@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Descargados & Consumidos (Ah)</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#111; --muted:#6b7280;
+    --tile:#e9eef3; --tile-hover:#dfe6ec;
+    --ring:#cdd5df; --filled:#000;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+
+  .page{max-width:1180px;margin:10px auto;padding:4px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:980px){ .row{grid-template-columns:1fr} }
+
+  .card{border:1px solid var(--ring);border-radius:16px;background:#f7f8fa;box-shadow:0 8px 24px rgba(0,0,0,.04)}
+  .titlebar{background:#f1f3f5;padding:10px 12px;border-top-left-radius:16px;border-top-right-radius:16px;
+            display:flex;align-items:center;justify-content:space-between}
+  .title{margin:0;font-weight:800;letter-spacing:.2px;font-size:16px}
+  .avg{font-weight:700;font-size:14px}
+
+  .inner{padding:8px 6px 10px}
+  .month{text-align:center;font-weight:700;margin:6px 0 8px 0;font-size:15px}
+
+  /* filas de inputs y de botones */
+  .controls{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:nowrap}
+  .controls input{
+    background:#fff;color:var(--ink);border:1px solid #cdd5df;border-radius:10px;
+    height:32px;padding:0 8px;font-size:13px;
+  }
+  .controls input[type="date"]{ width:170px; }
+  .controls input[type="number"]{ width:140px; }
+  /* Descargados: Anterior/Actual a la mitad */
+  #D_prev, #D_cur{ width:70px; }
+
+  .btn{
+    background:#000;color:#fff;border:1px solid #000;border-radius:10px;height:30px;
+    padding:0 8px;font-size:12px;font-weight:700;cursor:pointer
+  }
+  .btn:active{transform:translateY(1px)}
+
+  /* ====== Cabecera de días + grilla: 7 columnas, izquierda ====== */
+  .weekdays, .grid{
+    display:grid;
+    grid-template-columns:repeat(7, 44px);
+    gap:4px;
+    justify-content:flex-start;
+  }
+  .weekdays{margin-bottom:4px}
+  .weekdays div{font-size:11px;text-align:center;opacity:.65}
+
+  /* ====== Celdas ====== */
+  .cell{
+    height:44px;
+    border-radius:14px;
+    background:var(--tile);
+    border:1px solid var(--ring);
+    display:flex;
+    align-items:center;justify-content:center;
+    position:relative;
+    font-weight:700;font-size:13px;line-height:1.05
+  }
+  .cell:hover{background:var(--tile-hover)}
+  .cell .day{position:absolute;top:6px;left:8px;font-size:11px;font-weight:800;opacity:.75}
+  .cell.filled{background:var(--filled);color:#fff;border-color:#000}
+  .cell.filled .val{font-size:15px;font-weight:800}
+
+  .footer{font-size:11px;opacity:.75;margin-top:6px;text-align:center;color:#555}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ====== TARJETA A: AMPERIOS DESCARGADOS ====== -->
+  <div class="row">
+    <div class="card" id="card-desc">
+      <div class="titlebar">
+        <h2 class="title">AMPERIOS DESCARGADOS</h2>
+        <div class="avg">Promedio Ah: <span id="D_avg">0.0</span></div>
+      </div>
+      <div class="inner">
+        <div class="month" id="D_month">—</div>
+
+        <!-- Fila 1: inputs -->
+        <div class="controls">
+          <input id="D_date" type="date" aria-label="Fecha" />
+          <input id="D_prev" type="number" inputmode="decimal" placeholder="Anterior" aria-label="Lectura anterior (Ah)" />
+          <input id="D_cur"  type="number" inputmode="decimal" placeholder="Actual" aria-label="Lectura actual (Ah)" />
+        </div>
+
+        <!-- Fila 2: botones -->
+        <div class="controls">
+          <button class="btn" id="D_calc">Calcular</button>
+          <button class="btn" id="D_exp">Exportar J</button>
+          <label class="btn" for="D_imp" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">Importar J.</label>
+          <input id="D_imp" type="file" accept="application/json,.json" style="display:none" />
+        </div>
+
+        <div class="weekdays"><div>Dom</div><div>Lun</div><div>Mar</div><div>Mie</div><div>Jue</div><div>Vie</div><div>Sab</div></div>
+        <div class="grid" id="D_grid"></div>
+
+        <div class="footer">Guardado en localStorage: <code>calendarioDescargaAh</code></div>
+      </div>
+    </div>
+
+    <!-- ====== TARJETA B: AMPERIOS CONSUMIDOS ====== -->
+    <div class="card" id="card-cons">
+      <div class="titlebar">
+        <h2 class="title">AMPERIOS CONSUMIDOS</h2>
+        <div class="avg">Promedio Ah: <span id="C_avg">0.0</span></div>
+      </div>
+      <div class="inner">
+        <div class="month" id="C_month">—</div>
+
+        <!-- Fila 1: inputs -->
+        <div class="controls">
+          <input id="C_date" type="date" />
+          <input id="C_wh" type="number" step="1" min="0" placeholder="Wh del día" />
+        </div>
+        <!-- Fila 2: botones -->
+        <div class="controls">
+          <button class="btn" id="C_calc">Calcular</button>
+          <button class="btn" id="C_exp">Exportar J</button>
+          <label class="btn" for="C_imp">Importar J.</label>
+          <input id="C_imp" type="file" accept=".json,application/json" style="display:none" />
+        </div>
+
+        <div class="weekdays"><div>Dom</div><div>Lun</div><div>Mar</div><div>Mie</div><div>Jue</div><div>Vie</div><div>Sab</div></div>
+        <div class="grid" id="C_grid"></div>
+
+        <div class="footer">Voltaje 12.8 V · Factor inversor +15% · Guardado en localStorage: <code>calendarioAhConsumo</code></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== TARJETA C (NUEVA): LÍNEAS CON PUNTOS ====== -->
+  <div class="card" id="card-line">
+    <div class="titlebar">
+      <h2 class="title">DESCARGADOS vs CONSUMIDOS (Ah)</h2>
+      <div class="avg">Mes actual</div>
+    </div>
+    <div class="inner">
+      <!-- NUEVO: checks para elegir series -->
+      <div class="controls" id="LC_controls">
+        <label style="display:inline-flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="LC_showD" checked /> Descargados
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="LC_showC" checked /> Consumidos
+        </label>
+      </div>
+
+      <canvas id="LC_chart" style="width:100%;height:260px;display:block;border-radius:12px"></canvas>
+      <div class="footer">
+        Fondo degradado gris oscuro → gris claro · • <b style="color:#2563eb">Descargados</b> · • <b style="color:#059669">Consumidos</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  /* ==================== CONFIG GLOBAL ==================== */
+  const TODAY = new Date();
+  const CUR_YEAR = TODAY.getFullYear();
+  const CUR_MONTH = TODAY.getMonth(); // 0..11
+  const pad2 = n => String(n).padStart(2,'0');
+  const monthName = (y,m) => new Date(y,m,1).toLocaleDateString('es-EC',{month:'long', year:'numeric'});
+
+  function paintMonthGrid(container, dataMap){
+    container.innerHTML = '';
+    const first = new Date(CUR_YEAR, CUR_MONTH, 1);
+    const startPad = first.getDay(); // 0=Dom
+    const daysInMonth = new Date(CUR_YEAR, CUR_MONTH+1, 0).getDate();
+    for(let i=0;i<startPad;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); }
+    for(let d=1; d<=daysInMonth; d++){
+      const key = `${CUR_YEAR}-${pad2(CUR_MONTH+1)}-${pad2(d)}`;
+      const val = dataMap.get(key);
+      const cell = document.createElement('div'); cell.className = 'cell' + (val!=null ? ' filled' : '');
+      const dayEl = document.createElement('div'); dayEl.className='day'; dayEl.textContent=d; cell.appendChild(dayEl);
+      if(val!=null){ const v=document.createElement('div'); v.className='val'; v.textContent=String(val);
+        cell.title = `${val} Ah · ${pad2(d)}-${pad2(CUR_MONTH+1)}-${CUR_YEAR}`; cell.appendChild(v); }
+      container.appendChild(cell);
+    }
+  }
+  function restrictDateToCurrentMonth(input){
+    const min = `${CUR_YEAR}-${pad2(CUR_MONTH+1)}-01`;
+    const max = `${CUR_YEAR}-${pad2(CUR_MONTH+1)}-${pad2(new Date(CUR_YEAR,CUR_MONTH+1,0).getDate())}`;
+    input.min=min; input.max=max;
+    const today = new Date();
+    let d = new Date(CUR_YEAR, CUR_MONTH, Math.min(today.getDate(), new Date(CUR_YEAR,CUR_MONTH+1,0).getDate()));
+    const tz = new Date().getTimezoneOffset()*60000;
+    input.value = new Date(d.getTime()-tz).toISOString().slice(0,10);
+  }
+  function averageOfMonth(dataMap){
+    const vals = Array.from(dataMap.entries())
+      .filter(([k,_]) => k.startsWith(`${CUR_YEAR}-${pad2(CUR_MONTH+1)}-`))
+      .map(([_,v])=>Number(v)).filter(v=>Number.isFinite(v));
+    return vals.length? (vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+  }
+
+  /* ==================== DESCARGADOS ==================== */
+  const D = {
+    STORAGE_KEY: 'calendarioDescargaAh',            // <— NUEVO nombre
+    LAST_ACTUAL_KEY: 'lastActualAh',
+    map: new Map(),
+    elMonth: document.getElementById('D_month'),
+    elGrid:  document.getElementById('D_grid'),
+    elAvg:   document.getElementById('D_avg'),
+    elDate:  document.getElementById('D_date'),
+    elPrev:  document.getElementById('D_prev'),
+    elCur:   document.getElementById('D_cur'),
+    btnCalc: document.getElementById('D_calc'),
+    btnExp:  document.getElementById('D_exp'),
+    inpImp:  document.getElementById('D_imp')
+  };
+  function D_loadAll(){ try{ return JSON.parse(localStorage.getItem(D.STORAGE_KEY)) || {}; } catch{ return {}; } }
+  function D_saveAll(obj){ localStorage.setItem(D.STORAGE_KEY, JSON.stringify(obj)); }
+  function D_rebuildMap(all){
+    const m = new Map();
+    for(const [date, obj] of Object.entries(all)){
+      const d = new Date(date);
+      if(d.getFullYear()===CUR_YEAR && d.getMonth()===CUR_MONTH){ m.set(date, obj.delta); }
+    }
+    D.map = m;
+  }
+  function D_render(){
+    document.getElementById('D_month').textContent = monthName(CUR_YEAR,CUR_MONTH);
+    paintMonthGrid(D.elGrid, D.map);
+    D.elAvg.textContent = averageOfMonth(D.map).toFixed(1);
+  }
+  function D_init(){
+    const lastActualLS = localStorage.getItem(D.LAST_ACTUAL_KEY);
+    if(lastActualLS) D.elPrev.value = lastActualLS;
+    restrictDateToCurrentMonth(D.elDate);
+    const all = D_loadAll(); D_rebuildMap(all); D_render();
+
+    D.btnCalc.addEventListener('click', () => {
+      const date = D.elDate.value;
+      const prev = parseFloat(D.elPrev.value);
+      const cur  = parseFloat(D.elCur.value);
+      if(!date || isNaN(prev) || isNaN(cur)) return;
+      const delta = +(cur - prev).toFixed(0);
+      const allR = D_loadAll(); allR[date] = { prev, cur, delta }; D_saveAll(allR);
+      D_rebuildMap(allR); D_render();
+      localStorage.setItem(D.LAST_ACTUAL_KEY, String(cur));
+      D.elPrev.value = String(cur); D.elCur.value = '';
+    });
+
+    D.btnExp.addEventListener('click', () => {
+      const all = D_loadAll();
+      const payload = {
+        schema:{version:1, app:'pv-mini-meter'},
+        readings: Object.entries(all).sort(([a],[b])=>a.localeCompare(b))
+          .map(([date,obj])=>({date, prev:obj.prev, cur:obj.cur, delta:obj.delta}))
+      };
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='calendarioDescargaAh.json';  // <— nombre de archivo
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    });
+
+    D.inpImp.addEventListener('change', async (e)=>{
+      const f = e.target.files?.[0]; if(!f) return;
+      try{
+        const txt = await f.text();
+        const data = JSON.parse(txt);
+        const list = Array.isArray(data?.readings) ? data.readings : [];
+        let all = D_loadAll(); let merged=0;
+        for(const r of list){
+          if(!r?.date) continue;
+          const prev=Number(r.prev), cur=Number(r.cur), delta=Number(r.delta);
+          if(Number.isFinite(prev)&&Number.isFinite(cur)&&Number.isFinite(delta)){
+            all[r.date] = {prev,cur,delta}; merged++;
+          }
+        }
+        D_saveAll(all); D_rebuildMap(all); D_render();
+        alert(`Importación completa: ${merged} registros fusionados.`);
+      }catch{ alert('Archivo JSON inválido.'); }
+      finally{ e.target.value=''; }
+    });
+  }
+
+  /* ==================== CONSUMIDOS (sin cambios) ==================== */
+  const C = {
+    VOLTAJE: 12.8, FACTOR: 1.15,
+    KEY: 'calendarioAhConsumo',
+    map: new Map(),
+    elMonth: document.getElementById('C_month'),
+    elGrid:  document.getElementById('C_grid'),
+    elAvg:   document.getElementById('C_avg'),
+    elDate:  document.getElementById('C_date'),
+    elWh:    document.getElementById('C_wh'),
+    btnCalc: document.getElementById('C_calc'),
+    btnExp:  document.getElementById('C_exp'),
+    inpImp:  document.getElementById('C_imp')
+  };
+  function C_load(){ try{ const raw=localStorage.getItem(C.KEY); const o=raw?JSON.parse(raw):null; return (o&&o.datos)?o.datos:{}; }catch{ return {}; } }
+  function C_save(obj){ const payload={ voltajeV:C.VOLTAJE, factorInversor:C.FACTOR, datos:obj }; localStorage.setItem(C.KEY, JSON.stringify(payload)); }
+  function C_rebuildMap(datos){
+    const m=new Map();
+    for(const [date,val] of Object.entries(datos)){
+      const d=new Date(date);
+      if(d.getFullYear()===TODAY.getFullYear() && d.getMonth()===TODAY.getMonth()){
+        m.set(date, Math.round(Number(val)));
+      }
+    }
+    C.map=m;
+  }
+  function C_render(){
+    C.elMonth.textContent = monthName(TODAY.getFullYear(), TODAY.getMonth());
+    paintMonthGrid(C.elGrid, C.map);
+    C.elAvg.textContent = averageOfMonth(C.map).toFixed(1);
+  }
+  function C_init(){
+    restrictDateToCurrentMonth(C.elDate);
+    const datos=C_load(); C_rebuildMap(datos); C_render();
+    C.btnCalc.addEventListener('click', ()=>{
+      const f=C.elDate.value; const wh=Number(C.elWh.value);
+      if(!f || !Number.isFinite(wh) || wh<0) return;
+      const ah=Math.round((wh*C.FACTOR)/C.VOLTAJE);
+      const all=C_load(); all[f]=ah; C_save(all); C_rebuildMap(all); C_render(); C.elWh.value='';
+    });
+    C.btnExp.addEventListener('click', ()=>{
+      const all=C_load(); const payload={ voltajeV:C.VOLTAJE, factorInversor:C.FACTOR, datos:all };
+      const blob=new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='calendarioAhConsumo.json';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
+    C.inpImp.addEventListener('change', async (e)=>{
+      const f=e.target.files?.[0]; if(!f) return;
+      try{
+        const txt=await f.text(); const obj=JSON.parse(txt);
+        const datos=(obj && obj.datos && typeof obj.datos==='object')?obj.datos:{};
+        const cleaned={}; for(const [k,v] of Object.entries(datos)){
+          if(/^\d{4}-\d{2}-\d{2}$/.test(k) && Number.isFinite(Number(v))) cleaned[k]=Math.round(Number(v));
+        }
+        const current=C_load(); const merged={...current,...cleaned};
+        C_save(merged); C_rebuildMap(merged); C_render();
+      }catch{ alert('JSON no válido.'); } finally{ e.target.value=''; }
+    });
+  }
+
+  // Init
+  document.getElementById('D_month').textContent = monthName(CUR_YEAR,CUR_MONTH);
+  document.getElementById('C_month').textContent = monthName(CUR_YEAR,CUR_MONTH);
+  D_init(); C_init();
+})();
+</script>
+
+<!-- ====== SCRIPT NUEVO: pinta el gráfico de líneas con puntos + checks ====== -->
+<script>
+(() => {
+  const $ = sel => document.querySelector(sel);
+  const pad2 = n => String(n).padStart(2,'0');
+  const today = new Date();
+  const Y = today.getFullYear();
+  const M = today.getMonth();
+  const daysInMonth = new Date(Y, M+1, 0).getDate();
+
+  function loadDescargadosMes(){
+    try{
+      const raw = localStorage.getItem('calendarioDescargaAh');
+      const obj = raw ? JSON.parse(raw) : {};
+      const out = {};
+      for(const [date, rec] of Object.entries(obj||{})){
+        const d = new Date(date);
+        if(d.getFullYear()===Y && d.getMonth()===M && Number.isFinite(Number(rec?.delta))){
+          out[date] = Math.round(Number(rec.delta));
+        }
+      }
+      return out;
+    }catch{ return {}; }
+  }
+  function loadConsumidosMes(){
+    try{
+      const raw = localStorage.getItem('calendarioAhConsumo');
+      const obj = raw ? JSON.parse(raw) : {};
+      const datos = obj?.datos || {};
+      const out = {};
+      for(const [date, ah] of Object.entries(datos)){
+        const d = new Date(date);
+        if(d.getFullYear()===Y && d.getMonth()===M && Number.isFinite(Number(ah))){
+          out[date] = Math.round(Number(ah));
+        }
+      }
+      return out;
+    }catch{ return {}; }
+  }
+  function toSeries(mapObj){
+    const arr = new Array(daysInMonth).fill(null);
+    for(let d=1; d<=daysInMonth; d++){
+      const key = `${Y}-${pad2(M+1)}-${pad2(d)}`;
+      if(mapObj[key]!=null) arr[d-1] = Number(mapObj[key]);
+    }
+    return arr;
+  }
+
+  function draw(){
+    const canvas = $('#LC_chart');
+    if(!canvas) return;
+
+    const showD = $('#LC_showD') ? $('#LC_showD').checked : true;
+    const showC = $('#LC_showC') ? $('#LC_showC').checked : true;
+
+    // Ajuste HiDPI
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight || 260;
+    canvas.width  = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    // Fondo degradado gris oscuro → gris claro
+    const grad = ctx.createLinearGradient(0,0,0,cssH);
+    grad.addColorStop(0,'#4b5563');  // gris 600
+    grad.addColorStop(1,'#e5e7eb');  // gris 200
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,cssW,cssH);
+
+    // Márgenes y plot area
+    const L=40, R=12, T=14, B=26;
+    const W = cssW - L - R;
+    const H = cssH - T - B;
+
+    const dMap = loadDescargadosMes();
+    const cMap = loadConsumidosMes();
+    const S1 = toSeries(dMap);
+    const S2 = toSeries(cMap);
+
+    // ymax depende de lo seleccionado
+    const pool = [];
+    if(showD) pool.push(...S1.filter(v=>v!=null));
+    if(showC) pool.push(...S2.filter(v=>v!=null));
+    const maxVal = pool.length ? Math.max(...pool, 10) : 10;
+    const ymax = Math.ceil(maxVal/10)*10;
+
+    // Grilla horizontal + etiquetas
+    ctx.save();
+    ctx.translate(L,T);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    for(let i=0;i<=4;i++){
+      const y = H - (H*(i/4));
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,255,255,.8)';
+      ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+      const label = Math.round((ymax*(i/4)));
+      ctx.fillText(label.toString(), -28, y+4);
+      ctx.setLineDash([4,4]);
+    }
+    ctx.restore();
+
+    // Conversión coordenadas
+    const xFor = (dayIdx)=> L + (W * (dayIdx/(daysInMonth-1)));
+    const yFor = (val)=>  T + (H - (val/ymax)*H);
+
+    function drawSeries(arr, lineColor, dotColor){
+      const ctx2 = canvas.getContext('2d');
+      ctx2.lineWidth = 2;
+      ctx2.strokeStyle = lineColor;
+      ctx2.fillStyle = dotColor;
+
+      let prev = null;
+      for(let i=0;i<daysInMonth;i++){
+        const v = arr[i];
+        if(v==null){ prev=null; continue; }
+        const x = xFor(i);
+        const y = yFor(v);
+        if(prev){
+          ctx2.beginPath();
+          ctx2.moveTo(prev.x, prev.y);
+          ctx2.lineTo(x,y);
+          ctx2.stroke();
+        }
+        ctx2.beginPath();
+        ctx2.arc(x,y,3.3,0,Math.PI*2);
+        ctx2.fill();
+        prev = {x,y};
+      }
+    }
+
+    if(showD) drawSeries(S1, '#2563eb', '#93c5fd');  // Descargados
+    if(showC) drawSeries(S2, '#059669', '#86efac');  // Consumidos
+
+    // Eje X (ticks cada 5 días)
+    const ctx3 = canvas.getContext('2d');
+    ctx3.fillStyle = 'rgba(17,17,17,.9)';
+    ctx3.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    for(let d=1; d<=daysInMonth; d+=5){
+      const x = xFor(d-1);
+      ctx3.fillText(String(d).padStart(2,'0'), x-8, cssH-8);
+    }
+  }
+
+  // Redibuja al cargar, al cambiar tamaño, al importar/calcular y al (des)marcar checks
+  window.addEventListener('load', draw);
+  window.addEventListener('resize', draw);
+  ['D_calc','C_calc','D_imp','C_imp','LC_showD','LC_showC'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const evt = (id==='D_imp' || id==='C_imp') ? 'change' : (id.startsWith('LC_') ? 'change' : 'click');
+    el.addEventListener(evt, ()=> setTimeout(draw, 50));
+  });
+})();
+</script>
+</body>
+</html>

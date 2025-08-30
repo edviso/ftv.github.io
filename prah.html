@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Predicción solar fotovoltaica</title>
+  <style>
+    :root{
+      --bg:#f6f7f8;--card:#ffffff;--ink:#222;--muted:#6b7280;--accent:#111;
+      --ok:#16a34a;--warn:#f59e0b;--err:#b91c1c;--line:#e5e7eb;--soft:#f1f5f9
+    }
+    .dark{
+      --bg:#0f1115;--card:#151922;--ink:#e5e7eb;--muted:#9aa0aa;--accent:#fff;
+      --ok:#22c55e;--warn:#fbbf24;--err:#ef4444;--line:#2a2f3a;--soft:#111623
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial,sans-serif}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+    h1{font-size:clamp(18px,3.3vw,28px);letter-spacing:.2px;font-weight:700;margin:0;color:var(--accent)}
+    .sub{font-size:12px;color:var(--muted)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 1px 0 rgba(0,0,0,.03);margin-bottom:12px}
+    .row{display:grid;grid-template-columns:1fr 220px;gap:10px;margin:8px 0}
+    .row > label{font-size:12px;color:var(--muted);display:block}
+    select,input[type=number],input[type=text],input[type=date],.btn{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:14px
+    }
+    input[type=range]{width:100%}
+    .hint{font-size:11px;color:var(--muted);margin-top:4px}
+    .btn{cursor:pointer;background:var(--accent);color:var(--bg)}
+    .btn.ghost{background:var(--bg);color:var(--accent);border-color:var(--accent)}
+    .btn.bad{background:transparent;border:1px solid var(--err);color:var(--err)}
+    .stack{display:flex;gap:8px;flex-wrap:wrap}
+    .out{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi{background:var(--soft);border:1px dashed var(--line);border-radius:14px;padding:14px}
+    .kpi .lbl{font-size:12px;color:var(--muted)}
+    .kpi .val{font-size:clamp(18px,3.3vw,28px);font-weight:700;letter-spacing:.2px;transition:opacity .28s ease, transform .28s ease}
+    .pulse{opacity:0;transform:translateY(4px)}
+    .explain{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;color:var(--muted);white-space:pre-wrap}
+    details{border:1px dashed var(--line);border-radius:12px;padding:8px 10px;background:var(--soft)}
+    details>summary{cursor:pointer;font-weight:600;color:var(--accent)}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted);background:var(--soft)}
+    .footer{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px}
+    .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+    thead th{position:sticky;top:0;background:var(--soft);z-index:1}
+    .metrics{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}
+    .chip{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px}
+    .kpanel{margin-top:10px}
+    .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+    .kcell{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+    .kcell .t{font-size:11px;color:var(--muted);margin-bottom:4px}
+    .kcell .v{font-size:16px;font-weight:700}
+    .kcell.act{outline:2px solid var(--accent)}
+
+    /* Semáforo de consumo */
+    .state{font-weight:700;border-width:1px}
+    .state.ok{background:rgba(34,197,94,.12);color:#16a34a;border-color:#16a34a}
+    .state.neutral{background:rgba(148,163,184,.12);color:#64748b;border-color:#64748b}
+    .state.warn{background:rgba(251,191,36,.14);color:#b45309;border-color:#f59e0b}
+    .cons-border-ok{box-shadow:0 0 0 2px rgba(34,197,94,.35) inset}
+    .cons-border-warn{box-shadow:0 0 0 2px rgba(245,158,11,.35) inset}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Predicción solar fotovoltaica</h1>
+        <div class="sub">Modo clásico (sin irradiancia) · k por condición · Historial, exportación y gráficos</div>
+      </div>
+      <div class="stack">
+        <button class="btn ghost" id="themeBtn" title="Cambiar tema">Tema oscuro</button>
+        <span class="badge" id="status">sin cambios</span>
+      </div>
+    </header>
+
+    <section class="card" id="sec-meteo">
+      <h3 style="margin:0 0 6px 0;color:var(--accent);font-size:16px">Datos meteorológicos</h3>
+      <div class="row">
+        <label for="baseAh">Promedio base (Ah)</label>
+        <input type="number" id="baseAh" step="0.1" min="0" />
+      </div>
+      <div class="row">
+        <label for="sky">Cielo</label>
+        <select id="sky">
+          <option value="despejado">Despejado</option>
+          <option value="parcial">Parcial nublado</option>
+          <option value="mayormente" selected>Mayormente nublado</option>
+          <option value="nublado">Nublado grueso</option>
+          <option value="lluvia">Lluvia ligera</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="temp">Temp. al mediodía (°C): <span id="tempVal" class="hint"></span></label>
+        <input type="range" id="temp" min="18" max="38" step="1" />
+      </div>
+      <div class="row">
+        <label for="wind">Viento</label>
+        <select id="wind">
+          <option value="calma">Calma (0–5 km/h)</option>
+          <option value="leve" selected>Leve (6–12 km/h)</option>
+          <option value="moderado">Moderado (13–25 km/h)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="hum">Humedad</label>
+        <select id="hum">
+          <option value="baja">Baja (&lt;50%)</option>
+          <option value="media">Media (50–70%)</option>
+          <option value="alta" selected>Alta (70–85%)</option>
+          <option value="muyalta">Muy alta (&gt;85%)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="precip">Precipitación</label>
+        <select id="precip">
+          <option value="off" selected>Sin lluvia</option>
+          <option value="on">Con lluvia</option>
+        </select>
+      </div>
+
+      <details style="margin-top:10px">
+        <summary>Cargar meteo desde JSON</summary>
+        <div class="hint" style="margin:6px 0">Pega aquí el JSON de tu fuente (OpenWeather, Open‑Meteo u otro formato simple). <b>Nota</b>: se <b>ignora</b> la irradiancia para usar solo el modo clásico.</div>
+        <div class="row">
+          <label>Entrada JSON (texto)</label>
+          <textarea id="jsonInput" rows="8" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:12px" placeholder='{"temp_c":27,"viento_kmh":14,"humedad_pct":79,"precip_mm":0,"cielo":"mayormente","irr_wm2":700}'></textarea>
+        </div>
+        <div class="stack">
+          <button class="btn ghost" id="jsonPaste" type="button">Pegar del portapapeles</button>
+          <label class="btn ghost" for="jsonFile">Abrir .json</label>
+          <input id="jsonFile" type="file" accept="application/json" style="display:none" />
+          <button class="btn" id="jsonApply" type="button">Aplicar JSON al formulario</button>
+          <button class="btn bad" id="jsonClear" type="button">Limpiar JSON</button>
+        </div>
+        <div class="hint" id="jsonMsg" style="margin-top:6px"></div>
+      </details>
+
+      <div class="footer">
+        <div class="stack">
+          <button class="btn" id="calc">Calcular</button>
+          <label class="hint" style="display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="logForecast" checked />
+            Registrar pronóstico de hoy
+          </label>
+          <button class="btn ghost" id="reset">Restablecer</button>
+        </div>
+        <small class="hint">Los valores se guardan en este dispositivo.</small>
+      </div>
+    </section>
+
+    <section class="card" id="sec-resultados">
+      <h3 style="margin:0 0 6px 0;color:var(--accent);font-size:16px">Resultados</h3>
+      <div class="out" style="margin-bottom:6px">
+        <div class="kpi">
+          <div class="lbl">Factor del día (F)</div>
+          <div class="val" id="kpiF">—</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Ah previstos (central)</div>
+          <div class="val" id="kpiAh">—</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Rango sugerido</div>
+          <div class="val" id="kpiBand">—</div>
+        </div>
+      </div>
+      <div><span class="badge" id="basisTag">Central basado en: Cielo</span></div>
+    </section>
+
+    <section class="card" id="sec-real">
+      <details open>
+        <summary>Actualizar con dato real</summary>
+        <div class="row">
+          <label for="realDate">Fecha del dato real</label>
+          <input type="date" id="realDate" />
+        </div>
+        <div class="row">
+          <label for="ahReal">Ah reales del día</label>
+          <input type="number" id="ahReal" step="0.1" min="0" />
+        </div>
+        <div class="footer">
+          <div class="stack">
+            <button class="btn" id="applyReal">Ajustar coeficientes</button>
+          </div>
+          <small class="hint" id="ajusteMsg"></small>
+        </div>
+      </details>
+    </section>
+
+    <section class="card" id="sec-uso">
+      <h3 style="margin:0 0 6px 0;color:var(--accent);font-size:16px">Uso esperado</h3>
+      <div class="row">
+        <label for="consRef">Consumo diario esperado (Ah)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="consRef" step="0.1" min="0" style="flex:0 0 120px" />
+          <span id="consBadge" class="badge state neutral">—</span>
+        </div>
+      </div>
+      <div class="row">
+        <label>Uso recomendado</label>
+        <input type="text" id="rec" readonly />
+      </div>
+      <div class="row">
+        <label>Hora estimada SOC 100 %</label>
+        <input type="text" id="socTime" readonly />
+      </div>
+      <div class="explain" id="explain">—</div>
+    </section>
+
+    <section class="card" id="sec-k">
+      <details open>
+        <summary>Coeficientes avanzados (calibración)</summary>
+        <div class="row">
+          <label for="alpha">α temperatura (%/°C, 0.4% = 0.004)</label>
+          <input type="number" id="alpha" step="0.001" min="0" max="0.02" />
+        </div>
+        <div class="row" id="kClassicRow">
+          <label for="kGain">k (condición actual)</label>
+          <input type="number" id="kGain" step="0.001" min="0.85" max="1.15" />
+        </div>
+        <div class="hint">Se usa k por condición (despejado/parcial/mayormente/nublado/lluvia). k·irr se muestra abajo (solo lectura).</div>
+      </details>
+      <div class="kpanel">
+        <div class="hint" style="margin-bottom:6px">Aprendizaje (k) — 5 condiciones + k·irr (solo lectura)</div>
+        <div class="kgrid" id="kGrid"></div>
+      </div>
+    </section>
+
+    <section class="card" id="sec-hist">
+      <div class="stack" style="justify-content:space-between;align-items:center">
+        <h3 style="margin:0;color:var(--accent);font-size:16px">Historial</h3>
+        <div class="stack">
+          <button class="btn ghost" id="exportJSON">Exportar JSON</button>
+          <button class="btn ghost" id="exportCSV">Exportar CSV</button>
+          <label class="btn ghost" for="importJSONInput">Importar JSON</label>
+          <input id="importJSONInput" type="file" accept="application/json" style="display:none" />
+        </div>
+      </div>
+      <div class="metrics" id="metrics">
+        <span class="chip">MAE: —</span>
+        <span class="chip">MAPE: —</span>
+        <span class="chip">Bias: —</span>
+        <span class="chip">Con real: —</span>
+        <span class="chip">Total: —</span>
+      </div>
+      <div class="tablewrap">
+        <table id="histTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Ah Pred</th>
+              <th>Ah Real</th>
+              <th>Error %</th>
+              <th>F</th>
+              <th>Cielo</th>
+              <th>T(°C)</th>
+              <th>Viento</th>
+              <th>Hum</th>
+              <th>Lluvia</th>
+              <th>k antes</th>
+              <th>k después</th>
+              <th class="actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="hint" style="margin-top:6px">Se muestran los últimos 30 registros.</div>
+    </section>
+
+    <section class="card" id="sec-graf">
+      <div class="charts-head">
+        <h3 style="margin:0;color:var(--accent);font-size:16px">Gráficos (histórico)</h3>
+        <div class="chart-controls">
+          <label><input type="checkbox" id="gMae" checked> MAE</label>
+          <label><input type="checkbox" id="gMape"> MAPE</label>
+          <label><input type="checkbox" id="gBias" checked> Bias</label>
+          <label>Ventana
+            <select id="gWin">
+              <option value="7">7</option>
+              <option value="14" selected>14</option>
+              <option value="30">30</option>
+            </select> días
+          </label>
+          <button class="btn ghost" id="gPNG">Exportar PNG</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="lg"><span class="dot" id="lg-mae"></span>MAE (Ah)</span>
+        <span class="lg"><span class="dot" id="lg-mape"></span>MAPE (%)</span>
+        <span class="lg"><span class="dot" id="lg-bias"></span>Bias (Ah)</span>
+      </div>
+      <canvas id="chart" width="960" height="260" aria-label="Gráfico de métricas"></canvas>
+      <div class="hint" id="chartHint">Consejo: añade más días con dato real para ver la tendencia.</div>
+    </section>
+  </div>
+
+  <script>
+    const $ = (q)=>document.querySelector(q);
+    const KEY='pv-mini-state-v12';
+    const HKEY='pv-mini-history-v1';
+    const CKEY='pv-mini-chart-v1';
+    const MAX_ROWS=365;
+
+    const S = {
+      baseAh: 58, consRef: 63, sky: 'mayormente', temp: 27, wind: 'leve', hum: 'alta', precip: 'off',
+      alpha: 0.004,
+      k: {despejado:1.000, parcial:1.000, mayormente:1.000, nublado:1.000, lluvia:1.000},
+      kIrr: 1.000, theme: 'light'
+    };
+
+    function todayISO(){ const d=new Date();return d.toISOString().slice(0,10); }
+    function applyTheme(t){ S.theme=(t==='dark')?'dark':'light'; document.body.classList.toggle('dark',S.theme==='dark'); $('#themeBtn').textContent=S.theme==='dark'?'Tema claro':'Tema oscuro'; }
+
+    function migrate(x){
+      if(!x) return x;
+      if(!x.k){ const kg=typeof x.kGain==='number'?x.kGain:1.0; x.k={despejado:kg,parcial:kg,mayormente:kg, nublado:kg,lluvia:kg}; }
+      if(typeof x.kIrr!=='number'){ x.kIrr = (typeof x.kGain==='number'?x.kGain:1.0) || 1.0; }
+      if(!x.sky) x.sky='parcial';
+      if(!('alpha' in x)) x.alpha=0.004;
+      delete x.kGain;
+      return x;
+    }
+
+    function load(){
+      let x={}; try{x=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){x={}}
+      if(!Object.keys(x).length){
+        const prev=['pv-mini-state-v11','pv-mini-state-v10','pv-mini-state-v9','pv-mini-state-v8','pv-mini-state-v7','pv-mini-state-v6','pv-mini-state-v5','pv-mini-state-v4','pv-mini-state-v3'];
+        for(const k of prev){ try{ const cand=JSON.parse(localStorage.getItem(k)||'{}'); if(Object.keys(cand).length){ x=migrate(cand); break; } }catch(e){} }
+      }else{ x=migrate(x); }
+      Object.assign(S,x);
+
+      $('#baseAh').value=S.baseAh; $('#consRef').value=S.consRef; $('#sky').value=S.sky;
+      $('#temp').value=S.temp; $('#tempVal').textContent=S.temp+' °C';
+      $('#wind').value=S.wind; $('#hum').value=S.hum; $('#precip').value=S.precip;
+      $('#alpha').value=S.alpha; $('#kGain').value=(S.k?.[S.sky]??1).toFixed(3);
+      applyTheme(S.theme);
+      $('#realDate').value=todayISO(); $('#status').textContent='listo';
+      renderKpanel(); renderHistory(); loadChartPrefs(); drawChart();
+      updateConsBadgeFromState();
+    }
+
+    function save(){
+      const currentSky=$('#sky').value;
+      S.k[currentSky]=+($('#kGain').value||S.k[currentSky]||1);
+      const x={ baseAh:+$('#baseAh').value, consRef:+$('#consRef').value,
+        sky:currentSky, temp:+$('#temp').value, wind:$('#wind').value, hum:$('#hum').value, precip:$('#precip').value,
+        alpha:+$('#alpha').value, k:S.k, kIrr:S.kIrr, theme:S.theme };
+      localStorage.setItem(KEY,JSON.stringify(x)); Object.assign(S,x); $('#status').textContent='guardado'; renderKpanel();
+    }
+
+    function renderKpanel(){
+      const g=$('#kGrid'); if(!g) return;
+      const activeClassic=$('#sky').value;
+      const cells=[
+        {key:'despejado',t:'k·despejado',v:S.k?.despejado??1,act:activeClassic==='despejado'},
+        {key:'parcial',t:'k·parcial',v:S.k?.parcial??1,act:activeClassic==='parcial'},
+        {key:'mayormente',t:'k·mayormente',v:S.k?.mayormente??1,act:activeClassic==='mayormente'},
+        {key:'nublado',t:'k·nublado',v:S.k?.nublado??1,act:activeClassic==='nublado'},
+        {key:'lluvia',t:'k·lluvia',v:S.k?.lluvia??1,act:activeClassic==='lluvia'},
+        {key:'irr',t:'k·irr (ref)',v:S.kIrr??1,act:false}
+      ];
+      g.innerHTML=cells.map(c=>`<div class="kcell ${c.act?'act':''}"><div class="t">${c.t}</div><div class="v">${(typeof c.v==='number'&&!isNaN(c.v))?c.v.toFixed(3):'—'}</div></div>`).join('');
+    }
+
+    const loadHist=()=>{try{return JSON.parse(localStorage.getItem('pv-mini-history-v1')||'[]')}catch(e){return []}};
+    const saveHist=(arr)=>localStorage.setItem('pv-mini-history-v1',JSON.stringify(arr));
+    function upsertHistEntry(date,entry){
+      const hist=loadHist(); const idx=hist.findIndex(r=>r.date===date);
+      if(idx>=0) hist[idx]={...hist[idx],...entry,date}; else { hist.push({date,...entry}); if(hist.length>365){hist.sort((a,b)=>a.date.localeCompare(b.date)); hist.shift();} }
+      saveHist(hist); return hist;
+    }
+    function computeMetrics(rows){
+      const withReal=rows.filter(r=>typeof r.ah_real==='number'&&!isNaN(r.ah_real)&&typeof r.ah_pred==='number'&&r.ah_pred>0);
+      const n=withReal.length; if(n===0) return {MAE:null,MAPE:null,Bias:null,countReal:0,total:rows.length};
+      let mae=0,mape=0,bias=0;
+      withReal.forEach(r=>{ const err=(r.ah_real-r.ah_pred); mae+=Math.abs(err); mape+=Math.abs(err)/r.ah_pred; bias+=err; });
+      return {MAE:+(mae/n).toFixed(2), MAPE:+((mape/n)*100).toFixed(1), Bias:+(bias/n).toFixed(2), countReal:n, total:rows.length};
+    }
+    function renderHistory(){
+      const hist=loadHist().slice(-30).reverse(); const tb=$('#histTable tbody'); tb.innerHTML='';
+      hist.forEach(r=>{
+        const errPct=(typeof r.ah_real==='number'&&r.ah_pred>0)?(((r.ah_real-r.ah_pred)/r.ah_pred)*100):null;
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${r.date||''}</td>
+          <td>${fmtNum(r.ah_pred)}</td>
+          <td>${fmtNum(r.ah_real)}</td>
+          <td>${errPct===null?'—':(errPct.toFixed(1)+'%')}</td>
+          <td>${fmtNum(r.F)}</td>
+          <td>${r.inputs?.sky||''}</td>
+          <td>${r.inputs?.temp??''}</td>
+          <td>${r.inputs?.wind||''}</td>
+          <td>${r.inputs?.hum||''}</td>
+          <td>${r.inputs?.precip||''}</td>
+          <td>${fmtNum(r.k_before)}</td>
+          <td>${fmtNum(r.k_after)}</td>
+          <td class="actions">
+            <button class="btn ghost" data-act="edit" data-date="${r.date}">Editar real</button>
+            <button class="btn bad" data-act="del" data-date="${r.date}">Borrar</button>
+          </td>`;
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click',(e)=>{
+          const d=e.currentTarget.getAttribute('data-date'); const act=e.currentTarget.getAttribute('data-act');
+          if(act==='del'){ const all=loadHist().filter(x=>x.date!==d); saveHist(all); renderHistory(); drawChart(); }
+          else if(act==='edit'){ const all=loadHist(); const i=all.findIndex(x=>x.date===d); if(i<0) return;
+            const val=prompt('Nuevo Ah real para '+d, all[i].ah_real??''); if(val===null) return; const v=parseFloat(val); if(isNaN(v)) return alert('Valor no válido');
+            all[i].ah_real=v;
+            if(typeof all[i].ah_pred==='number' && all[i].ah_pred>0){ all[i].error_abs=+(v-all[i].ah_pred).toFixed(2); all[i].error_pct=+(((v-all[i].ah_pred)/all[i].ah_pred)).toFixed(4); }
+            else { all[i].error_abs=null; all[i].error_pct=null; }
+            all[i].updated_at=new Date().toISOString(); saveHist(all); renderHistory(); drawChart();
+          }
+        });
+      });
+      const m=computeMetrics(loadHist()); const chips=$('#metrics').querySelectorAll('.chip');
+      chips[0].textContent='MAE: '+(m.MAE===null?'—':m.MAE+' Ah');
+      chips[1].textContent='MAPE: '+(m.MAPE===null?'—':m.MAPE+' %');
+      chips[2].textContent='Bias: '+(m.Bias===null?'—':m.Bias+' Ah');
+      chips[3].textContent='Con real: '+m.countReal; chips[4].textContent='Total: '+m.total;
+    }
+    function fmtNum(x){ if(typeof x!=='number'||isNaN(x)) return '—'; if(Math.abs(x)>=100) return x.toFixed(0); if(Math.abs(x)>=10) return x.toFixed(1); return x.toFixed(2); }
+
+    const factorSky=(s)=>({despejado:1.00, parcial:0.95, mayormente:0.88, nublado:0.82, lluvia:0.70}[s]||1.00);
+    const factorTempAmb=(T,a)=>+(1+a*(25-T)).toFixed(4);
+    const factorWind=(w)=>({calma:1.00, leve:1.01, moderado:1.02}[w]||1.00);
+    const factorHum=(h)=>({baja:1.00, media:0.995, alta:0.985, muyalta:0.95}[h]||0.99);
+    const factorPrecip=(p)=> p==='on'?0.92:1.00;
+    function bandClassic(ah){ const d=Math.max(2,ah*0.04); return [+(ah-d).toFixed(1), +(ah+d).toFixed(1)]; }
+    function kSocTime(F){ const base=new Date(); base.setHours(13,30,0,0); const offH=-(F-1)*5; const mid=new Date(base.getTime()+offH*3600*1000); const t1=new Date(mid.getTime()-45*60*1000); const t2=new Date(mid.getTime()+45*60*1000); const f=(d)=>d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); return `${f(t1)}–${f(t2)}`; }
+    function usoRecomendado(ahPred,cons){ const m=ahPred-cons; if(m>=5) return 'Holgado'; if(m<=-2) return 'Ahorro'; return 'Normal'; }
+    function updateConsBadge(ahPred,cons){
+      const badge=$('#consBadge'); const inp=$('#consRef');
+      let txt='—', cls='neutral'; inp.classList.remove('cons-border-ok','cons-border-warn');
+      if(cons>0 && ahPred>0){
+        const margen=+(ahPred-cons).toFixed(1);
+        const pct=Math.round((ahPred/cons)*100);
+        let estado='Normal';
+        if(margen>=5){ estado='Holgado'; cls='ok'; inp.classList.add('cons-border-ok'); }
+        else if(margen<=-2){ estado='Ahorro'; cls='warn'; inp.classList.add('cons-border-warn'); }
+        txt=`${estado} • ${margen>0?'+':''}${margen} Ah • ${pct}%`;
+      }
+      badge.textContent=txt;
+      badge.classList.remove('ok','warn','neutral');
+      badge.classList.add(cls,'state');
+    }
+    function updateConsBadgeFromState(){
+      const pred=parseFloat(($('#kpiAh').textContent||'').replace(/[^0-9.]/g,''))||0;
+      updateConsBadge(pred, S.consRef);
+    }
+
+    function calc(){
+      save();
+      const fSky=factorSky(S.sky), fT=factorTempAmb(S.temp,S.alpha), fW=factorWind(S.wind), fH=factorHum(S.hum), fP=factorPrecip(S.precip), kCond=(S.k?.[S.sky]??1);
+      let F=fSky*fT*fW*fH*fP*kCond; F=+F.toFixed(3);
+      const Ah=+(S.baseAh*F).toFixed(1); const [lo,hi]=bandClassic(Ah);
+      setVal('#kpiF',F.toFixed(3)); setVal('#kpiAh',Ah+' Ah'); setVal('#kpiBand',`${lo} – ${hi} Ah`);
+      $('#basisTag').textContent='Central basado en: Cielo'; $('#socTime').value=kSocTime(F); $('#rec').value=usoRecomendado(Ah,S.consRef);
+      $('#explain').textContent=`Nub=${fSky.toFixed(3)} · Temp=${fT.toFixed(3)} · Viento=${fW.toFixed(3)} · Hum=${fH.toFixed(3)} · Lluvia=${fP.toFixed(3)} · k(${S.sky})=${kCond.toFixed(3)}\nF=${F.toFixed(3)}  Ah=${Ah}`;
+
+      updateConsBadge(Ah, S.consRef);
+
+      if($('#logForecast').checked){
+        const date=todayISO();
+        const entry={ ah_pred:Ah, band_lo:lo, band_hi:hi, F,
+          inputs:{mode:'classic', sky:S.sky,temp:S.temp,wind:S.wind,hum:S.hum,precip:S.precip, baseAh:S.baseAh,consRef:S.consRef,alpha:S.alpha },
+          k_before:(S.k?.[S.sky]??1), soc_window:$('#socTime').value, usage:$('#rec').value, created_at:new Date().toISOString() };
+        upsertHistEntry(date,entry); renderHistory(); drawChart();
+      }
+      return {F,Ah,lo,hi};
+    }
+
+    function ajustarConReal(){
+      const real=+$('#ahReal').value; const dsel=$('#realDate').value||todayISO(); if(!real){$('#ajusteMsg').textContent='Ingresa Ah reales.';return}
+      const pred=parseFloat(($('#kpiAh').textContent||'').replace(/[^0-9.]/g,''))||0; if(!pred){$('#ajusteMsg').textContent='Primero calcula el día.';return}
+      const kBefore=(S.k?.[S.sky]??1);
+      let k=kBefore*(real/pred); k=0.5*kBefore+0.5*k; k=Math.max(0.85,Math.min(1.15,k)); S.k[S.sky]=+k.toFixed(3); $('#kGain').value=S.k[S.sky];
+      $('#ajusteMsg').textContent=`k(${S.sky}) actualizada a ${S.k[S.sky]}. Registro guardado.`; save();
+      upsertHistEntry(dsel,{ah_real:+real.toFixed(2), error_abs:+(real-pred).toFixed(2), error_pct:+(((real-pred)/pred)).toFixed(4), k_before:kBefore, k_after:S.k[S.sky], updated_at:new Date().toISOString()});
+      renderKpanel(); renderHistory(); drawChart();
+    }
+
+    function setVal(id,text){ const el=$(id); el.classList.add('pulse'); setTimeout(()=>{el.textContent=text; el.classList.remove('pulse');},60); }
+    function download(filename,text){ const blob=new Blob([text],{type:'application/octet-stream'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
+    function exportJSON(){ const data={state:S,history:loadHist()}; download('pv-mini-export.json', JSON.stringify(data,null,2)); }
+    function exportCSV(){
+      const rows=loadHist();
+      const headers=['date','ah_pred','ah_real','error_abs','error_pct','F','sky','temp','wind','hum','precip','k_before','k_after','band_lo','band_hi','soc_window','usage','created_at','updated_at'];
+      const toRow=(r)=>[ r.date||'', r.ah_pred??'', r.ah_real??'', r.error_abs??'', (typeof r.error_pct==='number')?(r.error_pct*100).toFixed(2)+'%':'', r.F??'', r.inputs?.sky||'', r.inputs?.temp??'', r.inputs?.wind||'', r.inputs?.hum||'', r.inputs?.precip||'', r.k_before??'', r.k_after??'', r.band_lo??'', r.band_hi??'', r.soc_window??'', r.usage??'', r.created_at??'', r.updated_at??'' ];
+      const lines=[headers.join(',')].concat(rows.map(r=>toRow(r).map(v=>String(v).includes(',')?`"${String(v).replace(/"/g,'""')}"`:v).join(',')));
+      download('pv-mini-history.csv', lines.join('\n'));
+    }
+    function importJSON(file){
+      const reader=new FileReader(); reader.onload=()=>{ try{ const obj=JSON.parse(reader.result); if(obj.state){ const merged=Object.assign({},S,obj.state); if(!merged.k){ const kg=typeof merged.kGain==='number'?merged.kGain:1.0; merged.k={despejado:kg,parcial:kg,mayormente:kg,nublado:kg,lluvia:kg}; } else if(!('mayormente' in merged.k)){ merged.k.mayormente=(typeof merged.k.parcial==='number'?merged.k.parcial:1.0); } if(typeof merged.kIrr!=='number'){ merged.kIrr=(typeof merged.kGain==='number'?merged.kGain:1.0)||1.0;} delete merged.kGain; if(!('alpha' in merged)) merged.alpha=0.004; localStorage.setItem(KEY,JSON.stringify(merged)); } if(Array.isArray(obj.history)){ const cur=loadHist(); const map=new Map(cur.map(r=>[r.date,r])); obj.history.forEach(r=>{ if(r&&r.date){ map.set(r.date,r);} }); const mergedH=Array.from(map.values()).sort((a,b)=>a.date.localeCompare(b.date)); saveHist(mergedH.slice(-MAX_ROWS)); } load(); alert('Importación completa.'); }catch(e){ alert('Archivo JSON no válido.'); } }; reader.readAsText(file);
+    }
+
+    async function pasteFromClipboardTo(id){
+      try{ const t=await navigator.clipboard.readText(); if(!t){ alert('El portapapeles está vacío o bloqueado.'); return; } document.getElementById(id).value=t; }catch(e){ alert('No se pudo leer el portapapeles. Pega manualmente.'); }
+    }
+    function mapSkyFromText(txt){ if(!txt) return null; const s=String(txt).toLowerCase(); if(s.includes('clear')||s.includes('despejado')) return 'despejado'; if(s.includes('few')||s.includes('parcial')) return 'parcial'; if(s.includes('mostly')||s.includes('mayormente')) return 'mayormente'; if(s.includes('overcast')||s.includes('nublado')) return 'nublado'; if(s.includes('rain')||s.includes('lluv')) return 'lluvia'; return null; }
+    function mapSkyFromClouds(pct){ if(typeof pct!=='number') return null; if(pct<20) return 'despejado'; if(pct<50) return 'parcial'; if(pct<80) return 'mayormente'; return 'nublado'; }
+    function windBucket(kmh){ if(typeof kmh!=='number'||isNaN(kmh)) return null; if(kmh<=5) return 'calma'; if(kmh<=12) return 'leve'; return 'moderado'; }
+    function humBucket(pct){ if(typeof pct!=='number') return null; if(pct<50) return 'baja'; if(pct<=70) return 'media'; if(pct<=85) return 'alta'; return 'muyalta'; }
+    function clampTempC(x){ if(typeof x!=='number'||isNaN(x)) return null; return Math.max(18,Math.min(38,Math.round(x))); }
+    function parseMeteoJSON(text){
+      let raw; try{ raw=JSON.parse(text); }catch(e){ return {ok:false,msg:'JSON inválido'}; }
+      const tryOpenMeteo=()=>{ if(!raw||!raw.hourly||!Array.isArray(raw.hourly.time)) return null; const timeArr=raw.hourly.time; let idx=timeArr.findIndex(t=>/T(12|13):00/.test(t)); if(idx<0) idx=Math.floor(timeArr.length/2); const pick=(k)=> (raw.hourly[k] && typeof raw.hourly[k][idx]!=='undefined') ? raw.hourly[k][idx] : null; const T=pick('temperature_2m')??pick('temperature'); const RH=pick('relativehumidity_2m')??pick('relative_humidity_2m'); const W=pick('windspeed_10m')??pick('wind_speed_10m'); const CC=pick('cloudcover'); const PR=pick('precipitation'); const SW=pick('shortwave_radiation') ?? pick('global_radiation') ?? pick('direct_radiation'); return {temp_c:T,humedad_pct:RH,viento_kmh:W,nubes_pct:CC,precipitation:PR,irr_wm2:SW}; };
+      const tryOWM=()=>{ if(!raw||(!raw.main&&!raw.current)) return null; const node=raw.current||raw.main||raw; const T=(node.temp!=null?node.temp:raw.main?.temp); const RH=(node.humidity!=null?node.humidity:raw.main?.humidity); const wind=raw.wind?.speed||raw.current?.wind_speed; const kmh=(typeof wind==='number')?wind*3.6:null; const desc=(raw.weather?.[0]?.description||raw.current?.weather?.[0]?.description||raw.weather?.[0]?.main); const clouds=raw.clouds?.all||raw.current?.clouds; const rainmm=(typeof raw.rain?.['1h']==='number')?raw.rain['1h']:(typeof raw.rain?.['3h']==='number'?raw.rain['3h']:null); return {temp_k:T,humedad_pct:RH,viento_kmh:kmh,nubes_pct:clouds,cielo_txt:desc,precip_mm:rainmm}; };
+      const trySimple=()=>{ const x=raw; if(typeof x!=='object') return null; return { temp_c:x.temp_c??x.temp??x.t_c, humedad_pct:x.humedad_pct??x.humedad??x.rh, viento_kmh:x.viento_kmh??x.viento??x.wind_kmh??x.wind, nubes_pct:x.nubes_pct??x.nubosidad_pct??x.clouds, cielo_txt:x.cielo??x.sky, precip_mm:x.precip_mm??x.precipitacion_mm??x.rain_mm??x.rain, irr_wm2:x.irr_wm2??x.irradiancia??x.G??x.ghi??x.global }; };
+      const cand=tryOpenMeteo()||tryOWM()||trySimple(); if(!cand) return {ok:false,msg:'No se reconoció el formato. Usa el ejemplo simple.'};
+      let tempC=(cand.temp_c!=null)?+cand.temp_c:(cand.temp_k!=null?(+cand.temp_k-273.15):null); tempC=clampTempC(tempC);
+      const hum=cand.humedad_pct!=null?+cand.humedad_pct:null; const windK=cand.viento_kmh!=null?+cand.viento_kmh:null;
+      let sky=mapSkyFromText(cand.cielo_txt)||mapSkyFromClouds(cand.nubes_pct); const precipOn=(cand.precip_mm!=null && +cand.precip_mm>0.2)?'on':'off'; const irr=(cand.irr_wm2!=null)?+cand.irr_wm2:null;
+      return {ok:true, data:{ temp:tempC, hum:humBucket(hum), wind:windBucket(windK), sky:sky||'parcial', precip:precipOn, irr:irr }};
+    }
+    function applyMeteoParsed(mp){
+      if(mp.temp!=null){ $('#temp').value=mp.temp; $('#tempVal').textContent=mp.temp+' °C'; S.temp=mp.temp; }
+      if(mp.wind){ $('#wind').value=mp.wind; S.wind=mp.wind; }
+      if(mp.hum){ $('#hum').value=mp.hum; S.hum=mp.hum; }
+      if(mp.sky){ $('#sky').value=mp.sky; S.sky=mp.sky; $('#kGain').value=(S.k?.[S.sky]??1).toFixed(3); }
+      if(mp.precip){ $('#precip').value=mp.precip; S.precip=mp.precip; }
+      save();
+    }
+
+    function loadChartPrefs(){ try{ const x=JSON.parse(localStorage.getItem(CKEY)||'{}')||{}; $('#gMae').checked=('mae' in x)?!!x.mae:true; $('#gMape').checked=('mape' in x)?!!x.mape:false; $('#gBias').checked=('bias' in x)?!!x.bias:true; $('#gWin').value=(x.win||'14'); }catch(e){ $('#gMae').checked=true; $('#gMape').checked=false; $('#gBias').checked=true; $('#gWin').value='14'; } }
+    function saveChartPrefs(){ const x={mae:$('#gMae').checked, mape:$('#gMape').checked, bias:$('#gBias').checked, win:$('#gWin').value}; localStorage.setItem(CKEY,JSON.stringify(x)); }
+    function movingAverage(arr,N){ const out=[]; let sum=0; for(let i=0;i<arr.length;i++){ sum+=arr[i]; if(i>=N) sum-=arr[i-N]; const l=Math.min(i+1,N); out.push(sum/l); } return out; }
+    function getSeries(windowN){
+      const rows=loadHist().filter(r=>typeof r.ah_real==='number'&&!isNaN(r.ah_real)&&typeof r.ah_pred==='number'&&r.ah_pred>0).sort((a,b)=>a.date.localeCompare(b.date));
+      const dates=rows.map(r=>r.date); const absErr=rows.map(r=>Math.abs((r.ah_real??0)-(r.ah_pred??0))); const pctErr=rows.map(r=>Math.abs((r.ah_real??0)-(r.ah_pred??0))/(r.ah_pred||1)*100); const bias=rows.map(r=>(r.ah_real??0)-(r.ah_pred??0));
+      return {dates, mae:movingAverage(absErr,windowN), mape:movingAverage(pctErr,windowN), bias:movingAverage(bias,windowN)};
+    }
+    function drawChart(){
+      const canvas=$('#chart'); const ctx=canvas.getContext('2d'); const useMae=$('#gMae').checked, useMape=$('#gMape').checked, useBias=$('#gBias').checked; const win=parseInt($('#gWin').value||'14',10); saveChartPrefs();
+      const w=canvas.clientWidth, h=canvas.clientHeight; if(canvas.width!==w) canvas.width=w; if(canvas.height!==h) canvas.height=h; ctx.clearRect(0,0,canvas.width,canvas.height);
+      const data=getSeries(win); const n=data.dates.length;
+      if(n===0){ ctx.fillStyle=getCSS('--muted'); ctx.font='12px system-ui, sans-serif'; ctx.fillText('Sin datos con Ah real. Registra y actualiza algunos días para ver la curva.', 12, 22); $('#chartHint').textContent='Añade Ah real para habilitar el gráfico.'; return; }
+      $('#chartHint').textContent=`Promedio móvil de ${win} días • puntos: ${n}`;
+      let leftVals=[]; if(useMae) leftVals=leftVals.concat(data.mae); if(useBias) leftVals=leftVals.concat(data.bias); if(leftVals.length===0) leftVals=[0];
+      let lmin=Math.min(...leftVals), lmax=Math.max(...leftVals); if(lmin===lmax){lmin-=1;lmax+=1;} const padL=(lmax-lmin)*0.12; lmin-=padL; lmax+=padL;
+      let rmin=0,rmax=1; if(useMape){ rmin=Math.min(...data.mape); rmax=Math.max(...data.mape); if(rmin===rmax){ rmin=0; rmax=Math.max(1,rmax+1);} const padR=(rmax-rmin)*0.12; rmin=Math.max(0,rmin-padR); rmax+=padR; }
+      const margin={l:44, r:useMape?44:16, t:18, b:28}; const X0=margin.l, Y0=margin.t, X1=canvas.width-margin.r, Y1=canvas.height-margin.b;
+      ctx.strokeStyle=getCSS('--line'); ctx.lineWidth=1; ctx.beginPath(); for(let i=0;i<=4;i++){ const y=Y0+(Y1-Y0)*i/4; ctx.moveTo(X0,y); ctx.lineTo(X1,y);} ctx.stroke();
+      ctx.fillStyle=getCSS('--muted'); ctx.font='11px system-ui, sans-serif'; ctx.fillText('Ah',8,Y0+10); if(useMape) ctx.fillText('%',canvas.width-20,Y0+10);
+      const xAt=(i)=>X0+(X1-X0)*(i/(n-1||1)); const yL=(v)=>Y1-(v-lmin)/(lmax-lmin)*(Y1-Y0); const yR=(v)=>Y1-(v-rmin)/(rmax-rmin)*(Y1-Y0);
+      const labN=Math.max(2,Math.round(n/6)); for(let i=0;i<n;i+=labN){ const d=data.dates[i]||''; const x=xAt(i); const y=canvas.height-10; ctx.fillText(formatDateLabel(d), Math.max(X0,Math.min(X1-30,x-20)), y); }
+      function drawPoints(vals,yfun,colorVar,r){ ctx.fillStyle=getCSS(colorVar); for(let i=0;i<vals.length;i++){ const x=xAt(i), y=yfun(vals[i]); ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); } }
+      function drawLine(vals,yfun,colorVar){ const npts=vals.length; if(npts<=1){ drawPoints(vals,yfun,colorVar,3.5); return; } ctx.strokeStyle=getCSS(colorVar); ctx.lineWidth=2; ctx.beginPath(); for(let i=0;i<npts;i++){ const x=xAt(i), y=yfun(vals[i]); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.stroke(); }
+      if(useMae){ drawLine(data.mae,yL,'--muted'); drawPoints(data.mae,yL,'--muted',2.5); }
+      if(useBias){ drawLine(data.bias,yL,'--ink'); drawPoints(data.bias,yL,'--ink',2.5); }
+      if(useMape){ drawLine(data.mape,yR,'--muted'); drawPoints(data.mape,yR,'--muted',2.5); }
+      $('#lg-mae').style.background=getCSS('--muted'); $('#lg-bias').style.background=getCSS('--ink'); $('#lg-mape').style.background=getCSS('--muted');
+      $('#gPNG').onclick=()=>{ const a=document.createElement('a'); a.download=`pv-metricas-${todayISO()}.png`; a.href=canvas.toDataURL('image/png'); a.click(); };
+    }
+    function getCSS(v){ return getComputedStyle(document.body).getPropertyValue(v).trim()||'#888'; }
+    function formatDateLabel(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${parseInt(m,10)}`; }
+
+    $('#calc').addEventListener('click',calc);
+    $('#applyReal').addEventListener('click',ajustarConReal);
+    $('#reset').addEventListener('click',()=>{localStorage.removeItem(KEY);localStorage.removeItem(HKEY);load();renderHistory();drawChart();});
+    $('#temp').addEventListener('input',e=>{$('#tempVal').textContent=e.target.value+' °C'});
+    $('#themeBtn').addEventListener('click',()=>{applyTheme(S.theme==='dark'?'light':'dark'); save(); drawChart();});
+    $('#exportJSON').addEventListener('click',exportJSON);
+    $('#exportCSV').addEventListener('click',exportCSV);
+    $('#importJSONInput').addEventListener('change',(e)=>{const f=e.target.files?.[0]; if(f) importJSON(f);});
+    $('#sky').addEventListener('change',()=>{$('#kGain').value=(S.k?.[$('#sky').value]??1).toFixed(3); renderKpanel();});
+    $('#consRef').addEventListener('input',()=>{ S.consRef=+$('#consRef').value||0; save(); updateConsBadgeFromState(); });
+
+    $('#jsonPaste').addEventListener('click',()=>pasteFromClipboardTo('jsonInput'));
+    $('#jsonFile').addEventListener('change',(e)=>{const f=e.target.files?.[0]; if(!f) return; const reader=new FileReader(); reader.onload=()=>{$('#jsonInput').value=reader.result;}; reader.readAsText(f);});
+    $('#jsonApply').addEventListener('click',()=>{ const txt=$('#jsonInput').value.trim(); if(!txt){ $('#jsonMsg').textContent='Pega o abre un archivo .json primero.'; return; } const res=parseMeteoJSON(txt); if(!res.ok){ $('#jsonMsg').textContent=res.msg; return; } applyMeteoParsed(res.data); const parts=[]; if(res.data.sky) parts.push('cielo='+res.data.sky); if(res.data.temp!=null) parts.push('T='+res.data.temp+'°C'); if(res.data.wind) parts.push('viento='+res.data.wind); if(res.data.hum) parts.push('humedad='+res.data.hum); if(res.data.precip) parts.push('lluvia='+(res.data.precip==='on'?'sí':'no')); if(res.data.irr!=null) parts.push('irr(IGN)='+Math.round(res.data.irr)+' W/m²'); $('#jsonMsg').textContent='Aplicado: '+parts.join(' · ')+' · Modo clásico'; });
+    $('#jsonClear').addEventListener('click',()=>{ $('#jsonInput').value=''; $('#jsonMsg').textContent='JSON limpiado.'; });
+
+    load(); calc();
+  </script>
+
+<section class="card" id="sec-meter" style="margin-top:12px">
+  <h3 style="margin:0 0 6px 0;color:var(--accent);font-size:16px">Lecturas del controlador</h3>
+  <div class="row"><label for="mDate">Fecha</label><input type="date" id="mDate" /></div>
+  <div class="row"><label for="mPrev">Lectura anterior (Ah)</label><input type="number" id="mPrev" step="0.1" min="0" /></div>
+  <div class="row"><label for="mCurr">Lectura actual (Ah)</label><input type="number" id="mCurr" step="0.1" min="0" /></div>
+  <div class="row">
+    <label>Resultado</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%">
+      <div class="kpi"><div class="lbl">Ah del día (Δ)</div><div class="val" id="mDelta">—</div></div>
+      <div class="kpi"><div class="lbl">Promedio Ah</div><div class="val" id="mAvg">—</div><div class="sub" id="mAvgNote"></div></div>
+    </div>
+  </div>
+  <div class="row">
+    <label></label>
+    <div><label style="font-size:13px"><input type="checkbox" id="linkBase" checked> Usar este promedio como “Promedio base (Ah)”</label></div>
+  </div>
+  <div class="footer">
+    <div class="stack">
+      <button class="btn" id="mCalc" type="button">Calcular Δ</button>
+      <button class="btn" id="mSave" type="button">Guardar lectura</button>
+    </div>
+    <div class="stack">
+      <button class="btn ghost" id="mExport" type="button">Exportar JSON</button>
+      <label class="btn ghost" for="mImportFile">Importar JSON</label>
+      <input id="mImportFile" type="file" accept="application/json" style="display:none" />
+    </div>
+  </div>
+  <div class="tablewrap">
+    <table id="mTable">
+      <thead><tr><th>Fecha</th><th>Anterior</th><th>Actual</th><th>Δ Ah</th><th>Acciones</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="hint" style="margin-top:6px">Se muestran las últimas 30 lecturas. (Al guardar, la lectura actual pasa a ser la “anterior” para el siguiente día.)</div>
+</section>
+
+
+<section class="card" id="sec-soc" style="margin-top:12px">
+  <h3 style="margin:0 0 6px 0;color:var(--accent);font-size:16px">Registro diario del SOC</h3>
+  <div class="row"><label for="sDate">Fecha</label><input type="date" id="sDate" /></div>
+  <div class="row"><label style="opacity:.7">Medición</label><div></div></div>
+  <div class="row row-soc" style="display:grid;grid-template-columns:140px 1fr;gap:12px;align-items:center">
+    <div class="soc-left" style="display:flex;flex-direction:column;align-items:flex-start">
+      <div id="sSocVal" style="font-size:34px;font-weight:800;line-height:1">— %</div>
+      <div id="sVoltVal" style="font-size:16px;color:var(--muted);margin-top:2px">— V</div>
+    </div>
+    <div class="soc-right">
+      <div class="soc-controls" style="display:flex;align-items:center;gap:6px">
+        <button class="btn ghost" id="sMinus" type="button">−</button>
+        <input type="range" id="sVolt" min="13.30" max="13.80" step="0.01" style="flex:1">
+        <button class="btn ghost" id="sPlus" type="button">+</button>
+      </div>
+      <div style="margin-top:6px">
+        <label style="font-size:13px;margin-right:10px"><input type="radio" name="sState" value="reposo" checked> En reposo</label>
+        <label style="font-size:13px;margin-right:10px"><input type="radio" name="sState" value="con-carga"> Con carga</label>
+        <label style="font-size:13px"><input type="radio" name="sState" value="en-carga"> En carga</label>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="stack">
+      <button class="btn" id="sSave" type="button">Guardar SOC</button>
+    </div>
+    <div class="stack">
+      <button class="btn ghost" id="sExport" type="button">Exportar JSON</button>
+      <label class="btn ghost" for="sImportFile">Importar JSON</label>
+      <input id="sImportFile" type="file" accept="application/json" style="display:none" />
+    </div>
+  </div>
+  <div class="tablewrap">
+    <table id="sTable">
+      <thead><tr><th>Fecha</th><th>Voltaje (V)</th><th>SOC %</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="hint" style="margin-top:6px">Rango del control: 13.30–13.80 V (LiFePO₄). Los datos se guardan en este dispositivo.</div>
+</section>
+
+
+<script id="meter-v1">
+(function(){
+  const MKEY='pv-mini-meter-v1';
+  const $=q=>document.querySelector(q);
+  const toISO=(d)=>d.toISOString().slice(0,10);
+  function today(){ return toISO(new Date()); }
+  function load(){ try{return JSON.parse(localStorage.getItem(MKEY)||'[]');}catch(e){return [];} }
+  function saveRows(r){ localStorage.setItem(MKEY, JSON.stringify(r)); }
+  function wrapDelta(prev,curr){ prev=+prev; curr=+curr; if(isNaN(prev)||isNaN(curr)) return null; return curr>=prev? +(curr-prev).toFixed(1) : +((1000-prev)+curr).toFixed(1); }
+  function avgDelta(rows){ const v=rows.map(r=>+r.delta).filter(x=>!isNaN(x)); if(!v.length) return null; const a=v.reduce((s,x)=>s+x,0)/v.length; return +a.toFixed(1); }
+
+  function render(){
+    const rows=load().slice(-30).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const tb=$('#mTable tbody'); if(!tb) return; tb.innerHTML='';
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${r.date||''}</td><td>${r.prev??''}</td><td>${r.curr??''}</td><td>${r.delta??''}</td>
+                      <td><button class="btn ghost" data-act="edit" data-date="${r.date}">Editar</button>
+                          <button class="btn bad" data-act="del" data-date="${r.date}">Borrar</button></td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('button').forEach(b=>b.addEventListener('click', e=>{
+      const d=e.currentTarget.getAttribute('data-date'); const act=e.currentTarget.getAttribute('data-act');
+      const rows=load(); const i=rows.findIndex(x=>x.date===d); if(i<0) return;
+      if(act==='del'){ rows.splice(i,1); saveRows(rows); render(); updateAvg(); }
+      else {
+        const np=parseFloat(prompt('Lectura anterior (Ah)', rows[i].prev)); if(isNaN(np)) return;
+        const nc=parseFloat(prompt('Lectura actual (Ah)', rows[i].curr)); if(isNaN(nc)) return;
+        rows[i].prev=np; rows[i].curr=nc; rows[i].delta=wrapDelta(np,nc); rows[i].saved_at=new Date().toISOString();
+        saveRows(rows); render(); updateAvg();
+      }
+    }));
+  }
+
+  function updateAvg(){
+    const rows=load();
+    const a=avgDelta(rows);
+    $('#mAvg').textContent = a==null?'—':a.toFixed(1);
+    $('#mAvgNote').textContent = '(todos, n='+rows.length+')';
+    if($('#linkBase')?.checked && a!=null){
+      const elBase = document.querySelector('#baseAh');
+      if(elBase){ elBase.value = a.toFixed(1); if(typeof window.save==='function'){ window.save(); } if(typeof window.calc==='function'){ window.calc(); } }
+    }
+  }
+
+  function exportJSON(){
+    const blob=new Blob([JSON.stringify({schema:{version:1,app:'pv-mini-meter'}, readings: load()},null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pv-meter.json'; a.click(); URL.revokeObjectURL(a.href);
+  }
+  function importJSONFile(file){
+    const r=new FileReader(); r.onload=()=>{
+      try{
+        const obj=JSON.parse(r.result);
+        const inc=Array.isArray(obj.readings)?obj.readings:(Array.isArray(obj)?obj:[]);
+        const cur=load(); const map=new Map(cur.map(x=>[x.date,x]));
+        inc.forEach(x=>{ if(x&&x.date){ const d={date:x.date,prev:+x.prev||0,curr:+x.curr||0,delta:wrapDelta(+x.prev||0,+x.curr||0),saved_at:x.saved_at||new Date().toISOString()}; map.set(x.date,d);} });
+        const rows=Array.from(map.values()).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+        saveRows(rows); render(); updateAvg(); alert('Lecturas importadas.');
+      }catch(e){ alert('JSON no válido'); }
+    }; r.readAsText(file);
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    if($('#mDate')) $('#mDate').value=today();
+    const rows=load(); if(rows.length){ $('#mPrev').value = rows[rows.length-1].curr; }
+    $('#mCalc')?.addEventListener('click',()=>{
+      const d=wrapDelta($('#mPrev').value, $('#mCurr').value);
+      $('#mDelta').textContent = d==null?'—':d.toFixed(1)+' Ah';
+    });
+    $('#mSave')?.addEventListener('click',()=>{
+      const date=$('#mDate').value||today(), prev=parseFloat($('#mPrev').value), curr=parseFloat($('#mCurr').value);
+      const delta=wrapDelta(prev,curr); if(delta==null){ alert('Completa anterior y actual'); return; }
+      const cur=load(); const i=cur.findIndex(x=>x.date===date);
+      const row={date, prev, curr, delta, saved_at:new Date().toISOString()};
+      if(i>=0) cur[i]=row; else cur.push(row);
+      saveRows(cur); render(); updateAvg();
+      $('#mPrev').value = curr; $('#mCurr').value=''; $('#mDelta').textContent='—';
+    });
+    $('#mExport')?.addEventListener('click',exportJSON);
+    $('#mImportFile')?.addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) importJSONFile(f); });
+    render(); updateAvg();
+  });
+})();
+</script>
+
+
+<script id="soc-v1">
+(function(){
+  const SKEY='pv-mini-soc-v1';
+  const $=(q)=>document.querySelector(q);
+  const SOC_MAP = {
+      "13.30": 76.7,
+      "13.31": 77.3,
+      "13.32": 78.0,
+      "13.33": 78.7,
+      "13.34": 79.3,
+      "13.35": 80.0,
+      "13.36": 80.7,
+      "13.37": 81.3,
+      "13.38": 82.0,
+      "13.39": 82.7,
+      "13.40": 83.3,
+      "13.41": 84.0,
+      "13.42": 84.7,
+      "13.43": 85.3,
+      "13.44": 86.0,
+      "13.45": 86.7,
+      "13.46": 87.3,
+      "13.47": 88.0,
+      "13.48": 88.7,
+      "13.49": 89.3,
+      "13.50": 90.0,
+      "13.51": 90.4,
+      "13.52": 90.9,
+      "13.53": 91.3,
+      "13.54": 91.8,
+      "13.55": 92.3,
+      "13.56": 92.7,
+      "13.57": 93.2,
+      "13.58": 93.6,
+      "13.59": 94.1,
+      "13.60": 94.5,
+      "13.61": 94.9,
+      "13.62": 95.4,
+      "13.63": 95.9,
+      "13.64": 96.3,
+      "13.65": 96.8,
+      "13.66": 97.2,
+      "13.67": 97.7,
+      "13.68": 98.1,
+      "13.69": 98.6,
+      "13.70": 99.0,
+      "13.71": 99.1,
+      "13.72": 99.2,
+      "13.73": 99.3,
+      "13.74": 99.4,
+      "13.75": 99.5,
+      "13.76": 99.6,
+      "13.77": 99.7,
+      "13.78": 99.8,
+      "13.79": 99.9,
+      "13.80": 100.0
+  };
+  function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function loadRows(){ try{return JSON.parse(localStorage.getItem(SKEY)||'[]');}catch(e){return [];} }
+  function saveRows(r){ localStorage.setItem(SKEY, JSON.stringify(r)); }
+  function fmtSoc(x){ return (Math.round(x*10)/10).toFixed(1); }
+  function fmtVolt(x){ return parseFloat(x).toFixed(2); }
+  function socFromVolt(v){
+    v=parseFloat(v); v=clamp(v,13.30,13.80);
+    const k=v.toFixed(2);
+    if(SOC_MAP[k]!=null) return SOC_MAP[k];
+    const keys=Object.keys(SOC_MAP).map(parseFloat).sort((a,b)=>a-b);
+    let lo=keys[0], hi=keys[keys.length-1];
+    for(let i=0;i<keys.length-1;i++){ if(keys[i]<=v && v<=keys[i+1]){ lo=keys[i]; hi=keys[i+1]; break; } }
+    const s1=SOC_MAP[lo.toFixed(2)], s2=SOC_MAP[hi.toFixed(2)];
+    const t=(v-lo)/(hi-lo||1);
+    return s1 + (s2-s1)*t;
+  }
+  function updateUI(){
+    const sVolt=$('#sVolt'); if(!sVolt) return;
+    const v=parseFloat(sVolt.value);
+    const soc=socFromVolt(v);
+    $('#sSocVal').textContent = fmtSoc(soc)+' %';
+    $('#sVoltVal').textContent = fmtVolt(v)+' V';
+  }
+  function currentState(){
+    const el=document.querySelector('input[name="sState"]:checked');
+    return el?el.value:'reposo';
+  }
+  function renderTable(){
+    const tb=document.querySelector('#sTable tbody'); if(!tb) return;
+    const rows=loadRows().slice(-30).reverse();
+    tb.innerHTML='';
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${r.date||''}</td>
+                      <td>${fmtVolt(r.voltage)}</td>
+                      <td>${fmtSoc(r.soc)}%</td>
+                      <td>${r.state||'-'}</td>
+                      <td><button class="btn ghost" data-act="edit" data-date="${r.date}">Editar</button>
+                          <button class="btn bad" data-act="del" data-date="${r.date}">Borrar</button></td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('button').forEach(b=>b.addEventListener('click', e=>{
+      const date=e.currentTarget.getAttribute('data-date'); const act=e.currentTarget.getAttribute('data-act');
+      const cur=loadRows(); const i=cur.findIndex(x=>x.date===date); if(i<0) return;
+      if(act==='del'){ cur.splice(i,1); saveRows(cur); renderTable(); }
+      else if(act==='edit'){
+        const nv=parseFloat(prompt('Voltaje (V)', cur[i].voltage)); if(isNaN(nv)) return;
+        const ns=prompt('Estado (reposo/con-carga/en-carga)', cur[i].state||'reposo')||'reposo';
+        cur[i]={ date, voltage: clamp(nv,13.30,13.80), soc: socFromVolt(nv), state: ns, saved_at: new Date().toISOString() };
+        saveRows(cur); renderTable();
+      }
+    }));
+  }
+  function saveSOC(){
+    const date = ($('#sDate')&&$('#sDate').value) || todayISO();
+    const v = clamp(parseFloat($('#sVolt').value), 13.30, 13.80);
+    const s = socFromVolt(v);
+    const st = currentState();
+    const cur=loadRows();
+    const i=cur.findIndex(r=>r.date===date);
+    const row={ date, voltage:v, soc:s, state:st, saved_at:new Date().toISOString() };
+    if(i>=0) cur[i]=row; else cur.push(row);
+    saveRows(cur); renderTable(); updateUI();
+  }
+  function exportSOC(){
+    const blob=new Blob([JSON.stringify({schema:{version:1,app:'pv-mini-soc'}, readings: loadRows()}, null, 2)], {type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pv-mini-soc.json'; a.click(); URL.revokeObjectURL(a.href);
+  }
+  function importSOC(file){
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const obj=JSON.parse(r.result);
+        const inc=Array.isArray(obj.readings)?obj.readings:(Array.isArray(obj)?obj:[]);
+        const cur=loadRows();
+        const map=new Map(cur.map(x=>[x.date,x]));
+        inc.forEach(x=>{ if(x&&x.date) map.set(x.date, { date:x.date, voltage: clamp(parseFloat(x.voltage),13.30,13.80), soc: socFromVolt(x.voltage), state:x.state||'reposo', saved_at: x.saved_at||new Date().toISOString() }); });
+        saveRows(Array.from(map.values()).sort((a,b)=>(a.date||'').localeCompare(b.date||'')));
+        renderTable(); updateUI(); alert('SOC importado.');
+      }catch(e){ alert('JSON no válido.'); }
+    };
+    r.readAsText(file);
+  }
+  document.addEventListener('DOMContentLoaded', ()=>{
+    if($('#sDate')) $('#sDate').value = todayISO();
+    if($('#sVolt')) $('#sVolt').value = '13.50';
+    updateUI();
+    if($('#sVolt')) $('#sVolt').addEventListener('input', updateUI);
+    if($('#sMinus')) $('#sMinus').addEventListener('click', ()=>{ const s=$('#sVolt'); s.value=(Math.max(13.30, parseFloat(s.value)-0.01)).toFixed(2); updateUI(); });
+    if($('#sPlus')) $('#sPlus').addEventListener('click', ()=>{ const s=$('#sVolt'); s.value=(Math.min(13.80, parseFloat(s.value)+0.01)).toFixed(2); updateUI(); });
+    if($('#sSave')) $('#sSave').addEventListener('click', saveSOC);
+    if($('#sExport')) $('#sExport').addEventListener('click', exportSOC);
+    if($('#sImportFile')) $('#sImportFile').addEventListener('change', e=>{ const f=e.target.files&&e.target.files[0]; if(f) importSOC(f); });
+    document.querySelectorAll('input[name="sState"]').forEach(r=>r.addEventListener('change', updateUI));
+    renderTable();
+  });
+})();
+</script>
+
+<div style="text-align:center;margin:24px 0;color:#999">Versión v7d</div>
+
+<!-- === Open-Meteo card (embedded) === -->
+<section id="open-meteo-card" style="margin:20px 0;">
+  <div style="background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.04);">
+    <h2 style="font-size:20px; font-weight:700; margin:0 0 10px;">Open‑Meteo</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px;">
+      <div>
+        <label style="font-size:12px; color:#6b7280;">Latitud</label>
+        <input id="om-lat" type="number" step="0.001" value="-2.170" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:12px;">
+      </div>
+      <div>
+        <label style="font-size:12px; color:#6b7280;">Longitud</label>
+        <input id="om-lon" type="number" step="0.001" value="-79.922" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:12px;">
+      </div>
+
+      <div>
+        <label style="font-size:12px; color:#6b7280;">Fecha (local)</label>
+        <input id="om-date" type="date" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:12px;">
+      </div>
+      <div>
+        <label style="font-size:12px; color:#6b7280;">Hora (0–23)</label>
+        <input id="om-hour" type="number" min="0" max="23" step="1" value="13" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:12px;">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin:6px 0 16px;">
+      <button id="om-fetch" style="flex:1; padding:12px; background:#111827; color:white; border:none; border-radius:12px; font-weight:700;">Consultar</button>
+      <a id="om-url" href="#" target="_blank" style="flex:1; text-align:center; padding:12px; border:1px solid #e5e7eb; border-radius:12px; text-decoration:none; color:#111827;">Abrir URL</a>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px;">
+      <div style="border:1px solid #e5e7eb; border-radius:12px; padding:10px; text-align:center;"><div style="font-size:12px; color:#6b7280;">Temperatura (°C)</div><div id="om-t" style="font-size:20px; font-weight:700;">–</div></div>
+      <div style="border:1px solid #e5e7eb; border-radius:12px; padding:10px; text-align:center;"><div style="font-size:12px; color:#6b7280;">Humedad (%)</div><div id="om-h" style="font-size:20px; font-weight:700;">–</div></div>
+      <div style="border:1px solid #e5e7eb; border-radius:12px; padding:10px; text-align:center;"><div style="font-size:12px; color:#6b7280;">Viento (km/h)</div><div id="om-w" style="font-size:20px; font-weight:700;">–</div></div>
+      <div style="border:1px solid #e5e7eb; border-radius:12px; padding:10px; text-align:center;"><div style="font-size:12px; color:#6b7280;">Nubosidad (%)</div><div id="om-c" style="font-size:20px; font-weight:700;">–</div></div>
+    </div>
+
+    <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:6px;">JSON simple</label>
+    <textarea id="om-json" rows="7" style="width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <button id="om-copy" style="flex:1; padding:12px; background:#111827; color:white; border:none; border-radius:12px; font-weight:700;">Copiar JSON simple</button>
+    </div>
+    <div style="font-size:12px; color:#6b7280; margin-top:8px;">Proveedor: Open‑Meteo. Unidades: °C, km/h, %.</div>
+  </div>
+</section>
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  // default date = hoy
+  try{
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const dd = String(today.getDate()).padStart(2,'0');
+    $('om-date').value = `${yyyy}-${mm}-${dd}`;
+  }catch(e){}
+
+  function cieloFromClouds(cc){
+    if (cc <= 20) return 'despejado';
+    if (cc <= 60) return 'parcial';
+    if (cc <= 85) return 'mayormente';
+    return 'nublado';
+  }
+
+  function buildUrl(lat, lon, date){
+    const base = 'https://api.open-meteo.com/v1/forecast';
+    const params = new URLSearchParams({
+      latitude: lat,
+      longitude: lon,
+      hourly: 'temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,wind_speed_10m',
+      start_date: date,
+      end_date: date,
+      timezone: 'auto'
+    });
+    return `${base}?${params.toString()}`;
+  }
+
+  async function fetchOM(){
+    const lat = parseFloat($('om-lat').value);
+    const lon = parseFloat($('om-lon').value);
+    const date = $('om-date').value;
+    const hour = Math.min(23, Math.max(0, parseInt($('om-hour').value||'13',10)));
+    const url = buildUrl(lat, lon, date);
+    $('om-url').href = url;
+
+    const res = await fetch(url);
+    if(!res.ok){ alert('No se pudo consultar Open‑Meteo'); return; }
+    const data = await res.json();
+    const hours = data?.hourly?.time || [];
+    const i = hours.indexOf(`${date}T${String(hour).padStart(2,'0')}:00`);
+
+    function pick(arr){ return (i>=0 && Array.isArray(arr)) ? arr[i] : null; }
+
+    const t = pick(data?.hourly?.temperature_2m);
+    const h = pick(data?.hourly?.relative_humidity_2m);
+    const c = pick(data?.hourly?.cloud_cover);
+    const w_ms = pick(data?.hourly?.wind_speed_10m);
+    // wind speed from km/h already if we request in km/h? open-meteo returns km/h by default for wind_speed_10m
+    const w = w_ms; 
+
+    $('om-t').textContent = (t!=null)? t.toFixed(1):'–';
+    $('om-h').textContent = (h!=null)? Math.round(h):'–';
+    $('om-c').textContent = (c!=null)? Math.round(c):'–';
+    $('om-w').textContent = (w!=null)? Math.round(w):'–';
+
+    const cielo = (c!=null)? cieloFromClouds(c): 'parcial';
+
+    const simple = {
+      fecha: date,
+      cielo: cielo,
+      temperatura_mediodia_c: (t!=null)? parseFloat(t.toFixed(1)) : null,
+      viento_kmh: (w!=null)? Math.round(w) : null,
+      humedad_pct: (h!=null)? Math.round(h) : null,
+      precipitacion_pct: (Array.isArray(data?.hourly?.precipitation_probability) && i>=0) ? Math.round(data.hourly.precipitation_probability[i]||0) : 0,
+      usarIrradiancia: false
+    };
+    $('om-json').value = JSON.stringify(simple, null, 2);
+  }
+
+  $('om-fetch').addEventListener('click', fetchOM);
+
+  $('om-copy').addEventListener('click', async ()=>{
+    const txt = $('om-json').value;
+    try{
+      await navigator.clipboard.writeText(txt);
+      alert('Copiado al portapapeles.');
+    }catch(e){
+      // fallback
+      const ta = $('om-json');
+      ta.focus();
+      ta.select();
+      try{
+        document.execCommand('copy');
+        alert('Copiado al portapapeles.');
+      }catch(e2){
+        alert('No se pudo copiar, selecciónalo y copia manualmente.');
+      }
+    }
+  });
+})();
+</script>
+<!-- === /Open-Meteo card === -->
+
+</body>
+</html>

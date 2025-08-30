@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>PANEL DE CONTROL SOLAR</title>
+  <style>
+    :root{
+      --bg:#efefef;--card:#ffffff;--ink:#222;--muted:#6b6b6b;
+      --ok:#1f9d55;--ok2:#2bb673;--err:#b02a37;--amber:#b8860b;
+      --rail:#e6e6e6;--bar1:#9e9e9e;--bar2:#6f6f6f;
+      --ring:#dcdcdc;--chip:#f5f5f5;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,"Noto Sans","Helvetica Neue",sans-serif;
+      background:var(--bg); color:var(--ink);
+      display:flex; justify-content:center; min-height:100dvh;
+    }
+    .wrap{width:min(720px,94vw); padding:16px 0 64px}
+    .hero{
+      background:linear-gradient(180deg,#6f6f6f,#4a4a4a);
+      color:#fff; padding:14px 18px; border-radius:20px 20px 10px 10px;
+      text-align:center; font-weight:800; letter-spacing:.5px
+    }
+    .card{
+      background:var(--card); border-radius:18px; padding:14px; margin:14px 0;
+      box-shadow:0 2px 12px rgba(0,0,0,.06), inset 0 0 0 1px var(--ring);
+    }
+    .card h2{margin:2px 2px 10px; font-size:1.2rem}
+    .subtle{color:var(--muted); font-size:.95rem}
+    .row{display:flex; gap:10px; align-items:center}
+    .grow{flex:1}
+    .input{
+      width:100%; border:1px solid var(--ring); background:#fff; border-radius:12px;
+      padding:12px 44px 12px 12px; font-size:16px;
+    }
+    .field{position:relative}
+    .mic{
+      position:absolute; right:6px; top:50%; transform:translateY(-50%);
+      width:40px; height:40px; border-radius:50%; display:grid; place-items:center;
+      background:var(--chip); border:1px solid var(--ring)
+    }
+    .mic svg{width:22px; height:22px; fill:#555}
+    .mic.listening svg{fill:#333; animation:pop 1.1s infinite}
+    @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+    .pill { width:100%; height:22px; background:var(--rail); border-radius:999px; overflow:hidden; position:relative }
+    .fill {
+      height:100%; width:0%; border-radius:999px;
+      background:linear-gradient(90deg,var(--bar1),var(--bar2));
+      display:flex; align-items:center; justify-content:flex-end; padding-right:8px; color:#fff; font-weight:800; font-size:.9rem
+    }
+    .big{font-weight:800; font-size:1.35rem; text-align:center; margin:6px 0}
+    .muted{color:var(--muted)}
+    .tbl{width:100%; border-collapse:separate; border-spacing:0 8px}
+    .tbl td{padding:2px 4px}
+    .time{color:#3a7bbf; font-weight:800; white-space:nowrap}
+    .avail{color:#2f8d3a; font-weight:800}
+    .perc{text-align:center; font-weight:700}
+    .cons{color:#7a5b4a; font-weight:800; text-align:right; white-space:nowrap}
+    .line{height:1px; background:var(--ring); margin:10px 0}
+    .badge{display:inline-block; padding:6px 10px; border-radius:10px; background:var(--chip); border:1px solid var(--ring); font-weight:700}
+    .btn{border:1px solid var(--ring); background:var(--chip); padding:10px 12px; border-radius:12px; font-weight:700}
+    .btn.primary{background:#eee}
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .grid4{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .grid5{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .hint{font-size:.9rem; color:var(--muted)}
+    .center{display:flex; justify-content:center; align-items:center}
+    .right{text-align:right}
+    .ok{color:var(--ok); font-weight:800}
+    .warn{color:var(--amber); font-weight:800}
+    .bad{color:var(--err); font-weight:800}
+    table.log{width:100%; border-collapse:collapse; font-size:.92rem}
+    table.log th, table.log td{border-bottom:1px solid var(--ring); padding:6px}
+    table.log th{background:#f7f7f7; text-align:left}
+    .sticky-actions{position:sticky; bottom:8px; padding-top:10px; background:linear-gradient(180deg,transparent,rgba(255,255,255,.9))}
+    .switch{display:flex; align-items:center; gap:8px}
+    .switch input{width:22px; height:22px}
+    .dim{opacity:.55; pointer-events:none}
+
+    /* Gráficos */
+    .chips{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0}
+    .chip{display:flex; align-items:center; gap:8px; border:1px solid var(--ring); background:var(--chip); padding:10px 12px; border-radius:12px; font-weight:700}
+    .chip input{width:18px; height:18px}
+    .chartBox{border:1px solid var(--ring); border-radius:14px; padding:10px; background:#fff}
+    canvas{width:100%; height:240px; display:block}
+    .legend{display:flex; flex-wrap:wrap; gap:10px; margin-top:8px}
+    .lg{display:flex; align-items:center; gap:8px; border:1px solid var(--ring); background:var(--chip); padding:6px 10px; border-radius:10px; font-weight:700}
+    .sw{width:14px; height:10px; background:#777; border:1px solid #555}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">PANEL DE CONTROL SOLAR</div>
+
+    <!-- VOLTAJE -->
+    <div class="card">
+      <h2>Voltaje</h2>
+      <div class="field">
+        <input id="voltageInput" class="input" type="text" inputmode="decimal" placeholder="Ejemplo: 13.75 V" autocomplete="off"/>
+        <button id="micVoltage" class="mic" aria-label="Dictar voltaje">
+          <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c1.66 0 3 1.34 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        </button>
+      </div>
+      <div id="voiceStatus" class="subtle" aria-live="polite"></div>
+    </div>
+
+    <!-- PORCENTAJE -->
+    <div class="card">
+      <div class="big" id="percentageResult">Porcentaje: --%</div>
+      <div class="pill"><div id="progressFill" class="fill"><span id="progressText">0%</span></div></div>
+      <div class="subtle" style="margin-top:8px">Amperios cargados <span id="amperesResult" class="ok">--</span> de 108 Ah</div>
+    </div>
+
+    <!-- BALANCE -->
+    <div class="card">
+      <h2 class="center">Balance de Ah. por franja</h2>
+      <table class="tbl">
+        <tbody>
+          <tr><td class="time">17h00:</td><td><span id="amp17h" class="avail">--</span> Ah</td><td class="perc" id="perc17h">--%</td><td class="cons" id="cons17h">0.0 Ah</td></tr>
+          <tr><td class="time">19h00:</td><td><span id="amp19h" class="avail">--</span> Ah</td><td class="perc" id="perc19h">--%</td><td class="cons" id="cons19h">1.2 Ah</td></tr>
+          <tr><td class="time">00h00:</td><td><span id="amp00h" class="avail">--</span> Ah</td><td class="perc" id="perc00h">--%</td><td class="cons" id="cons00h">40.4 Ah</td></tr>
+          <tr><td class="time">06h00:</td><td><span id="amp06h" class="avail">--</span> Ah</td><td class="perc" id="perc06h">--%</td><td class="cons" id="cons06h">9.2 Ah</td></tr>
+          <tr><td class="time">08h00:</td><td><span id="amp08h" class="avail">--</span> Ah</td><td class="perc" id="perc08h">--%</td><td class="cons" id="cons08h">1.2 Ah</td></tr>
+        </tbody>
+      </table>
+
+      <div class="line"></div>
+
+      <!-- Barra de consumo 17→08 -->
+      <div class="pill"><div id="nightBar" class="fill"><span id="nightPct">0%</span></div></div>
+      <div class="subtle center" style="margin-top:6px" id="nightLabel">Consumo 17:00 → 08:00 · 0.0/52.0 Ah (0%)</div>
+
+      <div class="line"></div>
+
+      <label class="row">
+        <input type="checkbox" id="dayToggle">
+        <div class="grow">Incluir consumo diurno 08–17 (≈7 W · 9 h ≈ <b>5 Ah</b>)</div>
+      </label>
+      <div class="hint">Objetivo = Base nocturno + Diurno (si activo) + Simulación</div>
+    </div>
+
+    <!-- PREFERENCIAS -->
+    <div class="card">
+      <h2>Preferencias</h2>
+
+      <div class="switch" style="margin-bottom:8px">
+        <input type="checkbox" id="customSwitch">
+        <label for="customSwitch" class="grow"><b>Personalizar base por franja</b> (guarda en el navegador)</label>
+      </div>
+
+      <div id="baseSingleRow" class="grid2">
+        <div class="field">
+          <label class="subtle">Consumo base nocturno (Ah)</label>
+          <input id="baseNightAh" class="input" type="number" step="0.1" min="0" />
+        </div>
+        <div class="field">
+          <label class="subtle">Detalle del objetivo</label>
+          <div class="badge" id="objectiveBreak">—</div>
+        </div>
+      </div>
+
+      <div id="customBlock" class="grid5" style="display:none; margin-top:8px">
+        <div class="field"><label class="subtle">17:00 → 19:00</label><input id="c1" class="input" type="number" step="0.1" min="0"></div>
+        <div class="field"><label class="subtle">19:00 → 00:00</label><input id="c2" class="input" type="number" step="0.1" min="0"></div>
+        <div class="field"><label class="subtle">00:00 → 06:00</label><input id="c3" class="input" type="number" step="0.1" min="0"></div>
+        <div class="field"><label class="subtle">06:00 → 08:00</label><input id="c4" class="input" type="number" step="0.1" min="0"></div>
+        <div class="field"><label class="subtle">Ajuste 08h</label><input id="c5" class="input" type="number" step="0.1" min="0"></div>
+        <div class="field" style="grid-column:1/-1">
+          <div class="hint"><b>Total base personalizado:</b> <span id="customTotal">0.0</span> Ah</div>
+        </div>
+      </div>
+
+      <div class="hint" style="margin-top:6px">
+        Si la personalización está <b>activa</b>, se usa ese perfil como base. La simulación sigue siendo adicional (suma o resta).
+      </div>
+    </div>
+
+    <!-- PREDICCIÓN -->
+    <div class="card">
+      <h2>Predicción para mañana</h2>
+      <div class="field">
+        <input id="predictionInput" class="input" type="text" inputmode="numeric" placeholder="Amperios esperados mañana"/>
+        <button id="micPred" class="mic" aria-label="Dictar predicción">
+          <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c1.66 0 3 1.34 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        </button>
+      </div>
+
+      <div class="line"></div>
+
+      <!-- Auto-predicción -->
+      <div class="grid2">
+        <div>
+          <label class="subtle">Método</label>
+          <select id="predMethod" class="input">
+            <option value="ema">Suavizado exponencial (EMA)</option>
+            <option value="media">Media simple</option>
+            <option value="mediana">Mediana</option>
+          </select>
+        </div>
+        <div>
+          <label class="subtle">α (solo EMA)</label>
+          <input id="alphaInput" class="input" type="number" step="0.05" min="0.05" max="0.95" value="0.30"/>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:8px">
+        <div>
+          <label class="subtle">Clima</label>
+          <select id="climateSel" class="input">
+            <option value="1.00">Despejado (×1.00)</option>
+            <option value="0.95">Parcial (×0.95)</option>
+            <option value="0.85" selected>Nublado (×0.85)</option>
+            <option value="0.75">Lluvia (×0.75)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="subtle">&nbsp;</label>
+          <button id="btnAutoPred" class="btn primary input">Usar auto-predicción</button>
+        </div>
+      </div>
+      <div id="autoExplain" class="subtle" style="margin-top:6px">Auto: —</div>
+
+      <div id="predVoice" class="subtle" aria-live="polite" style="margin-top:6px"></div>
+      <div class="subtle" style="margin-top:6px">Total disponible: <span id="totalAvailable" class="ok">--</span> Ah</div>
+      <div id="recommendation" class="badge" style="margin-top:8px; display:block; text-align:center;">Ingrese amperios esperados para mañana</div>
+    </div>
+
+    <!-- SIMULACIÓN -->
+    <div class="card" id="simCard">
+      <h2>Simulación de consumo</h2>
+      <div class="grid2">
+        <div>
+          <label class="subtle">Tipo de objetivo</label>
+          <select id="simType" class="input">
+            <option value="wh">Wh (energía)</option>
+            <option value="ah">Ah (corriente)</option>
+          </select>
+        </div>
+        <div>
+          <label class="subtle">Distribución</label>
+          <select id="simDist" class="input">
+            <option value="uniform">Uniforme (toda la noche)</option>
+            <option value="manual">Manual por franja</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input id="simGoal" class="input grow" type="number" step="0.1" placeholder="Objetivo total (puede ser negativo)"/>
+        <button id="btnFill" class="btn">Rellenar watts</button>
+      </div>
+      <div class="grid2" style="margin-top:8px">
+        <div class="field">
+          <label class="subtle">Vref (V)</label>
+          <input id="simVref" class="input" type="number" step="0.1" value="12.5"/>
+        </div>
+        <div class="field">
+          <label class="subtle">Eficiencia</label>
+          <input id="simEff" class="input" type="number" step="0.01" value="1.00"/>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <div class="field"><label class="subtle">17:00 → 19:00</label><input id="w1" class="input" type="number" step="0.1" placeholder="± Watts"/></div>
+        <div class="field"><label class="subtle">19:00 → 00:00</label><input id="w2" class="input" type="number" step="0.1" placeholder="± Watts"/></div>
+        <div class="field"><label class="subtle">00:00 → 06:00</label><input id="w3" class="input" type="number" step="0.1" placeholder="± Watts"/></div>
+        <div class="field"><label class="subtle">06:00 → 08:00</label><input id="w4" class="input" type="number" step="0.1" placeholder="± Watts"/></div>
+        <div class="field"><label class="subtle">08:00 → ?</label><input id="w5" class="input" type="number" step="0.1" placeholder="± Watts (extra)"/></div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button id="btnApply" class="btn primary grow">Aplicar simulación</button>
+        <button id="btnClear" class="btn grow">Quitar simulación</button>
+      </div>
+      <div id="simStatus" class="hint" style="margin-top:6px">Simulación desactivada</div>
+    </div>
+
+    <!-- BITÁCORA 17 HORAS -->
+    <div class="card" id="logCard">
+      <h2>Bitácora 17 horas</h2>
+      <div class="grid2">
+        <div class="field">
+          <label class="subtle">Lectura controlador (contador 001–999)</label>
+          <input id="logCounter" class="input" type="number" step="1" min="1" max="999" placeholder="Ej. 262"/>
+        </div>
+        <div class="field">
+          <label class="subtle">Amperios consumidos (día)</label>
+          <input id="logConsumed" class="input" type="number" step="0.1" placeholder="Ah"/>
+        </div>
+        <div class="field">
+          <label class="subtle">Amperios excedentes</label>
+          <input id="logExcess" class="input" type="number" step="0.1" placeholder="Ah"/>
+        </div>
+        <div class="field">
+          <label class="subtle">Predicción (Ah) mañana</label>
+          <input id="logPred" class="input" type="number" step="1" placeholder="Ah"/>
+        </div>
+      </div>
+      <div class="hint">Se guardan: fecha local, voltaje dictado, SOC, diferencia de contador (wrap 999→001). Semilla inicial: 262.</div>
+      <div class="row sticky-actions">
+        <button id="btnSaveLog" class="btn primary grow">Guardar registro</button>
+        <button id="btnExportLog" class="btn grow">Exportar</button>
+        <label class="btn grow" style="text-align:center; cursor:pointer">
+          Importar <input id="fileImport" type="file" accept="application/json" style="display:none">
+        </label>
+      </div>
+      <div style="max-height:300px; overflow:auto; margin-top:10px">
+        <table class="log" id="logTable">
+          <thead><tr><th>Fecha</th><th>Volt(V)</th><th>SOC(%)</th><th>ΔCont</th><th>Cons(Ah)</th><th>Exceso(Ah)</th><th>Pred(Ah)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="card" id="chartsCard">
+      <h2>Gráficos estadísticos</h2>
+      <div class="row" style="gap:8px; margin-bottom:6px">
+        <button id="btnAll" class="btn grow">Todos</button>
+        <button id="btnNone" class="btn grow">Ninguno</button>
+      </div>
+      <div class="chips">
+        <label class="chip"><input type="checkbox" id="gVolt"> Volt(V)</label>
+        <label class="chip"><input type="checkbox" id="gSoc"> SOC(%)</label>
+        <label class="chip"><input type="checkbox" id="gDelta" checked> ΔCont</label>
+        <label class="chip"><input type="checkbox" id="gCons"> Cons(Ah)</label>
+        <label class="chip"><input type="checkbox" id="gExcess"> Exceso(Ah)</label>
+        <label class="chip"><input type="checkbox" id="gPred" checked> Pred(Ah)</label>
+      </div>
+      <div class="chartBox">
+        <canvas id="chartCanvas" width="800" height="240"></canvas>
+      </div>
+      <div id="chartLegend" class="legend"></div>
+    </div>
+
+    <!-- INFORMACIÓN DEL SISTEMA -->
+    <div class="card" id="specsCard">
+      <h2>Información del sistema</h2>
+
+      <div class="grid2" style="margin-bottom:8px">
+        <div class="subtle">Química</div><div class="right"><b>LiFePO₄</b></div>
+        <div class="subtle">Capacidad total</div><div class="right"><b>108 Ah / 1.38 kWh</b></div>
+        <div class="subtle">Voltaje nominal</div><div class="right"><b>12.8 V</b></div>
+        <div class="subtle">Configuración</div><div class="right"><b>6 baterías de 12.8V/18Ah en paralelo</b></div>
+        <div class="subtle">Baterías</div><div class="right"><b>6 × 18 Ah</b></div>
+      </div>
+
+      <div class="line"></div>
+
+      <div class="grid2" style="margin-bottom:8px">
+        <div class="subtle">Potencia total (FV)</div><div class="right"><b>720 W</b></div>
+        <div class="subtle">Paneles</div><div class="right"><b>12 × 60 W</b></div>
+        <div class="subtle">Tipo de panel</div><div class="right"><b>Monocristalino</b></div>
+        <div class="subtle">Configuración</div><div class="right"><b>12 paneles en paralelo</b></div>
+        <div class="subtle">V/I por panel</div><div class="right"><b>18 V / 3.2 A</b></div>
+      </div>
+
+      <div class="line"></div>
+
+      <div class="grid2">
+        <div class="subtle">Controlador</div><div class="right"><b>MPPT</b></div>
+        <div class="subtle">Capacidad</div><div class="right"><b>30 A</b></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== Tabla Voltaje → % ===== */
+    const voltagePercentageMap = {
+      "13.80":100.0,"13.79":99.9,"13.78":99.8,"13.77":99.7,"13.76":99.6,"13.75":99.5,"13.74":99.4,"13.73":99.3,"13.72":99.2,"13.71":99.1,"13.70":99.0,
+      "13.69":98.6,"13.68":98.1,"13.67":97.7,"13.66":97.2,"13.65":96.8,"13.64":96.3,"13.63":95.9,"13.62":95.4,"13.61":94.9,"13.60":94.5,
+      "13.59":94.1,"13.58":93.6,"13.57":93.2,"13.56":92.7,"13.55":92.3,"13.54":91.8,"13.53":91.3,"13.52":90.9,"13.51":90.4,"13.50":90.0,
+      "13.49":89.3,"13.48":88.7,"13.47":88.0,"13.46":87.3,"13.45":86.7,"13.44":86.0,"13.43":85.3,"13.42":84.7,"13.41":84.0,"13.40":83.3,
+      "13.39":82.7,"13.38":82.0,"13.37":81.3,"13.36":80.7,"13.35":80.0,"13.34":79.3,"13.33":78.7,"13.32":78.0,"13.31":77.3,"13.30":76.7,
+      "13.29":76.0,"13.28":75.3,"13.27":74.7,"13.26":74.0,"13.25":73.3,"13.24":72.7,"13.23":72.0,"13.22":71.3,"13.21":70.7,"13.20":70.0,
+      "13.19":67.0,"13.18":64.0,"13.17":61.0,"13.16":58.0,"13.15":55.0,"13.14":52.0,"13.13":49.0,"13.12":46.0,"13.11":43.0,"13.10":40.0,
+      "13.09":39.0,"13.08":38.0,"13.07":37.0,"13.06":36.0,"13.05":35.0,"13.04":34.0,"13.03":33.0,"13.02":32.0,"13.01":31.0,"13.00":30.0,
+      "12.99":29.0,"12.98":28.0,"12.97":27.0,"12.96":26.0,"12.95":25.0,"12.94":24.0,"12.93":23.0,"12.92":22.0,"12.91":21.0,"12.90":20.0,
+      "12.89":19.0,"12.88":18.0,"12.87":

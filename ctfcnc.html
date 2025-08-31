@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rendimiento FV · v1c</title>
+<style>
+  :root{--bg:#f7f7f7;--card:#fff;--ink:#111;--muted:#666;--line:#e6e6e6}
+  *{box-sizing:border-box;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:880px;margin:24px auto;padding:16px}
+  h1{font-size:22px;margin:0 0 12px 0}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:720px){.row{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+  .title{font-size:18px;margin:0 0 10px 0}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+  input[type=number],select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fafafa;color:var(--ink)}
+  .btn{display:inline-block;border-radius:14px;padding:12px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-weight:600;cursor:pointer}
+  .btn.secondary{background:#fff;color:var(--ink)}
+  .kpi{background:#f3f3f3;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+  .kpi .v{font-size:22px;font-weight:700}
+  .kpi .l{font-size:12px;color:var(--muted)}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media (max-width:720px){.grid-3{grid-template-columns:1fr}}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;border:1px solid var(--line);background:#fafafa;border-radius:12px;padding:12px;font-weight:600;cursor:pointer}
+  .seg button.active{border-color:#111}
+  .muted{color:var(--muted);font-size:12px}
+
+  /* Steppers (± a la derecha) */
+  .spin{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  .spin .controls{display:flex;gap:8px}
+  .spin .step{width:46px;height:42px;border:1px solid var(--line);border-radius:12px;background:#fafafa;font-weight:700;font-size:18px;line-height:1;cursor:pointer}
+  @media (max-width:720px){.spin{grid-template-columns:1fr 120px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Rendimiento fotovoltaico (micro-app) <span class="muted">v1c</span></h1>
+
+  <div class="card">
+    <div class="title">Modo</div>
+    <div class="seg" id="modeSeg">
+      <button data-mode="rapido" class="active">Rápido</button>
+      <button data-mode="detallado">Detallado</button>
+    </div>
+    <div class="muted" style="margin-top:8px">En ambos modos debes indicar: Nº paneles, Nº baterías, eficiencia de paneles, eficiencia del sistema, voltaje de carga y temperatura.</div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <div class="title">Parámetros del sistema</div>
+
+      <label>Nº de paneles (60 W c/u)</label>
+      <div class="spin">
+        <input id="nPanels" type="number" min="1" step="1" value="2" />
+        <div class="controls">
+          <button class="step" data-t="#nPanels" data-d="-1">−</button>
+          <button class="step" data-t="#nPanels" data-d="1">+</button>
+        </div>
+      </div>
+
+      <label>Nº de baterías (12.8 V · 18 Ah c/u)</label>
+      <div class="spin">
+        <input id="nBats" type="number" min="1" step="1" value="2" />
+        <div class="controls">
+          <button class="step" data-t="#nBats" data-d="-1">−</button>
+          <button class="step" data-t="#nBats" data-d="1">+</button>
+        </div>
+      </div>
+
+      <label>Eficiencia de paneles (%)</label>
+      <div class="spin">
+        <input id="effPanel" type="number" min="50" max="100" step="1" value="95" />
+        <div class="controls">
+          <button class="step" data-t="#effPanel" data-d="-1">−</button>
+          <button class="step" data-t="#effPanel" data-d="1">+</button>
+        </div>
+      </div>
+
+      <label>Eficiencia del sistema (%)</label>
+      <div class="spin">
+        <input id="effSys" type="number" min="50" max="100" step="1" value="90" />
+        <div class="controls">
+          <button class="step" data-t="#effSys" data-d="-1">−</button>
+          <button class="step" data-t="#effSys" data-d="1">+</button>
+        </div>
+      </div>
+
+      <label>Voltaje de carga V<sub>chg</sub> (V)</label>
+      <div class="spin">
+        <input id="vChg" type="number" step="0.01" value="13.80" />
+        <div class="controls">
+          <button class="step" data-t="#vChg" data-d="-0.01">−</button>
+          <button class="step" data-t="#vChg" data-d="0.01">+</button>
+        </div>
+      </div>
+
+      <label>Temperatura ambiente (°C)</label>
+      <div class="spin">
+        <input id="tAmb" type="number" step="0.5" value="30" />
+        <div class="controls">
+          <button class="step" data-t="#tAmb" data-d="-0.5">−</button>
+          <button class="step" data-t="#tAmb" data-d="0.5">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="cardRapido">
+      <div class="title">Clima — Modo rápido</div>
+      <label>Estado del cielo</label>
+      <select id="skyQuick">
+        <option value="soleado">Soleado</option>
+        <option value="parcial">Parcialmente nublado</option>
+        <option value="nublado">Nublado</option>
+      </select>
+      <div class="muted">HSP típicos Guayaquil: 5.5 / 4.0 / 2.5 h-sol pico.</div>
+    </div>
+
+    <div class="card" id="cardDetallado" style="display:none">
+      <div class="title">Clima — Modo detallado</div>
+      <label>Cielo</label>
+      <select id="sky">
+        <option value="despejado">Despejado</option>
+        <option value="parcial">Parcial nublado</option>
+        <option value="mayormente">Mayormente nublado</option>
+        <option value="nublado">Nublado grueso</option>
+        <option value="lluvia">Lluvia</option>
+      </select>
+      <label>Humedad</label>
+      <select id="hum">
+        <option value="baja">Baja</option>
+        <option value="media">Media</option>
+        <option value="alta">Alta</option>
+        <option value="muyalta">Muy alta</option>
+      </select>
+      <label>Viento</label>
+      <select id="wind">
+        <option value="calma">Calma</option>
+        <option value="leve">Leve</option>
+        <option value="moderado">Moderado</option>
+      </select>
+      <label>HSP despejado de referencia (h)</label>
+      <div class="spin">
+        <input id="hspRef" type="number" step="0.1" value="5.0" />
+        <div class="controls">
+          <button class="step" data-t="#hspRef" data-d="-0.1">−</button>
+          <button class="step" data-t="#hspRef" data-d="0.1">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="seg" style="margin-bottom:10px">
+      <button id="btnCalc" class="btn">Calcular</button>
+      <button id="btnReset" class="btn secondary">Restablecer</button>
+    </div>
+    <div class="grid-3">
+      <div class="kpi"><div class="l">Ah del día</div><div id="kAh" class="v">–</div></div>
+      <div class="kpi"><div class="l">Corriente pico (A)</div><div id="kIp" class="v">–</div></div>
+      <div class="kpi"><div class="l">Capacidad banco (Ah)</div><div id="kCap" class="v">–</div></div>
+    </div>
+    <div class="kpi" style="margin-top:10px"><div class="l">Cobertura PV sobre banco</div><div id="kCov" class="v">–</div></div>
+    <details style="margin-top:10px">
+      <summary>Desglose</summary>
+      <pre id="dbg" style="white-space:pre-wrap;font-size:12px;line-height:1.3"></pre>
+    </details>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = s=>document.querySelector(s);
+  const modeSeg = $('#modeSeg');
+  const cardRapido = $('#cardRapido');
+  const cardDetallado = $('#cardDetallado');
+
+  // Conmutar modo
+  modeSeg.addEventListener('click', e=>{
+    if(e.target.tagName!=='BUTTON') return;
+    [...modeSeg.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+    const m = e.target.dataset.mode;
+    cardRapido.style.display = (m==='rapido')?'block':'none';
+    cardDetallado.style.display = (m==='detallado')?'block':'none';
+  });
+
+  // Steppers
+  document.addEventListener('click', e=>{
+    const btn = e.target.closest('.step'); if(!btn) return;
+    const target = document.querySelector(btn.dataset.t); if(!target) return;
+    const d = parseFloat(btn.dataset.d||0);
+    const step = parseFloat(target.step||'1') || 1;
+    const val = parseFloat(target.value||'0') || 0;
+    let next = val + d;
+    // Limites si existen
+    if(target.min!==""){ next = Math.max(parseFloat(target.min), next); }
+    if(target.max!==""){ next = Math.min(parseFloat(target.max), next); }
+    // Arreglo de decimales según el step
+    const decimals = (step.toString().split('.')[1]||'').length;
+    target.value = next.toFixed(decimals);
+  });
+
+  function valNum(id, def){
+    const v = parseFloat($(id).value);
+    return isFinite(v)?v:def;
+  }
+
+  function calc(){
+    const nPanels = Math.max(0, Math.floor(valNum('#nPanels', 0)));
+    const nBats   = Math.max(0, Math.floor(valNum('#nBats', 0)));
+    const effPanel= Math.min(100, Math.max(0, valNum('#effPanel', 90)))/100;
+    const effSys  = Math.min(100, Math.max(0, valNum('#effSys', 90)))/100;
+    const vChg    = valNum('#vChg', 13.8);
+    const tAmb    = valNum('#tAmb', 30);
+
+    const Wp = nPanels * 60 * effPanel; // W efectivos
+
+    const mRapido = modeSeg.querySelector('button.active').dataset.mode === 'rapido';
+    let HSP = 5.0, fCielo=1.0;
+    if(mRapido){
+      const sky = $('#skyQuick').value;
+      HSP = (sky==='soleado')?5.5:(sky==='parcial')?4.0:2.5;
+    } else {
+      const sky = $('#sky').value;
+      const hum = $('#hum').value;
+      const wind= $('#wind').value;
+      const hspRef = valNum('#hspRef', 5.0);
+      const mapSky = {despejado:1.00, parcial:0.85, mayormente:0.75, nublado:0.60, lluvia:0.40};
+      const mapHum = {baja:1.00, media:0.98, alta:0.96, muyalta:0.94};
+      const mapWind= {calma:1.00, leve:1.01, moderado:1.03};
+      fCielo = (mapSky[sky]||1)*(mapHum[hum]||1)*(mapWind[wind]||1);
+      HSP = hspRef;
+    }
+
+    const Tcell = tAmb + 20;
+    const tempCoeff = -0.004; // por °C
+    const fTemp = 1 + tempCoeff * (Tcell - 25);
+
+    const Wh = Wp * HSP * fCielo * fTemp * effSys;
+    const Ah = Wh / Math.max(1, vChg);
+
+    const bankAh = nBats * 18;
+    const cov = bankAh>0 ? (Ah/bankAh*100) : 0;
+
+    $('#kAh').textContent = Ah>0? Ah.toFixed(1): '0.0';
+    const Ipk = Wp/Math.max(1, vChg);
+    $('#kIp').textContent = isFinite(Ipk)? Ipk.toFixed(1): '–';
+    $('#kCap').textContent = bankAh.toFixed(0);
+    $('#kCov').textContent = bankAh? cov.toFixed(0)+'%':'–';
+
+    const dbg = {nPanels,nBats,Wp:+Wp.toFixed(1),effPanel,effSys,vChg,
+      modo:mRapido?'rápido':'detallado',HSP,fCielo:+fCielo.toFixed(3),
+      tAmb,Tcell,fTemp:+fTemp.toFixed(3),Wh:+Wh.toFixed(1)};
+    $('#dbg').textContent = JSON.stringify(dbg, null, 2);
+  }
+
+  $('#btnCalc').addEventListener('click', calc);
+  $('#btnReset').addEventListener('click', ()=>{
+    const set=(id,val)=>{document.querySelector(id).value=val};
+    set('#nPanels',2);set('#nBats',2);set('#effPanel',95);set('#effSys',90);
+    set('#vChg','13.80');set('#tAmb','30');set('#hspRef','5.0');
+    $('#skyQuick').value='parcial';$('#sky').value='parcial';$('#hum').value='alta';$('#wind').value='leve';
+    $('#kAh').textContent='–';$('#kIp').textContent='–';$('#kCap').textContent='–';$('#kCov').textContent='–';$('#dbg').textContent='';
+  });
+})();
+</script>
+</body>
+</html>

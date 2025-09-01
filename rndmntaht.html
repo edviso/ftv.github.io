@@ -28,10 +28,12 @@
   .seg button{flex:1;border:1px solid var(--line);background:#fafafa;border-radius:12px;padding:12px;font-weight:600;cursor:pointer}
   .seg button.active{border-color:#111}
   .muted{color:var(--muted);font-size:12px}
+
   .spin{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
   .spin .controls{display:flex;gap:8px}
   .spin .step{width:46px;height:42px;border:1px solid var(--line);border-radius:12px;background:#fafafa;font-weight:700;font-size:18px;line-height:1;cursor:pointer}
   @media (max-width:720px){.spin{grid-template-columns:1fr 120px}}
+
   .good{color:#0b8a3b}
   .bad{color:#b03030}
 
@@ -212,11 +214,11 @@
   <!-- TRAMOS -->
   <div class="card" id="cardTramos">
     <div class="title">Tramos de consumo</div>
-    <div class="muted">Horas sin decimales (0–24). Se calcula duración, Wh y Ah con V<sub>chg</sub>.</div>
+    <div class="muted">Horas sin decimales (0–24). Se calcula duración, Wh y Ah con V<sub>chg</sub>. Cada tramo incluye +15% por pérdidas del inversor.</div>
 
     <label class="muted" style="display:flex;align-items:center;gap:8px;margin-top:6px">
       <input type="checkbox" id="syncAvg" checked>
-      Usar el total de Ah de tramos como “Promedio diario Ah consumidos”
+      Usar el total de Ah de tramos (con 15% inversor) como “Promedio diario Ah consumidos”
     </label>
 
     <div id="trList"></div>
@@ -227,8 +229,13 @@
     </div>
 
     <div class="kpi" style="margin-top:10px">
-      <div class="l">Total diario de tramos</div>
+      <div class="l">Total diario de tramos (incluye 15% inversor)</div>
       <div class="v"><span id="totWh">0</span> Wh · <span id="totAh">0</span> Ah</div>
+    </div>
+
+    <div class="kpi" style="margin-top:10px">
+      <div class="l">Consumo del inversor (solo pérdidas, 15%)</div>
+      <div class="v"><span id="invWh">0</span> Wh · <span id="invAh">0</span> Ah</div>
     </div>
   </div>
 
@@ -257,6 +264,10 @@
   function valNum(id, def){ const v = parseFloat($(id).value); return isFinite(v)?v:def; }
   const LSKEY='rendFV_v1c_state';
   const FILENAME='Tendimiento teóricoAh.json';
+
+  // >>> Factor del inversor
+  const INV_PCT = 0.15;         // 15% pérdidas
+  const INV_FACTOR = 1 + INV_PCT;
 
   // Conmutar modo
   modeSeg.addEventListener('click', e=>{
@@ -402,7 +413,7 @@
     set('#vChg','13.80');set('#tAmb','30');set('#hspRef','5.0');set('#ctrlA','30');
     $('#skyQuick').value='parcial';$('#sky').value='parcial';$('#hum').value='alta';$('#wind').value='leve';
     $('#kAh').textContent='–';$('#kIp').textContent='–';$('#kCap').textContent='–';$('#kCov').textContent='–';$('#dbg').textContent='';
-    set('#consAvg',''); set('#consExtra',''); $('#kBal').textContent='–'; $('#kBal').classList.remove('good','bad'); $('#kBalNote').textContent='';
+    $('#consAvg').value=''; $('#consExtra').value=''; $('#kBal').textContent='–'; $('#kBal').classList.remove('good','bad'); $('#kBalNote').textContent='';
     lastAh = 0; lastIpk = 0;
 
     tramos = [];
@@ -425,11 +436,23 @@
   }
   function labelFor(i){ return 'Tramo ' + String.fromCharCode(65+i); }
   function addTramo(init){ tramos.push(Object.assign({start:0,end:1,watts:10}, init||{})); }
+
+  // Duración y métricas: devolvemos base y con pérdidas de inversor
   function tramoDur(t){ const s=Math.max(0,Math.min(24,t.start|0)); const e=Math.max(0,Math.min(24,t.end|0)); return (e>=s)?(e-s):(24-s)+e; }
-  function tramoMetrics(t){ const h=tramoDur(t); const wh=(t.watts||0)*h; const v=valNum('#vChg',13.8); const ah=v>0?(wh/v):0; return {h,wh,ah}; }
+  function tramoMetrics(t){
+    const h = tramoDur(t);
+    const whBase = (t.watts||0) * h;
+    const v = valNum('#vChg',13.8);
+    const ahBase = v>0 ? (whBase / v) : 0;
+    const wh = whBase * INV_FACTOR;  // incluye 15%
+    const ah = ahBase * INV_FACTOR;  // incluye 15%
+    const invWh = whBase * INV_PCT;  // solo pérdidas
+    const invAh = ahBase * INV_PCT;  // solo pérdidas
+    return {h, whBase, ahBase, wh, ah, invWh, invAh};
+  }
 
   function rowHTML(t, i){
-    const {h, wh, ah} = tramoMetrics(t);
+    const {h, whBase, ahBase} = tramoMetrics(t);
     return `
       <div class="tr-hdr">
         <div style="display:flex;align-items:center;gap:8px">
@@ -453,8 +476,8 @@
         </div>
         <div class="mini">
           <div><span class="icon">⏱️</span><b class="m-hours">${h}</b> h</div>
-          <div><span class="icon">⚡</span><b class="m-wh">${Math.round(wh)}</b> Wh</div>
-          <div><span class="icon">🔋</span><b class="m-ah">${ah.toFixed(1)}</b> Ah</div>
+          <div><span class="icon">⚡</span><b class="m-wh">${Math.round(whBase)}</b> Wh</div>
+          <div><span class="icon">🔋</span><b class="m-ah">${ahBase.toFixed(1)}</b> Ah</div>
         </div>
       </div>
     `;
@@ -463,17 +486,29 @@
     const cont = $('#trList'); cont.innerHTML = '';
     tramos.forEach((t,i)=>{ const row=document.createElement('div'); row.className='tr-row'; row.dataset.idx=i; row.innerHTML=rowHTML(t,i); cont.appendChild(row); });
   }
-  function updateRowMetrics(row,i){ const m=tramoMetrics(tramos[i]); row.querySelector('.m-hours').textContent=m.h; row.querySelector('.m-wh').textContent=Math.round(m.wh); row.querySelector('.m-ah').textContent=m.ah.toFixed(1); }
+  function updateRowMetrics(row,i){
+    const m=tramoMetrics(tramos[i]);
+    row.querySelector('.m-hours').textContent=m.h;
+    row.querySelector('.m-wh').textContent=Math.round(m.whBase);
+    row.querySelector('.m-ah').textContent=m.ahBase.toFixed(1);
+  }
   function refreshAllRowMetrics(){ document.querySelectorAll('.tr-row').forEach(row=>{ const i=+row.dataset.idx; updateRowMetrics(row,i); }); }
+
   function updateTramosTotals(){
-    let Twh=0, Tah=0; tramos.forEach(t=>{ const m=tramoMetrics(t); Twh+=m.wh; Tah+=m.ah; });
+    let Twh=0, Tah=0, Iwh=0, Iah=0;
+    tramos.forEach(t=>{ const m=tramoMetrics(t); Twh+=m.wh; Tah+=m.ah; Iwh+=m.invWh; Iah+=m.invAh; });
     $('#totWh').textContent = Math.round(Twh);
     $('#totAh').textContent = Tah.toFixed(1);
+    $('#invWh').textContent = Math.round(Iwh);
+    $('#invAh').textContent = Iah.toFixed(1);
+
+    // Sincroniza con Promedio diario si está activado (usa Ah con 15%)
     const sync = $('#syncAvg').checked; const avgField = $('#consAvg');
     if(sync){ avgField.value = Tah.toFixed(1); avgField.setAttribute('readonly','readonly'); } else { avgField.removeAttribute('readonly'); }
     applyBalance(); updateJSON();
   }
 
+  // Delegación
   document.addEventListener('input', e=>{
     const row = e.target.closest('.tr-row'); 
     if(row){
@@ -516,14 +551,17 @@
       lastCalc:{Ah:+($('#kAh').textContent)||0, Ipk:lastIpk||0},
       consumo:{consAvg:+$('#consAvg').value||0, consExtra:+$('#consExtra').value||0, balance:$('#kBal').textContent.trim()},
       tramos: tramos.map(t=>({start:t.start,end:t.end,watts:t.watts})),
-      totalesTramos:{Wh:+$('#totWh').textContent||0, Ah:+$('#totAh').textContent||0},
-      opciones:{syncPromedio: $('#syncAvg').checked}
+      totalesTramos:{
+        Wh:+$('#totWh').textContent||0,
+        Ah:+$('#totAh').textContent||0,
+        inversor:{Wh:+$('#invWh').textContent||0, Ah:+$('#invAh').textContent||0}
+      },
+      opciones:{syncPromedio: $('#syncAvg').checked, factorInversor: INV_PCT}
     };
   }
   function updateJSON(){
     const text = JSON.stringify(buildState(), null, 2);
     $('#stateJson').value = text;
-    // Auto-guardar internamente
     localStorage.setItem(LSKEY, text);
   }
 
@@ -559,7 +597,7 @@
       const text = await f.text();
       const s = JSON.parse(text);
       loadStateObject(s);
-      localStorage.setItem(LSKEY, JSON.stringify(s)); // también guarda internamente
+      localStorage.setItem(LSKEY, JSON.stringify(s));
     }catch(err){}
     e.target.value = '';
   });
@@ -570,7 +608,7 @@
   // Inicial
   addTramo({start:0,end:24,watts:75});
   renderTramos(); refreshAllRowMetrics(); updateTramosTotals();
-  // Si había guardado previo, cárgalo automáticamente
+  // Carga previa si existe
   try{
     const raw = localStorage.getItem(LSKEY);
     if(raw){ loadStateObject(JSON.parse(raw)); }

@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Predicción de Amperios (PV) — v1.6.4</title>
+<style>
+  :root{
+    --bg:#f7f7f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#2563eb;
+    --ok:#16a34a; --warn:#f59e0b; --bad:#dc2626; --cool:#1e3a8a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial; background:var(--bg); color:var(--text)}
+  header{padding:16px 14px 8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h1{font-size:18px; margin:0}
+  .subtitle{color:var(--muted); font-size:13px; flex:1 1 100%}
+  .header-actions{margin-left:auto; display:flex; gap:8px}
+  .wrap{padding:10px 14px 24px}
+  .card{background:var(--card); border-radius:16px; box-shadow:0 10px 20px rgba(0,0,0,.04); padding:14px; margin:12px 0; overflow:hidden}
+  .row{display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px; margin:10px 0}
+  .row > :last-child{min-width:0}
+  .label{font-size:14px}
+  .hint{font-size:12px; color:var(--muted)}
+  .step{display:grid; grid-template-columns:38px 96px 38px; align-items:center; gap:6px}
+  .step button{height:38px; border:none; border-radius:12px; background:#eef2ff; font-size:18px; cursor:pointer}
+  .step input{height:38px; text-align:center; border:1px solid #e5e7eb; border-radius:12px; font-size:15px; padding:0 6px}
+  input[type="time"], input[type="date"], input[type="number"], input[type="text"]{
+    border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; font-size:15px; background:#fff;
+    width:100%; max-width:100%;
+  }
+  .grid2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px}
+  .grid3{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:8px}
+  .btn{display:inline-flex; gap:8px; align-items:center; justify-content:center; padding:12px 16px; border:none; border-radius:14px; background:var(--accent); color:#fff; font-weight:600; font-size:16px; cursor:pointer}
+  .btn.secondary{background:#111827}
+  .btn.ghost{background:#eef2ff; color:#111827}
+  .btn.sm{padding:8px 12px; font-size:13px; border-radius:10px}
+  .btn:active{transform:scale(0.98)}
+  .out{display:grid; gap:10px}
+  .kpi{display:grid; grid-template-columns:1fr auto; align-items:end; padding:12px; border-radius:14px; background:#f3f4f6}
+  .kpi .value{font-size:28px; font-weight:800}
+  .kpi .range{font-size:13px; color:var(--muted)}
+  .badge{padding:6px 10px; border-radius:999px; font-weight:700; font-size:12px; color:#fff}
+  .badge.red{background:var(--bad)}
+  .badge.orange{background:var(--warn)}
+  .badge.green{background:var(--ok)}
+  .badge.blue{background:var(--cool)}
+  details textarea{width:100%; min-height:140px; padding:10px; border-radius:12px; border:1px solid #e5e7eb}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space:pre-wrap; overflow-wrap:anywhere}
+  .page-bottom{display:flex; justify-content:flex-end; padding:10px 0}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(37,99,235,.7)}100%{box-shadow:0 0 0 12px rgba(37,99,235,0)}}
+  .flash{animation:flash .5s ease}
+
+  /* ===== Proyección semanal ===== */
+  .week-title{margin:2px 0 10px}
+  .week-scroll{display:flex; gap:10px; overflow-x:auto; padding-bottom:2px}
+  .wcell{flex:0 0 86px; height:86px; background:#000; color:#fff; border-radius:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;}
+  .w-date{position:absolute; top:8px; left:10px; font-size:13px; opacity:.9}
+  .w-day{font-size:13px; letter-spacing:.2px; margin-top:2px}
+  .w-val{font-size:28px; font-weight:800; line-height:1; margin-top:2px}
+  .w-bar{position:absolute; left:10px; right:10px; bottom:8px; height:6px; border-radius:4px; background:#3f3f46; opacity:.9;}
+  .w-bar.red{background: var(--bad);}
+  .w-bar.yellow{background: var(--warn);}
+  .w-bar.green{background: var(--ok);}
+
+  /* ===== Estilos tarjeta nueva (prefijo el-) ===== */
+  .el-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:#eef2ff;color:#111827;font-weight:700;font-size:14px}
+  .el-chip .muted{font-weight:600;opacity:.75}
+  .el-table{width:100%;border-collapse:collapse}
+  .el-table th,.el-table td{padding:8px;border-bottom:1px solid #e5e7eb;font-size:14px}
+  .el-table th{color:var(--muted);text-align:left}
+  .el-num{text-align:right}
+  .el-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  #elFile{display:none}
+  .el-flag{font-size:12px;padding:2px 8px;border-radius:999px;background:#fde68a;color:#7c2d12;font-weight:700}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Predicción de Amperios (PV)</h1>
+    <div class="subtitle">Modelo con pérdidas, ventana de sol directo y clima Open-Meteo · <b>v1.6.4</b></div>
+    <div class="header-actions">
+      <button class="btn ghost sm" id="btnCopyHtml" type="button">📋 Copiar HTML</button>
+      <button class="btn ghost sm" id="btnDownload" type="button">⬇️ Descargar</button>
+    </div>
+  </header>
+  <div class="wrap">
+
+    <!-- ===== Parámetros ===== -->
+    <div class="card">
+      <div class="row">
+        <div class="label"><b>Fecha</b></div>
+        <div class="grid3">
+          <input id="fecha" type="date">
+          <button class="btn ghost sm" id="btnHoy" type="button">Hoy</button>
+          <button class="btn ghost sm" id="btnMas1" type="button">+1 día</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Latitud / Longitud</div>
+        <div class="grid2">
+          <input id="lat" type="number" inputmode="decimal" step="0.0001">
+          <input id="lon" type="number" inputmode="decimal" step="0.0001">
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Voltaje medio del banco (V)</div>
+        <div class="step" data-id="vbank" data-step="0.1" data-min="10" data-max="16">
+          <button class="btn-step" data-delta="-0.1" type="button">−</button>
+          <input id="vbank" type="number" inputmode="decimal" step="0.1">
+          <button class="btn-step" data-delta="0.1" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Eficiencia base del arreglo (%)</div>
+        <div class="step" data-id="effBase" data-step="1" data-min="50" data-max="100">
+          <button class="btn-step" data-delta="-1" type="button">−</button>
+          <input id="effBase" type="number" inputmode="numeric">
+          <button class="btn-step" data-delta="1" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Cielo visible (0–1)</div>
+        <div class="step" data-id="cieloVis" data-step="0.01" data-min="0" data-max="1">
+          <button class="btn-step" data-delta="-0.01" type="button">−</button>
+          <input id="cieloVis" type="number" inputmode="decimal" step="0.01">
+          <button class="btn-step" data-delta="0.01" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Factor difuso <b>fuera</b> de ventana (0–1)</div>
+        <div class="step" data-id="kDif" data-step="0.05" data-min="0" data-max="1">
+          <button class="btn-step" data-delta="-0.05" type="button">−</button>
+          <input id="kDif" type="number" inputmode="decimal" step="0.01">
+          <button class="btn-step" data-delta="0.05" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Factor difuso <b>dentro</b> de ventana (0–1)</div>
+        <div class="step" data-id="kDifIn" data-step="0.05" data-min="0" data-max="1">
+          <button class="btn-step" data-delta="-0.05" type="button">−</button>
+          <input id="kDifIn" type="number" inputmode="decimal" step="0.01">
+          <button class="btn-step" data-delta="0.05" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Sol directo</div>
+        <div class="grid2">
+          <input id="hIni" type="time">
+          <input id="hFin" type="time">
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Pérdidas ===== -->
+    <div class="card">
+      <h3 style="margin:2px 0 8px">Pérdidas del sistema</h3>
+      <div class="row">
+        <div class="label">Eléctrica (%)</div>
+        <div class="step" data-id="pElec" data-step="1" data-min="50" data-max="100">
+          <button class="btn-step" data-delta="-1" type="button">−</button>
+          <input id="pElec" type="number" inputmode="numeric">
+          <button class="btn-step" data-delta="1" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Suciedad (%)</div>
+        <div class="step" data-id="pDirt" data-step="1" data-min="50" data-max="100">
+          <button class="btn-step" data-delta="-1" type="button">−</button>
+          <input id="pDirt" type="number" inputmode="numeric">
+          <button class="btn-step" data-delta="1" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">MPPT (%)</div>
+        <div class="step" data-id="pMppt" data-step="1" data-min="50" data-max="100">
+          <button class="btn-step" data-delta="-1" type="button">−</button>
+          <input id="pMppt" type="number" inputmode="numeric">
+          <button class="btn-step" data-delta="1" type="button">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Ángulo (%)</div>
+        <div class="step" data-id="pAng" data-step="1" data-min="50" data-max="100">
+          <button class="btn-step" data-delta="-1" type="button">−</button>
+          <input id="pAng" type="number" inputmode="numeric">
+          <button class="btn-step" data-delta="1" type="button">+</button>
+        </div>
+      </div>
+      <div class="hint">Todos los porcentajes se aplican como multiplicadores (p/100).</div>
+    </div>
+
+    <!-- ===== Acciones ===== -->
+    <div class="card">
+      <div class="grid2">
+        <button class="btn" id="btnCalc" type="button">🔄 Recalcular con Open-Meteo</button>
+        <button class="btn secondary" id="btnGuardar" type="button">💾 Guardar como predeterminado</button>
+      </div>
+
+      <!-- Microclima -->
+      <div class="row" style="margin-top:8px">
+        <div class="label">Microclima (5 puntos)</div>
+        <div class="grid2">
+          <label class="hint" style="display:flex;align-items:center;gap:8px">
+            <input id="useMicro" type="checkbox"> Activar
+          </label>
+          <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
+            <span class="hint">δ (°)</span>
+            <input id="delta" type="number" inputmode="decimal" step="0.01" min="0.01" max="0.05" style="width:100px">
+          </div>
+        </div>
+      </div>
+      <div class="hint">δ=0.02 ≈ 2.2 km. Calcula Centro, N, S, E, O y muestra rango microclima.</div>
+
+      <details style="margin-top:10px">
+        <summary class="hint">Alternativa: pegar JSON manual (estructura Open-Meteo o la tuya en español)</summary>
+        <textarea id="jsonManual" placeholder="Pega aquí el JSON y pulsa ‘Calcular con JSON’"></textarea>
+        <div class="grid2" style="margin-top:8px">
+          <button class="btn ghost sm" id="btnCalcJson" type="button">Calcular con JSON</button>
+          <button class="btn ghost sm" id="btnLimpiarJson" type="button">Limpiar</button>
+        </div>
+      </details>
+
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn ghost sm" id="btnDiag" type="button">🩺 Diagnóstico</button>
+      </div>
+    </div>
+
+    <!-- ===== Proyección Semanal ===== -->
+    <div class="card" id="weeklyCard" hidden>
+      <h3 class="week-title">Proyección Semanal</h3>
+      <div class="week-scroll" id="weekGrid"></div>
+      <div class="hint" style="margin-top:6px">Barra: ≤40 rojo · 41–57 amarillo · ≥58 verde. Valores estimados de Ah por día (Open-Meteo, mismo modelo).</div>
+    </div>
+
+    <!-- ===== Salida principal ===== -->
+    <div class="card out" id="panelOut" hidden>
+      <div class="kpi">
+        <div>
+          <div class="hint">Amperios previstos (12×60 W, 6 baterías)</div>
+          <div class="value" id="ahValue">—</div>
+          <div class="range" id="ahRange">—</div>
+        </div>
+        <div><span class="badge" id="badgeUso">—</span></div>
+      </div>
+      <div class="grid2">
+        <div class="card" style="padding:10px">
+          <div class="hint">Resumen técnico</div>
+          <pre class="mono" id="resume" style="margin:0"></pre>
+        </div>
+        <div class="card" style="padding:10px">
+          <div class="hint">Sol, variabilidad y microclima</div>
+          <pre class="mono" id="sunInfo" style="margin:0"></pre>
+        </div>
+      </div>
+      <div class="page-bottom">
+        <button class="btn ghost sm" id="btnCalc3" type="button">Recalcular</button>
+      </div>
+    </div>
+
+    <!-- ===== TARJETA: Evaluación & Aprendizaje ===== -->
+    <div class="card" id="elCard">
+      <h3 style="margin:2px 0 8px">Evaluación & Aprendizaje</h3>
+      <div class="row">
+        <div class="label"><b>Registrar</b></div>
+        <div class="grid3">
+          <input id="elFecha" type="date">
+          <input id="elPred" type="number" inputmode="decimal" step="0.1" placeholder="Ah predichos (ajustados)">
+          <input id="elReal" type="number" inputmode="decimal" step="0.1" placeholder="Ah reales">
+        </div>
+      </div>
+      <div class="row">
+        <div class="label"></div>
+        <div>
+          <label class="hint" style="display:flex;gap:8px;align-items:center">
+            <input id="elSkip" type="checkbox">
+            <span><b>Día no representativo (excluir del aprendizaje)</b></span>
+          </label>
+          <div class="hint" style="margin-top:4px">Úsalo si los Ah reales no reflejan el potencial (poco consumo, banco ya lleno, cortes, pruebas, etc.).</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="label">Acciones</div>
+        <div class="el-actions">
+          <button class="btn ghost sm" id="elTomar">Tomar pronóstico actual</button>
+          <button class="btn ghost sm" id="elGuardar">Guardar registro</button>
+          <button class="btn ghost sm" id="elCSV">Exportar CSV</button>
+          <button class="btn ghost sm" id="elJSONExp">Exportar JSON</button>
+          <button class="btn ghost sm" id="elJSONImp">Importar JSON</button>
+          <button class="btn ghost sm" id="elBorrar">Borrar todo</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+        <div class="el-chip">MAE: <span class="muted" id="elMae">—</span></div>
+        <div class="el-chip">MAPE: <span class="muted" id="elMape">—</span></div>
+        <div class="el-chip">Bias: <span class="muted" id="elBias">—</span></div>
+        <div class="el-chip">Con real: <span class="muted" id="elN">0</span></div>
+        <div class="el-chip">Total: <span class="muted" id="elNT">0</span></div>
+      </div>
+
+      <div style="overflow:auto;margin-top:6px">
+        <table class="el-table" id="elTable">
+          <thead><tr><th>Fecha</th><th>Ah Pred</th><th>Ah Real</th><th>Error %</th><th>F</th><th>Cielo μ/σ</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <input id="elFile" type="file" accept="application/json">
+    </div>
+
+  </div>
+
+<!-- ========= SCRIPT ORIGINAL (INTACTO) ========= -->
+<script>
+(function(){
+  const APP_VERSION = "1.6.4";
+  const STORAGE_KEY = "pvPredictDefaults_v1_6_4";
+
+  const $ = sel => document.querySelector(sel);
+  const fmt = n => n.toLocaleString('es-EC', {maximumFractionDigits:0});
+  const f2 = n => n.toLocaleString('es-EC', {maximumFractionDigits:2});
+
+  function ymdLocal(d){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function todayStr(shiftDays){ const d=new Date(); d.setDate(d.getDate()+(shiftDays||0)); return ymdLocal(d); }
+
+  const defaults = {
+    fecha: todayStr(0),
+    lat: -2.125,
+    lon: -79.875,
+    vbank: 13.0,
+    effBase: 75,
+    cieloVis: 0.65,
+    kDif: 0.25,
+    kDifIn: 0.35,
+    hIni: '09:00',
+    hFin: '14:00',
+    pElec: 90,
+    pDirt: 94,
+    pMppt: 85,
+    pAng: 93,
+    useMicro: false,
+    delta: 0.02
+  };
+
+  function safeMerge(def, saved){
+    const out = {...def};
+    for(const k in (saved||{})){
+      const v = saved[k];
+      if (['fecha','hIni','hFin'].includes(k)) { if (typeof v==='string' && v) out[k]=v; }
+      else if (typeof v==='boolean') out[k]=v;
+      else if (typeof v==='number' && Number.isFinite(v)) out[k]=v;
+    }
+    return out;
+  }
+  function loadSaved(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return safeMerge(defaults, raw?JSON.parse(raw):{});
+    }catch(e){
+      localStorage.removeItem(STORAGE_KEY);
+      return {...defaults};
+    }
+  }
+  const state = loadSaved();
+
+  const setVal = (id,val)=>{ const el=document.getElementById(id); if(el!=null) el.value=val; };
+  const setCheck = (id,val)=>{ const el=document.getElementById(id); if(el!=null) el.checked=!!val; };
+
+  setVal('fecha', state.fecha);
+  setVal('lat', state.lat); setVal('lon', state.lon);
+  setVal('vbank', state.vbank);
+  setVal('effBase', state.effBase);
+  setVal('cieloVis', state.cieloVis);
+  setVal('kDif', state.kDif); setVal('kDifIn', state.kDifIn);
+  setVal('hIni', state.hIni); setVal('hFin', state.hFin);
+  setVal('pElec', state.pElec); setVal('pDirt', state.pDirt); setVal('pMppt', state.pMppt); setVal('pAng', state.pAng);
+  setCheck('useMicro', state.useMicro);
+  setVal('delta', state.delta);
+
+  $('#btnHoy')?.addEventListener('click', ()=> setVal('fecha', todayStr(0)));
+  $('#btnMas1')?.addEventListener('click', ()=> setVal('fecha', todayStr(1)));
+
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.btn-step'); if(!btn) return;
+    const stepEl = btn.parentElement; const input = stepEl.querySelector('input');
+    const min = parseFloat(stepEl.dataset.min); const max = parseFloat(stepEl.dataset.max);
+    const step = parseFloat(stepEl.dataset.step); const delta = parseFloat(btn.dataset.delta);
+    let v = parseFloat(input.value||0)+delta; v=Math.min(max,Math.max(min,v)); v=Math.round(v/step)*step;
+    input.value = (step%1!==0) ? v.toFixed(2) : String(v);
+  });
+
+  document.querySelectorAll('.step input').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const stepEl = el.parentElement; let v = parseFloat(el.value);
+      if(isNaN(v)) return; const min=parseFloat(stepEl.dataset.min); const max=parseFloat(stepEl.dataset.max); const step=parseFloat(stepEl.dataset.step);
+      v=Math.min(max,Math.max(min,v)); v=Math.round(v/step)*step; el.value=(step%1!==0)?v.toFixed(2):String(v);
+    });
+  });
+
+  $('#btnCalc')?.addEventListener('click', mainRun);
+  $('#btnCalc3')?.addEventListener('click', mainRun);
+  $('#btnGuardar')?.addEventListener('click', ()=>{ localStorage.setItem("pvPredictDefaults_v1_6_4", JSON.stringify(readInputs())); toast('Valores guardados como predeterminado.'); });
+  $('#btnDiag')?.addEventListener('click', selfTest);
+
+  const btnCopy = document.getElementById('btnCopyHtml');
+  if(btnCopy){ btnCopy.onclick = async ()=>{ try{ const html='<!DOCTYPE html>\n'+document.documentElement.outerHTML; await navigator.clipboard.writeText(html); flash(btnCopy,'¡Copiado!'); }catch(e){ toast('No se pudo copiar: '+e.message); } }; }
+  const btnDownload = document.getElementById('btnDownload');
+  if(btnDownload){ btnDownload.onclick = ()=>{ const blob=new Blob(['<!DOCTYPE html>\n'+document.documentElement.outerHTML], {type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pv_prediccion_ah_v1_6_4.html'; a.click(); URL.revokeObjectURL(a.href); }; }
+
+  $('#btnCalcJson')?.addEventListener('click', ()=>{ const txt=$('#jsonManual').value.trim(); if(!txt){ toast('Pega un JSON válido.'); return; } try{ const obj=JSON.parse(txt); const parsed=parseAnyJson(obj); if(!parsed){ toast('No pude interpretar ese JSON.'); return; } const res = computeAh(parsed, readInputs()); paintSingle(res); buildWeekCells(); paintWeekPlaceholders(); }catch(e){ toast('JSON inválido: '+e.message); } });
+  $('#btnLimpiarJson')?.addEventListener('click', ()=> $('#jsonManual').value='');
+
+  function readInputs(){
+    return {
+      fecha: $('#fecha').value,
+      lat: parseFloat($('#lat').value), lon: parseFloat($('#lon').value),
+      vbank: parseFloat($('#vbank').value), effBase: parseFloat($('#effBase').value),
+      cieloVis: parseFloat($('#cieloVis').value), kDif: parseFloat($('#kDif').value), kDifIn: parseFloat($('#kDifIn').value),
+      hIni: $('#hIni').value, hFin: $('#hFin').value,
+      pElec: parseFloat($('#pElec').value), pDirt: parseFloat($('#pDirt').value), pMppt: parseFloat($('#pMppt').value), pAng: parseFloat($('#pAng').value),
+      useMicro: $('#useMicro').checked, delta: parseFloat($('#delta').value)||0.02
+    };
+  }
+
+  async function mainRun(){
+    const p = readInputs(); if(p.hIni>=p.hFin){ toast('La hora de inicio debe ser menor que la de fin.'); return; }
+    if (p.useMicro) { await run5(p); } else { await run1(p); }
+    await runWeek(p);
+  }
+
+  async function run1(p){
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Guayaquil';
+    const url = buildOMUrl(p.lat, p.lon, p.fecha, tz);
+    try{
+      const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
+      const data=await res.json(); const series=parseOpenMeteo(data);
+      const out = computeAh(series, p);
+      paintSingle(out);
+    }catch(e){ toast('Fallo Open-Meteo: '+e.message); }
+  }
+
+  async function run5(p){
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Guayaquil';
+    const δ = clamp(p.delta, 0.01, 0.05);
+    const pts = [
+      {name:'Centro', lat:p.lat, lon:p.lon},
+      {name:'N', lat:p.lat+δ, lon:p.lon},
+      {name:'S', lat:p.lat-δ, lon:p.lon},
+      {name:'E', lat:p.lat, lon:p.lon+δ},
+      {name:'O', lat:p.lat, lon:p.lon-δ},
+    ];
+    const urls = pts.map(pt=>buildOMUrl(pt.lat, pt.lon, p.fecha, tz));
+    try{
+      const reqs = urls.map(u=>fetch(u).then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status))));
+      const all = await Promise.allSettled(reqs);
+      const results = [];
+      for(let i=0;i<all.length;i++){
+        if(all[i].status==='fulfilled'){
+          const ser = parseOpenMeteo(all[i].value);
+          const out = computeAh(ser, p);
+          results.push({name: pts[i].name, ...out});
+        }
+      }
+      if(!results.length){ toast('No se pudo obtener datos de microclima.'); return; }
+      paintMicro(results);
+    }catch(e){ toast('Fallo Open-Meteo (microclima): '+e.message); }
+  }
+
+  function buildOMUrlWeek(lat, lon, startDate, days, tz){
+    const d=new Date(startDate);
+    const end=new Date(d); end.setDate(d.getDate()+(days-1));
+    const url=new URL('https://api.open-meteo.com/v1/forecast');
+    url.searchParams.set('latitude',lat); url.searchParams.set('longitude',lon); url.searchParams.set('timezone',tz);
+    url.searchParams.set('start_date', ymdLocal(d));
+    url.searchParams.set('end_date', ymdLocal(end));
+    url.searchParams.set('hourly','cloud_cover,temperature_2m,relative_humidity_2m,precipitation_probability,wind_speed_10m');
+    url.searchParams.set('daily','sunrise,sunset');
+    return url.toString();
+  }
+  function parseOpenMeteoRange(data){
+    const times=data?.hourly?.time||[], cloud=data?.hourly?.cloud_cover||[];
+    const sunr=data?.daily?.sunrise||[], suns=data?.daily?.sunset||[];
+    return {times, cloud, sunr, suns};
+  }
+
+  async function runWeek(p){
+    buildWeekCells();
+    paintWeekPlaceholders();
+
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Guayaquil';
+    const url = buildOMUrlWeek(p.lat, p.lon, p.fecha, 7, tz);
+    try{
+      const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
+      const data=await res.json(); const parsed=parseOpenMeteoRange(data);
+
+      const byDate={};
+      for(let i=0;i<parsed.times.length;i++){
+        const key=parsed.times[i].slice(0,10);
+        (byDate[key] ||= {times:[],cloud:[]});
+        byDate[key].times.push(parsed.times[i]);
+        byDate[key].cloud.push(parsed.cloud[i]);
+      }
+
+      const values=[], labels=[], dates=[];
+      for(let k=0;k<7;k++){
+        const d=new Date(p.fecha); d.setDate(d.getDate()+k);
+        const key=ymdLocal(d);
+        const sunrise=parsed.sunr?.[k] || (key+'T06:00');
+        const sunset =parsed.suns?.[k] || (key+'T18:00');
+        const seriesDay={ times:(byDate[key]?.times)||[], cloud:(byDate[key]?.cloud)||[], sunrise, sunset };
+        const out=computeAh(seriesDay,p);
+        values.push(isFinite(out?.Ah)? Math.max(0, Math.round(out.Ah)) : null);
+        labels.push(getDowShort(d));
+        dates.push(String(d.getDate()).padStart(2,'0'));
+      }
+      paintWeek(values, labels, dates);
+    }catch(e){ toast('Fallo Proyección semanal: '+e.message); }
+  }
+
+  function getDowShort(date){ const d = date.getDay(); return ['Dom','Lun','Mar','Mier','Jue','Vie','Sáb'][d]; }
+
+  function buildWeekCells(){
+    const grid=$('#weekGrid'); if(!grid) return;
+    if(grid.children.length) return;
+    for(let i=0;i<7;i++){
+      const cell=document.createElement('div'); cell.className='wcell';
+      const dateSmall=document.createElement('div'); dateSmall.className='w-date'; dateSmall.id='wdate'+i; dateSmall.textContent='—';
+      const lab=document.createElement('div'); lab.className='w-day'; lab.id='wday'+i; lab.textContent='—';
+      const val=document.createElement('div'); val.className='w-val'; val.id='wval'+i; val.textContent='—';
+      const bar=document.createElement('div'); bar.className='w-bar'; bar.id='wbar'+i;
+      cell.appendChild(dateSmall); cell.appendChild(lab); cell.appendChild(val); cell.appendChild(bar);
+      grid.appendChild(cell);
+    }
+    $('#weeklyCard').hidden=false;
+  }
+  function paintWeekPlaceholders(){
+    for(let i=0;i<7;i++){
+      const v=$('#wval'+i), d=$('#wday'+i), s=$('#wdate'+i), b=$('#wbar'+i);
+      if(v) v.textContent='—'; if(d) d.textContent='—'; if(s) s.textContent='—';
+      if(b) b.className='w-bar';
+    }
+    $('#weeklyCard').hidden=false;
+  }
+  function paintWeek(vals, labels, dates){
+    for(let i=0;i<7;i++){
+      const vEl=$('#wval'+i), dEl=$('#wday'+i), sEl=$('#wdate'+i), bEl=$('#wbar'+i);
+      const v = vals?.[i];
+      if(vEl) vEl.textContent = (v==null)?'—':v.toString();
+      if(dEl && labels) dEl.textContent = labels[i]||'—';
+      if(sEl && dates)  sEl.textContent = dates[i]||'—';
+      if(bEl){
+        const cls = (v==null||!isFinite(v)) ? '' : (v<=40?'red':(v<=57?'yellow':'green'));
+        bEl.className = 'w-bar' + (cls ? ' ' + cls : '');
+      }
+    }
+    $('#weeklyCard').hidden=false;
+  }
+
+  function buildOMUrl(lat, lon, fecha, tz){
+    const url = new URL('https://api.open-meteo.com/v1/forecast');
+    url.searchParams.set('latitude', lat); url.searchParams.set('longitude', lon); url.searchParams.set('timezone', tz);
+    url.searchParams.set('start_date', fecha); url.searchParams.set('end_date', fecha);
+    url.searchParams.set('hourly','cloud_cover,temperature_2m,relative_humidity_2m,precipitation_probability,wind_speed_10m');
+    url.searchParams.set('daily','sunrise,sunset');
+    return url.toString();
+  }
+
+  function parseOpenMeteo(data){ const times=data?.hourly?.time||[]; const cloud=data?.hourly?.cloud_cover||[]; const sunrise=data?.daily?.sunrise?.[0]||null; const sunset=data?.daily?.sunset?.[0]||null; return {times,cloud,sunrise,sunset}; }
+  function parseAnyJson(obj){
+    if(obj?.hourly?.time && (obj?.hourly?.cloud_cover||obj?.hourly?.nubes)){
+      const cloud=obj.hourly.cloud_cover||obj.hourly.nubes; const sunrise=obj?.daily?.sunrise?.[0]||null; const sunset=obj?.daily?.sunset?.[0]||null; return {times:obj.hourly.time, cloud, sunrise, sunset};
+    }
+    const ch=obj['cada hora']||obj['cada_hora']||obj['cadaHora'];
+    if(ch&&(ch['nubes']||ch['nubosidad'])&&ch['tiempo']){
+      const sunrise=obj?.diario?.amanecer||obj?.daily?.sunrise?.[0]||null; const sunset=obj?.diario?.atardecer||obj?.daily?.sunset?.[0]||null;
+      return {times:ch['tiempo'], cloud:ch['nubes']||ch['nubosidad'], sunrise, sunset};
+    }
+    return null;
+  }
+
+  function computeAh(series, p){
+    const {times,cloud}=series; if(!times?.length||!cloud?.length){ return {error:'Serie horaria incompleta.'}; }
+    const sunrise=series.sunrise?new Date(series.sunrise):new Date(p.fecha+'T06:00'); const sunset=series.sunset?new Date(series.sunset):new Date(p.fecha+'T18:00');
+    const hIni=toHM(p.hIni); const hFin=toHM(p.hFin);
+    const P_nom=12*60; const P_eff=P_nom*(p.effBase/100)*(p.pElec/100)*(p.pDirt/100)*(p.pMppt/100)*(p.pAng/100);
+    let HSE=0; const cloudsDay=[];
+    for(let i=0;i<times.length;i++){
+      const t=new Date(times[i]); if(!(t>=sunrise&&t<sunset)) continue; const h=t.getHours(); const inside=(h>=hIni.h && h<hFin.h);
+      const cc=clamp(cloud[i],0,100); const c=cc/100; const clear=1-c; const base=inside?1.0:(p.kDif||0.25);
+      const fEff=((clear)+(c*(p.kDifIn||0.35)))*(p.cieloVis||0.65)*base; HSE+=fEff; cloudsDay.push(cc);
+    }
+    if(HSE===0){ for(let i=0;i<times.length;i++){ const cc=clamp(cloud[i],0,100); const c=cc/100; const clear=1-c; const fEff=((clear)+(c*(p.kDifIn||0.35)))*(p.cieloVis||0.65)*(p.kDif||0.25); HSE+=fEff; cloudsDay.push(cc);} }
+    const Wh=P_eff*HSE; const Ah=Wh/p.vbank; const sigma=stddev(cloudsDay);
+    const bandPct=0.10+0.2*(sigma/100);
+    const AhLow=Ah*(1-bandPct); const AhHigh=Ah*(1+bandPct);
+    return {Ah, AhLow, AhHigh, Wh, HSE, P_nom, P_eff, sigma, bandPct, sunrise, sunset, p};
+  }
+
+  function usoRecomendado(Ah){ if(Ah<=47) return {text:'Ahorro', cl:'red'}; if(Ah<=53) return {text:'Normal', cl:'green'}; return {text:'Holgado', cl:'blue'}; }
+
+  function paintSingle(out){
+    if(out?.error){ toast(out.error); return; }
+    $('#panelOut').hidden=false;
+    $('#ahValue').textContent=`${fmt(out.Ah)} Ah`;
+    $('#ahRange').textContent=`Rango: ${fmt(out.AhLow)} – ${fmt(out.AhHigh)} Ah (± ${(out.bandPct*100).toFixed(1)}%)`;
+    const uso=usoRecomendado(out.Ah); const badge=$('#badgeUso'); badge.textContent=uso.text; badge.className='badge '+uso.cl;
+    $('#resume').textContent=`P_nom = 12×60 W = ${out.P_nom} W\nP_eff = ${f2(out.P_eff)} W\nHSE = ${f2(out.HSE)} h\nEnergía = ${fmt(out.Wh)} Wh\nVoltaje banco = ${out.p.vbank.toFixed(1)} V\nAmperios = ${fmt(out.Ah)} Ah`;
+    const sr=fmtHM(out.sunrise), ss=fmtHM(out.sunset);
+    $('#sunInfo').textContent=`Amanecer: ${sr}  ·  Atardecer: ${ss}\nVentana directo: ${out.p.hIni}–${out.p.hFin}\nCielo visible: ${out.p.cieloVis}  ·  Difuso ext: ${out.p.kDif}  ·  Difuso int: ${out.p.kDifIn}\nσ(nubosidad día) = ${out.sigma.toFixed(1)} pts`;
+  }
+
+  function paintMicro(list){
+    const centro = list.find(r=>r.name==='Centro') || list[0];
+    const AhVals = list.map(r=>r.Ah);
+    const Ah_min = Math.min(...AhVals), Ah_max = Math.max(...AhVals);
+    const low_cons = Math.min(...list.map(r=>r.AhLow));
+    const hi_cons  = Math.max(...list.map(r=>r.AhHigh));
+    paintSingle(centro);
+    const extra = `\nMicroclima (5 ptos): ${fmt(Ah_min)} – ${fmt(Ah_max)} Ah\nConservador: ${fmt(low_cons)} – ${fmt(hi_cons)} Ah`;
+    const prev = $('#sunInfo').textContent || '';
+    $('#sunInfo').textContent = prev + extra;
+  }
+
+  function clamp(x,min,max){ return Math.min(max, Math.max(min,x)); }
+  function toHM(str){ const [h,m]=str.split(':').map(x=>parseInt(x,10)); return {h: (isNaN(h)?0:h), m: (isNaN(m)?0:m)}; }
+  function stddev(arr){ if(!arr.length) return 0; const m=arr.reduce((a,b)=>a+b,0)/arr.length; const v=arr.reduce((a,b)=>a+(b-m)**2,0)/arr.length; return Math.sqrt(v); }
+  function fmtHM(d){ return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function toast(msg){ const n=document.createElement('div'); n.textContent=msg; n.style.position='fixed'; n.style.left='50%'; n.style.bottom='90px'; n.style.transform='translateX(-50%)'; n.style.background='#111827'; n.style.color='#fff'; n.style.padding='10px 14px'; n.style.borderRadius='12px'; n.style.fontSize='14px'; n.style.boxShadow='0 8px 20px rgba(0,0,0,.2)'; document.body.appendChild(n); setTimeout(()=>n.remove(),1600); }
+  function flash(btn, okText){ const old=btn.textContent; btn.textContent='✔ '+okText; btn.classList.add('flash'); setTimeout(()=>{btn.textContent=old; btn.classList.remove('flash');}, 1100); }
+
+  function selfTest(){
+    const ids = ['fecha','lat','lon','vbank','effBase','cieloVis','kDif','kDifIn','hIni','hFin','pElec','pDirt','pMppt','pAng','btnCalc','btnGuardar'];
+    const missing = ids.filter(id=>!document.getElementById(id));
+    if(missing.length){ toast('Diagnóstico: faltan elementos '+missing.join(', ')); return; }
+    try{
+      const fake = {times:Array.from({length:12},(_,i)=>`2025-01-01T0${i+6}:00`), cloud:Array(12).fill(40), sunrise:'2025-01-01T06:00', sunset:'2025-01-01T18:00'};
+      const out = computeAh(fake, readInputs());
+      if(!out || !isFinite(out.Ah)) throw new Error('cálculo inválido');
+      buildWeekCells(); paintWeekPlaceholders();
+      toast('Diagnóstico OK · v'+APP_VERSION);
+    }catch(e){ toast('Diagnóstico falló: '+e.message); }
+  }
+  setTimeout(selfTest, 50);
+})();
+</script>
+
+<!-- ========= SCRIPT: tarjeta Evaluación & Aprendizaje (con exclusión “No representativo”) ========= -->
+<script>
+(function(){
+  const KEY_LOG   = 'pvEvalLog_v2';
+  const KEY_MODEL = 'pvEvalModel_v2';
+  const $ = s => document.querySelector(s);
+  const fmt1 = n => Number.isFinite(n)? n.toLocaleString('es-EC',{maximumFractionDigits:1}) : '—';
+
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Guayaquil';
+  function num(x){ return Number.isFinite(+x)? +x : NaN; }
+  function today(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function stddev(arr){ if(!arr.length) return 0; const m=arr.reduce((a,b)=>a+b,0)/arr.length; const v=arr.reduce((a,b)=>a+(b-m)**2,0)/arr.length; return Math.sqrt(v); }
+  function parseNumFromText(t){ if(!t) return NaN; let s=String(t).replace(/[^0-9.,\-]/g,'').trim(); if(s.includes('.')&&s.includes(',')) s=s.replace(/\./g,'').replace(',', '.'); else if(s.includes(',')) s=s.replace(',', '.'); return parseFloat(s); }
+  function bucketFromCloud(mu){ if(!Number.isFinite(mu)) return 'NA'; if(mu<=33) return 'L'; if(mu<=66) return 'M'; return 'H'; }
+
+  function buildUrl(lat, lon, fecha){
+    const u = new URL('https://api.open-meteo.com/v1/forecast');
+    u.searchParams.set('latitude', lat); u.searchParams.set('longitude', lon); u.searchParams.set('timezone', tz);
+    u.searchParams.set('start_date', fecha); u.searchParams.set('end_date', fecha);
+    u.searchParams.set('hourly','cloud_cover,temperature_2m,relative_humidity_2m,precipitation_probability,wind_speed_10m');
+    u.searchParams.set('daily','sunrise,sunset');
+    return u.toString();
+  }
+
+  async function fetchFeatures(fecha, lat, lon){
+    try{
+      const res = await fetch(buildUrl(lat,lon,fecha));
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      const times=data?.hourly?.time||[];
+      const cloud=data?.hourly?.cloud_cover||[];
+      const temp =data?.hourly?.temperature_2m||[];
+      const rh   =data?.hourly?.relative_humidity_2m||[];
+      const pp   =data?.hourly?.precipitation_probability||[];
+      const wind =data?.hourly?.wind_speed_10m||[];
+      const sr = new Date(data?.daily?.sunrise?.[0] || (fecha+'T06:00'));
+      const ss = new Date(data?.daily?.sunset?.[0]  || (fecha+'T18:00'));
+
+      const sel = [];
+      for(let i=0;i<times.length;i++){ const t=new Date(times[i]); if(t>=sr && t<ss) sel.push(i); }
+
+      const v = (arr,f=sel)=> f.map(i=>num(arr?.[i])).filter(Number.isFinite);
+      const nubes = v(cloud), temps=v(temp), rhs=v(rh), winds=v(wind), pps=v(pp);
+      const features = {
+        fecha,
+        nube_avg: nubes.length? nubes.reduce((a,b)=>a+b,0)/nubes.length : NaN,
+        nube_std: nubes.length? stddev(nubes): NaN,
+        t_avg: temps.length? temps.reduce((a,b)=>a+b,0)/temps.length: NaN,
+        rh_avg: rhs.length? rhs.reduce((a,b)=>a+b,0)/rhs.length: NaN,
+        pp_max: pps.length? Math.max(...pps): NaN,
+        viento_avg: winds.length? winds.reduce((a,b)=>a+b,0)/winds.length: NaN
+      };
+      return features;
+    }catch(e){
+      console.warn('fetchFeatures error', e);
+      return null;
+    }
+  }
+
+  // -------- Estado --------
+  let log   = load(KEY_LOG, []);
+  let model = load(KEY_MODEL, {global:{bias:0,n:0}, buckets:{L:{bias:0,n:0}, M:{bias:0,n:0}, H:{bias:0,n:0}}});
+
+  function load(k, def){ try{ const j=JSON.parse(localStorage.getItem(k)||''); return j??def; }catch(_){ return def; } }
+  function save(){ localStorage.setItem(KEY_LOG, JSON.stringify(log)); localStorage.setItem(KEY_MODEL, JSON.stringify(model)); }
+
+  // -------- UI --------
+  const elFecha = $('#elFecha'); const elPred = $('#elPred'); const elReal = $('#elReal'); const elSkip = $('#elSkip');
+  if(elFecha && !elFecha.value){ elFecha.value = ($('#fecha')?.value)||today(); }
+
+  const kpi = document.getElementById('ahValue');
+  if(kpi){
+    const mo = new MutationObserver(async ()=>{
+      if(!elPred.value){
+        const pcrudo = parseNumFromText(kpi.textContent||'');
+        if(Number.isFinite(pcrudo)){
+          const adj = await adjustedPredForDate(elFecha.value||today(), pcrudo);
+          elPred.value = adj.toFixed(1);
+        }
+      }
+    });
+    mo.observe(kpi, {childList:true,subtree:true});
+  }
+
+  // -------- Acciones --------
+  $('#elTomar')?.addEventListener('click', async ()=>{
+    const pcrudo = parseNumFromText(document.getElementById('ahValue')?.textContent||'');
+    if(!Number.isFinite(pcrudo)){ toast('Primero pulsa “Recalcular” para obtener el pronóstico.'); return; }
+    const adj = await adjustedPredForDate(elFecha.value||today(), pcrudo);
+    elPred.value = adj.toFixed(1);
+    flashBtn('#elTomar');
+  });
+
+  $('#elGuardar')?.addEventListener('click', async ()=>{
+    const fecha = elFecha.value || today();
+    const pred  = parseFloat(elPred.value);
+    const real  = elReal.value==='' ? null : parseFloat(elReal.value);
+    const skip  = !!elSkip?.checked;
+    if(!Number.isFinite(pred)){ toast('Ingresa los Ah predichos.'); return; }
+
+    let rec = log.find(r=>r.fecha===fecha);
+    if(!rec){ rec = {fecha, pred, real, skip:false, features:null}; log.push(rec); }
+    rec.pred = pred; rec.real = real; rec.skip = skip;
+
+    if(!rec.features){
+      const lat = parseFloat(document.getElementById('lat')?.value);
+      const lon = parseFloat(document.getElementById('lon')?.value);
+      if(Number.isFinite(lat)&&Number.isFinite(lon)){
+        rec.features = await fetchFeatures(fecha, lat, lon);
+      }
+    }
+
+    // actualizar modelo sólo si NO está marcado como no representativo y hay real
+    if(!skip && Number.isFinite(real)){
+      const e = real - pred; // error con el signo correcto
+      const g = model.global; g.bias = (g.bias*g.n + e)/(g.n+1); g.n += 1;
+      const mu = rec?.features?.nube_avg;
+      const bkey = bucketFromCloud(mu);
+      if(['L','M','H'].includes(bkey)){
+        const b = model.buckets[bkey]; b.bias = (b.bias*b.n + e)/(b.n+1); b.n += 1;
+      }
+    }
+
+    save(); paint(); stats(); toast('Registro guardado.');
+  });
+
+  $('#elBorrar')?.addEventListener('click', ()=>{
+    if(!log.length){ toast('No hay registros.'); return; }
+    if(confirm('¿Borrar todos los registros y el modelo aprendido?')){
+      log=[]; model={global:{bias:0,n:0}, buckets:{L:{bias:0,n:0}, M:{bias:0,n:0}, H:{bias:0,n:0}}};
+      save(); paint(); stats();
+    }
+  });
+
+  $('#elCSV')?.addEventListener('click', ()=>{
+    if(!log.length){ toast('No hay registros.'); return; }
+    const rows = ['fecha,pred,real,skip,error_pct,nube_avg,nube_std,t_avg,rh_avg,pp_max,viento_avg'];
+    for(const r of log){
+      const ep = (!r.skip && Number.isFinite(r.real) && r.real!==0)? ((r.pred-r.real)/Math.abs(r.real)*100).toFixed(2) : '';
+      const f = r.features||{};
+      rows.push([r.fecha,
+                 Number.isFinite(r.pred)?r.pred.toFixed(2):'',
+                 Number.isFinite(r.real)?r.real.toFixed(2):'',
+                 r.skip?1:0,
+                 ep,
+                 f.nube_avg??'',
+                 f.nube_std??'',
+                 f.t_avg??'',
+                 f.rh_avg??'',
+                 f.pp_max??'',
+                 f.viento_avg??''].join(','));
+    }
+    const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='evaluacion_predicciones.csv'; a.click(); URL.revokeObjectURL(a.href);
+  });
+
+  $('#elJSONExp')?.addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify({model, log},null,2)], {type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='evaluacion_predicciones.json'; a.click(); URL.revokeObjectURL(a.href);
+  });
+  $('#elJSONImp')?.addEventListener('click', ()=> $('#elFile')?.click());
+  $('#elFile')?.addEventListener('change', async ev=>{
+    const f = ev.target.files?.[0]; if(!f) return;
+    try{
+      const txt = await f.text();
+      const data = JSON.parse(txt);
+      if(Array.isArray(data)) log=data; // compat v1
+      if(Array.isArray(data?.log)) log = data.log;
+      if(data?.model) model = data.model;
+      save(); paint(); stats(); toast('Importación completada.');
+    }catch(e){ toast('Error al importar: '+e.message); }
+    ev.target.value='';
+  });
+
+  // -------- Predicción ajustada (usa bias con signo correcto) --------
+  async function adjustedPredForDate(fecha, predCrudo){
+    const lat = parseFloat(document.getElementById('lat')?.value);
+    const lon = parseFloat(document.getElementById('lon')?.value);
+    let mu = null;
+    if(Number.isFinite(lat)&&Number.isFinite(lon)){
+      const feat = await fetchFeatures(fecha, lat, lon);
+      mu = feat?.nube_avg ?? null;
+    }
+    const bkey = bucketFromCloud(mu);
+    const b = model.buckets?.[bkey];
+    const biasBucket = (b && b.n>0)? b.bias : null;
+    const biasGlobal = (model.global?.n>0)? model.global.bias : 0;
+    const biasToUse = (biasBucket!=null)? biasBucket : biasGlobal;
+    return predCrudo + biasToUse;
+  }
+
+  // -------- Métricas y tabla --------
+  function stats(){
+    const withReal = log.filter(r=>Number.isFinite(r.real) && !r.skip);
+    const n=withReal.length, N=log.length;
+    let mae=null, mape=null, bias=null;
+    if(n){
+      let se=0,sape=0,sbias=0;
+      for(const r of withReal){
+        const e = r.real - r.pred; se += Math.abs(e); sbias += e; sape += Math.abs(e)/Math.max(Math.abs(r.real),1e-9);
+      }
+      mae = se/n; mape = (sape/n)*100; bias = sbias/n;
+    }
+    $('#elMae').textContent  = mae==null? '—' : mae.toLocaleString('es-EC',{maximumFractionDigits:2})+' Ah';
+    $('#elMape').textContent = mape==null? '—' : mape.toLocaleString('es-EC',{maximumFractionDigits:1})+' %';
+    $('#elBias').textContent = bias==null? '—' : (bias>=0?'+':'')+Math.abs(bias).toLocaleString('es-EC',{maximumFractionDigits:2})+' Ah';
+    $('#elN').textContent = String(n);
+    $('#elNT').textContent = String(N);
+  }
+
+  function paint(){
+    const tb = document.querySelector('#elTable tbody'); if(!tb) return;
+    tb.innerHTML='';
+    const data=[...log].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    for(const r of data){
+      const tr=document.createElement('tr');
+
+      const tdF=document.createElement('td'); tdF.textContent=r.fecha; tr.appendChild(tdF);
+      const tdP=document.createElement('td'); tdP.className='el-num'; tdP.textContent=Number.isFinite(r.pred)?fmt1(r.pred):'—'; tr.appendChild(tdP);
+      const tdR=document.createElement('td'); tdR.className='el-num'; tdR.textContent=Number.isFinite(r.real)?fmt1(r.real):'—'; tr.appendChild(tdR);
+
+      const tdE=document.createElement('td'); tdE.className='el-num';
+      let ep = (!r.skip && Number.isFinite(r.real)&&r.real!==0)? ((r.pred-r.real)/Math.abs(r.real)*100) : null;
+      tdE.textContent = ep==null? '—' : ((ep>=0?'+':'')+Math.abs(ep).toLocaleString('es-EC',{maximumFractionDigits:1})+' %');
+      tr.appendChild(tdE);
+
+      const tdFlag=document.createElement('td'); tdFlag.className='el-num';
+      tdFlag.innerHTML = r.skip ? '<span class="el-flag">No repr.</span>' : '';
+      tr.appendChild(tdFlag);
+
+      const tdC=document.createElement('td'); tdC.className='el-num';
+      const f=r.features||{}; const mu=f.nube_avg, sd=f.nube_std;
+      tdC.textContent=(Number.isFinite(mu)?mu.toFixed(0):'—')+'/'+(Number.isFinite(sd)?sd.toFixed(0):'—');
+      tr.appendChild(tdC);
+
+      const tdX=document.createElement('td');
+      const b=document.createElement('button'); b.type='button'; b.className='btn ghost sm'; b.textContent='🗑️';
+      b.onclick=()=>{ if(confirm('¿Eliminar registro del '+r.fecha+'?')){ const i=log.indexOf(r); if(i>=0) log.splice(i,1); save(); paint(); stats(); } };
+      tdX.appendChild(b); tr.appendChild(tdX);
+
+      tb.appendChild(tr);
+    }
+  }
+
+  function flashBtn(sel){ const b=document.querySelector(sel); if(!b) return; const old=b.textContent; b.textContent='✔'; b.classList.add('flash'); setTimeout(()=>{b.textContent=old; b.classList.remove('flash');}, 900); }
+
+  function toast(msg){
+    if(window.toast){ window.toast(msg); return; }
+    const n=document.createElement('div'); n.textContent=msg; n.style.position='fixed'; n.style.left='50%'; n.style.bottom='80px'; n.style.transform='translateX(-50%)'; n.style.background='#111827'; n.style.color='#fff'; n.style.padding='10px 14px'; n.style.borderRadius='12px'; n.style.fontSize='14px'; document.body.appendChild(n); setTimeout(()=>n.remove(),1600);
+  }
+
+  paint(); stats();
+})();
+</script>
+
+</body></html>

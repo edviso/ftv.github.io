@@ -145,6 +145,7 @@
       flex-direction: column;
       padding: 12px 16px;
       border-bottom: 1px solid var(--border);
+      position: relative;
     }
 
     .exercise:last-child {
@@ -169,6 +170,7 @@
       justify-content: center;
       flex-shrink: 0;
       transition: all 0.2s ease;
+      position: relative;
     }
 
     .exercise-checkbox.checked {
@@ -180,6 +182,24 @@
     .exercise-checkbox.checked::after {
       content: '✓';
       font-weight: bold;
+    }
+
+    .exercise-checkbox::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      animation: ripple 0.6s ease-out;
+      transform: scale(0);
+      opacity: 0;
+    }
+
+    .exercise-checkbox.rippling::before {
+      animation: ripple 0.6s ease-out;
+      transform: scale(1);
+      opacity: 1;
     }
 
     .exercise-content {
@@ -507,9 +527,86 @@
       font-weight: 600;
     }
 
+    .timer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+    }
+
+    .timer-content {
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      max-width: 300px;
+      width: 90%;
+    }
+
+    .timer-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--dark);
+      margin-bottom: 16px;
+    }
+
+    .timer-display {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 16px 0;
+      font-family: 'Inter', monospace;
+    }
+
+    .timer-progress {
+      width: 100%;
+      height: 8px;
+      background-color: #e0e7ff;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+
+    .timer-progress-fill {
+      height: 100%;
+      background-color: var(--primary);
+      border-radius: 4px;
+      transition: width 0.1s linear;
+    }
+
+    .timer-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+
+    .timer-btn:hover {
+      background-color: var(--primary-dark);
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-4px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(0); opacity: 0.5; }
+      100% { transform: scale(2); opacity: 0; }
     }
 
     @media (max-width: 480px) {
@@ -537,6 +634,10 @@
         width: 60px;
         padding: 8px;
         font-size: 0.9rem;
+      }
+      
+      .timer-display {
+        font-size: 2.5rem;
       }
     }
   </style>
@@ -640,6 +741,17 @@
     </button>
   </div>
 
+  <div class="timer-overlay" id="timerOverlay">
+    <div class="timer-content">
+      <h2 class="timer-title">Descanso entre series</h2>
+      <div class="timer-display" id="timerDisplay">90</div>
+      <div class="timer-progress">
+        <div class="timer-progress-fill" id="timerProgress"></div>
+      </div>
+      <button class="timer-btn" onclick="closeTimer()">Terminar descanso</button>
+    </div>
+  </div>
+
   <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
 
   <script>
@@ -729,7 +841,7 @@
             ${rutina.map((ej, idx) => `
               <div class="exercise" data-index="${idx}">
                 <div class="exercise-header">
-                  <div class="exercise-checkbox" onclick="toggleCheckbox(this)"></div>
+                  <div class="exercise-checkbox" onclick="toggleCheckbox(this, ${idx})"></div>
                   <div class="exercise-content">
                     <div class="exercise-name">${ej.nombre} <span style="color: var(--secondary); font-weight: normal;">${ej.detalle}</span></div>
                     <div class="exercise-muscles">${ej.musculos}</div>
@@ -784,7 +896,7 @@
             ${rutina.map((ej, idx) => `
               <div class="exercise" data-index="${idx}">
                 <div class="exercise-header">
-                  <div class="exercise-checkbox" onclick="toggleCheckbox(this)"></div>
+                  <div class="exercise-checkbox" onclick="toggleCheckbox(this, ${idx})"></div>
                   <div class="exercise-content">
                     <div class="exercise-name">${ej.nombre}</div>
                   </div>
@@ -835,8 +947,135 @@
       `;
     }
 
-    function toggleCheckbox(element) {
+    // Timer variables
+    let timerInterval;
+    let timerProgressInterval;
+    let totalTime = 90;
+    let timeLeft = totalTime;
+    let currentExerciseIndex = null;
+
+    function toggleCheckbox(element, exerciseIndex) {
       element.classList.toggle('checked');
+      
+      // Add ripple effect
+      element.classList.add('rippling');
+      setTimeout(() => {
+        element.classList.remove('rippling');
+      }, 600);
+
+      // Start timer if checkbox is checked
+      if (element.classList.contains('checked')) {
+        currentExerciseIndex = exerciseIndex;
+        startTimer();
+      }
+    }
+
+    function startTimer() {
+      const overlay = document.getElementById('timerOverlay');
+      const display = document.getElementById('timerDisplay');
+      const progress = document.getElementById('timerProgress');
+      
+      timeLeft = totalTime;
+      display.textContent = timeLeft;
+      progress.style.width = '100%';
+      
+      overlay.style.display = 'flex';
+      
+      // Create audio context and play sound
+      playBeepSound();
+      
+      // Update display every second
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        display.textContent = timeLeft;
+        
+        // Play sound at 10, 5, 4, 3, 2, 1 seconds
+        if (timeLeft <= 10 && timeLeft > 0) {
+          playBeepSound();
+        }
+        
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          clearInterval(timerProgressInterval);
+          playFinalSound();
+          display.textContent = '¡Listo!';
+        }
+      }, 1000);
+      
+      // Update progress bar
+      const progressStep = 100 / totalTime;
+      timerProgressInterval = setInterval(() => {
+        if (timeLeft > 0) {
+          progress.style.width = (timeLeft * progressStep) + '%';
+        }
+      }, 1000);
+    }
+
+    function closeTimer() {
+      clearInterval(timerInterval);
+      clearInterval(timerProgressInterval);
+      document.getElementById('timerOverlay').style.display = 'none';
+    }
+
+    function playBeepSound() {
+      // Create oscillator for beep sound
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 800;
+      gainNode.gain.value = 0.3;
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+      }, 150);
+    }
+
+    function playFinalSound() {
+      // Create a more distinctive sound for completion
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // First tone
+      const osc1 = audioContext.createOscillator();
+      const gain1 = audioContext.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.value = 600;
+      gain1.gain.value = 0.3;
+      osc1.connect(gain1);
+      gain1.connect(audioContext.destination);
+      osc1.start();
+      setTimeout(() => osc1.stop(), 200);
+      
+      // Second tone (higher)
+      setTimeout(() => {
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.value = 800;
+        gain2.gain.value = 0.3;
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        osc2.start();
+        setTimeout(() => osc2.stop(), 200);
+      }, 300);
+      
+      // Third tone (highest)
+      setTimeout(() => {
+        const osc3 = audioContext.createOscillator();
+        const gain3 = audioContext.createGain();
+        osc3.type = 'sine';
+        osc3.frequency.value = 1000;
+        gain3.gain.value = 0.3;
+        osc3.connect(gain3);
+        gain3.connect(audioContext.destination);
+        osc3.start();
+        setTimeout(() => osc3.stop(), 200);
+      }, 600);
     }
 
     function toggleCard(element) {

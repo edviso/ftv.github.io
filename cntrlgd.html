@@ -807,10 +807,38 @@
     ];
     
     const ejerciciosInferior = [
-      { nombre: "Sentadillas con mancuernas (15 lbs c/u)", series: 5, reps: 20, peso: 30 },
-      { nombre: "Desplantes alternos", series: 3, reps: 12, peso: 0 },
-      { nombre: "Elevaciones de talones", series: 4, reps: 20, peso: 30 },
-      { nombre: "Puente de glúteo", series: 3, reps: 15, peso: 0 }
+      { 
+        nombre: "Sentadillas con mancuernas", 
+        detalle: "(15 lbs c/u)", 
+        series: 4, 
+        reps: 20, 
+        peso: 30,
+        musculos: "Cuádriceps, glúteos, core. Ejercicio base para fuerza y resistencia de piernas."
+      },
+      { 
+        nombre: "Desplantes alternos", 
+        detalle: "(por pierna)", 
+        series: 3, 
+        reps: 12, 
+        peso: 0,
+        musculos: "Cuádriceps, glúteos, isquiotibiales, equilibrio y estabilidad."
+      },
+      { 
+        nombre: "Elevaciones de talones", 
+        detalle: "(de pie, con barra Z o peso en manos)", 
+        series: 4, 
+        reps: 20, 
+        peso: 30,
+        musculos: "Gemelos (gastrocnemio) y sóleo. Puedes hacer en el suelo o en un escalón para más rango."
+      },
+      { 
+        nombre: "Puente de glúteos", 
+        detalle: "(en el suelo, sin o con peso en la cadera)", 
+        series: 3, 
+        reps: 15, 
+        peso: 30,
+        musculos: "Glúteo mayor, isquiotibiales y zona lumbar como estabilizador."
+      }
     ];
 
     const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -884,12 +912,10 @@
         </div>
       `;
     } else if (rutina.length > 0 && tipoRutina === 'inferior') {
-      const grupoNombre = 'Tren Inferior 🦵';
-      
       cont.innerHTML = `
         <div class="exercise-group">
           <div class="exercise-group-header">
-            ${grupoNombre}
+            Tren Inferior 🦵
             <span class="badge">${rutina.length} ejercicios</span>
           </div>
           <div class="exercise-group-body">
@@ -898,7 +924,8 @@
                 <div class="exercise-header">
                   <div class="exercise-checkbox" onclick="toggleCheckbox(this, ${idx})"></div>
                   <div class="exercise-content">
-                    <div class="exercise-name">${ej.nombre}</div>
+                    <div class="exercise-name">${ej.nombre} <span style="color: var(--secondary); font-weight: normal;">${ej.detalle}</span></div>
+                    <div class="exercise-muscles">${ej.musculos}</div>
                   </div>
                 </div>
                 <div class="exercise-details">
@@ -1382,7 +1409,7 @@
     mostrarHistorial();
     
     // Si es tren superior, expandir automáticamente el registro corporal
-    if (tipoRutina === 'superior') {
+    if (tipoRutina === 'superior' || tipoRutina === 'inferior') {
       const card = document.querySelector('.card-title');
       if (card) {
         toggleCard(card);

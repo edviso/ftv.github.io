@@ -599,6 +599,49 @@
       background-color: var(--primary-dark);
     }
 
+    .add-exercise-form {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      margin-top: 16px;
+    }
+
+    .form-row {
+      margin-bottom: 12px;
+    }
+
+    .form-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background-color: white;
+    }
+
+    .save-btn {
+      background-color: var(--success);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    .save-btn:hover {
+      background-color: #059669;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-4px); }
       to { opacity: 1; transform: translateY(0); }
@@ -704,6 +747,63 @@
     </div>
 
     <div class="card">
+      <div class="card-title" onclick="toggleAddExercise()">
+        <div>
+          <i>➕</i> Añadir Ejercicio
+        </div>
+        <div class="toggle-btn">+</div>
+      </div>
+      <div class="card-content" id="addExerciseForm">
+        <div class="add-exercise-form">
+          <div class="form-row">
+            <label class="form-label">Tren</label>
+            <select id="tren" class="form-select">
+              <option value="superior">Tren Superior</option>
+              <option value="inferior">Tren Inferior</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Nombre del ejercicio</label>
+            <input type="text" id="nombreEjercicio" class="form-input" placeholder="Ej: Press de banca">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Forma de hacerlo</label>
+            <input type="text" id="formaHacer" class="form-input" placeholder="Ej: (con barra Z)">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Músculos que intervienen</label>
+            <input type="text" id="musculos" class="form-input" placeholder="Ej: Pecho, tríceps y deltoides anteriores">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Número de series</label>
+            <div class="stepper">
+              <button class="stepper-btn minus" onclick="adjustFormValue('series', -1)">−</button>
+              <input type="number" id="series" value="3" min="1" class="stepper-input">
+              <button class="stepper-btn" onclick="adjustFormValue('series', 1)">+</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Número de repeticiones</label>
+            <div class="stepper">
+              <button class="stepper-btn minus" onclick="adjustFormValue('reps', -1)">−</button>
+              <input type="number" id="reps" value="10" min="1" class="stepper-input">
+              <button class="stepper-btn" onclick="adjustFormValue('reps', 1)">+</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Peso en libras</label>
+            <div class="stepper">
+              <button class="stepper-btn minus" onclick="adjustFormValue('peso', -5)">−</button>
+              <input type="number" id="pesoEjercicio" value="0" min="0" class="stepper-input">
+              <button class="stepper-btn" onclick="adjustFormValue('peso', 5)">+</button>
+            </div>
+          </div>
+          <button class="save-btn" onclick="guardarNuevoEjercicio()">Guardar Ejercicio</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <h3 class="card-title"><i>📊</i> Valoración Final</h3>
       
       <div class="progress-container">
@@ -755,14 +855,37 @@
   <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
 
   <script>
-    const ejerciciosSuperior = [
+    // Cargar ejercicios personalizados del localStorage
+    function getCachedExercises() {
+      const stored = localStorage.getItem("ejerciciosPersonalizados");
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.log("Error parsing exercises:", e);
+          return {
+            superior: [],
+            inferior: []
+          };
+        }
+      }
+      return {
+        superior: [],
+        inferior: []
+      };
+    }
+
+    let ejerciciosPersonalizados = getCachedExercises();
+
+    const ejerciciosSuperiorBase = [
       { 
         nombre: "Jalones horizontales con bandas", 
         detalle: "(al pecho, codos atrás)", 
         series: 3, 
         reps: 15, 
         peso: 50,
-        musculos: "Espalda alta (romboides, trapecio medio, deltoides posteriores)"
+        musculos: "Espalda alta (romboides, trapecio medio, deltoides posteriores)",
+        tipo: 'base'
       },
       { 
         nombre: "Jalón descendente con bandas", 
@@ -770,7 +893,8 @@
         series: 3, 
         reps: 15, 
         peso: 50,
-        musculos: "Dorsal ancho y redondo mayor → amplitud en V"
+        musculos: "Dorsal ancho y redondo mayor → amplitud en V",
+        tipo: 'base'
       },
       { 
         nombre: "Press de banca con barra Z", 
@@ -778,7 +902,8 @@
         series: 3, 
         reps: 10, 
         peso: 25,
-        musculos: "Pecho, tríceps y deltoides anteriores"
+        musculos: "Pecho, tríceps y deltoides anteriores",
+        tipo: 'base'
       },
       { 
         nombre: "Remo inclinado con barra Z", 
@@ -786,7 +911,8 @@
         series: 3, 
         reps: 10, 
         peso: 25,
-        musculos: "Fuerza y grosor de espalda. Activa core y zona lumbar"
+        musculos: "Fuerza y grosor de espalda. Activa core y zona lumbar",
+        tipo: 'base'
       },
       { 
         nombre: "Remo al mentón con barra Z", 
@@ -794,7 +920,8 @@
         series: 3, 
         reps: 10, 
         peso: 25,
-        musculos: "Trapecio superior y deltoides laterales"
+        musculos: "Trapecio superior y deltoides laterales",
+        tipo: 'base'
       },
       { 
         nombre: "Curl de bíceps con barra Z", 
@@ -802,18 +929,20 @@
         series: 3, 
         reps: 12, 
         peso: 25,
-        musculos: "Bíceps y antebrazos"
+        musculos: "Bíceps y antebrazos",
+        tipo: 'base'
       }
     ];
     
-    const ejerciciosInferior = [
+    const ejerciciosInferiorBase = [
       { 
         nombre: "Sentadillas con mancuernas", 
         detalle: "(15 lbs c/u)", 
         series: 4, 
         reps: 20, 
         peso: 30,
-        musculos: "Cuádriceps, glúteos, core. Ejercicio base para fuerza y resistencia de piernas."
+        musculos: "Cuádriceps, glúteos, core. Ejercicio base para fuerza y resistencia de piernas.",
+        tipo: 'base'
       },
       { 
         nombre: "Desplantes alternos", 
@@ -821,7 +950,8 @@
         series: 3, 
         reps: 12, 
         peso: 0,
-        musculos: "Cuádriceps, glúteos, isquiotibiales, equilibrio y estabilidad."
+        musculos: "Cuádriceps, glúteos, isquiotibiales, equilibrio y estabilidad.",
+        tipo: 'base'
       },
       { 
         nombre: "Elevaciones de talones", 
@@ -829,7 +959,8 @@
         series: 4, 
         reps: 20, 
         peso: 30,
-        musculos: "Gemelos (gastrocnemio) y sóleo. Puedes hacer en el suelo o en un escalón para más rango."
+        musculos: "Gemelos (gastrocnemio) y sóleo. Puedes hacer en el suelo o en un escalón para más rango.",
+        tipo: 'base'
       },
       { 
         nombre: "Puente de glúteos", 
@@ -837,7 +968,8 @@
         series: 3, 
         reps: 15, 
         peso: 30,
-        musculos: "Glúteo mayor, isquiotibiales y zona lumbar como estabilizador."
+        musculos: "Glúteo mayor, isquiotibiales y zona lumbar como estabilizador.",
+        tipo: 'base'
       }
     ];
 
@@ -849,73 +981,33 @@
     let tipoRutina = '';
 
     if (hoy === 1 || hoy === 3 || hoy === 5) {
-      rutina = ejerciciosSuperior;
       tipoRutina = 'superior';
     } else if (hoy === 2 || hoy === 4 || hoy === 6) {
-      rutina = ejerciciosInferior;
       tipoRutina = 'inferior';
     }
 
+    // Combinar ejercicios base con personalizados
+    function getRutinaCompleta() {
+      if (tipoRutina === 'superior') {
+        return [...ejerciciosSuperiorBase, ...ejerciciosPersonalizados.superior];
+      } else if (tipoRutina === 'inferior') {
+        return [...ejerciciosInferiorBase, ...ejerciciosPersonalizados.inferior];
+      }
+      return [];
+    }
+
+    rutina = getRutinaCompleta();
+
     const cont = document.getElementById("routine");
     
-    if (rutina.length > 0 && tipoRutina === 'superior') {
+    if (rutina.length > 0 && (tipoRutina === 'superior' || tipoRutina === 'inferior')) {
+      const trenNombre = tipoRutina === 'superior' ? 'Tren Superior 💪' : 'Tren Inferior 🦵';
+      const trenIcono = tipoRutina === 'superior' ? '💪' : '🦵';
+      
       cont.innerHTML = `
         <div class="exercise-group">
           <div class="exercise-group-header">
-            Tren Superior 💪
-            <span class="badge">${rutina.length} ejercicios</span>
-          </div>
-          <div class="exercise-group-body">
-            ${rutina.map((ej, idx) => `
-              <div class="exercise" data-index="${idx}">
-                <div class="exercise-header">
-                  <div class="exercise-checkbox" onclick="toggleCheckbox(this, ${idx})"></div>
-                  <div class="exercise-content">
-                    <div class="exercise-name">${ej.nombre} <span style="color: var(--secondary); font-weight: normal;">${ej.detalle}</span></div>
-                    <div class="exercise-muscles">${ej.musculos}</div>
-                  </div>
-                </div>
-                <div class="exercise-details">
-                  <span>${ej.series} series</span>
-                  <span>${ej.reps} repeticiones</span>
-                  <span>${ej.peso} lbs</span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.85rem; color: var(--gray); min-width: 40px;">Series:</span>
-                    <div class="stepper">
-                      <button class="stepper-btn minus" onclick="adjustExerciseValue(${idx}, 'series', -1)">−</button>
-                      <input type="number" id="ser${idx}" value="${ej.series}" min="1" class="stepper-input">
-                      <button class="stepper-btn" onclick="adjustExerciseValue(${idx}, 'series', 1)">+</button>
-                    </div>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.85rem; color: var(--gray); min-width: 40px;">Reps:</span>
-                    <div class="stepper">
-                      <button class="stepper-btn minus" onclick="adjustExerciseValue(${idx}, 'reps', -1)">−</button>
-                      <input type="number" id="rep${idx}" value="${ej.reps}" min="1" class="stepper-input">
-                      <button class="stepper-btn" onclick="adjustExerciseValue(${idx}, 'reps', 1)">+</button>
-                    </div>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.85rem; color: var(--gray); min-width: 40px;">Peso:</span>
-                    <div class="stepper">
-                      <button class="stepper-btn minus" onclick="adjustExerciseValue(${idx}, 'peso', -5)">−</button>
-                      <input type="number" id="peso${idx}" value="${ej.peso}" min="0" class="stepper-input">
-                      <button class="stepper-btn" onclick="adjustExerciseValue(${idx}, 'peso', 5)">+</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    } else if (rutina.length > 0 && tipoRutina === 'inferior') {
-      cont.innerHTML = `
-        <div class="exercise-group">
-          <div class="exercise-group-header">
-            Tren Inferior 🦵
+            ${trenNombre}
             <span class="badge">${rutina.length} ejercicios</span>
           </div>
           <div class="exercise-group-body">
@@ -1046,63 +1138,71 @@
 
     function playBeepSound() {
       // Create oscillator for beep sound
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.type = 'sine';
-      oscillator.frequency.value = 800;
-      gainNode.gain.value = 0.3;
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.start();
-      setTimeout(() => {
-        oscillator.stop();
-      }, 150);
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.3;
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.start();
+        setTimeout(() => {
+          oscillator.stop();
+        }, 150);
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
     }
 
     function playFinalSound() {
       // Create a more distinctive sound for completion
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // First tone
-      const osc1 = audioContext.createOscillator();
-      const gain1 = audioContext.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.value = 600;
-      gain1.gain.value = 0.3;
-      osc1.connect(gain1);
-      gain1.connect(audioContext.destination);
-      osc1.start();
-      setTimeout(() => osc1.stop(), 200);
-      
-      // Second tone (higher)
-      setTimeout(() => {
-        const osc2 = audioContext.createOscillator();
-        const gain2 = audioContext.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.value = 800;
-        gain2.gain.value = 0.3;
-        osc2.connect(gain2);
-        gain2.connect(audioContext.destination);
-        osc2.start();
-        setTimeout(() => osc2.stop(), 200);
-      }, 300);
-      
-      // Third tone (highest)
-      setTimeout(() => {
-        const osc3 = audioContext.createOscillator();
-        const gain3 = audioContext.createGain();
-        osc3.type = 'sine';
-        osc3.frequency.value = 1000;
-        gain3.gain.value = 0.3;
-        osc3.connect(gain3);
-        gain3.connect(audioContext.destination);
-        osc3.start();
-        setTimeout(() => osc3.stop(), 200);
-      }, 600);
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // First tone
+        const osc1 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.value = 600;
+        gain1.gain.value = 0.3;
+        osc1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        osc1.start();
+        setTimeout(() => osc1.stop(), 200);
+        
+        // Second tone (higher)
+        setTimeout(() => {
+          const osc2 = audioContext.createOscillator();
+          const gain2 = audioContext.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.value = 800;
+          gain2.gain.value = 0.3;
+          osc2.connect(gain2);
+          gain2.connect(audioContext.destination);
+          osc2.start();
+          setTimeout(() => osc2.stop(), 200);
+        }, 300);
+        
+        // Third tone (highest)
+        setTimeout(() => {
+          const osc3 = audioContext.createOscillator();
+          const gain3 = audioContext.createGain();
+          osc3.type = 'sine';
+          osc3.frequency.value = 1000;
+          gain3.gain.value = 0.3;
+          osc3.connect(gain3);
+          gain3.connect(audioContext.destination);
+          osc3.start();
+          setTimeout(() => osc3.stop(), 200);
+        }, 600);
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
     }
 
     function toggleCard(element) {
@@ -1120,10 +1220,40 @@
       }
     }
 
+    function toggleAddExercise() {
+      const cards = document.querySelectorAll('.card');
+      const addExerciseCard = cards[2]; // Third card
+      const content = document.getElementById('addExerciseForm');
+      const toggleBtn = addExerciseCard.querySelector('.toggle-btn');
+      
+      content.classList.toggle('show');
+      addExerciseCard.classList.toggle('expanded');
+      
+      if (content.classList.contains('show')) {
+        toggleBtn.textContent = '−';
+      } else {
+        toggleBtn.textContent = '+';
+      }
+    }
+
     function adjustValue(id, amount) {
       const input = document.getElementById(id);
       let value = parseFloat(input.value) || 0;
       value = Math.max(0, value + amount);
+      input.value = value;
+    }
+
+    function adjustFormValue(field, amount) {
+      const id = field === 'series' ? 'series' : field === 'reps' ? 'reps' : 'pesoEjercicio';
+      const input = document.getElementById(id);
+      let value = parseInt(input.value) || 0;
+      
+      if (field === 'series' || field === 'reps') {
+        value = Math.max(1, value + amount);
+      } else if (field === 'peso') {
+        value = Math.max(0, value + amount);
+      }
+      
       input.value = value;
     }
 
@@ -1140,6 +1270,63 @@
       }
       
       input.value = value;
+    }
+
+    function guardarNuevoEjercicio() {
+      const tren = document.getElementById('tren').value;
+      const nombre = document.getElementById('nombreEjercicio').value.trim();
+      const forma = document.getElementById('formaHacer').value.trim();
+      const musculos = document.getElementById('musculos').value.trim();
+      const series = parseInt(document.getElementById('series').value) || 3;
+      const reps = parseInt(document.getElementById('reps').value) || 10;
+      const peso = parseInt(document.getElementById('pesoEjercicio').value) || 0;
+
+      // Validación
+      if (!nombre) {
+        showTemporaryMessage('❌ Nombre del ejercicio requerido');
+        return;
+      }
+      if (!musculos) {
+        showTemporaryMessage('❌ Describe los músculos trabajados');
+        return;
+      }
+
+      const nuevoEjercicio = {
+        nombre: nombre,
+        detalle: forma ? `(${forma})` : '',
+        series: series,
+        reps: reps,
+        peso: peso,
+        musculos: musculos,
+        tipo: 'personalizado',
+        fechaAgregado: new Date().toISOString()
+      };
+
+      // Añadir al array correspondiente
+      ejerciciosPersonalizados[tren].push(nuevoEjercicio);
+      
+      // Guardar en localStorage
+      try {
+        localStorage.setItem("ejerciciosPersonalizados", JSON.stringify(ejerciciosPersonalizados));
+        showTemporaryMessage('✅ Ejercicio añadido!');
+        
+        // Resetear el formulario
+        document.getElementById('nombreEjercicio').value = '';
+        document.getElementById('formaHacer').value = '';
+        document.getElementById('musculos').value = '';
+        document.getElementById('series').value = '3';
+        document.getElementById('reps').value = '10';
+        document.getElementById('pesoEjercicio').value = '0';
+        
+        // Cerrar el formulario
+        toggleAddExercise();
+        
+        // Recargar la rutina
+        location.reload();
+      } catch (e) {
+        showTemporaryMessage('❌ Error al guardar');
+        console.log("Storage error:", e);
+      }
     }
 
     function guardarDatos() {
@@ -1161,7 +1348,8 @@
           piernas: document.getElementById("piernas").value || '',
           pantorrillas: document.getElementById("pantorrillas").value || ''
         },
-        notas: document.getElementById("notas").value || ''
+        notas: document.getElementById("notas").value || '',
+        ejerciciosPersonalizados: ejerciciosPersonalizados // Incluir ejercicios personalizados
       };
 
       let completados = 0;
@@ -1179,7 +1367,8 @@
             series: document.getElementById(`ser${idx}`).value,
             reps: document.getElementById(`rep${idx}`).value,
             peso: document.getElementById(`peso${idx}`).value,
-            completado: hecho
+            completado: hecho,
+            tipo: ej.tipo || 'personalizado'
           });
         });
       }
@@ -1206,19 +1395,24 @@
         historial.unshift(data);
       }
       
-      localStorage.setItem("historialEntreno", JSON.stringify(historial));
-      mostrarHistorial();
-      
-      // Feedback visual
-      const btn = document.querySelector('.btn-primary');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span class="btn-icon">✓</span> Guardado!';
-      btn.style.backgroundColor = '#1f2937';
-      
-      setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.style.backgroundColor = '';
-      }, 1500);
+      try {
+        localStorage.setItem("historialEntreno", JSON.stringify(historial));
+        mostrarHistorial();
+        
+        // Feedback visual
+        const btn = document.querySelector('.btn-primary');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="btn-icon">✓</span> Guardado!';
+        btn.style.backgroundColor = '#1f2937';
+        
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.backgroundColor = '';
+        }, 1500);
+      } catch (e) {
+        showTemporaryMessage('❌ Error al guardar datos');
+        console.log("Storage error:", e);
+      }
     }
 
     function mostrarHistorial() {
@@ -1320,19 +1514,24 @@
 
     function exportarDatos() {
       const historial = localStorage.getItem("historialEntreno") || "[]";
-      const dataStr = JSON.stringify(JSON.parse(historial), null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `historial_entrenamiento_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      
-      URL.revokeObjectURL(url);
-      
-      // Feedback
-      showTemporaryMessage('✅ Historial exportado');
+      try {
+        const dataStr = JSON.stringify(JSON.parse(historial), null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `historial_entrenamiento_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        
+        URL.revokeObjectURL(url);
+        
+        // Feedback
+        showTemporaryMessage('✅ Historial exportado');
+      } catch (e) {
+        showTemporaryMessage('❌ Error al exportar');
+        console.log("Export error:", e);
+      }
     }
 
     function handleImport(event) {
@@ -1344,6 +1543,12 @@
         try {
           const data = JSON.parse(e.target.result);
           if (Array.isArray(data)) {
+            // Extraer ejercicios personalizados si existen
+            if (data.length > 0 && data[0].ejerciciosPersonalizados) {
+              ejerciciosPersonalizados = data[0].ejerciciosPersonalizados;
+              localStorage.setItem("ejerciciosPersonalizados", JSON.stringify(ejerciciosPersonalizados));
+            }
+            
             localStorage.setItem("historialEntreno", JSON.stringify(data));
             mostrarHistorial();
             showTemporaryMessage('✅ Historial importado correctamente');
@@ -1352,6 +1557,7 @@
           }
         } catch (error) {
           showTemporaryMessage('❌ Error al leer el archivo');
+          console.log("Import error:", error);
         }
       };
       reader.readAsText(file);
@@ -1408,7 +1614,7 @@
     // Inicializar
     mostrarHistorial();
     
-    // Si es tren superior, expandir automáticamente el registro corporal
+    // Si es día de entrenamiento, expandir registro corporal
     if (tipoRutina === 'superior' || tipoRutina === 'inferior') {
       const card = document.querySelector('.card-title');
       if (card) {

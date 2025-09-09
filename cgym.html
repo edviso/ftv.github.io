@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Notebook</title>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --accent: #4CAF50;
+            --shadow: rgba(0,0,0,0.3);
+            --border: #3d3d3d;
+        }
+
+        .light-mode {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e8e8e8;
+            --text-primary: #212121;
+            --text-secondary: #666666;
+            --accent: #4CAF50;
+            --shadow: rgba(0,0,0,0.1);
+            --border: #d0d0d0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            color: var(--text-primary);
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px var(--shadow);
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .date-display {
+            font-size: 1.2em;
+            opacity: 0.9;
+            color: var(--text-secondary);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 50px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .day-selector {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            padding: 5px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .day-btn {
+            flex: 1;
+            padding: 15px 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .day-btn.active {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--border));
+            color: var(--text-primary);
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .training-type {
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 25px;
+            color: var(--text-primary);
+            font-weight: 600;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .exercise-card {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px var(--shadow);
+            transition: all 0.3s ease;
+            border-left: 5px solid var(--border);
+        }
+
+        .exercise-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px var(--shadow);
+        }
+
+        .exercise-card.completed {
+            border-left-color: var(--accent);
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .exercise-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .exercise-details {
+            font-size: 0.95em;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .muscles-worked {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .muscle-tag {
+            background: var(--bg-tertiary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .exercise-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px 5px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 4px;
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .stepper button {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: var(--border);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stepper button:hover {
+            background: var(--bg-secondary);
+            transform: scale(1.05);
+        }
+
+        .stepper input {
+            width: 45px;
+            height: 28px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            font-size: 0.9em;
+            font-weight: 700;
+            color: var(--text-primary);
+            padding: 0;
+            margin: 0;
+        }
+
+        .complete-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--accent), #45a049);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .complete-btn:disabled {
+            background: var(--bg-tertiary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .timer {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-secondary);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 70px var(--shadow);
+            text-align: center;
+            display: none;
+            z-index: 1000;
+            border: 1px solid var(--border);
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px var(--shadow);
+        }
+
+        .timer-btn {
+            padding: 12px 30px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .timer-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+
+        .add-exercise-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .add-exercise-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 70px var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9em;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            transform: translateY(-2px);
+        }
+
+        .progress-section {
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px var(--shadow);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .progress-toggle {
+            background: none;
+            border: none;
+            font-size: 1.3em;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            padding: 5px;
+        }
+
+        .progress-toggle:hover {
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+
+        .progress-content {
+            display: none;
+        }
+
+        .progress-content.show {
+            display: block;
+        }
+
+        .measurement-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .measurement-input {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .measurement-input label {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .measurement-input input {
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9em;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .measurement-input input:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+        }
+
+        .rating {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .star {
+            font-size: 2em;
+            color: var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 0 2px 5px var(--shadow);
+        }
+
+        .star.filled {
+            color: #FFD700;
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+        }
+
+        .history-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .history-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .history-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+            border-left: 3px solid var(--border);
+        }
+
+        .history-date {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            font-size: 1em;
+        }
+
+        .history-stats {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+
+        .export-import {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .export-import button {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .export-import button:hover {
+            background: var(--border);
+            transform: translateY(-2px);
+        }
+
+        .notes-section {
+            margin-top: 20px;
+        }
+
+        .notes-section label {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .notes-section textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .notes-section textarea:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .exercise-stats {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .measurement-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .day-btn {
+                font-size: 0.75em;
+                padding: 10px 6px;
+            }
+            
+            .theme-toggle {
+                padding: 8px 15px;
+                font-size: 1em;
+            }
+            
+            .modal-content {
+                padding: 20px;
+                margin: 20px;
+                width: calc(100% - 40px);
+            }
+            
+            .timer {
+                padding: 30px 20px;
+            }
+            
+            .timer-display {
+                font-size: 2.5em;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px var(--shadow);
+            display: none;
+            z-index: 1001;
+            font-weight: 600;
+            font-size: 0.9em;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .notification.error {
+            background: #f44336;
+        }
+
+        .notification.warning {
+            background: #FF9800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="themeIcon">🌙</span>
+                <span id="themeText">Oscuro</span>
+            </button>
+            <h1>Training Notebook</h1>
+            <div class="date-display" id="currentDate"></div>
+        </div>
+
+        <div class="day-selector">
+            <button class="day-btn" data-day="0">Dom</button>
+            <button class="day-btn" data-day="1">Lun</button>
+            <button class="day-btn" data-day="2">Mar</button>
+            <button class="day-btn" data-day="3">Mié</button>
+            <button class="day-btn" data-day="4">Jue</button>
+            <button class="day-btn" data-day="5">Vie</button>
+            <button class="day-btn" data-day="6">Sáb</button>
+        </div>
+
+        <div class="training-type" id="trainingType"></div>
+
+        <button class="add-exercise-btn" onclick="showAddExerciseModal()">
+            + Añadir Ejercicio
+        </button>
+
+        <div id="exercisesList"></div>
+
+        <div class="progress-section">
+            <div class="progress-header">
+                <div class="progress-title">Registro Corporal</div>
+                <button class="progress-toggle" onclick="toggleProgress()">▼</button>
+            </div>
+            <div class="progress-content" id="progressContent">
+                <div class="measurement-grid">
+                    <div class="measurement-input">
+                        <label>Peso (lbs)</label>
+                        <input type="number" id="bodyWeight" placeholder="0" step="0.1">
+                    </div>
+                    <div class="measurement-input">
+                        <label>Altura (cm)</label>
+                        <input type="number" id="height" placeholder="0" step="0.1">
+                    </div>
+                    <div class="measurement-input">
+                        <label>Cintura (cm)</label>
+                        <input type="number" id="waist" placeholder="0" step="0.1">
+                    </div>
+                    <div class="measurement-input">
+                        <label>Pecho (cm)</label>
+                        <input type="number" id="chest" placeholder="0" step="0.1">
+                    </div>
+                    <div class="measurement-input">
+                        <label>Brazos (cm)</label>
+                        <input type="number" id="arms" placeholder="0" step="0.1">
+                    </div>
+                    <div class="measurement-input">
+                        <label>Piernas (cm)</label>
+                        <input type="number" id="legs" placeholder="0" step="0.1">
+                    </div>
+                </div>
+                <div class="rating">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+                <div class="notes-section">
+                    <label>Notas del día:</label>
+                    <textarea id="dailyNotes" placeholder="Añade tus notas sobre el entrenamiento de hoy..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="saveProgress()">Guardar Registro</button>
+            </div>
+        </div>
+
+        <button class="history-btn" onclick="showHistory()">Ver Historial</button>
+
+        <div class="export-import">
+            <button onclick="exportData()">Exportar Datos</button>
+            <button onclick="importData()">Importar Datos</button>
+            <input type="file" id="importFile" style="display: none;" accept=".json">
+        </div>
+    </div>
+
+    <!-- Timer Modal -->
+    <div class="timer" id="timerModal">
+        <div class="timer-display" id="timerDisplay">1:30</div>
+        <button class="timer-btn" onclick="stopTimer()">Detener</button>
+    </div>
+
+    <!-- Add Exercise Modal -->
+    <div class="modal" id="addExerciseModal">
+        <div class="modal-content">
+            <h2>Añadir Nuevo Ejercicio</h2>
+            <form id="addExerciseForm">
+                <div class="form-group">
+                    <label>Tipo de Tren:</label>
+                    <select id="newExerciseType" required>
+                        <option value="upper">Tren Superior</option>
+                        <option value="lower">Tren Inferior</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Ejercicio:</label>
+                    <input type="text" id="newExerciseName" required>
+                </div>
+                <div class="form-group">
+                    <label>Detalles de Ejecución:</label>
+                    <textarea id="newExerciseDetails" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Músculos Trabajados:</label>
+                    <input type="text" id="newExerciseMuscles" placeholder="Separados por comas" required>
+                </div>
+                <div class="form-group">
+                    <label>Series:</label>
+                    <div class="stepper">
+                        <button type="button" onclick="stepperChange('newExerciseSets', -1)">-</button>
+                        <input type="number" id="newExerciseSets" value="3" min="1" max="10">
+                        <button type="button" onclick="stepperChange('newExerciseSets', 1)">+</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Repeticiones:</label>
+                    <div class="stepper">
+                        <button type="button" onclick="stepperChange('newExerciseReps', -1)">-</button>
+                        <input type="number" id="newExerciseReps" value="12" min="1" max="50">
+                        <button type="button" onclick="stepperChange('newExerciseReps', 1)">+</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Peso (lbs):</label>
+                    <div class="stepper">
+                        <button type="button" onclick="stepperChange('newExerciseWeight', -5)">-</button>
+                        <input type="number" id="newExerciseWeight" value="0" min="0" max="500" step="5">
+                        <button type="button" onclick="stepperChange('newExerciseWeight', 5)">+</button>
+                    </div>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">Añadir Ejercicio</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddExerciseModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <h2>Historial de Entrenamientos</h2>
+            <div class="history-list" id="historyList"></div>
+            <button class="btn btn-secondary" onclick="closeHistoryModal()" style="margin-top: 20px;">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Data structure
+        let trainingData = {
+            exercises: {
+                upper: [
+                    {
+                        name: "Jalones horizontales con bandas",
+                        details: "Al pecho, codos atrás. Activa espalda alta (romboides, trapecio medio, deltoides posteriores). Sirve de calentamiento articular para el hombro.",
+                        muscles: ["Romboides", "Trapecio medio", "Deltoides posteriores"],
+                        sets: 3,
+                        reps: 15,
+                        weight: 0
+                    },
+                    {
+                        name: "Jalón descendente con bandas",
+                        details: "Hasta los muslos, brazos casi rectos. Dorsal ancho y redondo mayor → amplitud en V. Protege al hombro porque casi no usa bíceps.",
+                        muscles: ["Dorsal ancho", "Redondo mayor"],
+                        sets: 3,
+                        reps: 15,
+                        weight: 0
+                    },
+                    {
+                        name: "Press de banca con barra Z",
+                        details: "Ejercicio base de pecho, tríceps y deltoides anteriores. Hombros ya estarán calientes y más seguros aquí.",
+                        muscles: ["Pecho", "Tríceps", "Deltoides anteriores"],
+                        sets: 3,
+                        reps: 10,
+                        weight: 25
+                    },
+                    {
+                        name: "Remo inclinado con barra Z",
+                        details: "Ejercicio base de fuerza y grosor de espalda. Activa también core y zona lumbar.",
+                        muscles: ["Espalda", "Core", "Zona lumbar"],
+                        sets: 3,
+                        reps: 10,
+                        weight: 25
+                    },
+                    {
+                        name: "Remo al mentón con barra Z",
+                        details: "Trapecio superior y deltoides laterales.",
+                        muscles: ["Trapecio superior", "Deltoides laterales"],
+                        sets: 3,
+                        reps: 10,
+                        weight: 25
+                    },
+                    {
+                        name: "Curl de bíceps con barra Z",
+                        details: "Bíceps y antebrazos.",
+                        muscles: ["Bíceps", "Antebrazos"],
+                        sets: 3,
+                        reps: 12,
+                        weight: 25
+                    }
+                ],
+                lower: [
+                    {
+                        name: "Sentadillas con mancuernas",
+                        details: "Cuádriceps, glúteos, core. Ejercicio base para fuerza y resistencia de piernas.",
+                        muscles: ["Cuádriceps", "Glúteos", "Core"],
+                        sets: 5,
+                        reps: 20,
+                        weight: 30
+                    },
+                    {
+                        name: "Desplantes alternos",
+                        details: "Cuádriceps, glúteos, isquiotibiales, equilibrio y estabilidad.",
+                        muscles: ["Cuádriceps", "Glúteos", "Isquiotibiales"],
+                        sets: 3,
+                        reps: 12,
+                        weight: 0
+                    },
+                    {
+                        name: "Elevaciones de talones",
+                        details: "De pie, con barra Z o peso en manos. Gemelos (gastrocnemio) y sóleo. Puedes hacer en el suelo o en un escalón para más rango.",
+                        muscles: ["Gemelos", "Sóleo"],
+                        sets: 4,
+                        reps: 20,
+                        weight: 25
+                    },
+                    {
+                        name: "Puente de glúteos",
+                        details: "En el suelo, sin o con peso en la cadera. Glúteo mayor, isquiotibiales y zona lumbar como estabilizador.",
+                        muscles: ["Glúteo mayor", "Isquiotibiales", "Zona lumbar"],
+                        sets: 3,
+                        reps: 15,
+                        weight: 0
+                    }
+                ]
+            },
+            history: [],
+            currentDay: new Date().getDay(),
+            customExercises: [],
+            isDarkMode: true
+        };
+
+        let currentTimer = null;
+        let timerSeconds = 90;
+        let currentRating = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            applyTheme();
+            updateDate();
+            setupDaySelector();
+            loadExercises();
+            setupStarRating();
+            loadTodayProgress();
+        });
+
+        function toggleTheme() {
+            trainingData.isDarkMode = !trainingData.isDarkMode;
+            applyTheme();
+            saveData();
+        }
+
+        function applyTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (trainingData.isDarkMode) {
+                body.classList.remove('light-mode');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Oscuro';
+            } else {
+                body.classList.add('light-mode');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Claro';
+            }
+        }
+
+        function updateDate() {
+            const date = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = date.toLocaleDateString('es-ES', options);
+        }
+
+        function setupDaySelector() {
+            const dayButtons = document.querySelectorAll('.day-btn');
+            dayButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    dayButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    trainingData.currentDay = parseInt(this.dataset.day);
+                    loadExercises();
+                });
+            });
+
+            // Set current day as active
+            dayButtons[trainingData.currentDay].classList.add('active');
+        }
+
+        function getTrainingType(day) {
+            if (day === 0) return { type: 'rest', text: 'Descanso Activo - Domingo' };
+            if (day === 1 || day === 3 || day === 5) return { type: 'upper', text: 'Tren Superior' };
+            if (day === 2 || day === 4 || day === 6) return { type: 'lower', text: 'Tren Inferior' };
+        }
+
+        function loadExercises() {
+            const trainingType = getTrainingType(trainingData.currentDay);
+            const trainingTypeEl = document.getElementById('trainingType');
+            const exercisesListEl = document.getElementById('exercisesList');
+
+            if (trainingType.type === 'rest') {
+                trainingTypeEl.textContent = trainingType.text;
+                exercisesListEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Día de descanso activo. ¡Recuerda hacer estiramientos y ligera actividad cardiovascular!</div>';
+                return;
+            }
+
+            trainingTypeEl.textContent = trainingType.text;
+            
+            const exercises = trainingData.exercises[trainingType.type] || [];
+            const todayHistory = getTodayHistory();
+
+            exercisesListEl.innerHTML = exercises.map((exercise, index) => {
+                const isCompleted = todayHistory && todayHistory.completedExercises.includes(exercise.name);
+                return `
+                    <div class="exercise-card ${isCompleted ? 'completed' : ''} fade-in">
+                        <div class="exercise-header">
+                            <div class="exercise-name">${exercise.name}</div>
+                        </div>
+                        <div class="exercise-details">${exercise.details}</div>
+                        <div class="muscles-worked">
+                            ${exercise.muscles.map(muscle => `<span class="muscle-tag">${muscle}</span>`).join('')}
+                        </div>
+                        <div class="exercise-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Series</div>
+                                <div class="stepper">
+                                    <button type="button" onclick="quickMod(${index},'sets',-1)">-</button>
+                                    <input type="number" id="sets-${index}" value="${exercise.sets}" min="1" max="20" onchange="quickSave(${index},'sets',this.value)">
+                                    <button type="button" onclick="quickMod(${index},'sets',1)">+</button>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Reps</div>
+                                <div class="stepper">
+                                    <button type="button" onclick="quickMod(${index},'reps',-1)">-</button>
+                                    <input type="number" id="reps-${index}" value="${exercise.reps}" min="1" max="100" onchange="quickSave(${index},'reps',this.value)">
+                                    <button type="button" onclick="quickMod(${index},'reps',1)">+</button>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Peso</div>
+                                <div class="stepper">
+                                    <button type="button" onclick="quickMod(${index},'weight',-5)">-</button>
+                                    <input type="number" id="weight-${index}" value="${exercise.weight}" min="0" max="500" step="5" onchange="quickSave(${index},'weight',this.value)">
+                                    <button type="button" onclick="quickMod(${index},'weight',5)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="complete-btn" onclick="completeExercise('${exercise.name}', ${index})" ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? '✓ Completado' : 'Marcar como Completado'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function quickMod(idx, field, delta) {
+            const node = document.getElementById(`${field}-${idx}`);
+            const newVal = parseInt(node.value) + delta;
+            const min = parseInt(node.min) || 0;
+            const max = parseInt(node.max) || 999;
+            if (newVal < min || newVal > max) return;
+            node.value = newVal;
+            quickSave(idx, field, newVal);
+        }
+
+        function quickSave(idx, field, value) {
+            const trainingType = getTrainingType(trainingData.currentDay);
+            trainingData.exercises[trainingType.type][idx][field] = parseInt(value);
+            saveData();
+        }
+
+        function completeExercise(exerciseName, exerciseIndex) {
+            const trainingType = getTrainingType(trainingData.currentDay);
+            const exercises = trainingData.exercises[trainingType.type];
+            
+            if (!exercises || !exercises[exerciseIndex]) return;
+
+            // Mark as completed in UI
+            const exerciseCards = document.querySelectorAll('.exercise-card');
+            exerciseCards[exerciseIndex].classList.add('completed');
+            exerciseCards[exerciseIndex].querySelector('.complete-btn').disabled = true;
+            exerciseCards[exerciseIndex].querySelector('.complete-btn').textContent = '✓ Completado';
+
+            // Save to history
+            let todayHistory = getTodayHistory();
+            if (!todayHistory) {
+                todayHistory = {
+                    date: new Date().toISOString().split('T')[0],
+                    day: trainingData.currentDay,
+                    trainingType: trainingType.type,
+                    completedExercises: [],
+                    measurements: {},
+                    rating: 0,
+                    notes: ''
+                };
+                trainingData.history.push(todayHistory);
+            }
+
+            todayHistory.completedExercises.push(exerciseName);
+            saveData();
+
+            // Show timer
+            showTimer();
+
+            showNotification('¡Ejercicio completado! Descansa 90 segundos.');
+        }
+
+        function showTimer() {
+            const timerModal = document.getElementById('timerModal');
+            const timerDisplay = document.getElementById('timerDisplay');
+            
+            timerModal.style.display = 'block';
+            timerSeconds = 90;
+            
+            currentTimer = setInterval(() => {
+                timerSeconds--;
+                const minutes = Math.floor(timerSeconds / 60);
+                const seconds = timerSeconds % 60;
+                timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timerSeconds <= 0) {
+                    stopTimer();
+                    playAlarm();
+                    showNotification('¡Tiempo de descanso terminado!', 'warning');
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (currentTimer) {
+                clearInterval(currentTimer);
+                currentTimer = null;
+            }
+            document.getElementById('timerModal').style.display = 'none';
+        }
+
+        function playAlarm() {
+            // Create a simple beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function showAddExerciseModal() {
+            document.getElementById('addExerciseModal').style.display = 'block';
+        }
+
+        function closeAddExerciseModal() {
+            document.getElementById('addExerciseModal').style.display = 'none';
+            document.getElementById('addExerciseForm').reset();
+        }
+
+        function stepperChange(inputId, change) {
+            const input = document.getElementById(inputId);
+            const newValue = parseInt(input.value) + change;
+            const min = parseInt(input.min) || 0;
+            const max = parseInt(input.max) || 999;
+            
+            if (newValue >= min && newValue <= max) {
+                input.value = newValue;
+            }
+        }
+
+        document.getElementById('addExerciseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newExercise = {
+                name: document.getElementById('newExerciseName').value,
+                details: document.getElementById('newExerciseDetails').value,
+                muscles: document.getElementById('newExerciseMuscles').value.split(',').map(m => m.trim()),
+                sets: parseInt(document.getElementById('newExerciseSets').value),
+                reps: parseInt(document.getElementById('newExerciseReps').value),
+                weight: parseInt(document.getElementById('newExerciseWeight').value),
+                type: document.getElementById('newExerciseType').value
+            };
+
+            trainingData.exercises[newExercise.type].push(newExercise);
+            trainingData.customExercises.push(newExercise);
+            
+            saveData();
+            loadExercises();
+            closeAddExerciseModal();
+            showNotification('Ejercicio añadido correctamente');
+        });
+
+        function setupStarRating() {
+            const stars = document.querySelectorAll('.star');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    currentRating = parseInt(this.dataset.rating);
+                    updateStarDisplay();
+                });
+                
+                star.addEventListener('mouseenter', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    stars.forEach((s, index) => {
+                        s.classList.toggle('filled', index < rating);
+                    });
+                });
+            });
+
+            document.querySelector('.rating').addEventListener('mouseleave', function() {
+                updateStarDisplay();
+            });
+        }
+
+        function updateStarDisplay() {
+            const stars = document.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                star.classList.toggle('filled', index < currentRating);
+            });
+        }
+
+        function toggleProgress() {
+            const content = document.getElementById('progressContent');
+            const toggle = document.querySelector('.progress-toggle');
+            
+            content.classList.toggle('show');
+            toggle.textContent = content.classList.contains('show') ? '▲' : '▼';
+        }
+
+        function saveProgress() {
+            let todayHistory = getTodayHistory();
+            if (!todayHistory) {
+                todayHistory = {
+                    date: new Date().toISOString().split('T')[0],
+                    day: trainingData.currentDay,
+                    trainingType: getTrainingType(trainingData.currentDay).type,
+                    completedExercises: [],
+                    measurements: {},
+                    rating: 0,
+                    notes: ''
+                };
+                trainingData.history.push(todayHistory);
+            }
+
+            todayHistory.measurements = {
+                weight: parseFloat(document.getElementById('bodyWeight').value) || 0,
+                height: parseFloat(document.getElementById('height').value) || 0,
+                waist: parseFloat(document.getElementById('waist').value) || 0,
+                chest: parseFloat(document.getElementById('chest').value) || 0,
+                arms: parseFloat(document.getElementById('arms').value) || 0,
+                legs: parseFloat(document.getElementById('legs').value) || 0
+            };
+
+            todayHistory.rating = currentRating;
+            todayHistory.notes = document.getElementById('dailyNotes').value;
+
+            saveData();
+            showNotification('Registro guardado correctamente');
+        }
+
+        function loadTodayProgress() {
+            const todayHistory = getTodayHistory();
+            if (todayHistory) {
+                if (todayHistory.measurements) {
+                    document.getElementById('bodyWeight').value = todayHistory.measurements.weight || '';
+                    document.getElementById('height').value = todayHistory.measurements.height || '';
+                    document.getElementById('waist').value = todayHistory.measurements.waist || '';
+                    document.getElementById('chest').value = todayHistory.measurements.chest || '';
+                    document.getElementById('arms').value = todayHistory.measurements.arms || '';
+                    document.getElementById('legs').value = todayHistory.measurements.legs || '';
+                }
+                currentRating = todayHistory.rating || 0;
+                updateStarDisplay();
+                document.getElementById('dailyNotes').value = todayHistory.notes || '';
+            }
+        }
+
+        function getTodayHistory() {
+            const today = new Date().toISOString().split('T')[0];
+            return trainingData.history.find(h => h.date === today);
+        }
+
+        function showHistory() {
+            const historyModal = document.getElementById('historyModal');
+            const historyList = document.getElementById('historyList');
+            
+            if (trainingData.history.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay registros de entrenamiento aún.</p>';
+            } else {
+                historyList.innerHTML = trainingData.history.slice().reverse().map(record => {
+                    const completion = calculateCompletion(record);
+                    return `
+                        <div class="history-item">
+                            <div class="history-date">${formatDate(record.date)}</div>
+                            <div class="history-stats">
+                                Tipo: ${getTrainingTypeText(record.trainingType)}<br>
+                                Ejercicios completados: ${record.completedExercises.length}<br>
+                                Cumplimiento: ${completion.percentage}%<br>
+                                Calificación: ${'★'.repeat(record.rating)}${'☆'.repeat(5 - record.rating)}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            historyModal.style.display = 'block';
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        function calculateCompletion(record) {
+            const trainingType = getTrainingType(record.day);
+            if (trainingType.type === 'rest') {
+                return { percentage: 100, stars: 5 };
+            }
+            
+            const totalExercises = trainingData.exercises[trainingType.type]?.length || 0;
+            const completed = record.completedExercises.length;
+            const percentage = totalExercises > 0 ? Math.round((completed / totalExercises) * 100) : 0;
+            
+            let stars = 0;
+            if (percentage >= 90) stars = 5;
+            else if (percentage >= 70) stars = 4;
+            else if (percentage >= 50) stars = 3;
+            else if (percentage >= 30) stars = 2;
+            else if (percentage > 0) stars = 1;
+            
+            return { percentage, stars };
+        }
+
+        function getTrainingTypeText(type) {
+            const types = {
+                'upper': 'Tren Superior',
+                'lower': 'Tren Inferior',
+                'rest': 'Descanso Activo'
+            };
+            return types[type] || type;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('es-ES', options);
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(trainingData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `training-notebook-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Datos exportados correctamente');
+        }
+
+        function importData() {
+            document.getElementById('importFile').click();
+        }
+
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    
+                    // Validate data structure
+                    if (importedData.exercises && importedData.history !== undefined) {
+                        trainingData = importedData;
+                        applyTheme();
+                        saveData();
+                        loadExercises();
+                        loadTodayProgress();
+                        showNotification('Datos importados correctamente');
+                    } else {
+                        showNotification('El archivo no contiene datos válidos', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Error al leer el archivo', 'error');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function saveData() {
+            localStorage.setItem('trainingNotebookData', JSON.stringify(trainingData));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('trainingNotebookData');
+            if (saved) {
+                trainingData = JSON.parse(saved);
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification';
+            if (type === 'error') notification.classList.add('error');
+            if (type === 'warning') notification.classList.add('warning');
+            
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Close modals on outside click
+        window.addEventListener('click', function(e) {
+            const addModal = document.getElementById('addExerciseModal');
+            const historyModal = document.getElementById('historyModal');
+            const timerModal = document.getElementById('timerModal');
+            
+            if (e.target === addModal) closeAddExerciseModal();
+            if (e.target === historyModal) closeHistoryModal();
+            if (e.target === timerModal) stopTimer();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAddExerciseModal();
+                closeHistoryModal();
+                stopTimer();
+            }
+        });
+    </script>
+</body>
+</html>

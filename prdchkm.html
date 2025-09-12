@@ -1,0 +1,432 @@
+ ```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción Solar Watts</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);color:#333;padding:15px;min-height:100vh}
+        .container{max-width:100%;margin:0 auto;background:white;border-radius:15px;padding:20px;box-shadow:0 5px 15px rgba(0,0,0,.1)}
+        h1{text-align:center;color:#2c3e50;margin-bottom:20px;font-size:24px}
+        .config-section{background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:20px}
+        .config-item{margin-bottom:15px}
+        label{display:block;margin-bottom:5px;font-weight:600;color:#555}
+        input[type=number],input[type=date]{width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:16px;transition:border-color .3s}
+        input[type=number]:focus,input[type=date]:focus{outline:none;border-color:#4CAF50}
+        .button-group{display:flex;gap:10px;margin-top:15px}
+        button{flex:1;padding:12px;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#4CAF50;color:white}
+        .btn-primary:hover{background:#45a049;transform:translateY(-2px)}
+        .btn-secondary{background:#2196F3;color:white}
+        .btn-secondary:hover{background:#1976D2;transform:translateY(-2px)}
+        .prediction-container{margin-top:20px}
+        .day-buttons{display:flex;overflow-x:auto;gap:10px;padding:10px 0;-webkit-overflow-scrolling:touch}
+        .day-button{min-width:120px;padding:15px;border:none;border-radius:10px;text-align:center;font-weight:600;color:white;cursor:pointer;transition:all .3s;position:relative}
+        .day-button.red{background:#f44336}
+        .day-button.yellow{background:#ff9800}
+        .day-button.green{background:#4CAF50}
+        .day-button:hover{transform:scale(1.05)}
+        .day-button .date{font-size:14px;margin-bottom:5px}
+        .day-button .amps{font-size:20px;font-weight:bold}
+        .day-button .watts{font-size:12px;opacity:.9}
+        /* 🔧 Gráfico de barras - ANÁLISIS PROFUNDO */
+        .chart-card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:15px;margin-top:20px}
+        .chart-card h3{margin-bottom:10px;text-align:center;color:#2c3e50}
+        .chart-bars{display:flex;align-items:flex-end;justify-content:space-between;height:220px;gap:8px;overflow-x:auto;padding-bottom:10px;min-width:100%;scroll-behavior: smooth}
+        .bar-container{display:flex;flex-direction:column;align-items:center;flex:1;min-width:45px}
+        .bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font-size:14px;font-weight:600;color:#fff;text-align:center;padding:4px 2px;border-radius:4px;min-height:20px;width:100%}
+        .bar.red{background:#f44336}
+        .bar.yellow{background:#ff9800}
+        .bar.green{background:#4CAF50}
+        /* 🔧 BARRAS MÁS GRANDES Y PROPORCIONALES - SOLUCIÓN DEFINITIVA */
+        .bar-label{margin-top:6px;font-size:12px;color:#333;font-weight:500;white-space:nowrap}
+        .history-section{margin-top:30px;background:#f8f9fa;padding:15px;border-radius:10px}
+        .history-item{background:white;padding:10px;margin-bottom:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center}
+        .history-date{font-weight:600}
+        .history-amps{font-size:18px;font-weight:bold}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000}
+        .modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:15px;width:90%;max-width:400px}
+        .close-modal{float:right;font-size:28px;cursor:pointer;color:#999}
+        .close-modal:hover{color:#333}
+        .efficiency-display{background:#e3f2fd;padding:10px;border-radius:8px;margin-top:10px;text-align:center;font-weight:600}
+        .learning-box{background:#fff3cd;border:1px solid #ffeaa7;border-radius:8px;padding:10px;margin-top:10px;font-size:14px}
+        .learning-box input{width:80px;display:inline-block;margin-left:6px}
+        @media (max-width:480px){.container{padding:15px}h1{font-size:20px}.day-button{min-width:100px;padding:12px}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Predicción Solar</h1>
+        
+        <div class="config-section">
+            <div class="config-item">
+                <label for="date">Fecha de inicio:</label>
+                <input type="date" id="date">
+            </div>
+            <div class="config-item">
+                <label for="batteries">Número de baterías:</label>
+                <input type="number" id="batteries" value="6" min="1">
+            </div>
+            <div class="config-item">
+                <label for="panels">Número de paneles:</label>
+                <input type="number" id="panels" value="12" min="1">
+            </div>
+            <div class="config-item">
+                <label for="systemEfficiency">Eficiencia del sistema (%):</label>
+                <input type="number" id="systemEfficiency" value="70" min="1" max="100">
+            </div>
+            <div class="config-item">
+                <label for="panelEfficiency">Eficiencia de paneles (%):</label>
+                <input type="number" id="panelEfficiency" value="75" min="1" max="100">
+            </div>
+            <div class="config-item">
+                <label for="learningWindow">Días para auto-ajuste:</label>
+                <input type="number" id="learningWindow" value="7" min="3" max="30">
+            </div>
+            <div class="learning-box">
+                Factor de corrección actual: <strong id="correctionFactor">1.00</strong>
+                <br><small>Se actualiza solo con días que tengas dato real.</small>
+            </div>
+            <div class="efficiency-display">Eficiencia total: <span id="totalEfficiency">52.5%</span></div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="generatePredictions()">Generar Predicciones</button>
+                <button class="btn-secondary" onclick="exportData()">Exportar Datos</button>
+            </div>
+        </div>
+        
+        <div class="prediction-container">
+            <h3>Predicciones de 7 días:</h3>
+            <div class="day-buttons" id="dayButtons"></div>
+            <div class="chart-card">
+                <h3>Gráfico de predicción (A)</h3>
+                <div class="chart-bars" id="chartBars"></div>
+            </div>
+        </div>
+        
+        <div class="history-section">
+            <h3>Historial de Predicciones:</h3>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h3>Detalles del día</h3>
+            <div id="modalContent"></div>
+            <div style="margin-top:15px">
+                <label>Amperios reales medidos:</label>
+                <input type="number" id="realAmps" step="0.1" placeholder="Ingrese los amperios reales">
+                <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveRealData()">Guardar Datos Reales</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const USER_LAT = -2.1291352, USER_LON = -79.9135999;
+        const SYSTEM_VOLTAGE = 13.8;
+        const DIRECT_SUN_HOURS = 5;
+        const INDIRECT_EFFICIENCY = 0.30;
+        const INDIRECT_SUN_HOURS = 3;
+
+        let predictionsData = {}, currentSelectedDate = null;
+
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+        function updateTotalEfficiency() {
+            const se = document.getElementById('systemEfficiency').value / 100;
+            const pe = document.getElementById('panelEfficiency').value / 100;
+            document.getElementById('totalEfficiency').textContent = (se * pe * 100).toFixed(1) + '%';
+        }
+        ['systemEfficiency','panelEfficiency'].forEach(id=>
+            document.getElementById(id).addEventListener('input',updateTotalEfficiency));
+
+        function getCorrectionFactor(){
+            const stored = localStorage.getItem('correctionFactor');
+            return stored ? parseFloat(stored) : 1.00;
+        }
+        function saveCorrectionFactor(f){
+            localStorage.setItem('correctionFactor', f.toFixed(2));
+            document.getElementById('correctionFactor').textContent = f.toFixed(2);
+        }
+        function recalculateCorrectionFactor(){
+            const windowDays = parseInt(document.getElementById('learningWindow').value);
+            const sorted = Object.keys(predictionsData).sort().reverse().slice(0, windowDays);
+            let sumErr = 0, count = 0;
+            sorted.forEach(k => {
+                const d = predictionsData[k];
+                if(d.realAmps && d.predictedAmps){
+                    sumErr += d.realAmps / d.predictedAmps;
+                    count++;
+                }
+            });
+            if(count){
+                const newFactor = sumErr / count;
+                saveCorrectionFactor(newFactor);
+            }
+        }
+
+        function loadStoredData() {
+            const s = localStorage.getItem('solarPredictions');
+            if (s) { predictionsData = JSON.parse(s); updateHistoryDisplay(); }
+            recalculateCorrectionFactor();
+        }
+        function saveStoredData() { localStorage.setItem('solarPredictions',JSON.stringify(predictionsData)); }
+
+        async function generatePredictions() {
+            try {
+                const startDate = new Date(document.getElementById('date').value);
+                const numBat = parseInt(document.getElementById('batteries').value);
+                const numPan = parseInt(document.getElementById('panels').value);
+                const sysEff = document.getElementById('systemEfficiency').value/100;
+                const panEff = document.getElementById('panelEfficiency').value/100;
+                const totalEff = sysEff * panEff;
+                const ratedPower = numPan * 60;
+                const correction = getCorrectionFactor();
+
+                const container = document.getElementById('dayButtons');
+                container.innerHTML = '';
+                const chartContainer = document.getElementById('chartBars');
+                chartContainer.innerHTML = '';
+
+                // 1. Obtenemos TODOS los datos primero
+                const weatherPromises = [];
+                for (let i = 0; i < 7; i++){
+                    const d = new Date(startDate); d.setDate(startDate.getDate() + i);
+                    weatherPromises.push(fetchWeatherData(d));
+                }
+                const weatherArray = await Promise.all(weatherPromises);
+
+                // 2. Calculamos el máximo de amps (con corrección) ¡COMO NÚMERO!
+                let maxAmp = 0;
+                const ampsValues = [];
+                weatherArray.forEach(w => {
+                    if (!w || !w.weatherCode) {
+                        console.warn('Datos climáticos inválidos recibidos:', w);
+                        return;
+                    }
+                    let {amps: auxAmps} = calcGeneration(w, ratedPower, totalEff);
+                    auxAmps = parseFloat(auxAmps) * correction;  // 🔥 convertimos ANTES
+                    ampsValues.push(auxAmps);
+                    if (auxAmps > maxAmp) maxAmp = auxAmps;
+                });
+
+                // Aseguramos que maxAmp no sea 0 para evitar divisiones por cero
+                if (maxAmp === 0) {
+                    maxAmp = Math.max(1, Math.max(...ampsValues.filter(a => !isNaN(a)))); 
+                    if (maxAmp === 0) maxAmp = 1;
+                }
+
+                // Análisis profundo: Verificamos los valores reales generados
+                console.log('Valores de amperios generados:', ampsValues);
+                console.log('Valor máximo de amperios:', maxAmp);
+
+                // 3. Dibujamos botones y barras
+                for (let i = 0; i < 7; i++){
+                    const d = new Date(startDate); d.setDate(startDate.getDate() + i);
+                    const weather = weatherArray[i];
+                    
+                    // Validación de datos climáticos
+                    if (!weather || !weather.weatherCode) {
+                        console.error('Error: No se pudieron obtener datos climáticos para', d.toISOString());
+                        // Usamos valores por defecto si no hay datos
+                        const defaultWeather = {
+                            weatherCode: 0,
+                            maxTemp: 25,
+                            minTemp: 15,
+                            sunshineDuration: 18000, // 5 horas en segundos
+                            shortwaveRadiation: 15000 // valor estimado
+                        };
+                        weather = defaultWeather;
+                    }
+                    
+                    let {watts, amps} = calcGeneration(weather, ratedPower, totalEff);
+                    amps = (parseFloat(amps) * correction).toFixed(1);
+                    watts = Math.round(watts * correction);
+                    container.appendChild(createDayButton(d, watts, amps));
+                    createChartBar(d, parseFloat(amps), chartContainer, maxAmp); // 🔥 pasamos número
+
+                    const key = d.toISOString().split('T')[0];
+                    if (!predictionsData[key]) predictionsData[key] = {
+                        date: key, predictedWatts: watts, predictedAmps: amps, weatherData: weather,
+                        numBatteries: numBat, numPanels: numPan, systemEfficiency: sysEff, panelEfficiency: panEff
+                    };
+                }
+                saveStoredData(); updateHistoryDisplay();
+            } catch(err){ alert('Error al generar predicciones: '+err.message); }
+        }
+
+        async function fetchWeatherData(date) {
+            const dateStr = date.toISOString().split('T')[0];
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${USER_LAT}&longitude=${USER_LON}&start_date=${dateStr}&end_date=${dateStr}&daily=weathercode,temperature_2m_max,temperature_2m_min,sunshine_duration,shortwave_radiation_sum&timezone=auto`;
+            
+            try {
+                const r = await fetch(url);
+                if (!r.ok) {
+                    throw new Error(`HTTP error! status: ${r.status}`);
+                }
+                const j = await r.json();
+                
+                // Validar que los datos esperados existen
+                if (!j.daily || !j.daily.weathercode || !j.daily.temperature_2m_max || !j.daily.sunshine_duration) {
+                    throw new Error('Formato de respuesta inesperado de la API');
+                }
+                
+                return {
+                    weatherCode: j.daily.weathercode[0],
+                    maxTemp: j.daily.temperature_2m_max[0],
+                    minTemp: j.daily.temperature_2m_min[0],
+                    sunshineDuration: j.daily.sunshine_duration[0],
+                    shortwaveRadiation: j.daily.shortwave_radiation_sum[0]
+                };
+            } catch (error) {
+                console.error('Error fetching weather ', error);
+                // Devolver datos por defecto en caso de error
+                return {
+                    weatherCode: 0,
+                    maxTemp: 25,
+                    minTemp: 15,
+                    sunshineDuration: 18000,
+                    shortwaveRadiation: 15000
+                };
+            }
+        }
+
+        function calcGeneration(w, ratedPower, totalEff){
+            // Validación de datos de entrada
+            if (!w || typeof w.sunshineDuration !== 'number' || typeof w.shortwaveRadiation !== 'number') {
+                console.warn('Datos de clima inválidos para cálculo:', w);
+                // Valores por defecto para evitar errores
+                const defaultSunshine = 18000; // 5 horas en segundos
+                const defaultRadiation = 15000;
+                w = {
+                    ...w,
+                    sunshineDuration: defaultSunshine,
+                    shortwaveRadiation: defaultRadiation
+                };
+            }
+            
+            const sunHours = w.sunshineDuration / 3600;
+            const radiationFactor = w.shortwaveRadiation ? Math.min(w.shortwaveRadiation / 20, 1) : 1;
+            const iMax = (ratedPower * totalEff) / SYSTEM_VOLTAGE;
+            let ahDay = iMax * (sunHours / DIRECT_SUN_HOURS) * radiationFactor;
+            ahDay += iMax * (INDIRECT_SUN_HOURS / DIRECT_SUN_HOURS) * INDIRECT_EFFICIENCY * radiationFactor;
+            ahDay = Math.max(0, ahDay);
+            const whDay = ahDay * SYSTEM_VOLTAGE;
+            return {watts: Math.round(whDay), amps: ahDay.toFixed(1)};
+        }
+
+        function createDayButton(date, watts, amps){
+            const b=document.createElement('div'); b.className='day-button';
+            const a=parseFloat(amps);
+            b.classList.add(a<=40?'red':a<=59?'yellow':'green');
+            b.innerHTML=`
+                <div class="date">${date.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}</div>
+                <div class="amps">${amps} A</div>
+                <div class="watts">${watts} W</div>`;
+            b.onclick=()=>showDayDetails(date, watts, amps);
+            return b;
+        }
+        // 🔧 BARRAS MÁS GRANDES Y PROPORCIONALES - SOLUCIÓN DEFINITIVA
+        function createChartBar(date, amps, parent, maxAmp){
+            const a = parseFloat(amps);
+            const colorClass = a <= 40 ? 'red' : a <= 59 ? 'yellow' : 'green';
+            
+            // Análisis profundo: Calcular altura proporcional con margen mínimo
+            const maxH = 200; // Altura máxima disponible en px
+            const minHeight = 30; // Altura mínima para que las barras sean visibles
+            
+            // Cálculo de altura basado en la proporción respecto al máximo
+            let h = (a / maxAmp) * maxH;
+            
+            // Si el valor es muy pequeño, lo elevamos al menos al mínimo
+            h = Math.max(minHeight, h);
+            
+            // Debug: Mostrar valores para análisis
+            console.log(`Barra para ${date.toISOString()}: valor=${a}, max=${maxAmp}, altura=${h}px`);
+            
+            const bar = document.createElement('div');
+            bar.className = 'bar ' + colorClass;
+            bar.style.height = h + 'px';
+            bar.textContent = a + ' A'; // Mostramos el valor en la barra
+            
+            const label = document.createElement('div');
+            label.className = 'bar-label';
+            label.textContent = date.toLocaleDateString('es-ES', {day: 'numeric', month: 'short'});
+            
+            const barContainer = document.createElement('div');
+            barContainer.className = 'bar-container';
+            barContainer.style.display = 'flex';
+            barContainer.style.flexDirection = 'column';
+            barContainer.style.alignItems = 'center';
+            barContainer.style.flex = '1';
+            barContainer.style.minWidth = '45px'; // Ancho mínimo más grande para mejor visualización
+            
+            barContainer.appendChild(bar);
+            barContainer.appendChild(label);
+            
+            parent.appendChild(barContainer);
+        }
+
+        function showDayDetails(date, watts, amps){
+            currentSelectedDate=date.toISOString().split('T')[0];
+            const m=document.getElementById('modal'),c=document.getElementById('modalContent');
+            const corr = getCorrectionFactor();
+            c.innerHTML=`
+                <p><strong>Fecha:</strong> ${date.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+                <p><strong>Predicción:</strong> ${watts} W / ${amps} A</p>
+                <p><strong>Factor de corrección aplicado:</strong> ${corr.toFixed(2)}</p>
+                <p><strong>Potencia total paneles:</strong> ${document.getElementById('panels').value*60} W</p>
+                <p><strong>Baterías:</strong> ${document.getElementById('batteries').value} unidades</p>
+                ${predictionsData[currentSelectedDate]?.realAmps?
+                    `<p><strong>Amperios reales:</strong> ${predictionsData[currentSelectedDate].realAmps} A</p>`:
+                    '<p><em>No hay datos reales registrados</em></p>'}`;
+            m.style.display='block';
+        }
+        function closeModal(){document.getElementById('modal').style.display='none';}
+        function saveRealData(){
+            const ra=document.getElementById('realAmps').value;
+            if(ra&&currentSelectedDate){
+                if(!predictionsData[currentSelectedDate])predictionsData[currentSelectedDate]={};
+                predictionsData[currentSelectedDate].realAmps=parseFloat(ra);
+                saveStoredData();
+                recalculateCorrectionFactor();
+                updateHistoryDisplay();
+                closeModal();
+                document.getElementById('realAmps').value='';
+            }
+        }
+        function updateHistoryDisplay(){
+            const list=document.getElementById('historyList');
+            list.innerHTML='';
+            const sorted=Object.keys(predictionsData).sort().reverse();
+            sorted.slice(0,10).forEach(k=>{
+                const d=predictionsData[k],date=new Date(k);
+                list.insertAdjacentHTML('beforeend',`
+                    <div class="history-item">
+                        <div>
+                            <div class="history-date">${date.toLocaleDateString('es-ES')}</div>
+                            <div style="font-size:12px;color:#666">${d.numPanels} paneles, ${d.numBatteries} baterías</div>
+                        </div>
+                        <div>
+                            <div class="history-amps">${d.predictedAmps} A</div>
+                            ${d.realAmps?`<div style="font-size:12px;color:#4CAF50">Real: ${d.realAmps} A</div>`:'<div style="font-size:12px;color:#999">Sin datos reales</div>'}
+                        </div>
+                    </div>`);
+            });
+        }
+        function exportData(){
+            const blob=new Blob([JSON.stringify(predictionsData,null,2)],{type:'application/json'});
+            const a=document.createElement('a');
+            a.href=URL.createObjectURL(blob);
+            a.download=`solar_predictions_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+        window.onclick=e=>{if(e.target==document.getElementById('modal'))closeModal();};
+        loadStoredData(); updateTotalEfficiency();
+    </script>
+</body>
+</html>
+```

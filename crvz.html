@@ -1,493 +1,656 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Munich Amber Ale - Lote 54 v1</title>
-    <style>
-        :root {
-            --bg-color: #f5f5f5;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --accent-color: #78909c;
-            --border-color: #e0e0e0;
-            --shadow: 0 2px 8px rgba(0,0,0,0.1);
-            
-            /* Colores de etapas */
-            --arranque: #fff9c4;
-            --fermentacion: #ffcdd2;
-            --primaria: #ffe0b2;
-            --madura-calida: #d7ccc8;
-            --cold-crash: #bbdefb;
-            --embotellado: #e1bee7;
-            --carbonatacion: #c8e6c9;
-            --madura-botella: #bdbdbd;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%);
-            color: var(--text-color);
-            font-size: 14px;
-            line-height: 1.5;
-            padding: 10px;
-            min-height: 100vh;
-        }
-        
-        .header {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: var(--shadow);
-            text-align: center;
-            height: 25vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        .header h1 {
-            font-size: 1.4rem;
-            margin-bottom: 8px;
-            color: var(--text-color);
-        }
-        
-        .header p {
-            font-size: 1rem;
-            color: var(--accent-color);
-        }
-        
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .card-header {
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            border-bottom: 1px solid transparent;
-        }
-        
-        .card-header h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        .card-header .arrow {
-            transition: transform 0.3s ease;
-            font-size: 1.2rem;
-            color: var(--accent-color);
-        }
-        
-        .card-content {
-            padding: 0 15px;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .card.expanded .card-content {
-            padding: 15px;
-            max-height: 1000px;
-        }
-        
-        .card.expanded .card-header .arrow {
-            transform: rotate(180deg);
-        }
-        
-        .card.expanded .card-header {
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .temp-control {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: var(--shadow);
-        }
-        
-        .temp-control h2 {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .days-scroll {
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 10px;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .day-button {
-            display: inline-block;
-            width: 120px;
-            padding: 10px;
-            margin-right: 8px;
-            border-radius: 8px;
-            text-align: center;
-            border: 2px solid transparent;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            cursor: pointer;
-        }
-        
-        .day-button.current {
-            border: 2px solid var(--accent-color);
-        }
-        
-        .day-button .date {
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        
-        .day-button .stage {
-            font-size: 0.8rem;
-            margin: 3px 0;
-        }
-        
-        .day-button .temp {
-            font-size: 0.8rem;
-            color: var(--accent-color);
-        }
-        
-        /* Colores de etapas */
-        .arranque { background-color: var(--arranque); }
-        .fermentacion { background-color: var(--fermentacion); }
-        .primaria { background-color: var(--primaria); }
-        .madura-calida { background-color: var(--madura-calida); }
-        .cold-crash { background-color: var(--cold-crash); }
-        .embotellado { background-color: var(--embotellado); }
-        .carbonatacion { background-color: var(--carbonatacion); }
-        .madura-botella { background-color: var(--madura-botella); }
-        
-        /* Estilos para tablas y listas dentro de las tarjetas */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        th {
-            font-weight: 600;
-            color: var(--accent-color);
-        }
-        
-        ul {
-            padding-left: 20px;
-            margin: 10px 0;
-        }
-        
-        li {
-            margin-bottom: 8px;
-        }
-        
-        .highlight {
-            background-color: rgba(120, 144, 156, 0.1);
-            padding: 3px 6px;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#1f2937" />
+  <title>Munich Amber Ale lote 54 v1</title>
+  <style>
+    :root {
+      /* Paleta gris/azulada + acentos suaves */
+      --bg-top: #eef2f5;
+      --bg-bottom: #dbe4ea;
+      --ink: #111827;           /* Gris muy oscuro para texto principal */
+      --ink-2: #374151;         /* Gris oscuro secundario */
+      --muted: #6b7280;         /* Gris medio */
+      --card: #ffffffee;        /* Blancogris translúcido */
+      --shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --speed: 220ms;
+      --border: #e5e7eb;
+
+      /* Colores de etapas (pedidos por el usuario) */
+      --arranque: #fff9c4;     /* 🟡 Arranque limpio */
+      --vigorosa: #ffcdd2;     /* 🔴 Fermentación vigorosa */
+      --final: #ffe0b2;        /* 🟠 Final primaria + diacetilo */
+      --maduracion: #d7ccc8;   /* 🟤 Maduración cálida */
+      --cold-1: #bbdefb;       /* 🔵 Cold crash (claro) */
+      --cold-2: #0d47a1;       /* 🔵 Cold crash (oscuro) */
+      --embotellado: #e1bee7;  /* 🟣 Embotellado + priming */
+      --carb: #c8e6c9;         /* 🟢 Carbonatación en botella */
+      --mad-botella: #bdbdbd;  /* ⚫ Maduración en botella */
+      --accent: #94a3b8;       /* azul grisáceo para detalles sutiles */
+      --accent-strong: #64748b;
+
+      --min-font: 14px;        /* Tipografía mínima en móvil */
+    }
+
+    html, body { height: 100%; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--ink);
+      background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      -webkit-tap-highlight-color: transparent;
+      font-size: var(--min-font);
+    }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 10px 12px 28px; }
+
+    /* ===== Encabezado compacto (≤ 25% altura) ===== */
+    header.app-hd {
+      position: sticky; top: 0; z-index: 10;
+      background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.35));
+      backdrop-filter: saturate(120%) blur(4px);
+      border-bottom: 1px solid var(--border);
+    }
+    .hd-inner { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 4px; align-items: center; }
+    .title {
+      line-height: 1.15; margin: 0; font-size: clamp(18px, 4.2vw, 20px); font-weight: 700; color: var(--ink);
+    }
+    .subtitle { margin: 2px 0 0; font-size: clamp(13px, 3.8vw, 14px); color: var(--muted); font-weight: 500; }
+    .meta-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    .pill { font-variant-numeric: tabular-nums; padding: 3px 8px; border-radius: 999px; background: #f3f4f6; color: var(--ink-2); border: 1px solid var(--border); }
+    .btn-ghost { appearance: none; border: 1px solid var(--border); background: #f9fafb; color: var(--ink-2); padding: 7px 10px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow); }
+
+    /* ===== Tarjetas (colapsables y fija) ===== */
+    .cards { display: grid; gap: 10px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-hd {
+      display: grid; grid-template-columns: 1fr auto; align-items: center;
+      padding: 12px 14px; cursor: pointer; user-select: none;
+    }
+    .card-hd .h {
+      display: flex; align-items: baseline; gap: 8px;
+    }
+    .card-hd .h .t { font-weight: 700; font-size: 14px; color: var(--ink); }
+    .card-hd .h .s { font-size: 12px; color: var(--muted); }
+
+    .chev { width: 10px; height: 10px; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(-45deg); transition: transform var(--speed) ease; margin-left: 8px; }
+    .card.open .chev { transform: rotate(135deg); }
+
+    .card-body { block-size: auto; max-height: 0; overflow: hidden; transition: max-height var(--speed) ease, opacity var(--speed) ease; opacity: 0; padding: 0 14px; }
+    .card.open .card-body { max-height: 900px; opacity: 1; padding: 0 14px 12px; }
+
+    /* Grids internos compactos */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .field { display: grid; gap: 4px; }
+    .field label { font-size: 12px; color: var(--muted); }
+    .field input, .field textarea, .field select {
+      width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border); background: #f9fafb; color: var(--ink-2);
+      font-size: 14px; outline: none;
+    }
+    .field textarea { min-height: 76px; resize: vertical; }
+
+    /* ===== Control Diario (SIEMPRE visible) ===== */
+    .day-card .card-hd { cursor: default; }
+    .legend { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; gap: 10px; padding: 0 14px 10px; overflow-x: auto; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .sw { width: 14px; height: 10px; border-radius: 3px; display:inline-block; border: 1px solid rgba(0,0,0,0.08); }
+
+    .days-wrap { padding: 2px 6px 12px; }
+    .days {
+      display: flex; gap: 8px; overflow-x: auto; padding: 6px; scroll-snap-type: x mandatory; scroll-padding: 12px;
+      -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; border-top: 1px dashed var(--border);
+    }
+
+    .day {
+      flex: 0 0 auto; scroll-snap-align: start; min-width: 184px; max-width: 220px;
+      border: 2px solid transparent; border-radius: var(--radius-sm); padding: 8px 10px; line-height: 1.25; text-align: left; background: #f3f4f6;
+      box-shadow: 0 6px 16px rgba(2,6,23,0.04);
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease, border-color var(--speed) ease;
+      white-space: normal; word-break: keep-all;
+    }
+    .day strong { display:block; font-size: 13px; margin-bottom: 2px; color: #111827; }
+    .day .stage { display:block; font-size: 12px; color: #0f172a; font-weight: 600; }
+    .day .temp { display:block; font-size: 12px; color: #111827; }
+    .day:active { transform: scale(0.98); box-shadow: 0 4px 12px rgba(2,6,23,0.06); }
+
+    .day[data-today="true"] { border-color: var(--accent-strong); box-shadow: 0 0 0 2px rgba(100,116,139,0.15) inset, 0 8px 18px rgba(2,6,23,0.1); }
+
+    /* Etapas -> fondos */
+    .stage-arranque { background: var(--arranque); }
+    .stage-vigorosa { background: var(--vigorosa); }
+    .stage-final { background: var(--final); }
+    .stage-maduracion { background: var(--maduracion); }
+    .stage-cold { background: linear-gradient(180deg, var(--cold-1), var(--cold-2)); color: #f5faff; }
+    .stage-embotellado { background: var(--embotellado); }
+    .stage-carb { background: var(--carb); }
+    .stage-madbotella { background: linear-gradient(180deg, #eeeeee, var(--mad-botella)); }
+
+    /* ===== Dialog de edición rápida ===== */
+    dialog#editDialog {
+      border: none; border-radius: 18px; box-shadow: 0 20px 50px rgba(2,6,23,0.25);
+      padding: 12px; width: min(92vw, 420px);
+    }
+    dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); }
+    .dhd { display:flex; align-items:center; justify-content:space-between; gap:8px; padding: 2px 6px 10px; }
+    .dhd h3 { margin: 0; font-size: 15px; }
+    .dft { display:grid; gap:10px; }
+    .dlg-row { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dlg-actions { display:flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+    .btn { appearance:none; border:1px solid var(--border); padding:9px 12px; border-radius: 10px; font-weight:700; font-size: 13px; }
+    .btn.primary { background: var(--accent-strong); color: #fff; border-color: transparent; }
+
+    /* Accesibilidad táctil */
+    .touch-target { min-height: 38px; display:flex; align-items:center; }
+
+    /* Pequeños remates */
+    .muter { color: var(--muted); font-size: 12px; }
+  </style>
 </head>
 <body>
-    <!-- Encabezado superior -->
-    <div class="header">
-        <h1>Munich Amber Ale lote 54 v1</h1>
-        <p>American Amber Ale / Munich Amber Ale (BJCP 19A)</p>
-    </div>
-    
-    <!-- Tarjetas colapsables -->
-    <div class="card" id="datos-generales">
-        <div class="card-header">
-            <h2>Datos Generales</h2>
-            <span class="arrow">▼</span>
+  <div class="wrap">
+    <!-- ===== Encabezado ===== -->
+    <header class="app-hd" aria-label="Encabezado">
+      <div class="hd-inner">
+        <div>
+          <h1 class="title">Munich Amber Ale lote 54 v1</h1>
+          <p class="subtitle">American Amber Ale / Munich Amber Ale (BJCP 19A)</p>
+          <div class="meta-row">
+            <span class="pill" id="startPill">Inicio: <b>—</b></span>
+            <span class="pill" id="todayPill">Hoy: <b>—</b></span>
+          </div>
         </div>
-        <div class="card-content">
-            <table>
-                <tr>
-                    <td>Volumen</td>
-                    <td>20 L</td>
-                </tr>
-                <tr>
-                    <td>ABV</td>
-                    <td>5.8%</td>
-                </tr>
-                <tr>
-                    <td>OG</td>
-                    <td>1.058</td>
-                </tr>
-                <tr>
-                    <td>FG</td>
-                    <td>1.012</td>
-                </tr>
-                <tr>
-                    <td>IBUs</td>
-                    <td>35</td>
-                </tr>
-                <tr>
-                    <td>Color</td>
-                    <td>Ámbar (14 EBC)</td>
-                </tr>
-            </table>
+        <div>
+          <button id="btnSettings" class="btn-ghost touch-target" aria-label="Ajustes">Ajustes</button>
         </div>
-    </div>
-    
-    <div class="card" id="ingredientes">
-        <div class="card-header">
-            <h2>Ingredientes</h2>
-            <span class="arrow">▼</span>
-        </div>
-        <div class="card-content">
-            <h3>Granos</h3>
-            <table>
-                <tr>
-                    <th>Grano</th>
-                    <th>%</th>
-                    <th>EBC</th>
-                </tr>
-                <tr>
-                    <td>Malta Pale Ale</td>
-                    <td>70%</td>
-                    <td>6</td>
-                </tr>
-                <tr>
-                    <td>Malta Munich</td>
-                    <td>20%</td>
-                    <td>20</td>
-                </tr>
-                <tr>
-                    <td>Malta Crystal 60L</td>
-                    <td>5%</td>
-                    <td>120</td>
-                </tr>
-                <tr>
-                    <td>Malta Chocolate</td>
-                    <td>2%</td>
-                    <td>800</td>
-                </tr>
-                <tr>
-                    <td>Malta Carapils</td>
-                    <td>3%</td>
-                    <td>4</td>
-                </tr>
-            </table>
-            
-            <h3>Lúpulos</h3>
-            <table>
-                <tr>
-                    <th>Variedad</th>
-                    <th>Tiempo</th>
-                    <th>IBU</th>
-                </tr>
-                <tr>
-                    <td>Cascade</td>
-                    <td>60 min</td>
-                    <td>25</td>
-                </tr>
-                <tr>
-                    <td>Centennial</td>
-                    <td>15 min</td>
-                    <td>8</td>
-                </tr>
-                <tr>
-                    <td>Cascade</td>
-                    <td>0 min</td>
-                    <td>2</td>
-                </tr>
-            </table>
-            
-            <h3>Levadura</h3>
-            <ul>
-                <li>Wyeast 1056 - American Ale</li>
-            </ul>
-        </div>
-    </div>
-    
-    <div class="card" id="macarado">
-        <div class="card-header">
-            <h2>Macerado</h2>
-            <span class="arrow">▼</span>
-        </div>
-        <div class="card-content">
-            <table>
-                <tr>
-                    <th>Paso</th>
-                    <th>Temperatura</th>
-                    <th>Tiempo</th>
-                    <th>Volumen</th>
-                </tr>
-                <tr>
-                    <td>Macerado principal</td>
-                    <td>67°C</td>
-                    <td>60 min</td>
-                    <td>15 L</td>
-                </tr>
-                <tr>
-                    <td>Mash out</td>
-                    <td>76°C</td>
-                    <td>10 min</td>
-                    <td>5 L</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-    
-    <div class="card" id="notas-estilo">
-        <div class="card-header">
-            <h2>Notas de Estilo</h2>
-            <span class="arrow">▼</span>
-        </div>
-        <div class="card-content">
-            <p>Una cerveza ámbar americana equilibrada con carácter a malta y lúpulo. El perfil de malta es de medio a alto con notas caramelizadas y tostadas. El carácter del lúpulo es medio a alto con aromas y sabores cítricos y florales.</p>
-            <p><span class="highlight">OG:</span> 1.045 - 1.060</p>
-            <p><span class="highlight">FG:</span> 1.010 - 1.015</p>
-            <p><span class="highlight">IBU:</span> 25 - 40</p>
-            <p><span class="highlight">ABV:</span> 4.5% - 6.2%</p>
-            <p><span class="highlight">Color:</span> 10 - 17 EBC</p>
-        </div>
-    </div>
-    
-    <!-- Control diario de temperatura -->
-    <div class="temp-control">
-        <h2>Control Diario de Temperatura</h2>
-        <div class="days-scroll" id="days-scroll">
-            <!-- Los botones de días se generarán dinámicamente con JavaScript -->
-        </div>
-    </div>
+      </div>
+    </header>
 
-    <script>
-        // Función para expandir/colapsar tarjetas
-        document.querySelectorAll('.card-header').forEach(header => {
-            header.addEventListener('click', () => {
-                const card = header.parentElement;
-                card.classList.toggle('expanded');
-            });
+    <!-- ===== Control Diario (siempre visible) ===== -->
+    <section class="card day-card" aria-label="Control diario de temperatura">
+      <div class="card-hd" style="cursor:default">
+        <div class="h">
+          <span class="t">Control Diario de Temperatura (60 días)</span>
+          <span class="s pill" id="hoyPill">—</span>
+        </div>
+        <span class="chev" style="opacity:.35"></span>
+      </div>
+      <div class="legend" aria-label="Leyenda de etapas">
+        <div class="chip"><span class="sw" style="background:var(--arranque)"></span>Arranque limpio</div>
+        <div class="chip"><span class="sw" style="background:var(--vigorosa)"></span>Fermentación vigorosa</div>
+        <div class="chip"><span class="sw" style="background:var(--final)"></span>Final primaria + diacetilo</div>
+        <div class="chip"><span class="sw" style="background:var(--maduracion)"></span>Maduración cálida</div>
+        <div class="chip"><span class="sw" style="background:linear-gradient(180deg,var(--cold-1),var(--cold-2))"></span>Cold crash</div>
+        <div class="chip"><span class="sw" style="background:var(--embotellado)"></span>Embotellado + priming</div>
+        <div class="chip"><span class="sw" style="background:var(--carb)"></span>Carbonatación en botella</div>
+        <div class="chip"><span class="sw" style="background:linear-gradient(180deg,#eee,var(--mad-botella))"></span>Maduración en botella</div>
+      </div>
+      <div class="days-wrap">
+        <div id="days" class="days" role="listbox" aria-label="Días del proceso (desliza horizontalmente)"></div>
+      </div>
+    </section>
+
+    <!-- ===== Tarjetas colapsables (inician cerradas) ===== -->
+    <div class="cards" id="cards">
+      <!-- Datos generales -->
+      <section class="card collapsible" data-key="datos">
+        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
+          <div class="h"><span class="t">Datos Generales</span><span class="s muter">volumen, ABV, OG, FG, IBUs, color</span></div>
+          <i class="chev"></i>
+        </div>
+        <div class="card-body">
+          <div class="grid-3">
+            <div class="field"><label>Volumen (L)</label><input id="volumen" inputmode="decimal" /></div>
+            <div class="field"><label>ABV (%)</label><input id="abv" inputmode="decimal" /></div>
+            <div class="field"><label>Color (EBC)</label><input id="ebc" inputmode="decimal" /></div>
+          </div>
+          <div class="grid-3" style="margin-top:8px;">
+            <div class="field"><label>OG</label><input id="og" /></div>
+            <div class="field"><label>FG</label><input id="fg" /></div>
+            <div class="field"><label>IBUs</label><input id="ibus" inputmode="numeric" /></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ingredientes -->
+      <section class="card collapsible" data-key="ingredientes">
+        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
+          <div class="h"><span class="t">Ingredientes</span><span class="s muter">granos (%) y EBC</span></div>
+          <i class="chev"></i>
+        </div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div class="field"><label>Pilsen (%)</label><input id="gr-pilsen" inputmode="decimal" /></div>
+            <div class="field"><label>Pilsen (EBC)</label><input id="gr-pilsen-ebc" inputmode="decimal" /></div>
+            <div class="field"><label>Munich (%)</label><input id="gr-munich" inputmode="decimal" /></div>
+            <div class="field"><label>Munich (EBC)</label><input id="gr-munich-ebc" inputmode="decimal" /></div>
+            <div class="field"><label>Pale Ale (%)</label><input id="gr-pale" inputmode="decimal" /></div>
+            <div class="field"><label>Pale Ale (EBC)</label><input id="gr-pale-ebc" inputmode="decimal" /></div>
+            <div class="field"><label>Cara 20 MD (%)</label><input id="gr-cara" inputmode="decimal" /></div>
+            <div class="field"><label>Cara 20 MD (EBC)</label><input id="gr-cara-ebc" inputmode="decimal" /></div>
+            <div class="field"><label>Malta chocolate (%)</label><input id="gr-choco" inputmode="decimal" /></div>
+            <div class="field"><label>Malta chocolate (EBC)</label><input id="gr-choco-ebc" inputmode="decimal" /></div>
+            <div class="field"><label>Levadura</label><input id="levadura" /></div>
+            <div class="field"><label>Observaciones</label><textarea id="ing-notas" placeholder="Notas rápidas…"></textarea></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lúpulos -->
+      <section class="card collapsible" data-key="lupulos">
+        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
+          <div class="h"><span class="t">Lúpulos</span><span class="s muter">variedades, tiempos e IBUs</span></div>
+          <i class="chev"></i>
+        </div>
+        <div class="card-body">
+          <div class="grid-3">
+            <div class="field"><label>Variedad #1</label><input id="hop1" placeholder="Simcoe…" /></div>
+            <div class="field"><label>Tiempo (min)</label><input id="hop1t" inputmode="numeric" /></div>
+            <div class="field"><label>IBUs</label><input id="hop1i" inputmode="decimal" /></div>
+            <div class="field"><label>Variedad #2</label><input id="hop2" placeholder="Cascade…" /></div>
+            <div class="field"><label>Tiempo (min)</label><input id="hop2t" inputmode="numeric" /></div>
+            <div class="field"><label>IBUs</label><input id="hop2i" inputmode="decimal" /></div>
+            <div class="field"><label>Variedad #3</label><input id="hop3" /></div>
+            <div class="field"><label>Tiempo (min)</label><input id="hop3t" inputmode="numeric" /></div>
+            <div class="field"><label>IBUs</label><input id="hop3i" inputmode="decimal" /></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Macerado -->
+      <section class="card collapsible" data-key="mash">
+        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
+          <div class="h"><span class="t">Macerado</span><span class="s muter">pasos, temperaturas y agua</span></div>
+          <i class="chev"></i>
+        </div>
+        <div class="card-body">
+          <div class="grid-3">
+            <div class="field"><label>Paso 1 (°C)</label><input id="m1t" inputmode="decimal" /></div>
+            <div class="field"><label>Agua 1 (L)</label><input id="m1w" inputmode="decimal" /></div>
+            <div class="field"><label>Tiempo 1 (min)</label><input id="m1d" inputmode="numeric" /></div>
+            <div class="field"><label>Paso 2 (°C)</label><input id="m2t" inputmode="decimal" /></div>
+            <div class="field"><label>Agua 2 (L)</label><input id="m2w" inputmode="decimal" /></div>
+            <div class="field"><label>Tiempo 2 (min)</label><input id="m2d" inputmode="numeric" /></div>
+            <div class="field"><label>Mash out (°C)</label><input id="m3t" inputmode="decimal" /></div>
+            <div class="field"><label>Lavado (L)</label><input id="m3w" inputmode="decimal" /></div>
+            <div class="field"><label>Tiempo total (min)</label><input id="mtd" inputmode="numeric" /></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notas de estilo -->
+      <section class="card collapsible" data-key="styleNotes">
+        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
+          <div class="h"><span class="t">Notas de estilo</span><span class="s muter">BJCP y objetivos sensoriales</span></div>
+          <i class="chev"></i>
+        </div>
+        <div class="card-body">
+          <div class="field"><label>Notas</label><textarea id="style-notes" placeholder="Aroma a caramelo moderado, amargor medio, perfil limpio…"></textarea></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===== Editor de día ===== -->
+  <dialog id="editDialog">
+    <form method="dialog" id="editForm">
+      <div class="dhd">
+        <h3 id="editTitle">Editar día</h3>
+        <button class="btn" value="cancel" formnovalidate>Cancelar</button>
+      </div>
+      <div class="dft">
+        <div class="field">
+          <label>Etapa</label>
+          <select id="stageSel">
+            <option value="arranque">Arranque limpio</option>
+            <option value="vigorosa">Fermentación vigorosa</option>
+            <option value="final">Final primaria + descanso diacetilo</option>
+            <option value="maduracion">Maduración cálida</option>
+            <option value="cold">Cold crash</option>
+            <option value="embotellado">Embotellado + priming</option>
+            <option value="carb">Carbonatación en botella</option>
+            <option value="madbotella">Maduración en botella</option>
+          </select>
+        </div>
+        <div class="dlg-row">
+          <div class="field"><label>T° alta (°C)</label><input id="tHi" inputmode="decimal" /></div>
+          <div class="field"><label>T° baja (°C)</label><input id="tLo" inputmode="decimal" /></div>
+        </div>
+        <div class="muter">Sugerencia: toca el día en la lista para editarlo. Los cambios se guardan localmente.</div>
+        <div class="dlg-actions">
+          <button class="btn" value="cancel" formnovalidate>Cerrar</button>
+          <button class="btn primary" id="saveDay" value="default">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Ajustes rápidos ===== -->
+  <dialog id="settingsDialog">
+    <form method="dialog" id="settingsForm">
+      <div class="dhd">
+        <h3>Ajustes del lote</h3>
+        <button class="btn" value="cancel" formnovalidate>Cerrar</button>
+      </div>
+      <div class="dft">
+        <div class="field">
+          <label>Fecha de inicio</label>
+          <input type="date" id="startDateInp" />
+        </div>
+        <div class="muter">Este archivo funciona sin internet. Puedes exportar o borrar los datos locales cuando desees.</div>
+        <div class="dlg-actions">
+          <button class="btn" id="btnReset" type="button">Borrar datos</button>
+          <button class="btn primary" id="btnSaveSettings" value="default">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    /* ==========================================================
+       App Lote 54 v1 — HTML único, sin dependencias externas
+       - Optimizado para móvil (Android)
+       - Todo persiste en localStorage (clave: lote54v1_r1)
+       - Barra diaria deslizable: 60 días, editable por toque
+       ========================================================== */
+
+    const STORAGE_KEY = 'lote54v1_r1';
+
+    const STAGES = {
+      arranque: { label: 'Arranque limpio', cls: 'stage-arranque', def: { hi: 19, lo: 18 } },
+      vigorosa: { label: 'Fermentación vigorosa', cls: 'stage-vigorosa', def: { hi: 20, lo: 19 } },
+      final: { label: 'Final primaria + descanso diacetilo', cls: 'stage-final', def: { hi: 19, lo: 18 } },
+      maduracion: { label: 'Maduración cálida', cls: 'stage-maduracion', def: { hi: 20, lo: 18 } },
+      cold: { label: 'Cold crash', cls: 'stage-cold', def: { hi: 4, lo: 3 } },
+      embotellado: { label: 'Embotellado + priming', cls: 'stage-embotellado', def: { hi: 20, lo: 20 } },
+      carb: { label: 'Carbonatación en botella', cls: 'stage-carb', def: { hi: 20, lo: 20 } },
+      madbotella: { label: 'Maduración en botella', cls: 'stage-madbotella', def: { hi: 18, lo: 16 } },
+    };
+
+    // Programa por defecto (60 días). Incluye el detalle que nos pediste: Cold crash inicia en el día 13.
+    const DEFAULT_SCHEDULE = [
+      // 1-2 Arranque limpio
+      ...Array(2).fill('arranque'),
+      // 3-5 Vigorosa
+      ...Array(3).fill('vigorosa'),
+      // 6-10 Final primaria + diacetilo
+      ...Array(5).fill('final'),
+      // 11-12 Maduración cálida
+      ...Array(2).fill('maduracion'),
+      // 13-14 Cold crash
+      ...Array(2).fill('cold'),
+      // 15 Embotellado + priming
+      'embotellado',
+      // 16-26 Carbonatación en botella (11 días)
+      ...Array(11).fill('carb'),
+      // 27-60 Maduración en botella (34 días)
+      ...Array(34).fill('madbotella'),
+    ];
+
+    // Garantiza longitud 60
+    while (DEFAULT_SCHEDULE.length < 60) DEFAULT_SCHEDULE.push('madbotella');
+    if (DEFAULT_SCHEDULE.length > 60) DEFAULT_SCHEDULE.length = 60;
+
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    const state = loadState();
+
+    init();
+
+    /* ===== Inicialización general ===== */
+    function init() {
+      // Header pills
+      updateHeaderPills();
+
+      // Construir cards colapsables
+      $$('.collapsible').forEach(card => {
+        const hd = card.querySelector('.card-hd');
+        hd.addEventListener('click', () => toggleCard(card));
+        hd.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCard(card); }});
+      });
+
+      // Construir días
+      buildDays();
+
+      // Scroll al día de hoy
+      scrollToToday();
+
+      // Inputs -> persistencia
+      bindFormPersistence();
+
+      // Ajustes
+      $('#btnSettings').addEventListener('click', openSettings);
+      $('#btnSaveSettings').addEventListener('click', saveSettings);
+      $('#btnReset').addEventListener('click', resetAll);
+
+      // Dialog day editor
+      $('#saveDay').addEventListener('click', saveDayEdit);
+    }
+
+    function toggleCard(card) {
+      const open = card.classList.toggle('open');
+      card.querySelector('.card-hd').setAttribute('aria-expanded', String(open));
+    }
+
+    /* ===== Estado y persistencia ===== */
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      let st = null;
+      if (raw) {
+        try { st = JSON.parse(raw); } catch {}
+      }
+      if (!st) {
+        // Estado por defecto
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const days = Array.from({ length: 60 }, (_, i) => {
+          const key = DEFAULT_SCHEDULE[i] || 'madbotella';
+          const def = STAGES[key].def;
+          return { stage: key, hi: def.hi, lo: def.lo };
         });
-        
-        // Función para generar los botones de días
-        function generateDayButtons() {
-            const daysScroll = document.getElementById('days-scroll');
-            const today = new Date();
-            const startDate = new Date(today);
-            startDate.setDate(today.getDate() - 10); // Comenzamos 10 días atrás para mostrar progreso
-            
-            const stages = [
-                { name: "Arranque limpio", class: "arranque", duration: 3 },
-                { name: "Fermentación vigorosa", class: "fermentacion", duration: 5 },
-                { name: "Final primaria + descanso diacetilo", class: "primaria", duration: 7 },
-                { name: "Maduración cálida", class: "madura-calida", duration: 14 },
-                { name: "Cold crash", class: "cold-crash", duration: 7 },
-                { name: "Embotellado + priming", class: "embotellado", duration: 1 },
-                { name: "Carbonatación en botella", class: "carbonatacion", duration: 14 },
-                { name: "Maduración en botella", class: "madura-botella", duration: 9 }
-            ];
-            
-            let dayCount = 0;
-            let stageIndex = 0;
-            let stageDay = 0;
-            
-            for (let i = 0; i < 60; i++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + i);
-                
-                // Determinar la etapa actual
-                const currentStage = stages[stageIndex];
-                
-                // Crear el botón del día
-                const dayButton = document.createElement('div');
-                dayButton.className = `day-button ${currentStage.class}`;
-                
-                // Formatear fecha
-                const day = currentDate.getDate();
-                const month = currentDate.toLocaleString('es', { month: 'short' });
-                
-                // Determinar temperatura según etapa
-                let tempRange = "";
-                switch(currentStage.class) {
-                    case "arranque":
-                        tempRange = "19°C – 18°C";
-                        break;
-                    case "fermentacion":
-                        tempRange = "20°C – 22°C";
-                        break;
-                    case "primaria":
-                        tempRange = "18°C – 19°C";
-                        break;
-                    case "madura-calida":
-                        tempRange = "16°C – 18°C";
-                        break;
-                    case "cold-crash":
-                        tempRange = "4°C – 2°C";
-                        break;
-                    case "embotellado":
-                        tempRange = "20°C";
-                        break;
-                    case "carbonatacion":
-                        tempRange = "20°C – 22°C";
-                        break;
-                    case "madura-botella":
-                        tempRange = "12°C – 14°C";
-                        break;
-                }
-                
-                dayButton.innerHTML = `
-                    <div class="date">${day.toString().padStart(2, '0')}/${month} (Día ${i+1})</div>
-                    <div class="stage">${currentStage.name}</div>
-                    <div class="temp">${tempRange}</div>
-                `;
-                
-                // Marcar el día actual
-                if (currentDate.toDateString() === today.toDateString()) {
-                    dayButton.classList.add('current');
-                }
-                
-                daysScroll.appendChild(dayButton);
-                
-                // Avanzar a la siguiente etapa si es necesario
-                stageDay++;
-                if (stageDay >= currentStage.duration) {
-                    stageIndex++;
-                    stageDay = 0;
-                }
-                
-                // Si hemos terminado todas las etapas, repetir la última
-                if (stageIndex >= stages.length) {
-                    stageIndex = stages.length - 1;
-                }
-            }
-            
-            // Desplazar al día actual
-            const currentDayButton = document.querySelector('.day-button.current');
-            if (currentDayButton) {
-                currentDayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
-        }
-        
-        // Inicializar la aplicación
-        document.addEventListener('DOMContentLoaded', () => {
-            generateDayButtons();
-        });
-    </script>
+        st = {
+          startDate: startDate.toISOString().slice(0,10),
+          days,
+          fields: {}
+        };
+      }
+      // Defaults reales – se aplican solo si falta el valor o está vacío
+      const defaults = {
+        volumen: "14",
+        abv: "6.07",
+        ebc: "30.3",
+        og: "1.061",
+        fg: "1.015",
+        ibus: "19.7",
+        "gr-pilsen": "38.4",
+        "gr-pilsen-ebc": "3.9",
+        "gr-munich": "38.4",
+        "gr-munich-ebc": "17.7",
+        "gr-pale": "15.3",
+        "gr-pale-ebc": "5.9",
+        "gr-cara": "6.4",
+        "gr-cara-ebc": "39.4",
+        "gr-choco": "1.5",
+        "gr-choco-ebc": "886.5",
+        "ing-notas": "Pesos de grano (g):\n- Pilsen: 1500 g\n- Munich: 1500 g\n- Pale: 600 g\n- Caramelo/Crystal: 250 g\n- Chocolate: 60 g\nTotal: 3910 g.",
+        hop1: "Simcoe",
+        hop1t: "50",
+        hop1i: "19.7",
+        hop2: "Cascade",
+        hop2t: "0",
+        hop2i: "0",
+        m1t: "66.7",
+        m1w: "12.70",
+        m1d: "60",
+        m2t: "67.8",
+        m2w: "8.79",
+        m2d: "20",
+        m3t: "",
+        m3w: "",
+        mtd: "80",
+        "style-notes": "Perfil: maltoso, con notas de caramelo y leve tostado.\nColor: ámbar profundo (30.3 EBC).\nAmargor: moderado bajo (19.7 IBUs, por debajo del rango clásico 25–40, lo que lo hace más dulce).\nAroma: el Cascade a 0 min da toques cítricos/florales frescos.\nAlcohol: 6.07 %, en el límite superior del estilo."
+      };
+      st.fields = st.fields || {};
+      for (const [k, v] of Object.entries(defaults)) {
+        if (st.fields[k] == null || st.fields[k] === '') st.fields[k] = v;
+      }
+      return st;
+    }
+
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    /* ===== Días ===== */
+    function buildDays() {
+      const box = $('#days');
+      box.innerHTML = '';
+      const start = new Date(state.startDate + 'T00:00:00');
+      const today = new Date();
+      const idxToday = clamp( Math.floor((stripTime(today) - stripTime(start)) / 86400000), -999, 999 );
+
+      for (let i=0; i<60; i++) {
+        const info = state.days[i];
+        const date = addDays(start, i);
+        const isToday = i === idxToday;
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = `day ${classForStage(info.stage)}`;
+        el.setAttribute('role','option');
+        el.dataset.index = i;
+        el.dataset.today = isToday ? 'true' : 'false';
+
+        el.innerHTML = `
+          <strong>${formatDateES(date)} (Día ${i+1})</strong>
+          <span class="stage">${STAGES[info.stage].label}</span>
+          <span class="temp">${fmtTemp(info.hi)} – ${fmtTemp(info.lo)}</span>
+        `;
+
+        el.addEventListener('click', () => openDayEditor(i));
+        box.appendChild(el);
+      }
+
+      // Legend pill: hoy
+      const t = today;
+      $('#hoyPill').textContent = `Hoy: ${formatDateES(t)}`;
+    }
+
+    function classForStage(key) { return STAGES[key]?.cls || STAGES.madbotella.cls; }
+
+    function openDayEditor(index) {
+      const d = state.days[index];
+      $('#editTitle').textContent = `Editar — Día ${index+1}`;
+      $('#stageSel').value = d.stage;
+      $('#tHi').value = d.hi;
+      $('#tLo').value = d.lo;
+      $('#editDialog').dataset.index = index;
+      showDialog('#editDialog');
+    }
+
+    function saveDayEdit(ev) {
+      const idx = Number($('#editDialog').dataset.index || -1);
+      if (idx < 0) return;
+      const stage = $('#stageSel').value;
+      const hi = num($('#tHi').value, STAGES[stage].def.hi);
+      const lo = num($('#tLo').value, STAGES[stage].def.lo);
+      state.days[idx] = { stage, hi, lo };
+      saveState();
+      buildDays();
+    }
+
+    function scrollToToday() {
+      const el = $('.day[data-today="true"]');
+      if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    /* ===== Encabezado ===== */
+    function updateHeaderPills() {
+      const start = new Date(state.startDate + 'T00:00:00');
+      $('#startPill').innerHTML = `Inicio: <b>${formatDateES(start)}</b>`;
+      $('#todayPill').innerHTML = `Hoy: <b>${formatDateES(new Date())}</b>`;
+    }
+
+    /* ===== Ajustes ===== */
+    function openSettings() {
+      $('#startDateInp').value = state.startDate;
+      showDialog('#settingsDialog');
+    }
+
+    function saveSettings() {
+      const v = $('#startDateInp').value;
+      if (v) state.startDate = v;
+      saveState();
+      updateHeaderPills();
+      buildDays();
+    }
+
+    function resetAll() {
+      if (!confirm('Esto borrará los datos locales del lote. ¿Continuar?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      const fresh = loadState();
+      Object.assign(state, fresh);
+      saveState();
+      updateHeaderPills();
+      buildDays();
+    }
+
+    /* ===== Persistencia de formularios de las tarjetas ===== */
+    function bindFormPersistence() {
+      const ids = [
+        'volumen','abv','ebc','og','fg','ibus',
+        'gr-pilsen','gr-pilsen-ebc','gr-munich','gr-munich-ebc','gr-pale','gr-pale-ebc','gr-cara','gr-cara-ebc','gr-choco','gr-choco-ebc','levadura','ing-notas',
+        'hop1','hop1t','hop1i','hop2','hop2t','hop2i','hop3','hop3t','hop3i',
+        'm1t','m1w','m1d','m2t','m2w','m2d','m3t','m3w','mtd',
+        'style-notes'
+      ];
+
+      // cargar
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const val = state.fields?.[id];
+        if (val !== undefined) el.value = val;
+        el.addEventListener('input', debounce(() => {
+          state.fields[id] = el.value;
+          saveState();
+        }, 200));
+      });
+    }
+
+    /* ===== Utilidades ===== */
+    function num(v, d=0) { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : d; }
+    function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+    function stripTime(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function fmtTemp(v) { return `${num(v).toString().replace('.', ',')}°C`; }
+
+    function formatDateES(d) {
+      const dd = d.getDate().toString().padStart(2,'0');
+      const m = d.getMonth();
+      const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      return `${dd}/${meses[m]}`;
+    }
+
+    function showDialog(sel) {
+      const dlg = $(sel);
+      if (!dlg) return;
+      if (typeof dlg.showModal === 'function') dlg.showModal();
+      else alert('Tu navegador no soporta diálogos.');
+    }
+
+    function debounce(fn, ms=200){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,a), ms); }; }
+  </script>
 </body>
 </html>

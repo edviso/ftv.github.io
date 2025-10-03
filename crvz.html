@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Munich Amber Ale - Lote 54 v1</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --accent-color: #78909c;
+            --border-color: #e0e0e0;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+            
+            /* Colores de etapas */
+            --arranque: #fff9c4;
+            --fermentacion: #ffcdd2;
+            --primaria: #ffe0b2;
+            --madura-calida: #d7ccc8;
+            --cold-crash: #bbdefb;
+            --embotellado: #e1bee7;
+            --carbonatacion: #c8e6c9;
+            --madura-botella: #bdbdbd;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%);
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 10px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            height: 25vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .header h1 {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+        
+        .header p {
+            font-size: 1rem;
+            color: var(--accent-color);
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+        }
+        
+        .card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .card-header .arrow {
+            transition: transform 0.3s ease;
+            font-size: 1.2rem;
+            color: var(--accent-color);
+        }
+        
+        .card-content {
+            padding: 0 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card.expanded .card-content {
+            padding: 15px;
+            max-height: 1000px;
+        }
+        
+        .card.expanded .card-header .arrow {
+            transform: rotate(180deg);
+        }
+        
+        .card.expanded .card-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .temp-control {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+        }
+        
+        .temp-control h2 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .days-scroll {
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .day-button {
+            display: inline-block;
+            width: 120px;
+            padding: 10px;
+            margin-right: 8px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid transparent;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        
+        .day-button.current {
+            border: 2px solid var(--accent-color);
+        }
+        
+        .day-button .date {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .day-button .stage {
+            font-size: 0.8rem;
+            margin: 3px 0;
+        }
+        
+        .day-button .temp {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+        }
+        
+        /* Colores de etapas */
+        .arranque { background-color: var(--arranque); }
+        .fermentacion { background-color: var(--fermentacion); }
+        .primaria { background-color: var(--primaria); }
+        .madura-calida { background-color: var(--madura-calida); }
+        .cold-crash { background-color: var(--cold-crash); }
+        .embotellado { background-color: var(--embotellado); }
+        .carbonatacion { background-color: var(--carbonatacion); }
+        .madura-botella { background-color: var(--madura-botella); }
+        
+        /* Estilos para tablas y listas dentro de las tarjetas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+        
+        ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .highlight {
+            background-color: rgba(120, 144, 156, 0.1);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Encabezado superior -->
+    <div class="header">
+        <h1>Munich Amber Ale lote 54 v1</h1>
+        <p>American Amber Ale / Munich Amber Ale (BJCP 19A)</p>
+    </div>
+    
+    <!-- Tarjetas colapsables -->
+    <div class="card" id="datos-generales">
+        <div class="card-header">
+            <h2>Datos Generales</h2>
+            <span class="arrow">▼</span>
+        </div>
+        <div class="card-content">
+            <table>
+                <tr>
+                    <td>Volumen</td>
+                    <td>20 L</td>
+                </tr>
+                <tr>
+                    <td>ABV</td>
+                    <td>5.8%</td>
+                </tr>
+                <tr>
+                    <td>OG</td>
+                    <td>1.058</td>
+                </tr>
+                <tr>
+                    <td>FG</td>
+                    <td>1.012</td>
+                </tr>
+                <tr>
+                    <td>IBUs</td>
+                    <td>35</td>
+                </tr>
+                <tr>
+                    <td>Color</td>
+                    <td>Ámbar (14 EBC)</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card" id="ingredientes">
+        <div class="card-header">
+            <h2>Ingredientes</h2>
+            <span class="arrow">▼</span>
+        </div>
+        <div class="card-content">
+            <h3>Granos</h3>
+            <table>
+                <tr>
+                    <th>Grano</th>
+                    <th>%</th>
+                    <th>EBC</th>
+                </tr>
+                <tr>
+                    <td>Malta Pale Ale</td>
+                    <td>70%</td>
+                    <td>6</td>
+                </tr>
+                <tr>
+                    <td>Malta Munich</td>
+                    <td>20%</td>
+                    <td>20</td>
+                </tr>
+                <tr>
+                    <td>Malta Crystal 60L</td>
+                    <td>5%</td>
+                    <td>120</td>
+                </tr>
+                <tr>
+                    <td>Malta Chocolate</td>
+                    <td>2%</td>
+                    <td>800</td>
+                </tr>
+                <tr>
+                    <td>Malta Carapils</td>
+                    <td>3%</td>
+                    <td>4</td>
+                </tr>
+            </table>
+            
+            <h3>Lúpulos</h3>
+            <table>
+                <tr>
+                    <th>Variedad</th>
+                    <th>Tiempo</th>
+                    <th>IBU</th>
+                </tr>
+                <tr>
+                    <td>Cascade</td>
+                    <td>60 min</td>
+                    <td>25</td>
+                </tr>
+                <tr>
+                    <td>Centennial</td>
+                    <td>15 min</td>
+                    <td>8</td>
+                </tr>
+                <tr>
+                    <td>Cascade</td>
+                    <td>0 min</td>
+                    <td>2</td>
+                </tr>
+            </table>
+            
+            <h3>Levadura</h3>
+            <ul>
+                <li>Wyeast 1056 - American Ale</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="card" id="macarado">
+        <div class="card-header">
+            <h2>Macerado</h2>
+            <span class="arrow">▼</span>
+        </div>
+        <div class="card-content">
+            <table>
+                <tr>
+                    <th>Paso</th>
+                    <th>Temperatura</th>
+                    <th>Tiempo</th>
+                    <th>Volumen</th>
+                </tr>
+                <tr>
+                    <td>Macerado principal</td>
+                    <td>67°C</td>
+                    <td>60 min</td>
+                    <td>15 L</td>
+                </tr>
+                <tr>
+                    <td>Mash out</td>
+                    <td>76°C</td>
+                    <td>10 min</td>
+                    <td>5 L</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card" id="notas-estilo">
+        <div class="card-header">
+            <h2>Notas de Estilo</h2>
+            <span class="arrow">▼</span>
+        </div>
+        <div class="card-content">
+            <p>Una cerveza ámbar americana equilibrada con carácter a malta y lúpulo. El perfil de malta es de medio a alto con notas caramelizadas y tostadas. El carácter del lúpulo es medio a alto con aromas y sabores cítricos y florales.</p>
+            <p><span class="highlight">OG:</span> 1.045 - 1.060</p>
+            <p><span class="highlight">FG:</span> 1.010 - 1.015</p>
+            <p><span class="highlight">IBU:</span> 25 - 40</p>
+            <p><span class="highlight">ABV:</span> 4.5% - 6.2%</p>
+            <p><span class="highlight">Color:</span> 10 - 17 EBC</p>
+        </div>
+    </div>
+    
+    <!-- Control diario de temperatura -->
+    <div class="temp-control">
+        <h2>Control Diario de Temperatura</h2>
+        <div class="days-scroll" id="days-scroll">
+            <!-- Los botones de días se generarán dinámicamente con JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Función para expandir/colapsar tarjetas
+        document.querySelectorAll('.card-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const card = header.parentElement;
+                card.classList.toggle('expanded');
+            });
+        });
+        
+        // Función para generar los botones de días
+        function generateDayButtons() {
+            const daysScroll = document.getElementById('days-scroll');
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - 10); // Comenzamos 10 días atrás para mostrar progreso
+            
+            const stages = [
+                { name: "Arranque limpio", class: "arranque", duration: 3 },
+                { name: "Fermentación vigorosa", class: "fermentacion", duration: 5 },
+                { name: "Final primaria + descanso diacetilo", class: "primaria", duration: 7 },
+                { name: "Maduración cálida", class: "madura-calida", duration: 14 },
+                { name: "Cold crash", class: "cold-crash", duration: 7 },
+                { name: "Embotellado + priming", class: "embotellado", duration: 1 },
+                { name: "Carbonatación en botella", class: "carbonatacion", duration: 14 },
+                { name: "Maduración en botella", class: "madura-botella", duration: 9 }
+            ];
+            
+            let dayCount = 0;
+            let stageIndex = 0;
+            let stageDay = 0;
+            
+            for (let i = 0; i < 60; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                // Determinar la etapa actual
+                const currentStage = stages[stageIndex];
+                
+                // Crear el botón del día
+                const dayButton = document.createElement('div');
+                dayButton.className = `day-button ${currentStage.class}`;
+                
+                // Formatear fecha
+                const day = currentDate.getDate();
+                const month = currentDate.toLocaleString('es', { month: 'short' });
+                
+                // Determinar temperatura según etapa
+                let tempRange = "";
+                switch(currentStage.class) {
+                    case "arranque":
+                        tempRange = "19°C – 18°C";
+                        break;
+                    case "fermentacion":
+                        tempRange = "20°C – 22°C";
+                        break;
+                    case "primaria":
+                        tempRange = "18°C – 19°C";
+                        break;
+                    case "madura-calida":
+                        tempRange = "16°C – 18°C";
+                        break;
+                    case "cold-crash":
+                        tempRange = "4°C – 2°C";
+                        break;
+                    case "embotellado":
+                        tempRange = "20°C";
+                        break;
+                    case "carbonatacion":
+                        tempRange = "20°C – 22°C";
+                        break;
+                    case "madura-botella":
+                        tempRange = "12°C – 14°C";
+                        break;
+                }
+                
+                dayButton.innerHTML = `
+                    <div class="date">${day.toString().padStart(2, '0')}/${month} (Día ${i+1})</div>
+                    <div class="stage">${currentStage.name}</div>
+                    <div class="temp">${tempRange}</div>
+                `;
+                
+                // Marcar el día actual
+                if (currentDate.toDateString() === today.toDateString()) {
+                    dayButton.classList.add('current');
+                }
+                
+                daysScroll.appendChild(dayButton);
+                
+                // Avanzar a la siguiente etapa si es necesario
+                stageDay++;
+                if (stageDay >= currentStage.duration) {
+                    stageIndex++;
+                    stageDay = 0;
+                }
+                
+                // Si hemos terminado todas las etapas, repetir la última
+                if (stageIndex >= stages.length) {
+                    stageIndex = stages.length - 1;
+                }
+            }
+            
+            // Desplazar al día actual
+            const currentDayButton = document.querySelector('.day-button.current');
+            if (currentDayButton) {
+                currentDayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+        
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', () => {
+            generateDayButtons();
+        });
+    </script>
+</body>
+</html>

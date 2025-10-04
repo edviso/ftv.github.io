@@ -301,6 +301,24 @@
           <div class="field"><label>Notas</label><textarea id="style-notes" placeholder="Aroma a caramelo moderado, amargor medio, perfil limpio…"></textarea></div>
         </div>
       </section>
+
+      <!-- NUEVA: Notas -->
+      <section class="card collapsible" data-key="notas">
+        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
+          <div class="h"><span class="t">Notas</span><span class="s muter">apuntes libres</span></div>
+          <i class="chev"></i>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label>Notas del lote</label>
+            <textarea id="notas" placeholder="Escribe aquí tus notas..."></textarea>
+          </div>
+          <div class="dlg-actions" style="justify-content:flex-end; padding-top:6px;">
+            <button class="btn" id="btnSaveNotes" type="button">Guardar notas</button>
+          </div>
+        </div>
+      </section>
+
     </div>
   </div>
 
@@ -380,7 +398,7 @@
       madbotella: { label: 'Maduración en botella', cls: 'stage-madbotella', def: { hi: 18, lo: 16 } },
     };
 
-    // Programa por defecto (60 días). Incluye el detalle que nos pediste: Cold crash inicia en el día 13.
+    // Programa por defecto (60 días). Incluye el detalle: Cold crash inicia en el día 13.
     const DEFAULT_SCHEDULE = [
       // 1-2 Arranque limpio
       ...Array(2).fill('arranque'),
@@ -439,6 +457,20 @@
 
       // Dialog day editor
       $('#saveDay').addEventListener('click', saveDayEdit);
+
+      // Guardar notas manualmente
+      const btnNotes = $('#btnSaveNotes');
+      if (btnNotes) {
+        btnNotes.addEventListener('click', () => {
+          const el = $('#notas');
+          if (!state.fields) state.fields = {};
+          state.fields['notas'] = el.value;
+          saveState();
+          const old = btnNotes.textContent;
+          btnNotes.textContent = 'Guardado ✓';
+          setTimeout(() => btnNotes.textContent = old, 1200);
+        });
+      }
     }
 
     function toggleCard(card) {
@@ -502,7 +534,8 @@
         m3t: "",
         m3w: "",
         mtd: "80",
-        "style-notes": "Perfil: maltoso, con notas de caramelo y leve tostado.\nColor: ámbar profundo (30.3 EBC).\nAmargor: moderado bajo (19.7 IBUs, por debajo del rango clásico 25–40, lo que lo hace más dulce).\nAroma: el Cascade a 0 min da toques cítricos/florales frescos.\nAlcohol: 6.07 %, en el límite superior del estilo."
+        "style-notes": "Perfil: maltoso, con notas de caramelo y leve tostado.\nColor: ámbar profundo (30.3 EBC).\nAmargor: moderado bajo (19.7 IBUs, por debajo del rango clásico 25–40, lo que lo hace más dulce).\nAroma: el Cascade a 0 min da toques cítricos/florales frescos.\nAlcohol: 6.07 %, en el límite superior del estilo.",
+        "notas": ""
       };
       st.fields = st.fields || {};
       for (const [k, v] of Object.entries(defaults)) {
@@ -613,7 +646,8 @@
         'gr-pilsen','gr-pilsen-ebc','gr-munich','gr-munich-ebc','gr-pale','gr-pale-ebc','gr-cara','gr-cara-ebc','gr-choco','gr-choco-ebc','levadura','ing-notas',
         'hop1','hop1t','hop1i','hop2','hop2t','hop2i','hop3','hop3t','hop3i',
         'm1t','m1w','m1d','m2t','m2w','m2d','m3t','m3w','mtd',
-        'style-notes'
+        'style-notes',
+        'notas' // NUEVO: campo de Notas
       ];
 
       // cargar

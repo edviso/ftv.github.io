@@ -1,757 +1,934 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="theme-color" content="#1f2937" />
-  <title>Munich Amber Ale lote 54 v1</title>
-  <style>
-    :root {
-      /* Paleta gris/azulada + acentos suaves */
-      --bg-top: #eef2f5;
-      --bg-bottom: #dbe4ea;
-      --ink: #111827;           /* Gris muy oscuro para texto principal */
-      --ink-2: #374151;         /* Gris oscuro secundario */
-      --muted: #6b7280;         /* Gris medio */
-      --card: #ffffffee;        /* Blancogris translúcido */
-      --shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
-      --radius: 16px;
-      --radius-sm: 12px;
-      --speed: 220ms;
-      --border: #e5e7eb;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento Lote 54</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      /* Colores de etapas (pedidos por el usuario) */
-      --arranque: #fff9c4;     /* 🟡 Arranque limpio */
-      --vigorosa: #ffcdd2;     /* 🔴 Fermentación vigorosa */
-      --final: #ffe0b2;        /* 🟠 Final primaria + diacetilo */
-      --maduracion: #d7ccc8;   /* 🟤 Maduración cálida */
-      --cold-1: #bbdefb;       /* 🔵 Cold crash (claro) */
-      --cold-2: #0d47a1;       /* 🔵 Cold crash (oscuro) */
-      --embotellado: #e1bee7;  /* 🟣 Embotellado + priming */
-      --carb: #c8e6c9;         /* 🟢 Carbonatación en botella */
-      --mad-botella: #bdbdbd;  /* ⚫ Maduración en botella */
-      --accent: #94a3b8;       /* azul grisáceo para detalles sutiles */
-      --accent-strong: #64748b;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+            color: #212121;
+            padding-bottom: 20px;
+            min-height: 100vh;
+        }
 
-      --min-font: 14px;        /* Tipografía mínima en móvil */
-    }
+        .header {
+            background: linear-gradient(135deg, #424242 0%, #616161 100%);
+            color: #fafafa;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
 
-    html, body { height: 100%; }
-    html { scroll-behavior: smooth; }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
 
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color: var(--ink);
-      background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
-      -webkit-tap-highlight-color: transparent;
-      font-size: var(--min-font);
-    }
+        .header p {
+            font-size: 13px;
+            color: #e0e0e0;
+            font-weight: 400;
+        }
 
-    .wrap { max-width: 720px; margin: 0 auto; padding: 10px 12px 28px; }
+        .container {
+            padding: 12px;
+            max-width: 100%;
+        }
 
-    /* ===== Encabezado compacto (≤ 25% altura) ===== */
-    header.app-hd {
-      position: sticky; top: 0; z-index: 10;
-      background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.35));
-      backdrop-filter: saturate(120%) blur(4px);
-      border-bottom: 1px solid var(--border);
-    }
-    .hd-inner { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 4px; align-items: center; }
-    .title {
-      line-height: 1.15; margin: 0; font-size: clamp(18px, 4.2vw, 20px); font-weight: 700; color: var(--ink);
-    }
-    .subtitle { margin: 2px 0 0; font-size: clamp(13px, 3.8vw, 14px); color: var(--muted); font-weight: 500; }
-    .meta-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-    .pill { font-variant-numeric: tabular-nums; padding: 3px 8px; border-radius: 999px; background: #f3f4f6; color: var(--ink-2); border: 1px solid var(--border); }
-    .btn-ghost { appearance: none; border: 1px solid var(--border); background: #f9fafb; color: var(--ink-2); padding: 7px 10px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow); }
+        .card {
+            background: #fafafa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
 
-    /* ===== Tarjetas (colapsables y fija) ===== */
-    .cards { display: grid; gap: 10px; }
+        .card-header {
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+            user-select: none;
+        }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .card-hd {
-      display: grid; grid-template-columns: 1fr auto; align-items: center;
-      padding: 12px 14px; cursor: pointer; user-select: none;
-    }
-    .card-hd .h {
-      display: flex; align-items: baseline; gap: 8px;
-    }
-    .card-hd .h .t { font-weight: 700; font-size: 14px; color: var(--ink); }
-    .card-hd .h .s { font-size: 12px; color: var(--muted); }
+        .card-header:active {
+            background: #eeeeee;
+        }
 
-    .chev { width: 10px; height: 10px; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(-45deg); transition: transform var(--speed) ease; margin-left: 8px; }
-    .card.open .chev { transform: rotate(135deg); }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #424242;
+        }
 
-    .card-body { block-size: auto; max-height: 0; overflow: hidden; transition: max-height var(--speed) ease, opacity var(--speed) ease; opacity: 0; padding: 0 14px; }
-    .card.open .card-body { max-height: 900px; opacity: 1; padding: 0 14px 12px; }
+        .arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #757575;
+            transition: transform 0.3s ease;
+        }
 
-    /* Grids internos compactos */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .field { display: grid; gap: 4px; }
-    .field label { font-size: 12px; color: var(--muted); }
-    .field input, .field textarea, .field select {
-      width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border); background: #f9fafb; color: var(--ink-2);
-      font-size: 14px; outline: none;
-    }
-    .field textarea { min-height: 76px; resize: vertical; }
+        .arrow.open {
+            transform: rotate(180deg);
+        }
 
-    /* ===== Control Diario (SIEMPRE visible) ===== */
-    .day-card .card-hd { cursor: default; }
-    .legend { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; gap: 10px; padding: 0 14px 10px; overflow-x: auto; }
-    .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .sw { width: 14px; height: 10px; border-radius: 3px; display:inline-block; border: 1px solid rgba(0,0,0,0.08); }
+        .card-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
 
-    .days-wrap { padding: 2px 6px 12px; }
-    .days {
-      display: flex; gap: 8px; overflow-x: auto; padding: 6px; scroll-snap-type: x mandatory; scroll-padding: 12px;
-      -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; border-top: 1px dashed var(--border);
-    }
+        .card-content.open {
+            max-height: 2000px;
+        }
 
-    .day {
-      flex: 0 0 auto; scroll-snap-align: start; min-width: 184px; max-width: 220px;
-      border: 2px solid transparent; border-radius: var(--radius-sm); padding: 8px 10px; line-height: 1.25; text-align: left; background: #f3f4f6;
-      box-shadow: 0 6px 16px rgba(2,6,23,0.04);
-      transition: transform var(--speed) ease, box-shadow var(--speed) ease, border-color var(--speed) ease;
-      white-space: normal; word-break: keep-all;
-    }
-    .day strong { display:block; font-size: 13px; margin-bottom: 2px; color: #111827; }
-    .day .stage { display:block; font-size: 12px; color: #0f172a; font-weight: 600; }
-    .day .temp { display:block; font-size: 12px; color: #111827; }
-    .day:active { transform: scale(0.98); box-shadow: 0 4px 12px rgba(2,6,23,0.06); }
+        .card-body {
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
 
-    .day[data-today="true"] { border-color: var(--accent-strong); box-shadow: 0 0 0 2px rgba(100,116,139,0.15) inset, 0 8px 18px rgba(2,6,23,0.1); }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
 
-    /* Etapas -> fondos */
-    .stage-arranque { background: var(--arranque); }
-    .stage-vigorosa { background: var(--vigorosa); }
-    .stage-final { background: var(--final); }
-    .stage-maduracion { background: var(--maduracion); }
-    .stage-cold { background: linear-gradient(180deg, var(--cold-1), var(--cold-2)); color: #f5faff; }
-    .stage-embotellado { background: var(--embotellado); }
-    .stage-carb { background: var(--carb); }
-    .stage-madbotella { background: linear-gradient(180deg, #eeeeee, var(--mad-botella)); }
+        .data-row:last-child {
+            border-bottom: none;
+        }
 
-    /* ===== Dialog de edición rápida ===== */
-    dialog#editDialog {
-      border: none; border-radius: 18px; box-shadow: 0 20px 50px rgba(2,6,23,0.25);
-      padding: 12px; width: min(92vw, 420px);
-    }
-    dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); }
-    .dhd { display:flex; align-items:center; justify-content:space-between; gap:8px; padding: 2px 6px 10px; }
-    .dhd h3 { margin: 0; font-size: 15px; }
-    .dft { display:grid; gap:10px; }
-    .dlg-row { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .dlg-actions { display:flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
-    .btn { appearance:none; border:1px solid var(--border); padding:9px 12px; border-radius: 10px; font-weight:700; font-size: 13px; }
-    .btn.primary { background: var(--accent-strong); color: #fff; border-color: transparent; }
-    .btn.sm { padding: 6px 8px; font-size: 12px; }
+        .data-label {
+            font-weight: 500;
+            color: #616161;
+        }
 
-    /* Accesibilidad táctil */
-    .touch-target { min-height: 38px; display:flex; align-items:center; }
+        .data-value {
+            font-weight: 400;
+            color: #212121;
+            text-align: right;
+        }
 
-    /* Pequeños remates */
-    .muter { color: var(--muted); font-size: 12px; }
-  </style>
+        .ingredient-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .ingredient-item:last-child {
+            border-bottom: none;
+        }
+
+        .ingredient-name {
+            font-weight: 500;
+            color: #424242;
+            margin-bottom: 3px;
+        }
+
+        .ingredient-details {
+            font-size: 13px;
+            color: #757575;
+        }
+
+        .temp-control {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .temp-control h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #424242;
+            margin-bottom: 12px;
+        }
+
+        .days-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding: 4px 0;
+        }
+
+        .days-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .days-scroll::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .days-scroll::-webkit-scrollbar-thumb {
+            background: #757575;
+            border-radius: 4px;
+        }
+
+        .days-scroll::-webkit-scrollbar-thumb:hover {
+            background: #616161;
+        }
+
+        .progress-info {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #616161;
+            font-weight: 500;
+        }
+
+        .progress-percentage {
+            color: #424242;
+            font-weight: 600;
+        }
+
+        .day-btn {
+            display: inline-block;
+            padding: 10px 12px;
+            margin-right: 8px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            font-size: 13px;
+            line-height: 1.4;
+            text-align: center;
+            min-width: 140px;
+            vertical-align: top;
+            white-space: normal;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .day-btn:active {
+            transform: scale(0.97);
+        }
+
+        .day-btn.current {
+            border-color: #424242;
+            border-width: 3px;
+            box-shadow: 0 0 0 2px rgba(66, 66, 66, 0.2);
+        }
+
+        .day-date {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .day-stage {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 2px;
+            font-size: 12px;
+        }
+
+        .day-temp {
+            font-weight: 400;
+            display: block;
+            font-size: 12px;
+        }
+
+        .stage-arranque { background: #fff9c4; color: #6d6d00; }
+        .stage-vigorosa { background: #ffcdd2; color: #8b0000; }
+        .stage-final { background: #ffe0b2; color: #8b4500; }
+        .stage-maduracion { background: #d7ccc8; color: #4e3629; }
+        .stage-cold1 { background: #e3f2fd; color: #0d47a1; }
+        .stage-cold2 { background: #bbdefb; color: #1565c0; }
+        .stage-cold3 { background: #90caf9; color: #1976d2; }
+        .stage-embotellado { background: #e1bee7; color: #4a148c; }
+        .stage-carbonatacion { background: #c8e6c9; color: #1b5e20; }
+        .stage-maduracion-botella { background: #bdbdbd; color: #212121; }
+
+        .color-legend {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .legend-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #616161;
+            margin-bottom: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            margin-right: 8px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .legend-label {
+            color: #424242;
+            line-height: 1.3;
+        }
+
+        .style-notes {
+            font-size: 14px;
+            color: #424424;
+            line-height: 1.7;
+        }
+
+        .style-notes strong {
+            color: #212121;
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
+
+        .style-notes strong:first-child {
+            margin-top: 0;
+        }
+
+        .cards-carousel {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .cards-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            gap: 12px;
+            padding: 0 12px;
+            scrollbar-width: none;
+        }
+
+        .cards-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cards-scroll .card {
+            min-width: calc(100vw - 24px);
+            scroll-snap-align: start;
+            margin-bottom: 0;
+        }
+
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 0;
+        }
+
+        .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #bdbdbd;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .indicator-dot.active {
+            background: #616161;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .observations-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.6;
+            resize: vertical;
+            background: #ffffff;
+            color: #212121;
+        }
+
+        .observations-textarea:focus {
+            outline: none;
+            border-color: #757575;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 90px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-save {
+            background: #616161;
+            color: #ffffff;
+        }
+
+        .btn-save:hover {
+            background: #757575;
+        }
+
+        .btn-export {
+            background: #e0e0e0;
+            color: #424242;
+        }
+
+        .btn-export:hover {
+            background: #bdbdbd;
+        }
+
+        .btn-import {
+            background: #e0e0e0;
+            color: #424242;
+        }
+
+        .btn-import:hover {
+            background: #bdbdbd;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .status-message {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #c8e6c9;
+            color: #1b5e20;
+        }
+
+        .status-message.error {
+            background: #ffcdd2;
+            color: #8b0000;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- ===== Encabezado ===== -->
-    <header class="app-hd" aria-label="Encabezado">
-      <div class="hd-inner">
-        <div>
-          <h1 class="title">Munich Amber Ale lote 54 v1</h1>
-          <p class="subtitle">American Amber Ale / Munich Amber Ale (BJCP 19A)</p>
-          <div class="meta-row">
-            <span class="pill" id="startPill">Inicio: <b>—</b></span>
-            <span class="pill" id="todayPill">Hoy: <b>—</b></span>
-          </div>
-        </div>
-        <div>
-          <button id="btnSettings" class="btn-ghost touch-target" aria-label="Ajustes">Ajustes</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- ===== Control Diario (siempre visible) ===== -->
-    <section class="card day-card" aria-label="Control diario de temperatura">
-      <div class="card-hd" style="cursor:default">
-        <div class="h">
-          <span class="t">Control Diario de Temperatura (60 días)</span>
-          <span class="s pill" id="hoyPill">—</span>
-        </div>
-        <span class="chev" style="opacity:.35"></span>
-      </div>
-      <div class="legend" aria-label="Leyenda de etapas">
-        <div class="chip"><span class="sw" style="background:var(--arranque)"></span>Arranque limpio</div>
-        <div class="chip"><span class="sw" style="background:var(--vigorosa)"></span>Fermentación vigorosa</div>
-        <div class="chip"><span class="sw" style="background:var(--final)"></span>Final primaria + diacetilo</div>
-        <div class="chip"><span class="sw" style="background:var(--maduracion)"></span>Maduración cálida</div>
-        <div class="chip"><span class="sw" style="background:linear-gradient(180deg,var(--cold-1),var(--cold-2))"></span>Cold crash</div>
-        <div class="chip"><span class="sw" style="background:var(--embotellado)"></span>Embotellado + priming</div>
-        <div class="chip"><span class="sw" style="background:var(--carb)"></span>Carbonatación en botella</div>
-        <div class="chip"><span class="sw" style="background:linear-gradient(180deg,#eee,var(--mad-botella))"></span>Maduración en botella</div>
-      </div>
-      <div class="days-wrap">
-        <div id="days" class="days" role="listbox" aria-label="Días del proceso (desliza horizontalmente)"></div>
-      </div>
-    </section>
-
-    <!-- ===== Tarjetas colapsables (inician cerradas) ===== -->
-    <div class="cards" id="cards">
-      <!-- Datos generales -->
-      <section class="card collapsible" data-key="datos">
-        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
-          <div class="h"><span class="t">Datos Generales</span><span class="s muter">volumen, ABV, OG, FG, IBUs, color</span></div>
-          <i class="chev"></i>
-        </div>
-        <div class="card-body">
-          <div class="grid-3">
-            <div class="field"><label>Volumen (L)</label><input id="volumen" inputmode="decimal" /></div>
-            <div class="field"><label>ABV (%)</label><input id="abv" inputmode="decimal" /></div>
-            <div class="field"><label>Color (EBC)</label><input id="ebc" inputmode="decimal" /></div>
-          </div>
-          <div class="grid-3" style="margin-top:8px;">
-            <div class="field"><label>OG</label><input id="og" /></div>
-            <div class="field"><label>FG</label><input id="fg" /></div>
-            <div class="field"><label>IBUs</label><input id="ibus" inputmode="numeric" /></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Ingredientes -->
-      <section class="card collapsible" data-key="ingredientes">
-        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
-          <div class="h"><span class="t">Ingredientes</span><span class="s muter">granos (%) y EBC</span></div>
-          <i class="chev"></i>
-        </div>
-        <div class="card-body">
-          <div class="grid-2">
-            <div class="field"><label>Pilsen (%)</label><input id="gr-pilsen" inputmode="decimal" /></div>
-            <div class="field"><label>Pilsen (EBC)</label><input id="gr-pilsen-ebc" inputmode="decimal" /></div>
-            <div class="field"><label>Munich (%)</label><input id="gr-munich" inputmode="decimal" /></div>
-            <div class="field"><label>Munich (EBC)</label><input id="gr-munich-ebc" inputmode="decimal" /></div>
-            <div class="field"><label>Pale Ale (%)</label><input id="gr-pale" inputmode="decimal" /></div>
-            <div class="field"><label>Pale Ale (EBC)</label><input id="gr-pale-ebc" inputmode="decimal" /></div>
-            <div class="field"><label>Cara 20 MD (%)</label><input id="gr-cara" inputmode="decimal" /></div>
-            <div class="field"><label>Cara 20 MD (EBC)</label><input id="gr-cara-ebc" inputmode="decimal" /></div>
-            <div class="field"><label>Malta chocolate (%)</label><input id="gr-choco" inputmode="decimal" /></div>
-            <div class="field"><label>Malta chocolate (EBC)</label><input id="gr-choco-ebc" inputmode="decimal" /></div>
-            <div class="field"><label>Levadura</label><input id="levadura" /></div>
-            <div class="field"><label>Observaciones</label><textarea id="ing-notas" placeholder="Notas rápidas…"></textarea></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Lúpulos -->
-      <section class="card collapsible" data-key="lupulos">
-        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
-          <div class="h"><span class="t">Lúpulos</span><span class="s muter">variedades, tiempos e IBUs</span></div>
-          <i class="chev"></i>
-        </div>
-        <div class="card-body">
-          <div class="grid-3">
-            <div class="field"><label>Variedad #1</label><input id="hop1" placeholder="Simcoe…" /></div>
-            <div class="field"><label>Tiempo (min)</label><input id="hop1t" inputmode="numeric" /></div>
-            <div class="field"><label>IBUs</label><input id="hop1i" inputmode="decimal" /></div>
-            <div class="field"><label>Variedad #2</label><input id="hop2" placeholder="Cascade…" /></div>
-            <div class="field"><label>Tiempo (min)</label><input id="hop2t" inputmode="numeric" /></div>
-            <div class="field"><label>IBUs</label><input id="hop2i" inputmode="decimal" /></div>
-            <div class="field"><label>Variedad #3</label><input id="hop3" /></div>
-            <div class="field"><label>Tiempo (min)</label><input id="hop3t" inputmode="numeric" /></div>
-            <div class="field"><label>IBUs</label><input id="hop3i" inputmode="decimal" /></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Macerado -->
-      <section class="card collapsible" data-key="mash">
-        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
-          <div class="h"><span class="t">Macerado</span><span class="s muter">pasos, temperaturas y agua</span></div>
-          <i class="chev"></i>
-        </div>
-        <div class="card-body">
-          <div class="grid-3">
-            <div class="field"><label>Paso 1 (°C)</label><input id="m1t" inputmode="decimal" /></div>
-            <div class="field"><label>Agua 1 (L)</label><input id="m1w" inputmode="decimal" /></div>
-            <div class="field"><label>Tiempo 1 (min)</label><input id="m1d" inputmode="numeric" /></div>
-            <div class="field"><label>Paso 2 (°C)</label><input id="m2t" inputmode="decimal" /></div>
-            <div class="field"><label>Agua 2 (L)</label><input id="m2w" inputmode="decimal" /></div>
-            <div class="field"><label>Tiempo 2 (min)</label><input id="m2d" inputmode="numeric" /></div>
-            <div class="field"><label>Mash out (°C)</label><input id="m3t" inputmode="decimal" /></div>
-            <div class="field"><label>Lavado (L)</label><input id="m3w" inputmode="decimal" /></div>
-            <div class="field"><label>Tiempo total (min)</label><input id="mtd" inputmode="numeric" /></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Notas de estilo -->
-      <section class="card collapsible" data-key="styleNotes">
-        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
-          <div class="h"><span class="t">Notas de estilo</span><span class="s muter">BJCP y objetivos sensoriales</span></div>
-          <i class="chev"></i>
-        </div>
-        <div class="card-body">
-          <div class="field"><label>Notas</label><textarea id="style-notes" placeholder="Aroma a caramelo moderado, amargor medio, perfil limpio…"></textarea></div>
-        </div>
-      </section>
-
-      <!-- NUEVA: Notas -->
-      <section class="card collapsible" data-key="notas">
-        <div class="card-hd" role="button" tabindex="0" aria-expanded="false">
-          <div class="h"><span class="t">Notas</span><span class="s muter">apuntes libres</span></div>
-          <i class="chev"></i>
-        </div>
-        <div class="card-body">
-          <div class="field">
-            <label>Notas del lote</label>
-            <textarea id="notas" placeholder="Escribe aquí tus notas..."></textarea>
-          </div>
-          <input id="importFile" type="file" accept="application/json" style="display:none" />
-          <div class="dlg-actions" style="justify-content:flex-end; padding-top:6px;">
-            <button class="btn sm" id="btnExportJson" type="button" title="Exportar JSON de notas">ExJson</button>
-            <button class="btn sm" id="btnImportJson" type="button" title="Importar JSON de notas">ImJson</button>
-            <button class="btn" id="btnSaveNotes" type="button">Guardar notas</button>
-          </div>
-        </div>
-      </section>
-
+    <div class="header">
+        <h1>Munich Amber Ale / lote 54 v1</h1>
+        <p>American Amber Ale / Munich Amber Ale (BJCP 19A)</p>
     </div>
-  </div>
 
-  <!-- ===== Editor de día ===== -->
-  <dialog id="editDialog">
-    <form method="dialog" id="editForm">
-      <div class="dhd">
-        <h3 id="editTitle">Editar día</h3>
-        <button class="btn" value="cancel" formnovalidate>Cancelar</button>
-      </div>
-      <div class="dft">
-        <div class="field">
-          <label>Etapa</label>
-          <select id="stageSel">
-            <option value="arranque">Arranque limpio</option>
-            <option value="vigorosa">Fermentación vigorosa</option>
-            <option value="final">Final primaria + descanso diacetilo</option>
-            <option value="maduracion">Maduración cálida</option>
-            <option value="cold">Cold crash</option>
-            <option value="embotellado">Embotellado + priming</option>
-            <option value="carb">Carbonatación en botella</option>
-            <option value="madbotella">Maduración en botella</option>
-          </select>
+    <div class="container">
+        <div class="temp-control">
+            <h3>Control Diario de Temperatura</h3>
+            <div class="days-scroll" id="daysScroll"></div>
+            <div class="progress-info">
+                Avance del proceso: <span class="progress-percentage" id="progressPercentage">0%</span>
+            </div>
+            
+            <div class="color-legend">
+                <div class="legend-title">Referencia de etapas:</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fff9c4;"></div>
+                    <div class="legend-label">Arranque limpio (Días 1-3)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffcdd2;"></div>
+                    <div class="legend-label">Fermentación vigorosa (Días 4-7)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffe0b2;"></div>
+                    <div class="legend-label">Final primaria + descanso diacetilo (Días 8-14)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #d7ccc8;"></div>
+                    <div class="legend-label">Maduración cálida (Días 15-21)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(to right, #e3f2fd, #90caf9);"></div>
+                    <div class="legend-label">Cold crash (Días 22-28)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e1bee7;"></div>
+                    <div class="legend-label">Embotellado + priming (Días 29-30)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #c8e6c9;"></div>
+                    <div class="legend-label">Carbonatación en botella (Días 31-44)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #bdbdbd;"></div>
+                    <div class="legend-label">Maduración en botella (Días 45-60)</div>
+                </div>
+            </div>
         </div>
-        <div class="dlg-row">
-          <div class="field"><label>T° alta (°C)</label><input id="tHi" inputmode="decimal" /></div>
-          <div class="field"><label>T° baja (°C)</label><input id="tLo" inputmode="decimal" /></div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Observaciones</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <textarea 
+                        id="observationsText" 
+                        class="observations-textarea" 
+                        placeholder="Escribe aquí tus observaciones sobre el proceso de elaboración..."
+                    ></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-save" onclick="saveObservations()">Guardar</button>
+                        <button class="btn btn-export" onclick="exportJSON()">ExJson</button>
+                        <button class="btn btn-import" onclick="document.getElementById('fileInput').click()">ImJson</button>
+                    </div>
+                    
+                    <input type="file" id="fileInput" class="file-input" accept=".json" onchange="importJSON(event)">
+                    
+                    <div id="statusMessage" class="status-message"></div>
+                </div>
+            </div>
         </div>
-        <div class="muter">Sugerencia: toca el día en la lista para editarlo. Los cambios se guardan localmente.</div>
-        <div class="dlg-actions">
-          <button class="btn" value="cancel" formnovalidate>Cerrar</button>
-          <button class="btn primary" id="saveDay" value="default">Guardar</button>
+
+        <div class="cards-carousel">
+            <div class="cards-scroll" id="cardsScroll">
+                <div class="card">
+                    <div class="card-header" onclick="toggleCard(this)">
+                        <span class="card-title">Datos Generales</span>
+                        <div class="arrow"></div>
+                    </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="data-row">
+                        <span class="data-label">Fecha de elaboración</span>
+                        <span class="data-value">02 de octubre de 2025</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Método de elaboración</span>
+                        <span class="data-value">Hybrid Mash</span>
+                    </div>
+                    <div class="data-row" style="padding-top: 12px; margin-top: 8px; border-top: 1px solid #e0e0e0;">
+                        <span class="data-label">Volumen final</span>
+                        <span class="data-value">14 L</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">ABV (alcohol)</span>
+                        <span class="data-value">6.07%</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">OG (densidad inicial)</span>
+                        <span class="data-value">1.061 SG</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">FG (densidad final)</span>
+                        <span class="data-value">1.015 SG</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">IBUs (amargor)</span>
+                        <span class="data-value">19.7 IBU</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Color</span>
+                        <span class="data-value">30.3 EBC (Ámbar oscuro)</span>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </form>
-  </dialog>
 
-  <!-- ===== Ajustes rápidos ===== -->
-  <dialog id="settingsDialog">
-    <form method="dialog" id="settingsForm">
-      <div class="dhd">
-        <h3>Ajustes del lote</h3>
-        <button class="btn" value="cancel" formnovalidate>Cerrar</button>
-      </div>
-      <div class="dft">
-        <div class="field">
-          <label>Fecha de inicio</label>
-          <input type="date" id="startDateInp" />
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Ingredientes</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Pilsner (2 Row) Bel</div>
+                        <div class="ingredient-details">38.4% • 1500 g • 3.9 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Munich Malt</div>
+                        <div class="ingredient-details">38.4% • 1500 g • 17.7 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Pale Malt (2 Row) Bel</div>
+                        <div class="ingredient-details">15.3% • 600 g • 5.9 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Caramel / Crystal Malt</div>
+                        <div class="ingredient-details">6.4% • 250 g • 39.4 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Chocolate Malt</div>
+                        <div class="ingredient-details">1.5% • 60 g • 886.5 EBC</div>
+                    </div>
+                    <div class="ingredient-item" style="border-bottom: none; padding-top: 12px; margin-top: 8px; border-top: 2px solid #e0e0e0;">
+                        <div class="ingredient-name" style="color: #616161;">Peso total de granos</div>
+                        <div class="ingredient-details" style="font-weight: 600; color: #212121;">3910 g</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="muter">Este archivo funciona sin internet. Puedes exportar o borrar los datos locales cuando desees.</div>
-        <div class="dlg-actions">
-          <button class="btn" id="btnReset" type="button">Borrar datos</button>
-          <button class="btn primary" id="btnSaveSettings" value="default">Guardar</button>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Lúpulos</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Simcoe</div>
+                        <div class="ingredient-details">9 g • Hervor 50 min • 19.7 IBU</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Cascade</div>
+                        <div class="ingredient-details">30 g • Adición a 0 min (whirlpool) • 0 IBU</div>
+                    </div>
+                    <div class="ingredient-item" style="border-bottom: none;">
+                        <div class="ingredient-details" style="color: #757575; font-style: italic; margin-top: 4px;">
+                            El Cascade aporta aroma cítrico/floral fresco
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </form>
-  </dialog>
 
-  <script>
-    /* ==========================================================
-       App Lote 54 v1 — HTML único, sin dependencias externas
-       - Optimizado para móvil (Android)
-       - Todo persiste en localStorage (clave: lote54v1_r1)
-       - Barra diaria deslizable: 60 días, editable por toque
-       ========================================================== */
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Macerado</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Mash In</div>
+                        <div class="ingredient-details">66.7°C • 60 min</div>
+                        <div class="ingredient-details" style="margin-top: 4px;">Añadir 12.70 L de agua a 71.9°C</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Lavado (Sparge)</div>
+                        <div class="ingredient-details">67.8°C • 20 min</div>
+                        <div class="ingredient-details" style="margin-top: 4px;">Añadir 8.79 L de agua a 69.6°C</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    const STORAGE_KEY = 'lote54v1_r1';
-    const LOT_NAME = 'Munich Amber Ale lote 54 v1';
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Notas de Estilo</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="style-notes">
+                        <strong>Perfil general:</strong>
+                        Cerveza maltosa con notas de caramelo y leve tostado. Color ámbar profundo (30.3 EBC) con un amargor moderado bajo (19.7 IBUs), lo que la hace más dulce que el rango clásico del estilo (25-40 IBUs).
 
-    const STAGES = {
-      arranque: { label: 'Arranque limpio', cls: 'stage-arranque', def: { hi: 19, lo: 18 } },
-      vigorosa: { label: 'Fermentación vigorosa', cls: 'stage-vigorosa', def: { hi: 20, lo: 19 } },
-      final: { label: 'Final primaria + descanso diacetilo', cls: 'stage-final', def: { hi: 19, lo: 18 } },
-      maduracion: { label: 'Maduración cálida', cls: 'stage-maduracion', def: { hi: 20, lo: 18 } },
-      cold: { label: 'Cold crash', cls: 'stage-cold', def: { hi: 4, lo: 3 } },
-      embotellado: { label: 'Embotellado + priming', cls: 'stage-embotellado', def: { hi: 20, lo: 20 } },
-      carb: { label: 'Carbonatación en botella', cls: 'stage-carb', def: { hi: 20, lo: 20 } },
-      madbotella: { label: 'Maduración en botella', cls: 'stage-madbotella', def: { hi: 18, lo: 16 } },
-    };
+                        <strong>Alcohol:</strong>
+                        6.07%, en el límite superior del estilo American Amber Ale.
 
-    // Programa por defecto (60 días). Incluye el detalle: Cold crash inicia en el día 13.
-    const DEFAULT_SCHEDULE = [
-      // 1-2 Arranque limpio
-      ...Array(2).fill('arranque'),
-      // 3-5 Vigorosa
-      ...Array(3).fill('vigorosa'),
-      // 6-10 Final primaria + diacetilo
-      ...Array(5).fill('final'),
-      // 11-12 Maduración cálida
-      ...Array(2).fill('maduracion'),
-      // 13-14 Cold crash
-      ...Array(2).fill('cold'),
-      // 15 Embotellado + priming
-      'embotellado',
-      // 16-26 Carbonatación en botella (11 días)
-      ...Array(11).fill('carb'),
-      // 27-60 Maduración en botella (34 días)
-      ...Array(34).fill('madbotella'),
-    ];
+                        <strong>Aroma:</strong>
+                        El lúpulo Cascade añadido a 0 min (whirlpool) proporciona toques cítricos y florales frescos, complementando el perfil maltoso sin dominar.
 
-    // Garantiza longitud 60
-    while (DEFAULT_SCHEDULE.length < 60) DEFAULT_SCHEDULE.push('madbotella');
-    if (DEFAULT_SCHEDULE.length > 60) DEFAULT_SCHEDULE.length = 60;
+                        <strong>Carácter maltoso:</strong>
+                        Predomina la malta Munich (38.4%) junto con Pilsner, creando una base rica. El Crystal Malt aporta dulzor a caramelo, mientras que el Chocolate Malt añade sutiles notas tostadas y complejidad al color.
 
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
+                        <strong>Balance:</strong>
+                        Ligeramente desbalanceado hacia lo maltoso debido al bajo amargor, resultando en una cerveza más dulce y reconfortante, ideal para quienes prefieren perfiles menos amargos.
+                    </div>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <div class="carousel-indicators" id="carouselIndicators"></div>
+        </div>
+    </div>
 
-    const state = loadState();
+    <script>
+        const days = [
+            {date: '02/oct', day: 1, stage: 'Arranque limpio', temp: '19°C – 18°C', class: 'stage-arranque'},
+            {date: '03/oct', day: 2, stage: 'Arranque limpio', temp: '19°C – 18°C', class: 'stage-arranque'},
+            {date: '04/oct', day: 3, stage: 'Fermentación vigorosa', temp: '20°C – 19°C', class: 'stage-vigorosa'},
+            {date: '05/oct', day: 4, stage: 'Fermentación vigorosa', temp: '20°C – 19°C', class: 'stage-vigorosa'},
+            {date: '06/oct', day: 5, stage: 'Fermentación vigorosa', temp: '20°C – 19°C', class: 'stage-vigorosa'},
+            {date: '07/oct', day: 6, stage: 'Final primaria + descanso diacetilo', temp: '21°C – 20°C', class: 'stage-final'},
+            {date: '08/oct', day: 7, stage: 'Final primaria + descanso diacetilo', temp: '21°C – 20°C', class: 'stage-final'},
+            {date: '09/oct', day: 8, stage: 'Final primaria + descanso diacetilo', temp: '21°C – 20°C', class: 'stage-final'},
+            {date: '10/oct', day: 9, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '11/oct', day: 10, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '12/oct', day: 11, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '13/oct', day: 12, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '14/oct', day: 13, stage: 'Cold crash inicio', temp: '11°C – 9°C', class: 'stage-cold1'},
+            {date: '15/oct', day: 14, stage: 'Cold crash medio', temp: '6°C – 4°C', class: 'stage-cold2'},
+            {date: '16/oct', day: 15, stage: 'Cold crash final', temp: '4°C – 2°C', class: 'stage-cold3'},
+            {date: '17/oct', day: 16, stage: 'Cold crash final', temp: '4°C – 2°C', class: 'stage-cold3'},
+            {date: '18/oct', day: 17, stage: 'Cold crash final', temp: '4°C – 2°C', class: 'stage-cold3'},
+            {date: '19/oct', day: 18, stage: 'Embotellado + priming', temp: '22°C – 20°C', class: 'stage-embotellado'},
+            {date: '20/oct', day: 19, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '21/oct', day: 20, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '22/oct', day: 21, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '23/oct', day: 22, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '24/oct', day: 23, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '25/oct', day: 24, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '26/oct', day: 25, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '27/oct', day: 26, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '28/oct', day: 27, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '29/oct', day: 28, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '30/oct', day: 29, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '31/oct', day: 30, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '01/nov', day: 31, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '02/nov', day: 32, stage: 'Carbonatación en botella (lista)', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '03/nov', day: 33, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '04/nov', day: 34, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '05/nov', day: 35, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '06/nov', day: 36, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '07/nov', day: 37, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '08/nov', day: 38, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '09/nov', day: 39, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '10/nov', day: 40, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '11/nov', day: 41, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '12/nov', day: 42, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '13/nov', day: 43, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '14/nov', day: 44, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '15/nov', day: 45, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '16/nov', day: 46, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '17/nov', day: 47, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '18/nov', day: 48, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '19/nov', day: 49, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '20/nov', day: 50, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '21/nov', day: 51, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '22/nov', day: 52, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '23/nov', day: 53, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '24/nov', day: 54, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '25/nov', day: 55, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '26/nov', day: 56, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '27/nov', day: 57, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '28/nov', day: 58, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '29/nov', day: 59, stage: 'Maduración en botella', temp: '14°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '30/nov', day: 60, stage: 'Maduración en botella (final)', temp: '14°C – 12°C', class: 'stage-maduracion-botella'}
+        ];
 
-    init();
-
-    /* ===== Inicialización general ===== */
-    function init() {
-      // Header pills
-      updateHeaderPills();
-
-      // Construir cards colapsables
-      $$('.collapsible').forEach(card => {
-        const hd = card.querySelector('.card-hd');
-        hd.addEventListener('click', () => toggleCard(card));
-        hd.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCard(card); }});
-      });
-
-      // Construir días
-      buildDays();
-
-      // Scroll al día de hoy
-      scrollToToday();
-
-      // Inputs -> persistencia
-      bindFormPersistence();
-
-      // Ajustes
-      $('#btnSettings').addEventListener('click', openSettings);
-      $('#btnSaveSettings').addEventListener('click', saveSettings);
-      $('#btnReset').addEventListener('click', resetAll);
-
-      // Dialog day editor
-      $('#saveDay').addEventListener('click', saveDayEdit);
-
-      // Guardar notas manualmente
-      const btnNotes = $('#btnSaveNotes');
-      if (btnNotes) {
-        btnNotes.addEventListener('click', () => {
-          const el = $('#notas');
-          if (!state.fields) state.fields = {};
-          state.fields['notas'] = el.value;
-          saveState();
-          flash(btnNotes, 'Guardado ✓');
-        });
-      }
-
-      // Exportar/Importar JSON
-      const btnEx = $('#btnExportJson');
-      const btnIm = $('#btnImportJson');
-      const fileIm = $('#importFile');
-      if (btnEx) btnEx.addEventListener('click', exportNotesJson);
-      if (btnIm && fileIm) {
-        btnIm.addEventListener('click', () => fileIm.click());
-        fileIm.addEventListener('change', () => {
-          const f = fileIm.files && fileIm.files[0];
-          if (f) importNotesJson(f, btnIm);
-          fileIm.value = '';
-        });
-      }
-    }
-
-    function toggleCard(card) {
-      const open = card.classList.toggle('open');
-      card.querySelector('.card-hd').setAttribute('aria-expanded', String(open));
-    }
-
-    /* ===== Estado y persistencia ===== */
-    function loadState() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      let st = null;
-      if (raw) {
-        try { st = JSON.parse(raw); } catch {}
-      }
-      if (!st) {
-        // Estado por defecto
-        const today = new Date();
-        const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const days = Array.from({ length: 60 }, (_, i) => {
-          const key = DEFAULT_SCHEDULE[i] || 'madbotella';
-          const def = STAGES[key].def;
-          return { stage: key, hi: def.hi, lo: def.lo };
-        });
-        st = {
-          startDate: startDate.toISOString().slice(0,10),
-          days,
-          fields: {}
-        };
-      }
-      // Defaults reales – se aplican solo si falta el valor o está vacío
-      const defaults = {
-        volumen: "14",
-        abv: "6.07",
-        ebc: "30.3",
-        og: "1.061",
-        fg: "1.015",
-        ibus: "19.7",
-        "gr-pilsen": "38.4",
-        "gr-pilsen-ebc": "3.9",
-        "gr-munich": "38.4",
-        "gr-munich-ebc": "17.7",
-        "gr-pale": "15.3",
-        "gr-pale-ebc": "5.9",
-        "gr-cara": "6.4",
-        "gr-cara-ebc": "39.4",
-        "gr-choco": "1.5",
-        "gr-choco-ebc": "886.5",
-        "ing-notas": "Pesos de grano (g):\n- Pilsen: 1500 g\n- Munich: 1500 g\n- Pale: 600 g\n- Caramelo/Crystal: 250 g\n- Chocolate: 60 g\nTotal: 3910 g.",
-        hop1: "Simcoe",
-        hop1t: "50",
-        hop1i: "19.7",
-        hop2: "Cascade",
-        hop2t: "0",
-        hop2i: "0",
-        m1t: "66.7",
-        m1w: "12.70",
-        m1d: "60",
-        m2t: "67.8",
-        m2w: "8.79",
-        m2d: "20",
-        m3t: "",
-        m3w: "",
-        mtd: "80",
-        "style-notes": "Perfil: maltoso, con notas de caramelo y leve tostado.\nColor: ámbar profundo (30.3 EBC).\nAmargor: moderado bajo (19.7 IBUs, por debajo del rango clásico 25–40, lo que lo hace más dulce).\nAroma: el Cascade a 0 min da toques cítricos/florales frescos.\nAlcohol: 6.07 %, en el límite superior del estilo.",
-        "notas": ""
-      };
-      st.fields = st.fields || {};
-      for (const [k, v] of Object.entries(defaults)) {
-        if (st.fields[k] == null || st.fields[k] === '') st.fields[k] = v;
-      }
-      return st;
-    }
-
-    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-
-    /* ===== Días ===== */
-    function buildDays() {
-      const box = $('#days');
-      box.innerHTML = '';
-      const start = new Date(state.startDate + 'T00:00:00');
-      const today = new Date();
-      const idxToday = clamp( Math.floor((stripTime(today) - stripTime(start)) / 86400000), -999, 999 );
-
-      for (let i=0; i<60; i++) {
-        const info = state.days[i];
-        const date = addDays(start, i);
-        const isToday = i === idxToday;
-        const el = document.createElement('button');
-        el.type = 'button';
-        el.className = `day ${classForStage(info.stage)}`;
-        el.setAttribute('role','option');
-        el.dataset.index = i;
-        el.dataset.today = isToday ? 'true' : 'false';
-
-        el.innerHTML = `
-          <strong>${formatDateES(date)} (Día ${i+1})</strong>
-          <span class="stage">${STAGES[info.stage].label}</span>
-          <span class="temp">${fmtTemp(info.hi)} – ${fmtTemp(info.lo)}</span>
-        `;
-
-        el.addEventListener('click', () => openDayEditor(i));
-        box.appendChild(el);
-      }
-
-      // Legend pill: hoy
-      const t = today;
-      $('#hoyPill').textContent = `Hoy: ${formatDateES(t)}`;
-    }
-
-    function classForStage(key) { return STAGES[key]?.cls || STAGES.madbotella.cls; }
-
-    function openDayEditor(index) {
-      const d = state.days[index];
-      $('#editTitle').textContent = `Editar — Día ${index+1}`;
-      $('#stageSel').value = d.stage;
-      $('#tHi').value = d.hi;
-      $('#tLo').value = d.lo;
-      $('#editDialog').dataset.index = index;
-      showDialog('#editDialog');
-    }
-
-    function saveDayEdit(ev) {
-      const idx = Number($('#editDialog').dataset.index || -1);
-      if (idx < 0) return;
-      const stage = $('#stageSel').value;
-      const hi = num($('#tHi').value, STAGES[stage].def.hi);
-      const lo = num($('#tLo').value, STAGES[stage].def.lo);
-      state.days[idx] = { stage, hi, lo };
-      saveState();
-      buildDays();
-    }
-
-    function scrollToToday() {
-      const el = $('.day[data-today="true"]');
-      if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-    }
-
-    /* ===== Encabezado ===== */
-    function updateHeaderPills() {
-      const start = new Date(state.startDate + 'T00:00:00');
-      $('#startPill').innerHTML = `Inicio: <b>${formatDateES(start)}</b>`;
-      $('#todayPill').innerHTML = `Hoy: <b>${formatDateES(new Date())}</b>`;
-    }
-
-    /* ===== Ajustes ===== */
-    function openSettings() {
-      $('#startDateInp').value = state.startDate;
-      showDialog('#settingsDialog');
-    }
-
-    function saveSettings() {
-      const v = $('#startDateInp').value;
-      if (v) state.startDate = v;
-      saveState();
-      updateHeaderPills();
-      buildDays();
-    }
-
-    function resetAll() {
-      if (!confirm('Esto borrará los datos locales del lote. ¿Continuar?')) return;
-      localStorage.removeItem(STORAGE_KEY);
-      const fresh = loadState();
-      Object.assign(state, fresh);
-      saveState();
-      updateHeaderPills();
-      buildDays();
-    }
-
-    /* ===== Persistencia de formularios de las tarjetas ===== */
-    function bindFormPersistence() {
-      const ids = [
-        'volumen','abv','ebc','og','fg','ibus',
-        'gr-pilsen','gr-pilsen-ebc','gr-munich','gr-munich-ebc','gr-pale','gr-pale-ebc','gr-cara','gr-cara-ebc','gr-choco','gr-choco-ebc','levadura','ing-notas',
-        'hop1','hop1t','hop1i','hop2','hop2t','hop2i','hop3','hop3t','hop3i',
-        'm1t','m1w','m1d','m2t','m2w','m2d','m3t','m3w','mtd',
-        'style-notes',
-        'notas' // NUEVO: campo de Notas
-      ];
-
-      // cargar
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const val = state.fields?.[id];
-        if (val !== undefined) el.value = val;
-        el.addEventListener('input', debounce(() => {
-          state.fields[id] = el.value;
-          saveState();
-        }, 200));
-      });
-    }
-
-    /* ===== Export/Import JSON de Notas ===== */
-    function exportNotesJson() {
-      const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const dd = String(d.getDate()).padStart(2,'0');
-      const fname = `JsonLote54-${yyyy}-${mm}-${dd}.json`;
-      const payload = {
-        nombre: LOT_NAME,
-        fecha: `${yyyy}-${mm}-${dd}`,
-        notas: state.fields?.notas || ''
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = fname;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
-    }
-
-    function importNotesJson(file, btn) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const obj = JSON.parse(reader.result);
-          if (typeof obj.notas === 'string') {
-            state.fields = state.fields || {};
-            state.fields.notas = obj.notas;
-            saveState();
-            const el = $('#notas');
-            if (el) el.value = obj.notas;
-            if (btn) flash(btn, 'Importado ✓');
-          } else {
-            alert('El JSON no contiene el campo "notas".');
-          }
-        } catch (e) {
-          alert('Archivo JSON inválido.');
+        const daysScroll = document.getElementById('daysScroll');
+        
+        // Calcular el día actual basado en la fecha
+        function getCurrentDay() {
+            // Crear fecha usando año, mes (0-indexed), día para evitar problemas de zona horaria
+            const startDate = new Date(2025, 9, 2); // 2 de octubre de 2025 (mes 9 = octubre)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Calcular diferencia en días
+            const diffTime = today.getTime() - startDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            // El día 1 es el 02/oct (diffDays = 0)
+            // El día 2 es el 03/oct (diffDays = 1)
+            // El día 3 es el 04/oct (diffDays = 2)
+            const dayNumber = diffDays + 1;
+            
+            // Debug
+            console.log('Fecha actual:', today.toLocaleDateString());
+            console.log('Diferencia en días:', diffDays);
+            console.log('Día del proceso:', dayNumber);
+            
+            // Limitar entre día 1 y 60
+            if (dayNumber < 1) return 1;
+            if (dayNumber > 60) return 60;
+            return dayNumber;
         }
-      };
-      reader.readAsText(file, 'utf-8');
-    }
+        
+        const currentDay = getCurrentDay();
 
-    function flash(btn, text) {
-      const old = btn.textContent;
-      btn.textContent = text;
-      btn.disabled = true;
-      setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1200);
-    }
+        // Calcular y mostrar porcentaje de avance
+        const progressPercentage = Math.round((currentDay / 60) * 100);
+        document.getElementById('progressPercentage').textContent = progressPercentage + '%';
 
-    /* ===== Utilidades ===== */
-    function num(v, d=0) { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : d; }
-    function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
-    function stripTime(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-    function fmtTemp(v) { return `${num(v).toString().replace('.', ',')}°C`; }
+        // Carrusel de tarjetas
+        const cardsScroll = document.getElementById('cardsScroll');
+        const indicators = document.getElementById('carouselIndicators');
+        const totalCards = 5;
 
-    function formatDateES(d) {
-      const dd = d.getDate().toString().padStart(2,'0');
-      const m = d.getMonth();
-      const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-      return `${dd}/${meses[m]}`;
-    }
+        // Crear indicadores
+        for (let i = 0; i < totalCards; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'indicator-dot';
+            if (i === 0) dot.classList.add('active');
+            dot.onclick = () => scrollToCard(i);
+            indicators.appendChild(dot);
+        }
 
-    function showDialog(sel) {
-      const dlg = $(sel);
-      if (!dlg) return;
-      if (typeof dlg.showModal === 'function') dlg.showModal();
-      else alert('Tu navegador no soporta diálogos.');
-    }
+        // Actualizar indicador activo al hacer scroll
+        cardsScroll.addEventListener('scroll', () => {
+            const scrollLeft = cardsScroll.scrollLeft;
+            const cardWidth = cardsScroll.querySelector('.card').offsetWidth + 12; // incluye gap
+            const activeIndex = Math.round(scrollLeft / cardWidth);
+            
+            document.querySelectorAll('.indicator-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === activeIndex);
+            });
+        });
 
-    function debounce(fn, ms=200){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,a), ms); }; }
-  </script>
+        // Función para scroll a tarjeta específica
+        function scrollToCard(index) {
+            const cardWidth = cardsScroll.querySelector('.card').offsetWidth + 12;
+            cardsScroll.scrollTo({
+                left: cardWidth * index,
+                behavior: 'smooth'
+            });
+        }
+
+        // Cargar observaciones guardadas al iniciar
+        window.addEventListener('DOMContentLoaded', function() {
+            loadObservations();
+        });
+
+        days.forEach(d => {
+            const btn = document.createElement('div');
+            btn.className = `day-btn ${d.class}`;
+            if (d.day === currentDay) {
+                btn.classList.add('current');
+            }
+            btn.innerHTML = `
+                <span class="day-date">${d.date} (Día ${d.day})</span>
+                <span class="day-stage">${d.stage}</span>
+                <span class="day-temp">${d.temp}</span>
+            `;
+            daysScroll.appendChild(btn);
+        });
+
+        setTimeout(() => {
+            const currentBtn = document.querySelector('.day-btn.current');
+            if (currentBtn) {
+                currentBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        }, 100);
+
+        function toggleCard(header) {
+            const arrow = header.querySelector('.arrow');
+            const content = header.nextElementSibling;
+            arrow.classList.toggle('open');
+            content.classList.toggle('open');
+        }
+
+        // Funciones para manejar observaciones
+        function saveObservations() {
+            const text = document.getElementById('observationsText').value;
+            const data = {
+                lote: 'Munich Amber Ale lote 54 v1',
+                fecha: new Date().toISOString(),
+                observaciones: text
+            };
+            
+            localStorage.setItem('cerveza_observaciones', JSON.stringify(data));
+            showMessage('Observaciones guardadas correctamente', 'success');
+        }
+
+        function loadObservations() {
+            const saved = localStorage.getItem('cerveza_observaciones');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    document.getElementById('observationsText').value = data.observaciones || '';
+                } catch (e) {
+                    console.error('Error al cargar observaciones:', e);
+                }
+            }
+        }
+
+        function exportJSON() {
+            const text = document.getElementById('observationsText').value;
+            const data = {
+                lote: 'Munich Amber Ale lote 54 v1',
+                estilo: 'American Amber Ale / Munich Amber Ale (BJCP 19A)',
+                fecha_exportacion: new Date().toISOString(),
+                observaciones: text
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'observaciones_lote54.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showMessage('Archivo JSON exportado correctamente', 'success');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.observaciones !== undefined) {
+                        document.getElementById('observationsText').value = data.observaciones;
+                        showMessage('Archivo JSON importado correctamente', 'success');
+                    } else {
+                        showMessage('El archivo JSON no contiene observaciones válidas', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('statusMessage');
+            msg.textContent = text;
+            msg.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+    </script>
 </body>
 </html>

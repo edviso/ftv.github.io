@@ -152,6 +152,7 @@
     .dlg-actions { display:flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
     .btn { appearance:none; border:1px solid var(--border); padding:9px 12px; border-radius: 10px; font-weight:700; font-size: 13px; }
     .btn.primary { background: var(--accent-strong); color: #fff; border-color: transparent; }
+    .btn.sm { padding: 6px 8px; font-size: 12px; }
 
     /* Accesibilidad táctil */
     .touch-target { min-height: 38px; display:flex; align-items:center; }
@@ -313,7 +314,10 @@
             <label>Notas del lote</label>
             <textarea id="notas" placeholder="Escribe aquí tus notas..."></textarea>
           </div>
+          <input id="importFile" type="file" accept="application/json" style="display:none" />
           <div class="dlg-actions" style="justify-content:flex-end; padding-top:6px;">
+            <button class="btn sm" id="btnExportJson" type="button" title="Exportar JSON de notas">ExJson</button>
+            <button class="btn sm" id="btnImportJson" type="button" title="Importar JSON de notas">ImJson</button>
             <button class="btn" id="btnSaveNotes" type="button">Guardar notas</button>
           </div>
         </div>
@@ -386,6 +390,7 @@
        ========================================================== */
 
     const STORAGE_KEY = 'lote54v1_r1';
+    const LOT_NAME = 'Munich Amber Ale lote 54 v1';
 
     const STAGES = {
       arranque: { label: 'Arranque limpio', cls: 'stage-arranque', def: { hi: 19, lo: 18 } },
@@ -466,9 +471,21 @@
           if (!state.fields) state.fields = {};
           state.fields['notas'] = el.value;
           saveState();
-          const old = btnNotes.textContent;
-          btnNotes.textContent = 'Guardado ✓';
-          setTimeout(() => btnNotes.textContent = old, 1200);
+          flash(btnNotes, 'Guardado ✓');
+        });
+      }
+
+      // Exportar/Importar JSON
+      const btnEx = $('#btnExportJson');
+      const btnIm = $('#btnImportJson');
+      const fileIm = $('#importFile');
+      if (btnEx) btnEx.addEventListener('click', exportNotesJson);
+      if (btnIm && fileIm) {
+        btnIm.addEventListener('click', () => fileIm.click());
+        fileIm.addEventListener('change', () => {
+          const f = fileIm.files && fileIm.files[0];
+          if (f) importNotesJson(f, btnIm);
+          fileIm.value = '';
         });
       }
     }
@@ -661,6 +678,56 @@
           saveState();
         }, 200));
       });
+    }
+
+    /* ===== Export/Import JSON de Notas ===== */
+    function exportNotesJson() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      const fname = `JsonLote54-${yyyy}-${mm}-${dd}.json`;
+      const payload = {
+        nombre: LOT_NAME,
+        fecha: `${yyyy}-${mm}-${dd}`,
+        notas: state.fields?.notas || ''
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    }
+
+    function importNotesJson(file, btn) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const obj = JSON.parse(reader.result);
+          if (typeof obj.notas === 'string') {
+            state.fields = state.fields || {};
+            state.fields.notas = obj.notas;
+            saveState();
+            const el = $('#notas');
+            if (el) el.value = obj.notas;
+            if (btn) flash(btn, 'Importado ✓');
+          } else {
+            alert('El JSON no contiene el campo "notas".');
+          }
+        } catch (e) {
+          alert('Archivo JSON inválido.');
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function flash(btn, text) {
+      const old = btn.textContent;
+      btn.textContent = text;
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1200);
     }
 
     /* ===== Utilidades ===== */

@@ -353,6 +353,136 @@
             border-radius: 4px;
         }
 
+        .beer-cards-carousel {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .beer-carousel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #424242;
+            padding: 0 12px 8px 12px;
+        }
+
+        .beer-cards-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            gap: 12px;
+            padding: 0 12px;
+            scrollbar-width: none;
+        }
+
+        .beer-cards-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .beer-cards-scroll .card {
+            min-width: calc(100vw - 24px);
+            scroll-snap-align: start;
+            margin-bottom: 0;
+        }
+
+        .beer-card-header {
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            user-select: none;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .beer-card-header:active {
+            opacity: 0.9;
+        }
+
+        .beer-amber-deep {
+            background: linear-gradient(135deg, #d97e30 0%, #b85c1a 100%);
+        }
+
+        .beer-pale-gold {
+            background: linear-gradient(135deg, #f4d03f 0%, #e6b800 100%);
+        }
+
+        .beer-medium-gold {
+            background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);
+        }
+
+        .beer-amber-medium {
+            background: linear-gradient(135deg, #e67e22 0%, #ca6510 100%);
+        }
+
+        .beer-amber-copper {
+            background: linear-gradient(135deg, #d35400 0%, #a04000 100%);
+        }
+
+        .beer-red-copper {
+            background: linear-gradient(135deg, #c0392b 0%, #922b21 100%);
+        }
+
+        .beer-dark-brown {
+            background: linear-gradient(135deg, #6e2c00 0%, #3e1800 100%);
+        }
+
+        .beer-black {
+            background: linear-gradient(135deg, #1c1c1c 0%, #000000 100%);
+        }
+
+        .beer-card-title-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .beer-pale-gold .beer-card-title-text,
+        .beer-medium-gold .beer-card-title-text {
+            color: #4a3800;
+        }
+
+        .beer-card-arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #ffffff;
+            transition: transform 0.3s ease;
+        }
+
+        .beer-pale-gold .beer-card-arrow,
+        .beer-medium-gold .beer-card-arrow {
+            border-top-color: #4a3800;
+        }
+
+        .beer-card-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .beer-carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 0;
+            flex-wrap: wrap;
+        }
+
+        .beer-indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #bdbdbd;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .beer-indicator-dot.active {
+            background: #616161;
+            transform: scale(1.3);
+        }
+
         .observations-textarea {
             width: 100%;
             min-height: 150px;
@@ -681,6 +811,221 @@
             
             <div class="carousel-indicators" id="carouselIndicators"></div>
         </div>
+
+        <div class="beer-cards-carousel">
+            <h3 class="beer-carousel-title">Recetas</h3>
+            <div class="beer-cards-scroll" id="beerCardsScroll">
+                <div class="card">
+                    <div class="beer-card-header beer-amber-deep" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Munich Amber Ale</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText1" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Munich Amber Ale..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(1)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(1, 'Munich Amber Ale')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput1').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput1" class="file-input" accept=".json" onchange="importBeerJSON(event, 1)">
+                            
+                            <div id="beerStatusMessage1" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-pale-gold" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Pilsner SMaSH</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText2" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Pilsner SMaSH..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(2)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(2, 'Pilsner SMaSH')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput2').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput2" class="file-input" accept=".json" onchange="importBeerJSON(event, 2)">
+                            
+                            <div id="beerStatusMessage2" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-medium-gold" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">APA cítrica</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText3" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta APA cítrica..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(3)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(3, 'APA cítrica')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput3').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput3" class="file-input" accept=".json" onchange="importBeerJSON(event, 3)">
+                            
+                            <div id="beerStatusMessage3" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-amber-medium" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">American Amber</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText4" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta American Amber..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(4)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(4, 'American Amber')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput4').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput4" class="file-input" accept=".json" onchange="importBeerJSON(event, 4)">
+                            
+                            <div id="beerStatusMessage4" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-amber-copper" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Märzen Ale</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText5" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Märzen Ale..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(5)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(5, 'Märzen Ale')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput5').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput5" class="file-input" accept=".json" onchange="importBeerJSON(event, 5)">
+                            
+                            <div id="beerStatusMessage5" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-red-copper" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Irish Red</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText6" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Irish Red..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(6)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(6, 'Irish Red')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput6').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput6" class="file-input" accept=".json" onchange="importBeerJSON(event, 6)">
+                            
+                            <div id="beerStatusMessage6" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-dark-brown" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Porter</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText7" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Porter..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(7)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(7, 'Porter')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput7').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput7" class="file-input" accept=".json" onchange="importBeerJSON(event, 7)">
+                            
+                            <div id="beerStatusMessage7" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-black" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Stout</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText8" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Stout..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(8)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(8, 'Stout')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput8').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput8" class="file-input" accept=".json" onchange="importBeerJSON(event, 8)">
+                            
+                            <div id="beerStatusMessage8" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="beer-carousel-indicators" id="beerCarouselIndicators"></div>
+        </div>
     </div>
 
     <script>
@@ -817,9 +1162,44 @@
             });
         }
 
+        // Carrusel de tarjetas de cerveza
+        const beerCardsScroll = document.getElementById('beerCardsScroll');
+        const beerIndicators = document.getElementById('beerCarouselIndicators');
+        const totalBeerCards = 8;
+
+        // Crear indicadores para tarjetas de cerveza
+        for (let i = 0; i < totalBeerCards; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'beer-indicator-dot';
+            if (i === 0) dot.classList.add('active');
+            dot.onclick = () => scrollToBeerCard(i);
+            beerIndicators.appendChild(dot);
+        }
+
+        // Actualizar indicador activo al hacer scroll en tarjetas de cerveza
+        beerCardsScroll.addEventListener('scroll', () => {
+            const scrollLeft = beerCardsScroll.scrollLeft;
+            const cardWidth = beerCardsScroll.querySelector('.beer-card').offsetWidth + 12;
+            const activeIndex = Math.round(scrollLeft / cardWidth);
+            
+            document.querySelectorAll('.beer-indicator-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === activeIndex);
+            });
+        });
+
+        // Función para scroll a tarjeta de cerveza específica
+        function scrollToBeerCard(index) {
+            const cardWidth = beerCardsScroll.querySelector('.beer-card').offsetWidth + 12;
+            beerCardsScroll.scrollTo({
+                left: cardWidth * index,
+                behavior: 'smooth'
+            });
+        }
+
         // Cargar observaciones guardadas al iniciar
         window.addEventListener('DOMContentLoaded', function() {
             loadObservations();
+            loadBeerRecipes();
         });
 
         days.forEach(d => {
@@ -844,10 +1224,92 @@
         }, 100);
 
         function toggleCard(header) {
-            const arrow = header.querySelector('.arrow');
+            const arrow = header.querySelector('.arrow, .beer-card-arrow');
             const content = header.nextElementSibling;
             arrow.classList.toggle('open');
             content.classList.toggle('open');
+        }
+
+        // Funciones para manejar recetas de cerveza
+        function saveBeerRecipe(id) {
+            const text = document.getElementById(`beerText${id}`).value;
+            const beerNames = ['Munich Amber Ale', 'Pilsner SMaSH', 'APA cítrica', 'American Amber', 'Märzen Ale', 'Irish Red', 'Porter', 'Stout'];
+            const data = {
+                receta: beerNames[id - 1],
+                fecha: new Date().toISOString(),
+                datos: text
+            };
+            
+            localStorage.setItem(`cerveza_receta_${id}`, JSON.stringify(data));
+            showBeerMessage(id, 'Receta guardada correctamente', 'success');
+        }
+
+        function loadBeerRecipes() {
+            for (let i = 1; i <= 8; i++) {
+                const saved = localStorage.getItem(`cerveza_receta_${i}`);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        document.getElementById(`beerText${i}`).value = data.datos || '';
+                    } catch (e) {
+                        console.error(`Error al cargar receta ${i}:`, e);
+                    }
+                }
+            }
+        }
+
+        function exportBeerJSON(id, name) {
+            const text = document.getElementById(`beerText${id}`).value;
+            const data = {
+                receta: name,
+                fecha_exportacion: new Date().toISOString(),
+                datos: text
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `receta_${name.replace(/\s+/g, '_').toLowerCase()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showBeerMessage(id, 'Archivo JSON exportado correctamente', 'success');
+        }
+
+        function importBeerJSON(event, id) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.datos !== undefined) {
+                        document.getElementById(`beerText${id}`).value = data.datos;
+                        showBeerMessage(id, 'Archivo JSON importado correctamente', 'success');
+                    } else {
+                        showBeerMessage(id, 'El archivo JSON no contiene datos válidos', 'error');
+                    }
+                } catch (error) {
+                    showBeerMessage(id, 'Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showBeerMessage(id, text, type) {
+            const msg = document.getElementById(`beerStatusMessage${id}`);
+            msg.textContent = text;
+            msg.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
         }
 
         // Funciones para manejar observaciones

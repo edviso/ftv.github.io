@@ -656,6 +656,32 @@
             </div>
         </div>
 
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Insumos disponibles</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <textarea 
+                        id="insumosText" 
+                        class="observations-textarea" 
+                        placeholder="Escribe aquí el inventario de tus insumos disponibles (maltas, lúpulos, levaduras, etc.)..."
+                    ></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-save" onclick="saveInsumos()">Guardar</button>
+                        <button class="btn btn-export" onclick="exportInsumosJSON()">ExJson</button>
+                        <button class="btn btn-import" onclick="document.getElementById('insumosFileInput').click()">ImJson</button>
+                    </div>
+                    
+                    <input type="file" id="insumosFileInput" class="file-input" accept=".json" onchange="importInsumosJSON(event)">
+                    
+                    <div id="insumosStatusMessage" class="status-message"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="cards-carousel">
             <div class="cards-scroll" id="cardsScroll">
                 <div class="card">
@@ -1199,6 +1225,7 @@
         // Cargar observaciones guardadas al iniciar
         window.addEventListener('DOMContentLoaded', function() {
             loadObservations();
+            loadInsumos();
             loadBeerRecipes();
         });
 
@@ -1384,6 +1411,85 @@
 
         function showMessage(text, type) {
             const msg = document.getElementById('statusMessage');
+            msg.textContent = text;
+            msg.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+
+        // Funciones para manejar insumos
+        function saveInsumos() {
+            const text = document.getElementById('insumosText').value;
+            const data = {
+                tipo: 'Insumos disponibles',
+                fecha: new Date().toISOString(),
+                inventario: text
+            };
+            
+            localStorage.setItem('cerveza_insumos', JSON.stringify(data));
+            showInsumosMessage('Insumos guardados correctamente', 'success');
+        }
+
+        function loadInsumos() {
+            const saved = localStorage.getItem('cerveza_insumos');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    document.getElementById('insumosText').value = data.inventario || '';
+                } catch (e) {
+                    console.error('Error al cargar insumos:', e);
+                }
+            }
+        }
+
+        function exportInsumosJSON() {
+            const text = document.getElementById('insumosText').value;
+            const data = {
+                tipo: 'Insumos disponibles',
+                fecha_exportacion: new Date().toISOString(),
+                inventario: text
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'insumos_disponibles.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showInsumosMessage('Archivo JSON exportado correctamente', 'success');
+        }
+
+        function importInsumosJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.inventario !== undefined) {
+                        document.getElementById('insumosText').value = data.inventario;
+                        showInsumosMessage('Archivo JSON importado correctamente', 'success');
+                    } else {
+                        showInsumosMessage('El archivo JSON no contiene datos válidos', 'error');
+                    }
+                } catch (error) {
+                    showInsumosMessage('Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showInsumosMessage(text, type) {
+            const msg = document.getElementById('insumosStatusMessage');
             msg.textContent = text;
             msg.className = `status-message ${type} show`;
             

@@ -270,13 +270,42 @@
 
         let layerData = {};
 
-        // Inicializar datos vacíos
-        layers.forEach(layer => {
-            layerData[layer.id] = {
-                description: "",
-                image: null
-            };
-        });
+        // Cargar datos desde localStorage al iniciar
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('acuarelaCapas');
+            if (saved) {
+                try {
+                    layerData = JSON.parse(saved);
+                    return true;
+                } catch (error) {
+                    console.error('Error al cargar desde localStorage:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // Guardar en localStorage
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('acuarelaCapas', JSON.stringify(layerData));
+                return true;
+            } catch (error) {
+                console.error('Error al guardar en localStorage:', error);
+                return false;
+            }
+        }
+
+        // Inicializar datos vacíos o cargar desde localStorage
+        const dataLoaded = loadFromLocalStorage();
+        if (!dataLoaded) {
+            layers.forEach(layer => {
+                layerData[layer.id] = {
+                    description: "",
+                    image: null
+                };
+            });
+        }
 
         function showNotification(message) {
             const notification = document.getElementById('notification');
@@ -290,7 +319,12 @@
         function saveData(layerId) {
             const textarea = document.getElementById(`textarea-${layerId}`);
             layerData[layerId].description = textarea.value;
-            showNotification(`Capa ${layerId} guardada`);
+            
+            if (saveToLocalStorage()) {
+                showNotification(`Capa ${layerId} guardada en localStorage`);
+            } else {
+                showNotification(`Error al guardar Capa ${layerId}`);
+            }
         }
 
         function handleImageUpload(layerId, event) {
@@ -304,6 +338,9 @@
                     preview.src = e.target.result;
                     preview.classList.add('show');
                     removeBtn.classList.add('show');
+                    
+                    // Auto-guardar en localStorage al subir imagen
+                    saveToLocalStorage();
                     showNotification(`Imagen agregada a Capa ${layerId}`);
                 };
                 reader.readAsDataURL(file);
@@ -319,6 +356,9 @@
             preview.classList.remove('show');
             removeBtn.classList.remove('show');
             input.value = '';
+            
+            // Auto-guardar en localStorage al eliminar imagen
+            saveToLocalStorage();
             showNotification(`Imagen eliminada de Capa ${layerId}`);
         }
 
@@ -362,6 +402,9 @@
                                 layerData = imported;
                             }
                             
+                            // Guardar en localStorage después de importar
+                            saveToLocalStorage();
+                            
                             // Actualizar todos los textareas e imágenes
                             layers.forEach(layer => {
                                 const textarea = document.getElementById(`textarea-${layer.id}`);
@@ -384,7 +427,7 @@
                                     }
                                 }
                             });
-                            showNotification('JSON importado correctamente');
+                            showNotification('JSON importado y guardado');
                         } catch (error) {
                             console.error('Error al importar:', error);
                             showNotification('Error al importar JSON: ' + error.message);
@@ -441,6 +484,31 @@
                 </div>
             `;
             container.appendChild(card);
+        });
+
+        // Restaurar datos guardados al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            layers.forEach(layer => {
+                const textarea = document.getElementById(`textarea-${layer.id}`);
+                const preview = document.getElementById(`preview-${layer.id}`);
+                const removeBtn = document.getElementById(`remove-${layer.id}`);
+                
+                if (layerData[layer.id]) {
+                    if (textarea) {
+                        textarea.value = layerData[layer.id].description || '';
+                    }
+                    
+                    if (layerData[layer.id].image && preview) {
+                        preview.src = layerData[layer.id].image;
+                        preview.classList.add('show');
+                        removeBtn.classList.add('show');
+                    }
+                }
+            });
+            
+            if (dataLoaded) {
+                showNotification('Datos cargados desde localStorage');
+            }
         });
     </script>
 </body>

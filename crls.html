@@ -345,12 +345,29 @@
                     reader.onload = (event) => {
                         try {
                             const imported = JSON.parse(event.target.result);
-                            layerData = imported;
+                            
+                            // Verificar si el formato es el antiguo (solo strings) o el nuevo (objetos)
+                            const firstKey = Object.keys(imported)[0];
+                            const isOldFormat = typeof imported[firstKey] === 'string';
+                            
+                            if (isOldFormat) {
+                                // Convertir formato antiguo a nuevo
+                                Object.keys(imported).forEach(key => {
+                                    layerData[key] = {
+                                        description: imported[key],
+                                        image: null
+                                    };
+                                });
+                            } else {
+                                layerData = imported;
+                            }
+                            
                             // Actualizar todos los textareas e imágenes
                             layers.forEach(layer => {
                                 const textarea = document.getElementById(`textarea-${layer.id}`);
                                 const preview = document.getElementById(`preview-${layer.id}`);
                                 const removeBtn = document.getElementById(`remove-${layer.id}`);
+                                const uploadInput = document.getElementById(`upload-${layer.id}`);
                                 
                                 if (textarea && layerData[layer.id]) {
                                     textarea.value = layerData[layer.id].description || '';
@@ -363,12 +380,14 @@
                                         preview.src = '';
                                         preview.classList.remove('show');
                                         removeBtn.classList.remove('show');
+                                        if (uploadInput) uploadInput.value = '';
                                     }
                                 }
                             });
-                            showNotification('JSON importado');
+                            showNotification('JSON importado correctamente');
                         } catch (error) {
-                            showNotification('Error al importar JSON');
+                            console.error('Error al importar:', error);
+                            showNotification('Error al importar JSON: ' + error.message);
                         }
                     };
                     reader.readAsText(file);

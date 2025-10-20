@@ -295,6 +295,17 @@
                 const saved = localStorage.getItem('acuarelaCapas');
                 if (saved) {
                     const parsed = JSON.parse(saved);
+                    
+                    // Asegurar que la estructura de paleta existe
+                    if (!parsed.palette) {
+                        parsed.palette = {
+                            description: "",
+                            paletaAcuarela: null,
+                            paletaRetratos: null,
+                            paletaVariantes: null
+                        };
+                    }
+                    
                     layerData = parsed;
                     
                     // Actualizar la interfaz con los datos cargados
@@ -511,7 +522,18 @@
                             } else {
                                 // Comprimir imágenes al importar
                                 for (let key in imported) {
-                                    if (imported[key].image) {
+                                    if (key === 'palette') {
+                                        // Manejar paleta de colores
+                                        if (imported[key].paletaAcuarela) {
+                                            imported[key].paletaAcuarela = await compressImage(imported[key].paletaAcuarela);
+                                        }
+                                        if (imported[key].paletaRetratos) {
+                                            imported[key].paletaRetratos = await compressImage(imported[key].paletaRetratos);
+                                        }
+                                        if (imported[key].paletaVariantes) {
+                                            imported[key].paletaVariantes = await compressImage(imported[key].paletaVariantes);
+                                        }
+                                    } else if (imported[key].image) {
                                         imported[key].image = await compressImage(imported[key].image);
                                     }
                                 }

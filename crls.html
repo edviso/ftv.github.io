@@ -224,6 +224,7 @@
         .layer-10 { background: linear-gradient(135deg, #ffffff, #f0f0f0); color: #333 !important; }
         .layer-11 { background: linear-gradient(135deg, #8b6f47, #6f5a3a); }
         .layer-12 { background: linear-gradient(135deg, #b8a090, #a08f7f); }
+        .layer-palette { background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3); }
 
         .notification {
             position: fixed;
@@ -265,17 +266,27 @@
             { id: 9, title: "Capa 9 — Labios naturales (crema)", class: "layer-9" },
             { id: 10, title: "Capa 10 — Toques de luz (agua limpia / reserva)", class: "layer-10" },
             { id: 11, title: "Capa 11 — Cabello (té a leche según zona)", class: "layer-11" },
-            { id: 12, title: "Capa 12 — Fondo y ropa (leche a crema, finalización)", class: "layer-12" }
+            { id: 12, title: "Capa 12 — Fondo y ropa (leche a crema, finalización)", class: "layer-12" },
+            { id: 'palette', title: "Paleta de colores", class: "layer-palette", isPalette: true }
         ];
 
         let layerData = {};
 
         // Inicializar datos vacíos
         layers.forEach(layer => {
-            layerData[layer.id] = {
-                description: "",
-                image: null
-            };
+            if (layer.isPalette) {
+                layerData[layer.id] = {
+                    description: "",
+                    paletaAcuarela: null,
+                    paletaRetratos: null,
+                    paletaVariantes: null
+                };
+            } else {
+                layerData[layer.id] = {
+                    description: "",
+                    image: null
+                };
+            }
         });
 
         // Cargar datos desde localStorage al iniciar
@@ -288,17 +299,35 @@
                     
                     // Actualizar la interfaz con los datos cargados
                     layers.forEach(layer => {
-                        const textarea = document.getElementById(`textarea-${layer.id}`);
-                        const preview = document.getElementById(`preview-${layer.id}`);
-                        const removeBtn = document.getElementById(`remove-${layer.id}`);
-                        
-                        if (textarea && layerData[layer.id]) {
-                            textarea.value = layerData[layer.id].description || '';
+                        if (layer.isPalette) {
+                            const textarea = document.getElementById(`textarea-palette`);
+                            if (textarea && layerData['palette']) {
+                                textarea.value = layerData['palette'].description || '';
+                                
+                                ['paletaAcuarela', 'paletaRetratos', 'paletaVariantes'].forEach(paletteType => {
+                                    const preview = document.getElementById(`preview-palette-${paletteType}`);
+                                    const removeBtn = document.getElementById(`remove-palette-${paletteType}`);
+                                    
+                                    if (layerData['palette'][paletteType]) {
+                                        preview.src = layerData['palette'][paletteType];
+                                        preview.classList.add('show');
+                                        removeBtn.classList.add('show');
+                                    }
+                                });
+                            }
+                        } else {
+                            const textarea = document.getElementById(`textarea-${layer.id}`);
+                            const preview = document.getElementById(`preview-${layer.id}`);
+                            const removeBtn = document.getElementById(`remove-${layer.id}`);
                             
-                            if (layerData[layer.id].image) {
-                                preview.src = layerData[layer.id].image;
-                                preview.classList.add('show');
-                                removeBtn.classList.add('show');
+                            if (textarea && layerData[layer.id]) {
+                                textarea.value = layerData[layer.id].description || '';
+                                
+                                if (layerData[layer.id].image) {
+                                    preview.src = layerData[layer.id].image;
+                                    preview.classList.add('show');
+                                    removeBtn.classList.add('show');
+                                }
                             }
                         }
                     });
@@ -392,6 +421,44 @@
             }
         }
 
+        function handlePaletteImageUpload(paletteType, event) {
+            const file = event.target.files[0];
+            if (file && file.type.match('image.*')) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const compressed = await compressImage(e.target.result);
+                    layerData['palette'][paletteType] = compressed;
+                    
+                    const preview = document.getElementById(`preview-palette-${paletteType}`);
+                    const removeBtn = document.getElementById(`remove-palette-${paletteType}`);
+                    preview.src = compressed;
+                    preview.classList.add('show');
+                    removeBtn.classList.add('show');
+                    
+                    try {
+                        saveToLocalStorage();
+                        showNotification(`Paleta agregada`);
+                    } catch (error) {
+                        showNotification(`Error al guardar paleta: Imagen muy grande`);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removePaletteImage(paletteType) {
+            layerData['palette'][paletteType] = null;
+            const preview = document.getElementById(`preview-palette-${paletteType}`);
+            const removeBtn = document.getElementById(`remove-palette-${paletteType}`);
+            const input = document.getElementById(`upload-palette-${paletteType}`);
+            preview.src = '';
+            preview.classList.remove('show');
+            removeBtn.classList.remove('show');
+            input.value = '';
+            saveToLocalStorage();
+            showNotification(`Paleta eliminada`);
+        }
+
         function removeImage(layerId) {
             layerData[layerId].image = null;
             const preview = document.getElementById(`preview-${layerId}`);
@@ -460,23 +527,50 @@
                             
                             // Actualizar todos los textareas e imágenes
                             layers.forEach(layer => {
-                                const textarea = document.getElementById(`textarea-${layer.id}`);
-                                const preview = document.getElementById(`preview-${layer.id}`);
-                                const removeBtn = document.getElementById(`remove-${layer.id}`);
-                                const uploadInput = document.getElementById(`upload-${layer.id}`);
-                                
-                                if (textarea && layerData[layer.id]) {
-                                    textarea.value = layerData[layer.id].description || '';
+                                if (layer.isPalette) {
+                                    // Actualizar paleta de colores
+                                    const textarea = document.getElementById(`textarea-palette`);
+                                    if (textarea && layerData['palette']) {
+                                        textarea.value = layerData['palette'].description || '';
+                                        
+                                        // Actualizar las tres paletas
+                                        ['paletaAcuarela', 'paletaRetratos', 'paletaVariantes'].forEach(paletteType => {
+                                            const preview = document.getElementById(`preview-palette-${paletteType}`);
+                                            const removeBtn = document.getElementById(`remove-palette-${paletteType}`);
+                                            const uploadInput = document.getElementById(`upload-palette-${paletteType}`);
+                                            
+                                            if (layerData['palette'][paletteType]) {
+                                                preview.src = layerData['palette'][paletteType];
+                                                preview.classList.add('show');
+                                                removeBtn.classList.add('show');
+                                            } else {
+                                                preview.src = '';
+                                                preview.classList.remove('show');
+                                                removeBtn.classList.remove('show');
+                                                if (uploadInput) uploadInput.value = '';
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    // Actualizar capas normales
+                                    const textarea = document.getElementById(`textarea-${layer.id}`);
+                                    const preview = document.getElementById(`preview-${layer.id}`);
+                                    const removeBtn = document.getElementById(`remove-${layer.id}`);
+                                    const uploadInput = document.getElementById(`upload-${layer.id}`);
                                     
-                                    if (layerData[layer.id].image) {
-                                        preview.src = layerData[layer.id].image;
-                                        preview.classList.add('show');
-                                        removeBtn.classList.add('show');
-                                    } else {
-                                        preview.src = '';
-                                        preview.classList.remove('show');
-                                        removeBtn.classList.remove('show');
-                                        if (uploadInput) uploadInput.value = '';
+                                    if (textarea && layerData[layer.id]) {
+                                        textarea.value = layerData[layer.id].description || '';
+                                        
+                                        if (layerData[layer.id].image) {
+                                            preview.src = layerData[layer.id].image;
+                                            preview.classList.add('show');
+                                            removeBtn.classList.add('show');
+                                        } else {
+                                            preview.src = '';
+                                            preview.classList.remove('show');
+                                            removeBtn.classList.remove('show');
+                                            if (uploadInput) uploadInput.value = '';
+                                        }
                                     }
                                 }
                             });
@@ -497,45 +591,135 @@
         layers.forEach(layer => {
             const card = document.createElement('div');
             card.className = 'card';
-            card.innerHTML = `
-                <div class="card-header ${layer.class}">
-                    ${layer.title}
-                </div>
-                <div class="card-body">
-                    <label for="textarea-${layer.id}">Descripción:</label>
-                    <textarea 
-                        id="textarea-${layer.id}" 
-                        placeholder="Escribe los detalles de esta capa..."
-                    ></textarea>
-                    
-                    <div class="image-upload-container">
-                        <label class="upload-btn" for="upload-${layer.id}">
-                            📷 Subir imagen de referencia
-                        </label>
-                        <input 
-                            type="file" 
-                            id="upload-${layer.id}" 
-                            accept="image/*"
-                            style="display: none;"
-                            onchange="handleImageUpload(${layer.id}, event)"
-                        >
-                        <img id="preview-${layer.id}" class="image-preview" alt="Preview">
-                        <button 
-                            id="remove-${layer.id}" 
-                            class="remove-image" 
-                            onclick="removeImage(${layer.id})"
-                        >
-                            Eliminar imagen
-                        </button>
+            
+            if (layer.isPalette) {
+                // Tarjeta especial de paleta de colores
+                card.innerHTML = `
+                    <div class="card-header ${layer.class}">
+                        ${layer.title}
                     </div>
-                    
-                    <div class="button-group">
-                        <button class="btn-save" onclick="saveData(${layer.id})">Guardar</button>
-                        <button class="btn-export" onclick="exportJSON()">ExJson</button>
-                        <button class="btn-import" onclick="importJSON()">ImJson</button>
+                    <div class="card-body">
+                        <div class="image-upload-container">
+                            <label>Paleta de acuarela:</label>
+                            <label class="upload-btn" for="upload-palette-paletaAcuarela">
+                                📷 Subir paleta de acuarela
+                            </label>
+                            <input 
+                                type="file" 
+                                id="upload-palette-paletaAcuarela" 
+                                accept="image/*"
+                                style="display: none;"
+                                onchange="handlePaletteImageUpload('paletaAcuarela', event)"
+                            >
+                            <img id="preview-palette-paletaAcuarela" class="image-preview" alt="Preview">
+                            <button 
+                                id="remove-palette-paletaAcuarela" 
+                                class="remove-image" 
+                                onclick="removePaletteImage('paletaAcuarela')"
+                            >
+                                Eliminar imagen
+                            </button>
+                        </div>
+                        
+                        <div class="image-upload-container">
+                            <label>Paleta para retratos:</label>
+                            <label class="upload-btn" for="upload-palette-paletaRetratos">
+                                📷 Subir paleta para retratos
+                            </label>
+                            <input 
+                                type="file" 
+                                id="upload-palette-paletaRetratos" 
+                                accept="image/*"
+                                style="display: none;"
+                                onchange="handlePaletteImageUpload('paletaRetratos', event)"
+                            >
+                            <img id="preview-palette-paletaRetratos" class="image-preview" alt="Preview">
+                            <button 
+                                id="remove-palette-paletaRetratos" 
+                                class="remove-image" 
+                                onclick="removePaletteImage('paletaRetratos')"
+                            >
+                                Eliminar imagen
+                            </button>
+                        </div>
+                        
+                        <div class="image-upload-container">
+                            <label>Paleta para variantes:</label>
+                            <label class="upload-btn" for="upload-palette-paletaVariantes">
+                                📷 Subir paleta para variantes
+                            </label>
+                            <input 
+                                type="file" 
+                                id="upload-palette-paletaVariantes" 
+                                accept="image/*"
+                                style="display: none;"
+                                onchange="handlePaletteImageUpload('paletaVariantes', event)"
+                            >
+                            <img id="preview-palette-paletaVariantes" class="image-preview" alt="Preview">
+                            <button 
+                                id="remove-palette-paletaVariantes" 
+                                class="remove-image" 
+                                onclick="removePaletteImage('paletaVariantes')"
+                            >
+                                Eliminar imagen
+                            </button>
+                        </div>
+                        
+                        <label for="textarea-palette">Descripciones:</label>
+                        <textarea 
+                            id="textarea-palette" 
+                            placeholder="Escribe las descripciones de las paletas..."
+                        ></textarea>
+                        
+                        <div class="button-group">
+                            <button class="btn-save" onclick="saveData('palette')">Guardar</button>
+                            <button class="btn-export" onclick="exportJSON()">ExJson</button>
+                            <button class="btn-import" onclick="importJSON()">ImJson</button>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                // Tarjetas normales de capas
+                card.innerHTML = `
+                    <div class="card-header ${layer.class}">
+                        ${layer.title}
+                    </div>
+                    <div class="card-body">
+                        <label for="textarea-${layer.id}">Descripción:</label>
+                        <textarea 
+                            id="textarea-${layer.id}" 
+                            placeholder="Escribe los detalles de esta capa..."
+                        ></textarea>
+                        
+                        <div class="image-upload-container">
+                            <label class="upload-btn" for="upload-${layer.id}">
+                                📷 Subir imagen de referencia
+                            </label>
+                            <input 
+                                type="file" 
+                                id="upload-${layer.id}" 
+                                accept="image/*"
+                                style="display: none;"
+                                onchange="handleImageUpload(${layer.id}, event)"
+                            >
+                            <img id="preview-${layer.id}" class="image-preview" alt="Preview">
+                            <button 
+                                id="remove-${layer.id}" 
+                                class="remove-image" 
+                                onclick="removeImage(${layer.id})"
+                            >
+                                Eliminar imagen
+                            </button>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="btn-save" onclick="saveData(${layer.id})">Guardar</button>
+                            <button class="btn-export" onclick="exportJSON()">ExJson</button>
+                            <button class="btn-import" onclick="importJSON()">ImJson</button>
+                        </div>
+                    </div>
+                `;
+            }
             container.appendChild(card);
         });
 

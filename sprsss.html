@@ -463,7 +463,7 @@
             document.getElementById('stopBtn').style.display = 'none';
         }
         
-        function createCard(cardData = null) {
+        function createCard(cardData = null, cardIndex = null) {
             const id = cardData ? cardData.id : Date.now();
             const card = cardData || {
                 id: id,
@@ -476,11 +476,12 @@
             cardDiv.className = 'extraction-card';
             cardDiv.id = `card-${card.id}`;
             
-            const cardIndex = cards.length;
+            // Calcular índice en tiempo de renderizado
+            const displayIndex = cardIndex !== null ? cardIndex : cards.findIndex(c => c.id === card.id);
             
             cardDiv.innerHTML = `
                 <div class="card-header">
-                    <div class="card-number">Extracción #${cardIndex + 1}</div>
+                    <div class="card-number" id="cardnum-${card.id}">Extracción #${displayIndex + 1}</div>
                     <button class="btn-delete" onclick="deleteCard(${card.id})">🗑️ Eliminar</button>
                 </div>
                 <div class="image-upload" onclick="document.getElementById('file-${card.id}').click()">
@@ -541,7 +542,6 @@
             const cardIndex = cards.findIndex(c => c.id === cardId);
             if (cardIndex !== -1) {
                 cards.splice(cardIndex, 1);
-                document.getElementById(`card-${cardId}`).remove();
                 saveToLocalStorage();
                 renderAllCards();
             }
@@ -604,7 +604,7 @@
         }
         
         function addCard() {
-            const newCardData = createCard();
+            const newCardData = createCard(null, cards.length);
             cards.push(newCardData.card);
             document.getElementById('cardsWrapper').appendChild(newCardData.element);
             saveToLocalStorage();
@@ -614,9 +614,18 @@
             const wrapper = document.getElementById('cardsWrapper');
             wrapper.innerHTML = '';
             
-            cards.forEach((cardData) => {
-                const cardElement = createCard(cardData);
+            cards.forEach((cardData, index) => {
+                const cardElement = createCard(cardData, index);
                 wrapper.appendChild(cardElement.element);
+            });
+        }
+        
+        function updateCardNumbers() {
+            cards.forEach((card, index) => {
+                const cardNumElement = document.getElementById(`cardnum-${card.id}`);
+                if (cardNumElement) {
+                    cardNumElement.textContent = `Extracción #${index + 1}`;
+                }
             });
         }
         

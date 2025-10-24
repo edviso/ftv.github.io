@@ -35,9 +35,58 @@
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             padding: 25px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.3);
             color: #333;
+        }
+        
+        .controls-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .controls-card:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+        
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        
+        .controls-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #6B4423;
+        }
+        
+        .collapse-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+            color: #6B4423;
+        }
+        
+        .collapse-icon.open {
+            transform: rotate(180deg);
+        }
+        
+        .controls-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .controls-content.open {
+            max-height: 300px;
+            margin-top: 15px;
         }
         
         .timer-display {
@@ -61,9 +110,17 @@
         
         .timer-controls {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             justify-content: center;
             flex-wrap: wrap;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-width: 600px;
+            margin: 0 auto;
         }
         
         .save-indicator {
@@ -75,14 +132,19 @@
         }
         
         button {
-            padding: 15px 30px;
-            font-size: 1.1em;
+            padding: 12px 20px;
+            font-size: 1em;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn-timer {
+            padding: 15px 30px;
+            font-size: 1.1em;
         }
         
         .btn-start {
@@ -115,6 +177,36 @@
             transform: translateY(-2px);
         }
         
+        .btn-export-all {
+            background: #9C27B0;
+            color: white;
+        }
+        
+        .btn-export-all:hover {
+            background: #7B1FA2;
+            transform: translateY(-2px);
+        }
+        
+        .btn-import-all {
+            background: #673AB7;
+            color: white;
+        }
+        
+        .btn-import-all:hover {
+            background: #512DA8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-clear-all {
+            background: #FF5722;
+            color: white;
+        }
+        
+        .btn-clear-all:hover {
+            background: #E64A19;
+            transform: translateY(-2px);
+        }
+        
         .data-controls {
             display: flex;
             gap: 10px;
@@ -126,21 +218,6 @@
         .btn-export-all, .btn-import-all, .btn-clear-all {
             padding: 10px 20px;
             font-size: 0.95em;
-        }
-        
-        .btn-export-all {
-            background: #9C27B0;
-            color: white;
-        }
-        
-        .btn-import-all {
-            background: #673AB7;
-            color: white;
-        }
-        
-        .btn-clear-all {
-            background: #FF5722;
-            color: white;
         }
         
         .cards-container {
@@ -253,8 +330,17 @@
             }
             
             button {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+            
+            .btn-timer {
                 padding: 12px 20px;
                 font-size: 1em;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
             }
             
             .extraction-card {
@@ -273,17 +359,26 @@
                 <div class="timer-count" id="count">--</div>
             </div>
             <div class="timer-controls">
-                <button class="btn-start" id="startBtn" onclick="startTimer()">▶ Iniciar Extracción</button>
-                <button class="btn-stop" id="stopBtn" onclick="stopTimer()" style="display:none;">⏹ Detener</button>
-                <button class="btn-add" onclick="addCard()">➕ Agregar Tarjeta</button>
-            </div>
-            <div class="data-controls">
-                <button class="btn-export-all" onclick="exportAllCards()">⬇ Exportar Todas</button>
-                <button class="btn-import-all" onclick="document.getElementById('importAll').click()">⬆ Importar Todas</button>
-                <button class="btn-clear-all" onclick="clearAllData()">🗑️ Borrar Todo</button>
-                <input type="file" id="importAll" accept=".json" onchange="importAllCards(event)" style="display:none;">
+                <button class="btn-start btn-timer" id="startBtn" onclick="startTimer()">▶ Iniciar Extracción</button>
+                <button class="btn-stop btn-timer" id="stopBtn" onclick="stopTimer()" style="display:none;">⏹ Detener</button>
             </div>
             <div class="save-indicator" id="saveIndicator"></div>
+        </div>
+        
+        <div class="controls-card" onclick="toggleControls()">
+            <div class="controls-header">
+                <div class="controls-title">⚙️ Administración</div>
+                <div class="collapse-icon" id="collapseIcon">▼</div>
+            </div>
+            <div class="controls-content" id="controlsContent" onclick="event.stopPropagation()">
+                <div class="controls-grid">
+                    <button class="btn-add" onclick="addCard()">➕ Agregar Tarjeta</button>
+                    <button class="btn-export-all" onclick="exportAllCards()">⬇ Exportar Todas</button>
+                    <button class="btn-import-all" onclick="document.getElementById('importAll').click()">⬆ Importar Todas</button>
+                    <button class="btn-clear-all" onclick="clearAllData()">🗑️ Borrar Todo</button>
+                </div>
+                <input type="file" id="importAll" accept=".json" onchange="importAllCards(event)" style="display:none;">
+            </div>
         </div>
         
         <div class="cards-container">
@@ -601,6 +696,14 @@
                     showSaveIndicator('✓ Todos los datos borrados');
                 }
             }
+        }
+        
+        function toggleControls() {
+            const content = document.getElementById('controlsContent');
+            const icon = document.getElementById('collapseIcon');
+            
+            content.classList.toggle('open');
+            icon.classList.toggle('open');
         }
         
         function addCard() {

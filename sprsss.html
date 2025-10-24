@@ -66,6 +66,14 @@
             flex-wrap: wrap;
         }
         
+        .save-indicator {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #4CAF50;
+            min-height: 20px;
+        }
+        
         button {
             padding: 15px 30px;
             font-size: 1.1em;
@@ -107,6 +115,34 @@
             transform: translateY(-2px);
         }
         
+        .data-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-export-all, .btn-import-all, .btn-clear-all {
+            padding: 10px 20px;
+            font-size: 0.95em;
+        }
+        
+        .btn-export-all {
+            background: #9C27B0;
+            color: white;
+        }
+        
+        .btn-import-all {
+            background: #673AB7;
+            color: white;
+        }
+        
+        .btn-clear-all {
+            background: #FF5722;
+            color: white;
+        }
+        
         .cards-container {
             overflow-x: auto;
             white-space: nowrap;
@@ -131,11 +167,27 @@
             vertical-align: top;
         }
         
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
         .card-number {
             font-size: 0.9em;
             color: #6B4423;
             font-weight: bold;
-            margin-bottom: 15px;
+        }
+        
+        .btn-delete {
+            background: #f44336;
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.8em;
+            border-radius: 5px;
+            cursor: pointer;
+            border: none;
         }
         
         .image-upload {
@@ -187,32 +239,6 @@
             border-color: #6B4423;
         }
         
-        .card-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .btn-save {
-            background: #FF9800;
-            color: white;
-            flex: 1;
-            padding: 10px;
-            font-size: 0.95em;
-        }
-        
-        .btn-export, .btn-import {
-            background: #9C27B0;
-            color: white;
-            flex: 1;
-            padding: 10px;
-            font-size: 0.9em;
-        }
-        
-        .btn-import {
-            background: #673AB7;
-        }
-        
         input[type="file"] {
             display: none;
         }
@@ -251,6 +277,13 @@
                 <button class="btn-stop" id="stopBtn" onclick="stopTimer()" style="display:none;">⏹ Detener</button>
                 <button class="btn-add" onclick="addCard()">➕ Agregar Tarjeta</button>
             </div>
+            <div class="data-controls">
+                <button class="btn-export-all" onclick="exportAllCards()">⬇ Exportar Todas</button>
+                <button class="btn-import-all" onclick="document.getElementById('importAll').click()">⬆ Importar Todas</button>
+                <button class="btn-clear-all" onclick="clearAllData()">🗑️ Borrar Todo</button>
+                <input type="file" id="importAll" accept=".json" onchange="importAllCards(event)" style="display:none;">
+            </div>
+            <div class="save-indicator" id="saveIndicator"></div>
         </div>
         
         <div class="cards-container">
@@ -272,6 +305,72 @@
             { name: "Transición", duration: 3, countTo: 3, announce: true },
             { name: "Extracción Principal", duration: 25, countTo: 25, announce: true }
         ];
+        
+        // Comprimir imagen antes de guardar
+        function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.src = dataUrl;
+            });
+        }
+        
+        // Guardar en localStorage
+        function saveToLocalStorage() {
+            try {
+                const data = {
+                    cards: cards,
+                    lastSaved: new Date().toISOString()
+                };
+                localStorage.setItem('espressoExtractions', JSON.stringify(data));
+                showSaveIndicator('✓ Guardado automáticamente');
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    showSaveIndicator('⚠️ Memoria llena. Exporta y borra datos antiguos.');
+                } else {
+                    showSaveIndicator('✗ Error al guardar');
+                }
+            }
+        }
+        
+        // Cargar desde localStorage
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('espressoExtractions');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    return data.cards || [];
+                }
+            } catch (e) {
+                console.error('Error al cargar datos:', e);
+            }
+            return [];
+        }
+        
+        function showSaveIndicator(message) {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.textContent = message;
+            setTimeout(() => {
+                indicator.textContent = '';
+            }, 3000);
+        }
         
         function speak(text) {
             if ('speechSynthesis' in window) {
@@ -325,7 +424,6 @@
                     }
                 }, 1000);
             } else {
-                // Fase de preparación (5 segundos sin anunciar)
                 currentCount = 5;
                 document.getElementById('count').textContent = currentCount;
                 
@@ -365,80 +463,109 @@
             document.getElementById('stopBtn').style.display = 'none';
         }
         
-        function createCard(index) {
-            const card = {
-                id: Date.now() + index,
+        function createCard(cardData = null) {
+            const id = cardData ? cardData.id : Date.now();
+            const card = cardData || {
+                id: id,
                 image: null,
-                notes: ''
+                notes: '',
+                timestamp: new Date().toISOString()
             };
             
             const cardDiv = document.createElement('div');
             cardDiv.className = 'extraction-card';
+            cardDiv.id = `card-${card.id}`;
+            
+            const cardIndex = cards.length;
+            
             cardDiv.innerHTML = `
-                <div class="card-number">Extracción #${index + 1}</div>
+                <div class="card-header">
+                    <div class="card-number">Extracción #${cardIndex + 1}</div>
+                    <button class="btn-delete" onclick="deleteCard(${card.id})">🗑️ Eliminar</button>
+                </div>
                 <div class="image-upload" onclick="document.getElementById('file-${card.id}').click()">
+                    ${card.image ? `<img src="${card.image}" alt="Espresso">` : `
                     <div class="upload-placeholder">
                         <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                         </svg>
                         <div>Subir foto</div>
-                    </div>
+                    </div>`}
                 </div>
                 <input type="file" id="file-${card.id}" accept="image/*" onchange="handleImageUpload(event, ${card.id})">
-                <textarea id="notes-${card.id}" placeholder="Detalles de la extracción y comentarios...">${card.notes}</textarea>
-                <div class="card-buttons">
-                    <button class="btn-save" onclick="saveCard(${card.id})">💾 Guardar</button>
-                    <button class="btn-export" onclick="exportCard(${card.id})">⬇ ExJson</button>
-                    <button class="btn-import" onclick="document.getElementById('import-${card.id}').click()">⬆ ImJson</button>
-                    <input type="file" id="import-${card.id}" accept=".json" onchange="importCard(event, ${card.id})" style="display:none;">
-                </div>
+                <textarea id="notes-${card.id}" placeholder="Detalles de la extracción y comentarios..." oninput="autoSaveCard(${card.id})">${card.notes}</textarea>
             `;
             
             return { card, element: cardDiv };
         }
         
-        function handleImageUpload(event, cardId) {
+        async function handleImageUpload(event, cardId) {
             const file = event.target.files[0];
             if (!file) return;
             
+            showSaveIndicator('⏳ Comprimiendo imagen...');
+            
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const cardIndex = cards.findIndex(c => c.id === cardId);
-                if (cardIndex !== -1) {
-                    cards[cardIndex].image = e.target.result;
+            reader.onload = async function(e) {
+                try {
+                    const compressed = await compressImage(e.target.result);
                     
-                    const uploadDiv = event.target.previousElementSibling;
-                    uploadDiv.innerHTML = `<img src="${e.target.result}" alt="Espresso">`;
+                    const cardIndex = cards.findIndex(c => c.id === cardId);
+                    if (cardIndex !== -1) {
+                        cards[cardIndex].image = compressed;
+                        
+                        const uploadDiv = event.target.previousElementSibling;
+                        uploadDiv.innerHTML = `<img src="${compressed}" alt="Espresso">`;
+                        
+                        saveToLocalStorage();
+                    }
+                } catch (error) {
+                    showSaveIndicator('✗ Error al procesar imagen');
                 }
             };
             reader.readAsDataURL(file);
         }
         
-        function saveCard(cardId) {
+        function autoSaveCard(cardId) {
             const cardIndex = cards.findIndex(c => c.id === cardId);
             if (cardIndex !== -1) {
                 const notes = document.getElementById(`notes-${cardId}`).value;
                 cards[cardIndex].notes = notes;
-                alert('✓ Tarjeta guardada correctamente');
+                saveToLocalStorage();
             }
         }
         
-        function exportCard(cardId) {
+        function deleteCard(cardId) {
+            if (!confirm('¿Eliminar esta tarjeta?')) return;
+            
             const cardIndex = cards.findIndex(c => c.id === cardId);
             if (cardIndex !== -1) {
-                const cardData = cards[cardIndex];
-                const dataStr = JSON.stringify(cardData, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `espresso-extraccion-${cardIndex + 1}-${Date.now()}.json`;
-                link.click();
-                URL.revokeObjectURL(url);
+                cards.splice(cardIndex, 1);
+                document.getElementById(`card-${cardId}`).remove();
+                saveToLocalStorage();
+                renderAllCards();
             }
         }
         
-        function importCard(event, cardId) {
+        function exportAllCards() {
+            const dataStr = JSON.stringify({
+                cards: cards,
+                exportDate: new Date().toISOString(),
+                totalCards: cards.length
+            }, null, 2);
+            
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `espresso-extracciones-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showSaveIndicator('✓ Exportado correctamente');
+        }
+        
+        function importAllCards(event) {
             const file = event.target.files[0];
             if (!file) return;
             
@@ -446,41 +573,69 @@
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    const cardIndex = cards.findIndex(c => c.id === cardId);
                     
-                    if (cardIndex !== -1) {
-                        cards[cardIndex].image = data.image || null;
-                        cards[cardIndex].notes = data.notes || '';
-                        
-                        // Actualizar UI
-                        if (data.image) {
-                            const uploadDiv = document.querySelector(`#file-${cardId}`).previousElementSibling;
-                            uploadDiv.innerHTML = `<img src="${data.image}" alt="Espresso">`;
+                    if (data.cards && Array.isArray(data.cards)) {
+                        if (confirm(`¿Importar ${data.cards.length} tarjetas? Esto reemplazará todas las tarjetas actuales.`)) {
+                            cards = data.cards;
+                            saveToLocalStorage();
+                            renderAllCards();
+                            showSaveIndicator(`✓ Importadas ${data.cards.length} tarjetas`);
                         }
-                        
-                        document.getElementById(`notes-${cardId}`).value = data.notes || '';
-                        alert('✓ Datos importados correctamente');
+                    } else {
+                        showSaveIndicator('✗ Archivo JSON inválido');
                     }
                 } catch (error) {
-                    alert('✗ Error al importar el archivo JSON');
+                    showSaveIndicator('✗ Error al importar');
                 }
             };
             reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        function clearAllData() {
+            if (confirm('¿BORRAR TODAS las tarjetas y datos? Esta acción no se puede deshacer.')) {
+                if (confirm('¿Estás completamente seguro? Se perderán todas tus extracciones.')) {
+                    cards = [];
+                    localStorage.removeItem('espressoExtractions');
+                    renderAllCards();
+                    showSaveIndicator('✓ Todos los datos borrados');
+                }
+            }
         }
         
         function addCard() {
-            const newCardData = createCard(cards.length);
+            const newCardData = createCard();
             cards.push(newCardData.card);
             document.getElementById('cardsWrapper').appendChild(newCardData.element);
+            saveToLocalStorage();
         }
         
-        // Inicializar con 10 tarjetas
-        function init() {
+        function renderAllCards() {
             const wrapper = document.getElementById('cardsWrapper');
-            for (let i = 0; i < 10; i++) {
-                const cardData = createCard(i);
-                cards.push(cardData.card);
-                wrapper.appendChild(cardData.element);
+            wrapper.innerHTML = '';
+            
+            cards.forEach((cardData) => {
+                const cardElement = createCard(cardData);
+                wrapper.appendChild(cardElement.element);
+            });
+        }
+        
+        // Inicializar
+        function init() {
+            const savedCards = loadFromLocalStorage();
+            
+            if (savedCards.length > 0) {
+                cards = savedCards;
+                renderAllCards();
+                showSaveIndicator(`✓ Cargadas ${savedCards.length} tarjetas`);
+            } else {
+                // Crear 10 tarjetas iniciales solo si no hay datos guardados
+                for (let i = 0; i < 10; i++) {
+                    const newCardData = createCard();
+                    cards.push(newCardData.card);
+                }
+                renderAllCards();
+                saveToLocalStorage();
             }
         }
         

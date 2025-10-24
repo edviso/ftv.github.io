@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Extracción de Espresso</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6B4423 0%, #3E2723 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .timer-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            color: #333;
+        }
+        
+        .timer-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .timer-phase {
+            font-size: 1.2em;
+            color: #6B4423;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .timer-count {
+            font-size: 4em;
+            font-weight: bold;
+            color: #3E2723;
+            margin: 10px 0;
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn-start {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-start:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .btn-stop {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-stop:hover {
+            background: #da190b;
+            transform: translateY(-2px);
+        }
+        
+        .btn-add {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-add:hover {
+            background: #0b7dda;
+            transform: translateY(-2px);
+        }
+        
+        .cards-container {
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 20px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .cards-wrapper {
+            display: inline-flex;
+            gap: 20px;
+        }
+        
+        .extraction-card {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            width: 350px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            color: #333;
+            white-space: normal;
+            vertical-align: top;
+        }
+        
+        .card-number {
+            font-size: 0.9em;
+            color: #6B4423;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .image-upload {
+            width: 100%;
+            height: 250px;
+            border: 3px dashed #6B4423;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            overflow: hidden;
+            background: #f5f5f5;
+            position: relative;
+        }
+        
+        .image-upload img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+        
+        .upload-placeholder {
+            text-align: center;
+            color: #6B4423;
+        }
+        
+        .upload-placeholder svg {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95em;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #6B4423;
+        }
+        
+        .card-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-save {
+            background: #FF9800;
+            color: white;
+            flex: 1;
+            padding: 10px;
+            font-size: 0.95em;
+        }
+        
+        .btn-export, .btn-import {
+            background: #9C27B0;
+            color: white;
+            flex: 1;
+            padding: 10px;
+            font-size: 0.9em;
+        }
+        
+        .btn-import {
+            background: #673AB7;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .timer-count {
+                font-size: 3em;
+            }
+            
+            button {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+            
+            .extraction-card {
+                width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☕ Control de Extracción de Espresso</h1>
+        
+        <div class="timer-card">
+            <div class="timer-display">
+                <div class="timer-phase" id="phase">Listo para comenzar</div>
+                <div class="timer-count" id="count">--</div>
+            </div>
+            <div class="timer-controls">
+                <button class="btn-start" id="startBtn" onclick="startTimer()">▶ Iniciar Extracción</button>
+                <button class="btn-stop" id="stopBtn" onclick="stopTimer()" style="display:none;">⏹ Detener</button>
+                <button class="btn-add" onclick="addCard()">➕ Agregar Tarjeta</button>
+            </div>
+        </div>
+        
+        <div class="cards-container">
+            <div class="cards-wrapper" id="cardsWrapper">
+                <!-- Las tarjetas se generarán aquí -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval = null;
+        let currentPhase = 0;
+        let currentCount = 0;
+        let cards = [];
+        
+        const phases = [
+            { name: "Preparación", duration: 5, countTo: 0, announce: false },
+            { name: "Pre-infusión", duration: 8, countTo: 8, announce: true },
+            { name: "Transición", duration: 3, countTo: 3, announce: true },
+            { name: "Extracción Principal", duration: 25, countTo: 25, announce: true }
+        ];
+        
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                speechSynthesis.speak(utterance);
+            }
+        }
+        
+        function startTimer() {
+            if (timerInterval) return;
+            
+            currentPhase = 0;
+            currentCount = 0;
+            
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            
+            runPhase();
+        }
+        
+        function runPhase() {
+            if (currentPhase >= phases.length) {
+                finishTimer();
+                return;
+            }
+            
+            const phase = phases[currentPhase];
+            document.getElementById('phase').textContent = phase.name;
+            
+            if (phase.announce) {
+                currentCount = 1;
+                document.getElementById('count').textContent = currentCount;
+                speak(currentCount.toString());
+                
+                timerInterval = setInterval(() => {
+                    currentCount++;
+                    if (currentCount <= phase.countTo) {
+                        document.getElementById('count').textContent = currentCount;
+                        speak(currentCount.toString());
+                    }
+                    
+                    if (currentCount >= phase.countTo) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        currentPhase++;
+                        setTimeout(runPhase, 1000);
+                    }
+                }, 1000);
+            } else {
+                // Fase de preparación (5 segundos sin anunciar)
+                currentCount = 5;
+                document.getElementById('count').textContent = currentCount;
+                
+                timerInterval = setInterval(() => {
+                    currentCount--;
+                    document.getElementById('count').textContent = currentCount;
+                    
+                    if (currentCount <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        currentPhase++;
+                        runPhase();
+                    }
+                }, 1000);
+            }
+        }
+        
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            speechSynthesis.cancel();
+            
+            document.getElementById('phase').textContent = 'Detenido';
+            document.getElementById('count').textContent = '--';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+        
+        function finishTimer() {
+            document.getElementById('phase').textContent = '¡Extracción Completa!';
+            document.getElementById('count').textContent = '✓';
+            speak('Extracción completa');
+            
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+        
+        function createCard(index) {
+            const card = {
+                id: Date.now() + index,
+                image: null,
+                notes: ''
+            };
+            
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'extraction-card';
+            cardDiv.innerHTML = `
+                <div class="card-number">Extracción #${index + 1}</div>
+                <div class="image-upload" onclick="document.getElementById('file-${card.id}').click()">
+                    <div class="upload-placeholder">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                        </svg>
+                        <div>Subir foto</div>
+                    </div>
+                </div>
+                <input type="file" id="file-${card.id}" accept="image/*" onchange="handleImageUpload(event, ${card.id})">
+                <textarea id="notes-${card.id}" placeholder="Detalles de la extracción y comentarios...">${card.notes}</textarea>
+                <div class="card-buttons">
+                    <button class="btn-save" onclick="saveCard(${card.id})">💾 Guardar</button>
+                    <button class="btn-export" onclick="exportCard(${card.id})">⬇ ExJson</button>
+                    <button class="btn-import" onclick="document.getElementById('import-${card.id}').click()">⬆ ImJson</button>
+                    <input type="file" id="import-${card.id}" accept=".json" onchange="importCard(event, ${card.id})" style="display:none;">
+                </div>
+            `;
+            
+            return { card, element: cardDiv };
+        }
+        
+        function handleImageUpload(event, cardId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const cardIndex = cards.findIndex(c => c.id === cardId);
+                if (cardIndex !== -1) {
+                    cards[cardIndex].image = e.target.result;
+                    
+                    const uploadDiv = event.target.previousElementSibling;
+                    uploadDiv.innerHTML = `<img src="${e.target.result}" alt="Espresso">`;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function saveCard(cardId) {
+            const cardIndex = cards.findIndex(c => c.id === cardId);
+            if (cardIndex !== -1) {
+                const notes = document.getElementById(`notes-${cardId}`).value;
+                cards[cardIndex].notes = notes;
+                alert('✓ Tarjeta guardada correctamente');
+            }
+        }
+        
+        function exportCard(cardId) {
+            const cardIndex = cards.findIndex(c => c.id === cardId);
+            if (cardIndex !== -1) {
+                const cardData = cards[cardIndex];
+                const dataStr = JSON.stringify(cardData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `espresso-extraccion-${cardIndex + 1}-${Date.now()}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        function importCard(event, cardId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const cardIndex = cards.findIndex(c => c.id === cardId);
+                    
+                    if (cardIndex !== -1) {
+                        cards[cardIndex].image = data.image || null;
+                        cards[cardIndex].notes = data.notes || '';
+                        
+                        // Actualizar UI
+                        if (data.image) {
+                            const uploadDiv = document.querySelector(`#file-${cardId}`).previousElementSibling;
+                            uploadDiv.innerHTML = `<img src="${data.image}" alt="Espresso">`;
+                        }
+                        
+                        document.getElementById(`notes-${cardId}`).value = data.notes || '';
+                        alert('✓ Datos importados correctamente');
+                    }
+                } catch (error) {
+                    alert('✗ Error al importar el archivo JSON');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function addCard() {
+            const newCardData = createCard(cards.length);
+            cards.push(newCardData.card);
+            document.getElementById('cardsWrapper').appendChild(newCardData.element);
+        }
+        
+        // Inicializar con 10 tarjetas
+        function init() {
+            const wrapper = document.getElementById('cardsWrapper');
+            for (let i = 0; i < 10; i++) {
+                const cardData = createCard(i);
+                cards.push(cardData.card);
+                wrapper.appendChild(cardData.element);
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>

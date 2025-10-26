@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Extracción de Espresso</title>
+    <title>Control de Extracción de Espresso v2.0</title>
     <style>
         * {
             margin: 0;
@@ -131,6 +131,18 @@
             min-height: 20px;
         }
         
+        .debug-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #FF5722;
+            min-height: 20px;
+            font-weight: bold;
+            padding: 5px;
+            background: rgba(255, 87, 34, 0.1);
+            border-radius: 5px;
+        }
+        
         button {
             padding: 12px 20px;
             font-size: 1em;
@@ -205,19 +217,6 @@
         .btn-clear-all:hover {
             background: #E64A19;
             transform: translateY(-2px);
-        }
-        
-        .data-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .btn-export-all, .btn-import-all, .btn-clear-all {
-            padding: 10px 20px;
-            font-size: 0.95em;
         }
         
         .cards-container {
@@ -362,6 +361,7 @@
                 <button class="btn-start btn-timer" id="startBtn" onclick="startTimer()">▶ Iniciar Extracción</button>
                 <button class="btn-stop btn-timer" id="stopBtn" onclick="stopTimer()" style="display:none;">⏹ Detener</button>
             </div>
+            <div class="debug-info" id="debugInfo">Sistema listo - v2.0</div>
             <div class="save-indicator" id="saveIndicator"></div>
         </div>
         
@@ -389,19 +389,142 @@
     </div>
 
     <script>
+        // VERSIÓN 2.0 - REESCRITURA COMPLETA
         let timerInterval = null;
         let currentPhase = 0;
         let currentCount = 0;
         let cards = [];
         
-        const phases = [
-            { name: "Preparación", duration: 5, countTo: 0, announce: false },
-            { name: "Pre-infusión", duration: 8, countTo: 8, announce: true },
-            { name: "Transición", duration: 3, countTo: 3, announce: true },
-            { name: "Extracción Principal", duration: 25, countTo: 25, announce: true }
+        // DEFINICIÓN DE FASES
+        const TIMER_PHASES = [
+            { name: "Preparación", seconds: 5, mode: "countdown_silent" },
+            { name: "Precalentamiento", seconds: 15, mode: "countdown_voice" },
+            { name: "Pre-infusión", seconds: 8, mode: "countup_voice" },
+            { name: "Transición", seconds: 3, mode: "countup_voice" },
+            { name: "Extracción Principal", seconds: 25, mode: "countup_voice" }
         ];
         
-        // Comprimir imagen antes de guardar
+        function showDebug(msg) {
+            const el = document.getElementById('debugInfo');
+            if (el) el.textContent = msg;
+        }
+        
+        function speakText(text) {
+            showDebug('🔊 Diciendo: ' + text);
+            if ('speechSynthesis' in window) {
+                speechSynthesis.cancel();
+                setTimeout(() => {
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'es-ES';
+                    u.rate = 1.0;
+                    u.volume = 1.0;
+                    speechSynthesis.speak(u);
+                }, 100);
+            }
+        }
+        
+        function startTimer() {
+            if (timerInterval) return;
+            currentPhase = 0;
+            currentCount = 0;
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            executePhase();
+        }
+        
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            speechSynthesis.cancel();
+            document.getElementById('phase').textContent = 'Detenido';
+            document.getElementById('count').textContent = '--';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            showDebug('Timer detenido');
+        }
+        
+        function executePhase() {
+            if (currentPhase >= TIMER_PHASES.length) {
+                finishTimer();
+                return;
+            }
+            
+            const phase = TIMER_PHASES[currentPhase];
+            document.getElementById('phase').textContent = phase.name;
+            showDebug(`FASE ${currentPhase + 1}: ${phase.name} - ${phase.seconds}s - Modo: ${phase.mode}`);
+            
+            if (phase.mode === "countdown_silent") {
+                // Preparación: cuenta regresiva silenciosa
+                currentCount = phase.seconds;
+                document.getElementById('count').textContent = currentCount;
+                
+                timerInterval = setInterval(() => {
+                    currentCount--;
+                    document.getElementById('count').textContent = currentCount;
+                    if (currentCount <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        currentPhase++;
+                        executePhase();
+                    }
+                }, 1000);
+                
+            } else if (phase.mode === "countdown_voice") {
+                // Precalentamiento: cuenta regresiva con voz al inicio y fin
+                speakText(`Precalentamiento de ${phase.seconds} segundos iniciando`);
+                currentCount = phase.seconds;
+                document.getElementById('count').textContent = currentCount;
+                
+                timerInterval = setInterval(() => {
+                    currentCount--;
+                    document.getElementById('count').textContent = currentCount;
+                    showDebug(`Precalentamiento: ${currentCount}s restantes`);
+                    
+                    if (currentCount <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        speakText('Precalentamiento finalizado');
+                        setTimeout(() => {
+                            currentPhase++;
+                            executePhase();
+                        }, 2000);
+                    }
+                }, 1000);
+                
+            } else if (phase.mode === "countup_voice") {
+                // Pre-infusión, transición, extracción: cuenta ascendente con voz
+                currentCount = 1;
+                document.getElementById('count').textContent = currentCount;
+                speakText(currentCount.toString());
+                
+                timerInterval = setInterval(() => {
+                    currentCount++;
+                    if (currentCount <= phase.seconds) {
+                        document.getElementById('count').textContent = currentCount;
+                        speakText(currentCount.toString());
+                    }
+                    if (currentCount >= phase.seconds) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        currentPhase++;
+                        setTimeout(executePhase, 1000);
+                    }
+                }, 1000);
+            }
+        }
+        
+        function finishTimer() {
+            document.getElementById('phase').textContent = '¡Extracción Completa!';
+            document.getElementById('count').textContent = '✓';
+            speakText('Extracción completa');
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            showDebug('✓ Proceso completado');
+        }
+        
+        // FUNCIONES DE TARJETAS
         function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -427,7 +550,6 @@
             });
         }
         
-        // Guardar en localStorage
         function saveToLocalStorage() {
             try {
                 const data = {
@@ -445,7 +567,6 @@
             }
         }
         
-        // Cargar desde localStorage
         function loadFromLocalStorage() {
             try {
                 const saved = localStorage.getItem('espressoExtractions');
@@ -467,101 +588,9 @@
             }, 3000);
         }
         
-        function speak(text) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'es-ES';
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
-                utterance.volume = 1.0;
-                speechSynthesis.speak(utterance);
-            }
-        }
-        
-        function startTimer() {
-            if (timerInterval) return;
-            
-            currentPhase = 0;
-            currentCount = 0;
-            
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('stopBtn').style.display = 'inline-block';
-            
-            runPhase();
-        }
-        
-        function runPhase() {
-            if (currentPhase >= phases.length) {
-                finishTimer();
-                return;
-            }
-            
-            const phase = phases[currentPhase];
-            document.getElementById('phase').textContent = phase.name;
-            
-            if (phase.announce) {
-                currentCount = 1;
-                document.getElementById('count').textContent = currentCount;
-                speak(currentCount.toString());
-                
-                timerInterval = setInterval(() => {
-                    currentCount++;
-                    if (currentCount <= phase.countTo) {
-                        document.getElementById('count').textContent = currentCount;
-                        speak(currentCount.toString());
-                    }
-                    
-                    if (currentCount >= phase.countTo) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                        currentPhase++;
-                        setTimeout(runPhase, 1000);
-                    }
-                }, 1000);
-            } else {
-                currentCount = 5;
-                document.getElementById('count').textContent = currentCount;
-                
-                timerInterval = setInterval(() => {
-                    currentCount--;
-                    document.getElementById('count').textContent = currentCount;
-                    
-                    if (currentCount <= 0) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                        currentPhase++;
-                        runPhase();
-                    }
-                }, 1000);
-            }
-        }
-        
-        function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            speechSynthesis.cancel();
-            
-            document.getElementById('phase').textContent = 'Detenido';
-            document.getElementById('count').textContent = '--';
-            document.getElementById('startBtn').style.display = 'inline-block';
-            document.getElementById('stopBtn').style.display = 'none';
-        }
-        
-        function finishTimer() {
-            document.getElementById('phase').textContent = '¡Extracción Completa!';
-            document.getElementById('count').textContent = '✓';
-            speak('Extracción completa');
-            
-            document.getElementById('startBtn').style.display = 'inline-block';
-            document.getElementById('stopBtn').style.display = 'none';
-        }
-        
         function createCard(cardData = null, cardIndex = null) {
             const id = cardData ? cardData.id : Date.now();
             
-            // Generar fecha y hora en zona horaria de Ecuador si es tarjeta nueva
             let initialNotes = '';
             if (!cardData) {
                 const now = new Date();
@@ -589,7 +618,6 @@
             cardDiv.className = 'extraction-card';
             cardDiv.id = `card-${card.id}`;
             
-            // Calcular índice en tiempo de renderizado
             const displayIndex = cardIndex !== null ? cardIndex : cards.findIndex(c => c.id === card.id);
             
             cardDiv.innerHTML = `
@@ -741,16 +769,6 @@
             });
         }
         
-        function updateCardNumbers() {
-            cards.forEach((card, index) => {
-                const cardNumElement = document.getElementById(`cardnum-${card.id}`);
-                if (cardNumElement) {
-                    cardNumElement.textContent = `Extracción #${index + 1}`;
-                }
-            });
-        }
-        
-        // Inicializar
         function init() {
             const savedCards = loadFromLocalStorage();
             
@@ -759,7 +777,6 @@
                 renderAllCards();
                 showSaveIndicator(`✓ Cargadas ${savedCards.length} tarjetas`);
             } else {
-                // Crear 10 tarjetas iniciales solo si no hay datos guardados
                 for (let i = 0; i < 10; i++) {
                     const newCardData = createCard();
                     cards.push(newCardData.card);

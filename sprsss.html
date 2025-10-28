@@ -404,6 +404,29 @@
             { name: "Extracción Principal", seconds: 25, mode: "countup_voice" }
         ];
         
+        function playBeep() {
+            showDebug('🔔 BEEP');
+            // Crear un beep usando Web Audio API
+            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                const AudioContextClass = AudioContext || webkitAudioContext;
+                const audioCtx = new AudioContextClass();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 800; // Frecuencia del beep
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+        
         function showDebug(msg) {
             const el = document.getElementById('debugInfo');
             if (el) el.textContent = msg;
@@ -496,81 +519,29 @@
             } else if (phase.mode === "countup_voice") {
                 // Pre-infusión, transición, extracción: cuenta ascendente con voz
                 
-                // Anuncio inicial según la fase
-                if (phase.name === "Pre-infusión") {
-                    speakText("Inicia la preinfusión");
-                }
+                currentCount = 1;
+                document.getElementById('count').textContent = currentCount;
+                speakText(currentCount.toString());
                 
-                currentCount = 0;
-                
-                setTimeout(() => {
-                    currentCount = 1;
+                timerInterval = setInterval(() => {
+                    currentCount++;
                     document.getElementById('count').textContent = currentCount;
                     speakText(currentCount.toString());
                     
-                    timerInterval = setInterval(() => {
-                        // Pausa especial en segundo 20 de extracción principal
-                        if (phase.name === "Extracción Principal" && currentCount === 20) {
-                            clearInterval(timerInterval);
-                            timerInterval = null;
-                            
-                            setTimeout(() => {
-                                speakText("Empieza a bajar la presión");
-                                
-                                setTimeout(() => {
-                                    // Continuar desde 21
-                                    currentCount = 21;
-                                    document.getElementById('count').textContent = currentCount;
-                                    speakText(currentCount.toString());
-                                    
-                                    timerInterval = setInterval(() => {
-                                        currentCount++;
-                                        document.getElementById('count').textContent = currentCount;
-                                        speakText(currentCount.toString());
-                                        
-                                        if (currentCount >= phase.seconds) {
-                                            clearInterval(timerInterval);
-                                            timerInterval = null;
-                                            currentPhase++;
-                                            setTimeout(executePhase, 1000);
-                                        }
-                                    }, 1000);
-                                }, 2000);
-                            }, 1000);
-                            
-                            return;
-                        }
-                        
-                        currentCount++;
-                        document.getElementById('count').textContent = currentCount;
-                        speakText(currentCount.toString());
-                        
-                        if (currentCount >= phase.seconds) {
-                            clearInterval(timerInterval);
-                            timerInterval = null;
-                            
-                            // Anuncios finales según la fase
-                            setTimeout(() => {
-                                if (phase.name === "Pre-infusión") {
-                                    speakText("Inicia presión para primera gota");
-                                    setTimeout(() => {
-                                        currentPhase++;
-                                        executePhase();
-                                    }, 2500);
-                                } else if (phase.name === "Transición") {
-                                    speakText("Inicia presión ascendente");
-                                    setTimeout(() => {
-                                        currentPhase++;
-                                        executePhase();
-                                    }, 2500);
-                                } else {
-                                    currentPhase++;
-                                    executePhase();
-                                }
-                            }, 1000);
-                        }
-                    }, 1000);
-                }, phase.name === "Pre-infusión" ? 2000 : 0);
+                    // Beep en segundo 17 de extracción principal
+                    if (phase.name === "Extracción Principal" && currentCount === 17) {
+                        setTimeout(() => {
+                            playBeep();
+                        }, 500);
+                    }
+                    
+                    if (currentCount >= phase.seconds) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        currentPhase++;
+                        setTimeout(executePhase, 1000);
+                    }
+                }, 1000);
             }
         }
         

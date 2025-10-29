@@ -19,6 +19,16 @@
             color: #fff;
         }
         
+        /* Forzar opacidad completa en todas las tarjetas y sus elementos */
+        .extraction-card,
+        .extraction-card *,
+        .timer-card,
+        .timer-card *,
+        .controls-card,
+        .controls-card * {
+            opacity: 1 !important;
+        }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -32,7 +42,7 @@
         }
         
         .timer-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             border-radius: 15px;
             padding: 25px;
             margin-bottom: 20px;
@@ -41,7 +51,7 @@
         }
         
         .controls-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             border-radius: 15px;
             padding: 15px 20px;
             margin-bottom: 25px;
@@ -241,7 +251,7 @@
         
         .extraction-card {
             display: inline-block;
-            background: rgba(255, 255, 255, 1);
+            background: white;
             border-radius: 15px;
             padding: 20px;
             width: 350px;
@@ -250,7 +260,15 @@
             color: #333;
             white-space: normal;
             vertical-align: top;
-            opacity: 1;
+        }
+        
+        .extraction-card img {
+            opacity: 1 !important;
+        }
+        
+        .extraction-card textarea {
+            opacity: 1 !important;
+            color: #333 !important;
         }
         
         .card-navigation {
@@ -347,6 +365,8 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: cover;
+            opacity: 1 !important;
+            filter: none !important;
         }
         
         .upload-placeholder {
@@ -370,6 +390,9 @@
             font-size: 0.95em;
             resize: vertical;
             margin-bottom: 15px;
+            background: white !important;
+            color: #333 !important;
+            opacity: 1 !important;
         }
         
         textarea:focus {
@@ -680,8 +703,9 @@
             }, 3000);
         }
         
-        function createCard(cardData = null, cardIndex = null) {
+        function createCard(cardData = null, cardIndex = null, uniqueId = null) {
             const id = cardData ? cardData.id : Date.now();
+            const displayId = uniqueId || id; // ID único para el DOM
             
             let initialNotes = '';
             if (!cardData) {
@@ -708,17 +732,18 @@
             
             const cardDiv = document.createElement('div');
             cardDiv.className = 'extraction-card';
-            cardDiv.id = `card-${card.id}`;
+            cardDiv.id = `card-${displayId}`;
+            cardDiv.dataset.cardId = id; // ID real de la tarjeta
             
             const displayIndex = cardIndex !== null ? cardIndex : cards.findIndex(c => c.id === card.id);
             
             cardDiv.innerHTML = `
                 <div class="card-header">
-                    <div class="card-number" id="cardnum-${card.id}">Extracción #${displayIndex + 1}</div>
-                    <button class="btn-delete" onclick="deleteCard(${card.id})">🗑️ Eliminar</button>
+                    <div class="card-number" id="cardnum-${displayId}">Extracción #${displayIndex + 1}</div>
+                    <button class="btn-delete" onclick="deleteCard(${id})">🗑️ Eliminar</button>
                 </div>
-                <div class="image-upload" onclick="document.getElementById('file-${card.id}').click()">
-                    ${card.image ? `<img src="${card.image}" alt="Espresso">` : `
+                <div class="image-upload" onclick="document.getElementById('file-${displayId}').click()">
+                    ${card.image ? `<img src="${card.image}" alt="Espresso" style="opacity: 1;">` : `
                     <div class="upload-placeholder">
                         <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
@@ -726,14 +751,14 @@
                         <div>Subir foto</div>
                     </div>`}
                 </div>
-                <input type="file" id="file-${card.id}" accept="image/*" onchange="handleImageUpload(event, ${card.id})">
-                <textarea id="notes-${card.id}" placeholder="Detalles de la extracción y comentarios..." oninput="autoSaveCard(${card.id})">${card.notes}</textarea>
+                <input type="file" id="file-${displayId}" accept="image/*" onchange="handleImageUpload(event, ${id}, '${displayId}')">
+                <textarea id="notes-${displayId}" placeholder="Detalles de la extracción y comentarios..." oninput="autoSaveCard(${id}, '${displayId}')" style="opacity: 1; color: #333;">${card.notes}</textarea>
             `;
             
             return { card, element: cardDiv };
         }
         
-        async function handleImageUpload(event, cardId) {
+        async function handleImageUpload(event, cardId, displayId) {
             const file = event.target.files[0];
             if (!file) return;
             
@@ -748,8 +773,14 @@
                     if (cardIndex !== -1) {
                         cards[cardIndex].image = compressed;
                         
-                        const uploadDiv = event.target.previousElementSibling;
-                        uploadDiv.innerHTML = `<img src="${compressed}" alt="Espresso">`;
+                        // Actualizar TODAS las copias de esta tarjeta
+                        const allCardCopies = document.querySelectorAll(`[data-card-id="${cardId}"]`);
+                        allCardCopies.forEach(cardElement => {
+                            const uploadDiv = cardElement.querySelector('.image-upload');
+                            if (uploadDiv) {
+                                uploadDiv.innerHTML = `<img src="${compressed}" alt="Espresso" style="opacity: 1;">`;
+                            }
+                        });
                         
                         saveToLocalStorage();
                     }
@@ -760,11 +791,21 @@
             reader.readAsDataURL(file);
         }
         
-        function autoSaveCard(cardId) {
+        function autoSaveCard(cardId, displayId) {
             const cardIndex = cards.findIndex(c => c.id === cardId);
             if (cardIndex !== -1) {
-                const notes = document.getElementById(`notes-${cardId}`).value;
+                const notes = document.getElementById(`notes-${displayId}`).value;
                 cards[cardIndex].notes = notes;
+                
+                // Sincronizar el texto en todas las copias de esta tarjeta
+                const allCardCopies = document.querySelectorAll(`[data-card-id="${cardId}"]`);
+                allCardCopies.forEach(cardElement => {
+                    const textarea = cardElement.querySelector('textarea');
+                    if (textarea && textarea.id !== `notes-${displayId}`) {
+                        textarea.value = notes;
+                    }
+                });
+                
                 saveToLocalStorage();
             }
         }
@@ -847,13 +888,18 @@
         function addCard() {
             const newCardData = createCard(null, cards.length);
             cards.push(newCardData.card);
-            document.getElementById('cardsWrapper').appendChild(newCardData.element);
             saveToLocalStorage();
             
-            // Scroll automático a la nueva tarjeta (última)
+            // Re-renderizar todas las tarjetas (con las 3 copias)
+            renderAllCards();
+            
+            // Scroll automático a la nueva tarjeta en el grupo del medio
             setTimeout(() => {
                 const container = document.getElementById('cardsContainer');
-                container.scrollLeft = container.scrollWidth;
+                const cardWidth = 370;
+                const middleGroupStart = cards.length * cardWidth;
+                const newCardPosition = middleGroupStart + ((cards.length - 1) * cardWidth);
+                container.scrollLeft = newCardPosition;
             }, 100);
         }
         
@@ -861,10 +907,14 @@
             const wrapper = document.getElementById('cardsWrapper');
             wrapper.innerHTML = '';
             
-            cards.forEach((cardData, index) => {
-                const cardElement = createCard(cardData, index);
-                wrapper.appendChild(cardElement.element);
-            });
+            // Crear 3 copias de las tarjetas con IDs únicos para evitar conflictos
+            for (let copy = 0; copy < 3; copy++) {
+                cards.forEach((cardData, index) => {
+                    const uniqueId = `${cardData.id}-copy${copy}`;
+                    const cardElement = createCard(cardData, index, uniqueId);
+                    wrapper.appendChild(cardElement.element);
+                });
+            }
         }
         
         function init() {
@@ -872,53 +922,58 @@
             
             if (savedCards.length > 0) {
                 cards = savedCards;
-                renderAllCards();
-                showSaveIndicator(`✓ Cargadas ${savedCards.length} tarjetas`);
-                
-                // Scroll automático a la última tarjeta
-                setTimeout(() => {
-                    const container = document.getElementById('cardsContainer');
-                    container.scrollLeft = container.scrollWidth;
-                }, 500);
             } else {
                 for (let i = 0; i < 10; i++) {
                     const newCardData = createCard();
                     cards.push(newCardData.card);
                 }
-                renderAllCards();
                 saveToLocalStorage();
-                
-                // Scroll automático a la última tarjeta
-                setTimeout(() => {
-                    const container = document.getElementById('cardsContainer');
-                    container.scrollLeft = container.scrollWidth;
-                }, 500);
             }
             
-            // Implementar scroll circular infinito
+            renderAllCards();
+            
+            if (savedCards.length > 0) {
+                showSaveIndicator(`✓ Cargadas ${savedCards.length} tarjetas`);
+            }
+            
+            // Scroll inicial: posicionar en el segundo grupo (originales)
+            setTimeout(() => {
+                const container = document.getElementById('cardsContainer');
+                const cardWidth = 370; // 350 + 20 gap
+                const middlePosition = cards.length * cardWidth;
+                container.scrollLeft = middlePosition + (container.scrollWidth - container.clientWidth) / 2;
+            }, 500);
+            
+            // Scroll infinito: detectar cuando llega a los extremos
             const container = document.getElementById('cardsContainer');
+            let isScrolling = false;
             
             container.addEventListener('scroll', () => {
-                if (cards.length === 0) return;
+                if (isScrolling) return;
                 
                 const scrollLeft = container.scrollLeft;
                 const scrollWidth = container.scrollWidth;
                 const clientWidth = container.clientWidth;
-                const padding = parseInt(getComputedStyle(document.querySelector('.cards-wrapper')).paddingLeft);
+                const cardWidth = 370;
+                const totalCards = cards.length;
                 
-                // Si llegó al final (última tarjeta), volver al principio
-                if (scrollLeft + clientWidth >= scrollWidth - 10) {
-                    setTimeout(() => {
-                        container.scrollLeft = padding;
-                    }, 50);
+                // Posición del primer grupo (izquierda)
+                const firstGroupEnd = cardWidth * totalCards;
+                // Posición del tercer grupo (derecha)
+                const thirdGroupStart = cardWidth * totalCards * 2;
+                
+                // Si llegó al inicio del primer grupo, saltar al segundo
+                if (scrollLeft < firstGroupEnd / 2) {
+                    isScrolling = true;
+                    container.scrollLeft = scrollLeft + (cardWidth * totalCards);
+                    setTimeout(() => { isScrolling = false; }, 100);
                 }
                 
-                // Si llegó al principio (primera tarjeta), ir al final
-                if (scrollLeft <= padding + 10) {
-                    setTimeout(() => {
-                        const lastCardPosition = scrollWidth - clientWidth - padding;
-                        container.scrollLeft = lastCardPosition;
-                    }, 50);
+                // Si llegó al inicio del tercer grupo, saltar al segundo
+                if (scrollLeft > thirdGroupStart) {
+                    isScrolling = true;
+                    container.scrollLeft = scrollLeft - (cardWidth * totalCards);
+                    setTimeout(() => { isScrolling = false; }, 100);
                 }
             });
         }

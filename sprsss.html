@@ -241,7 +241,7 @@
         
         .extraction-card {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 1);
             border-radius: 15px;
             padding: 20px;
             width: 350px;
@@ -250,6 +250,7 @@
             color: #333;
             white-space: normal;
             vertical-align: top;
+            opacity: 1;
         }
         
         .card-navigation {
@@ -893,6 +894,33 @@
                     container.scrollLeft = container.scrollWidth;
                 }, 500);
             }
+            
+            // Implementar scroll circular infinito
+            const container = document.getElementById('cardsContainer');
+            
+            container.addEventListener('scroll', () => {
+                if (cards.length === 0) return;
+                
+                const scrollLeft = container.scrollLeft;
+                const scrollWidth = container.scrollWidth;
+                const clientWidth = container.clientWidth;
+                const padding = parseInt(getComputedStyle(document.querySelector('.cards-wrapper')).paddingLeft);
+                
+                // Si llegó al final (última tarjeta), volver al principio
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    setTimeout(() => {
+                        container.scrollLeft = padding;
+                    }, 50);
+                }
+                
+                // Si llegó al principio (primera tarjeta), ir al final
+                if (scrollLeft <= padding + 10) {
+                    setTimeout(() => {
+                        const lastCardPosition = scrollWidth - clientWidth - padding;
+                        container.scrollLeft = lastCardPosition;
+                    }, 50);
+                }
+            });
         }
         
         init();

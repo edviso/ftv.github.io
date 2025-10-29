@@ -221,14 +221,22 @@
         
         .cards-container {
             overflow-x: auto;
+            overflow-y: hidden;
             white-space: nowrap;
             padding: 20px 0;
+            width: 100%;
             -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .cards-container::-webkit-scrollbar {
+            display: none;
         }
         
         .cards-wrapper {
             display: inline-flex;
             gap: 20px;
+            padding: 0 calc(50vw - 175px);
         }
         
         .extraction-card {
@@ -237,10 +245,63 @@
             border-radius: 15px;
             padding: 20px;
             width: 350px;
+            min-width: 350px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.3);
             color: #333;
             white-space: normal;
             vertical-align: top;
+        }
+        
+        .card-navigation {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .nav-button {
+            background: rgba(255, 255, 255, 0.9);
+            color: #6B4423;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: 2px solid #6B4423;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .nav-button:hover {
+            background: #6B4423;
+            color: white;
+        }
+        
+        .card-indicator {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .extraction-card {
+            display: block;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 350px;
+            max-width: 350px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            color: #333;
+            white-space: normal;
+            flex-shrink: 0;
+            opacity: 0.3;
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+        
+        .extraction-card.active {
+            opacity: 1;
+            transform: scale(1);
         }
         
         .card-header {
@@ -381,7 +442,7 @@
             </div>
         </div>
         
-        <div class="cards-container">
+        <div class="cards-container" id="cardsContainer">
             <div class="cards-wrapper" id="cardsWrapper">
                 <!-- Las tarjetas se generarán aquí -->
             </div>
@@ -787,6 +848,12 @@
             cards.push(newCardData.card);
             document.getElementById('cardsWrapper').appendChild(newCardData.element);
             saveToLocalStorage();
+            
+            // Scroll automático a la nueva tarjeta (última)
+            setTimeout(() => {
+                const container = document.getElementById('cardsContainer');
+                container.scrollLeft = container.scrollWidth;
+            }, 100);
         }
         
         function renderAllCards() {
@@ -806,6 +873,12 @@
                 cards = savedCards;
                 renderAllCards();
                 showSaveIndicator(`✓ Cargadas ${savedCards.length} tarjetas`);
+                
+                // Scroll automático a la última tarjeta
+                setTimeout(() => {
+                    const container = document.getElementById('cardsContainer');
+                    container.scrollLeft = container.scrollWidth;
+                }, 500);
             } else {
                 for (let i = 0; i < 10; i++) {
                     const newCardData = createCard();
@@ -813,6 +886,12 @@
                 }
                 renderAllCards();
                 saveToLocalStorage();
+                
+                // Scroll automático a la última tarjeta
+                setTimeout(() => {
+                    const container = document.getElementById('cardsContainer');
+                    container.scrollLeft = container.scrollWidth;
+                }, 500);
             }
         }
         

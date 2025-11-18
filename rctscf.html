@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Recetas de Café</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe4cc 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 15px 10px 20px 10px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #6b4423;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            padding: 0 10px;
+        }
+
+        h1::before {
+            content: "☕ ";
+        }
+
+        h1::after {
+            content: " ☕";
+        }
+
+        .carousel-container {
+            position: relative;
+            height: 500px;
+            margin-bottom: 80px;
+            perspective: 1000px;
+            touch-action: pan-y;
+            z-index: 1;
+        }
+
+        .carousel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+        }
+
+        .carousel.spinning {
+            transition: transform 3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .card {
+            position: absolute;
+            width: 90vw;
+            max-width: 350px;
+            height: 480px;
+            left: 50%;
+            top: 50%;
+            transform-origin: center;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            overflow: hidden;
+            backface-visibility: hidden;
+            pointer-events: auto;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #8b6f47 0%, #6b4423 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .card-content {
+            padding: 15px;
+            height: calc(100% - 48px);
+        }
+
+        .image-container {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #faf8f5;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .image-container:active {
+            background-color: #f0ede8;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .image-placeholder {
+            color: #8b6f47;
+            text-align: center;
+            font-size: 1em;
+            padding: 20px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0 10px 20px 10px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 16px 12px;
+            background: linear-gradient(135deg, #8b6f47 0%, #6b4423 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(107, 68, 35, 0.3);
+            touch-action: manipulation;
+            min-height: 50px;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            background: linear-gradient(135deg, #bbb 0%, #999 100%);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .btn-random {
+            background: linear-gradient(135deg, #d4763a 0%, #c0563a 100%);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+
+
+        .status-message {
+            text-align: center;
+            color: #6b4423;
+            font-size: 0.9em;
+            margin-top: 10px;
+            padding: 0 10px 20px 10px;
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mi Libro de Recetas de Café</h1>
+
+        <div class="carousel-container">
+            <div class="carousel" id="carousel"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-full" onclick="createNewRecipe()">Crear Nueva Receta</button>
+            
+            <div class="button-row">
+                <button onclick="exportJSON()">Exportar JSON</button>
+                <button onclick="document.getElementById('importFile').click()">Importar JSON</button>
+            </div>
+            
+            <button class="btn-full btn-random" onclick="randomRecipe()" id="randomBtn">Receta al Azar</button>
+            
+            <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
+        </div>
+        
+        <div class="status-message" id="statusMsg"></div>
+    </div>
+
+    <script>
+        let recipes = [];
+        let currentIndex = 0;
+        let usedRandomIndices = [];
+        let isSpinning = false;
+        const MAX_IMAGE_SIZE = 800; // px para el lado más largo
+        const JPEG_QUALITY = 0.7; // 70% calidad
+
+        function showStatus(msg, duration = 2000) {
+            const statusEl = document.getElementById('statusMsg');
+            statusEl.textContent = msg;
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, duration);
+        }
+
+        function initApp() {
+            const stored = localStorage.getItem('coffeeRecipes');
+            if (stored) {
+                try {
+                    recipes = JSON.parse(stored);
+                } catch (e) {
+                    showStatus('Error al cargar recetas guardadas');
+                    recipes = [];
+                }
+            }
+            
+            if (recipes.length === 0) {
+                createNewRecipe();
+            } else {
+                renderCarousel();
+            }
+        }
+
+        function createNewRecipe() {
+            const newRecipe = {
+                id: Date.now(),
+                number: recipes.length + 1,
+                image: null
+            };
+            recipes.push(newRecipe);
+            saveRecipes();
+            currentIndex = recipes.length - 1;
+            renderCarousel();
+            showStatus('Nueva receta creada');
+        }
+
+        function saveRecipes() {
+            try {
+                localStorage.setItem('coffeeRecipes', JSON.stringify(recipes));
+            } catch (e) {
+                showStatus('Error: Memoria llena. Exporta tus recetas.', 4000);
+            }
+        }
+
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onerror = () => reject(new Error('Error al leer archivo'));
+                
+                reader.onload = (e) => {
+                    const img = new Image();
+                    
+                    img.onerror = () => reject(new Error('Error al cargar imagen'));
+                    
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Calcular nuevas dimensiones manteniendo proporción
+                        if (width > height) {
+                            if (width > MAX_IMAGE_SIZE) {
+                                height = (height * MAX_IMAGE_SIZE) / width;
+                                width = MAX_IMAGE_SIZE;
+                            }
+                        } else {
+                            if (height > MAX_IMAGE_SIZE) {
+                                width = (width * MAX_IMAGE_SIZE) / height;
+                                height = MAX_IMAGE_SIZE;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Convertir a JPEG con compresión
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+                        
+                        // Verificar tamaño aproximado
+                        const sizeKB = Math.round((compressedDataUrl.length * 3) / 4 / 1024);
+                        showStatus(`Imagen optimizada: ~${sizeKB}KB`, 3000);
+                        
+                        resolve(compressedDataUrl);
+                    };
+                    
+                    img.src = e.target.result;
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderCarousel() {
+            const carousel = document.getElementById('carousel');
+            carousel.innerHTML = '';
+
+            if (recipes.length === 0) return;
+
+            const angleStep = 360 / recipes.length;
+            const radius = window.innerWidth > 400 ? 400 : 300;
+
+            recipes.forEach((recipe, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                const angle = angleStep * index;
+                
+                card.style.transform = `
+                    translate(-50%, -50%)
+                    rotateY(${angle}deg)
+                    translateZ(${radius}px)
+                `;
+
+                card.innerHTML = `
+                    <div class="card-header">Receta #${recipe.number}</div>
+                    <div class="card-content">
+                        <div class="image-container" onclick="selectImage(${index})">
+                            ${recipe.image 
+                                ? `<img src="${recipe.image}" alt="Receta ${recipe.number}">` 
+                                : '<div class="image-placeholder">Toca para añadir imagen<br>768×1124 px</div>'
+                            }
+                        </div>
+                    </div>
+                `;
+
+                carousel.appendChild(card);
+            });
+
+            updateCarouselRotation();
+        }
+
+        function updateCarouselRotation() {
+            const carousel = document.getElementById('carousel');
+            const angleStep = 360 / recipes.length;
+            const rotation = -angleStep * currentIndex;
+            carousel.style.transform = `rotateY(${rotation}deg)`;
+        }
+
+        function navigateCarousel(direction) {
+            if (isSpinning) return;
+            currentIndex = (currentIndex + direction + recipes.length) % recipes.length;
+            updateCarouselRotation();
+        }
+
+        async function selectImage(index) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 10 * 1024 * 1024) { // 10MB
+                        showStatus('Imagen muy grande. Máximo 10MB', 3000);
+                        return;
+                    }
+                    
+                    showStatus('Optimizando imagen...');
+                    
+                    try {
+                        const compressedImage = await compressImage(file);
+                        recipes[index].image = compressedImage;
+                        saveRecipes();
+                        renderCarousel();
+                    } catch (error) {
+                        showStatus('Error al procesar imagen', 3000);
+                        console.error(error);
+                    }
+                }
+            };
+            input.click();
+        }
+
+        function exportJSON() {
+            const dataStr = JSON.stringify(recipes, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            const date = new Date().toISOString().split('T')[0];
+            link.download = `recetas-cafe-${date}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            showStatus('JSON exportado correctamente');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        recipes = imported;
+                        saveRecipes();
+                        currentIndex = 0;
+                        usedRandomIndices = [];
+                        renderCarousel();
+                        showStatus(`${recipes.length} recetas importadas`);
+                    } catch (error) {
+                        showStatus('Error al importar JSON', 3000);
+                    }
+                };
+                reader.readAsText(file);
+            }
+            event.target.value = '';
+        }
+
+        function randomRecipe() {
+            if (isSpinning || recipes.length === 0) return;
+            
+            if (usedRandomIndices.length >= recipes.length) {
+                usedRandomIndices = [];
+                showStatus('Reiniciando sorteos...');
+            }
+
+            let availableIndices = recipes.map((_, i) => i)
+                .filter(i => !usedRandomIndices.includes(i));
+            
+            const targetIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            usedRandomIndices.push(targetIndex);
+
+            isSpinning = true;
+            const carousel = document.getElementById('carousel');
+            const randomBtn = document.getElementById('randomBtn');
+            randomBtn.disabled = true;
+            
+            carousel.classList.add('spinning');
+            
+            const angleStep = 360 / recipes.length;
+            const fullRotations = 720;
+            const finalRotation = -angleStep * targetIndex - fullRotations;
+            
+            carousel.style.transform = `rotateY(${finalRotation}deg)`;
+
+            setTimeout(() => {
+                carousel.classList.remove('spinning');
+                currentIndex = targetIndex;
+                updateCarouselRotation();
+                isSpinning = false;
+                randomBtn.disabled = false;
+                showStatus(`Receta #${recipes[targetIndex].number} seleccionada`);
+            }, 3000);
+        }
+
+        // Soporte para gestos táctiles
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.querySelector('.carousel-container').addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        document.querySelector('.carousel-container').addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+
+        function handleSwipe() {
+            if (isSpinning) return;
+            const swipeThreshold = 50;
+            if (touchEndX < touchStartX - swipeThreshold) {
+                navigateCarousel(1); // Swipe izquierda
+            }
+            if (touchEndX > touchStartX + swipeThreshold) {
+                navigateCarousel(-1); // Swipe derecha
+            }
+        }
+
+        initApp();
+    </script>
+</body>
+</html>

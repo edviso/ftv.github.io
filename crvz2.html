@@ -598,7 +598,8 @@
             <h3>Control Diario de Temperatura</h3>
             <div class="days-scroll" id="daysScroll"></div>
             <div class="progress-info">
-                Avance del proceso: <span class="progress-percentage" id="progressPercentage">0%</span>
+                <span>Avance del proceso: <span class="progress-percentage" id="progressPercentage">0%</span></span>
+                <span>Faltan: <span class="progress-left" id="daysLeft">0 días</span></span>
             </div>
             
             <div class="color-legend">
@@ -1161,6 +1162,10 @@
         // Calcular y mostrar porcentaje de avance
         const progressPercentage = Math.round((currentDay / 60) * 100);
         document.getElementById('progressPercentage').textContent = progressPercentage + '%';
+        
+        // Calcular y mostrar días restantes
+        const daysRemaining = 60 - currentDay;
+        document.getElementById('daysLeft').textContent = daysRemaining + (daysRemaining === 1 ? ' día' : ' días');
 
         // Carrusel de tarjetas
         const cardsScroll = document.getElementById('cardsScroll');

@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento Lote 54</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+            color: #212121;
+            padding-bottom: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #424242 0%, #616161 100%);
+            color: #fafafa;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #e0e0e0;
+            font-weight: 400;
+        }
+
+        .container {
+            padding: 12px;
+            max-width: 100%;
+        }
+
+        .card {
+            background: #fafafa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card-header {
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+            user-select: none;
+        }
+
+        .card-header:active {
+            background: #eeeeee;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #424242;
+        }
+
+        .arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #757575;
+            transition: transform 0.3s ease;
+        }
+
+        .arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .card-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .card-content.open {
+            max-height: 2000px;
+        }
+
+        .card-body {
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-weight: 500;
+            color: #616161;
+        }
+
+        .data-value {
+            font-weight: 400;
+            color: #212121;
+            text-align: right;
+        }
+
+        .ingredient-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .ingredient-item:last-child {
+            border-bottom: none;
+        }
+
+        .ingredient-name {
+            font-weight: 500;
+            color: #424242;
+            margin-bottom: 3px;
+        }
+
+        .ingredient-details {
+            font-size: 13px;
+            color: #757575;
+        }
+
+        .temp-control {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .temp-control h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #424242;
+            margin-bottom: 12px;
+        }
+
+        .days-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding: 4px 0;
+        }
+
+        .days-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .days-scroll::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .days-scroll::-webkit-scrollbar-thumb {
+            background: #757575;
+            border-radius: 4px;
+        }
+
+        .days-scroll::-webkit-scrollbar-thumb:hover {
+            background: #616161;
+        }
+
+        .progress-info {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #616161;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-percentage {
+            color: #424242;
+            font-weight: 600;
+        }
+
+        .days-remaining {
+            color: #424242;
+            font-weight: 600;
+        }
+
+        .day-btn {
+            display: inline-block;
+            padding: 10px 12px;
+            margin-right: 8px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            font-size: 13px;
+            line-height: 1.4;
+            text-align: center;
+            min-width: 140px;
+            vertical-align: top;
+            white-space: normal;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .day-btn:active {
+            transform: scale(0.97);
+        }
+
+        .day-btn.current {
+            border-color: #424242;
+            border-width: 3px;
+            box-shadow: 0 0 0 2px rgba(66, 66, 66, 0.2);
+        }
+
+        .day-date {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .day-stage {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 2px;
+            font-size: 12px;
+        }
+
+        .day-temp {
+            font-weight: 400;
+            display: block;
+            font-size: 12px;
+        }
+
+        .stage-arranque { background: #fff9c4; color: #6d6d00; }
+        .stage-vigorosa { background: #ffcdd2; color: #8b0000; }
+        .stage-final { background: #ffe0b2; color: #8b4500; }
+        .stage-maduracion { background: #d7ccc8; color: #4e3629; }
+        .stage-cold1 { background: #e3f2fd; color: #0d47a1; }
+        .stage-cold2 { background: #bbdefb; color: #1565c0; }
+        .stage-cold3 { background: #90caf9; color: #1976d2; }
+        .stage-embotellado { background: #e1bee7; color: #4a148c; }
+        .stage-carbonatacion { background: #c8e6c9; color: #1b5e20; }
+        .stage-maduracion-botella { background: #bdbdbd; color: #212121; }
+
+        .color-legend {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .legend-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #616161;
+            margin-bottom: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            margin-right: 8px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .legend-label {
+            color: #424242;
+            line-height: 1.3;
+        }
+
+        .style-notes {
+            font-size: 14px;
+            color: #424424;
+            line-height: 1.7;
+        }
+
+        .style-notes strong {
+            color: #212121;
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
+
+        .style-notes strong:first-child {
+            margin-top: 0;
+        }
+
+        .cards-carousel {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .cards-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            gap: 12px;
+            padding: 0 12px;
+            scrollbar-width: none;
+        }
+
+        .cards-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cards-scroll .card {
+            min-width: calc(100vw - 24px);
+            scroll-snap-align: start;
+            margin-bottom: 0;
+        }
+
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 0;
+        }
+
+        .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #bdbdbd;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .indicator-dot.active {
+            background: #616161;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .beer-cards-carousel {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .beer-carousel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #424242;
+            padding: 0 12px 8px 12px;
+        }
+
+        .beer-cards-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            gap: 12px;
+            padding: 0 12px;
+            scrollbar-width: none;
+        }
+
+        .beer-cards-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .beer-cards-scroll .card {
+            min-width: calc(100vw - 24px);
+            scroll-snap-align: start;
+            margin-bottom: 0;
+        }
+
+        .beer-card-header {
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            user-select: none;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .beer-card-header:active {
+            opacity: 0.9;
+        }
+
+        .beer-amber-deep {
+            background: linear-gradient(135deg, #d97e30 0%, #b85c1a 100%);
+        }
+
+        .beer-pale-gold {
+            background: linear-gradient(135deg, #f4d03f 0%, #e6b800 100%);
+        }
+
+        .beer-medium-gold {
+            background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);
+        }
+
+        .beer-amber-medium {
+            background: linear-gradient(135deg, #e67e22 0%, #ca6510 100%);
+        }
+
+        .beer-amber-copper {
+            background: linear-gradient(135deg, #d35400 0%, #a04000 100%);
+        }
+
+        .beer-red-copper {
+            background: linear-gradient(135deg, #c0392b 0%, #922b21 100%);
+        }
+
+        .beer-dark-brown {
+            background: linear-gradient(135deg, #6e2c00 0%, #3e1800 100%);
+        }
+
+        .beer-black {
+            background: linear-gradient(135deg, #1c1c1c 0%, #000000 100%);
+        }
+
+        .beer-card-title-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .beer-pale-gold .beer-card-title-text,
+        .beer-medium-gold .beer-card-title-text {
+            color: #4a3800;
+        }
+
+        .beer-card-arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #ffffff;
+            transition: transform 0.3s ease;
+        }
+
+        .beer-pale-gold .beer-card-arrow,
+        .beer-medium-gold .beer-card-arrow {
+            border-top-color: #4a3800;
+        }
+
+        .beer-card-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .beer-carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 0;
+            flex-wrap: wrap;
+        }
+
+        .beer-indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #bdbdbd;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .beer-indicator-dot.active {
+            background: #616161;
+            transform: scale(1.3);
+        }
+
+        .observations-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.6;
+            resize: vertical;
+            background: #ffffff;
+            color: #212121;
+        }
+
+        .observations-textarea:focus {
+            outline: none;
+            border-color: #757575;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 90px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-save {
+            background: #616161;
+            color: #ffffff;
+        }
+
+        .btn-save:hover {
+            background: #757575;
+        }
+
+        .btn-export {
+            background: #e0e0e0;
+            color: #424242;
+        }
+
+        .btn-export:hover {
+            background: #bdbdbd;
+        }
+
+        .btn-import {
+            background: #e0e0e0;
+            color: #424242;
+        }
+
+        .btn-import:hover {
+            background: #bdbdbd;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .status-message {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #c8e6c9;
+            color: #1b5e20;
+        }
+
+        .status-message.error {
+            background: #ffcdd2;
+            color: #8b0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Munich Amber Ale / lote 54 v1</h1>
+        <p>American Amber Ale / Munich Amber Ale (BJCP 19A)</p>
+    </div>
+
+    <div class="container">
+        <div class="temp-control">
+            <h3>Control Diario de Temperatura</h3>
+            <div class="days-scroll" id="daysScroll"></div>
+            <div class="progress-info">
+                <span>Avance del proceso: <span class="progress-percentage" id="progressPercentage">0%</span></span>
+                <span>Faltan: <span class="days-remaining" id="daysRemaining">0</span> días</span>
+            </div>
+            
+            <div class="color-legend">
+                <div class="legend-title">Referencia de etapas:</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fff9c4;"></div>
+                    <div class="legend-label">Arranque limpio (Días 1-2)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffcdd2;"></div>
+                    <div class="legend-label">Fermentación vigorosa (Días 3-5)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffe0b2;"></div>
+                    <div class="legend-label">Final primaria + descanso diacetilo (Días 6-8)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #d7ccc8;"></div>
+                    <div class="legend-label">Maduración cálida (Días 9-12)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(to right, #e3f2fd, #90caf9);"></div>
+                    <div class="legend-label">Cold crash (Días 13-17)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e1bee7;"></div>
+                    <div class="legend-label">Embotellado + priming (Día 18)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #c8e6c9;"></div>
+                    <div class="legend-label">Carbonatación en botella (Días 19-32)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #bdbdbd;"></div>
+                    <div class="legend-label">Maduración en botella (Días 33-60)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Observaciones</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <textarea 
+                        id="observationsText" 
+                        class="observations-textarea" 
+                        placeholder="Escribe aquí tus observaciones sobre el proceso de elaboración..."
+                    ></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-save" onclick="saveObservations()">Guardar</button>
+                        <button class="btn btn-export" onclick="exportJSON()">ExJson</button>
+                        <button class="btn btn-import" onclick="document.getElementById('fileInput').click()">ImJson</button>
+                    </div>
+                    
+                    <input type="file" id="fileInput" class="file-input" accept=".json" onchange="importJSON(event)">
+                    
+                    <div id="statusMessage" class="status-message"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-carousel">
+            <div class="cards-scroll" id="cardsScroll">
+                <div class="card">
+                    <div class="card-header" onclick="toggleCard(this)">
+                        <span class="card-title">Datos Generales</span>
+                        <div class="arrow"></div>
+                    </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="data-row">
+                        <span class="data-label">Fecha de elaboración</span>
+                        <span class="data-value">02 de octubre de 2025</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Método de elaboración</span>
+                        <span class="data-value">Hybrid Mash</span>
+                    </div>
+                    <div class="data-row" style="padding-top: 12px; margin-top: 8px; border-top: 1px solid #e0e0e0;">
+                        <span class="data-label">Volumen final</span>
+                        <span class="data-value">14 L</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">ABV (alcohol)</span>
+                        <span class="data-value">6.07%</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">OG (densidad inicial)</span>
+                        <span class="data-value">1.061 SG</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">FG (densidad final)</span>
+                        <span class="data-value">1.015 SG</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">IBUs (amargor)</span>
+                        <span class="data-value">19.7 IBU</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Color</span>
+                        <span class="data-value">30.3 EBC (Ámbar oscuro)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Ingredientes</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Pilsner (2 Row) Bel</div>
+                        <div class="ingredient-details">38.4% • 1500 g • 3.9 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Munich Malt</div>
+                        <div class="ingredient-details">38.4% • 1500 g • 17.7 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Pale Malt (2 Row) Bel</div>
+                        <div class="ingredient-details">15.3% • 600 g • 5.9 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Caramel / Crystal Malt</div>
+                        <div class="ingredient-details">6.4% • 250 g • 39.4 EBC</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Chocolate Malt</div>
+                        <div class="ingredient-details">1.5% • 60 g • 886.5 EBC</div>
+                    </div>
+                    <div class="ingredient-item" style="border-bottom: none; padding-top: 12px; margin-top: 8px; border-top: 2px solid #e0e0e0;">
+                        <div class="ingredient-name" style="color: #616161;">Peso total de granos</div>
+                        <div class="ingredient-details" style="font-weight: 600; color: #212121;">3910 g</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Lúpulos</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Simcoe</div>
+                        <div class="ingredient-details">9 g • Hervor 50 min • 19.7 IBU</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Cascade</div>
+                        <div class="ingredient-details">30 g • Adición a 0 min (whirlpool) • 0 IBU</div>
+                    </div>
+                    <div class="ingredient-item" style="border-bottom: none;">
+                        <div class="ingredient-details" style="color: #757575; font-style: italic; margin-top: 4px;">
+                            El Cascade aporta aroma cítrico/floral fresco
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Macerado</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Mash In</div>
+                        <div class="ingredient-details">66.7°C • 60 min</div>
+                        <div class="ingredient-details" style="margin-top: 4px;">Añadir 12.70 L de agua a 71.9°C</div>
+                    </div>
+                    <div class="ingredient-item">
+                        <div class="ingredient-name">Lavado (Sparge)</div>
+                        <div class="ingredient-details">67.8°C • 20 min</div>
+                        <div class="ingredient-details" style="margin-top: 4px;">Añadir 8.79 L de agua a 69.6°C</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Notas de Estilo</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <div class="style-notes">
+                        <strong>Perfil general:</strong>
+                        Cerveza maltosa con notas de caramelo y leve tostado. Color ámbar profundo (30.3 EBC) con un amargor moderado bajo (19.7 IBUs), lo que la hace más dulce que el rango clásico del estilo (25-40 IBUs).
+
+                        <strong>Alcohol:</strong>
+                        6.07%, en el límite superior del estilo American Amber Ale.
+
+                        <strong>Aroma:</strong>
+                        El lúpulo Cascade añadido a 0 min (whirlpool) proporciona toques cítricos y florales frescos, complementando el perfil maltoso sin dominar.
+
+                        <strong>Carácter maltoso:</strong>
+                        Predomina la malta Munich (38.4%) junto con Pilsner, creando una base rica. El Crystal Malt aporta dulzor a caramelo, mientras que el Chocolate Malt añade sutiles notas tostadas y complejidad al color.
+
+                        <strong>Balance:</strong>
+                        Ligeramente desbalanceado hacia lo maltoso debido al bajo amargor, resultando en una cerveza más dulce y reconfortante, ideal para quienes prefieren perfiles menos amargos.
+                    </div>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <div class="carousel-indicators" id="carouselIndicators"></div>
+        </div>
+
+        <div class="beer-cards-carousel">
+            <h3 class="beer-carousel-title">Recetas</h3>
+            <div class="beer-cards-scroll" id="beerCardsScroll">
+                <div class="card">
+                    <div class="beer-card-header beer-amber-deep" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Munich Amber Ale</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText1" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Munich Amber Ale..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(1)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(1, 'Munich Amber Ale')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput1').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput1" class="file-input" accept=".json" onchange="importBeerJSON(event, 1)">
+                            
+                            <div id="beerStatusMessage1" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-pale-gold" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Pilsner SMaSH</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText2" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Pilsner SMaSH..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(2)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(2, 'Pilsner SMaSH')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput2').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput2" class="file-input" accept=".json" onchange="importBeerJSON(event, 2)">
+                            
+                            <div id="beerStatusMessage2" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-medium-gold" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">APA cítrica</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText3" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta APA cítrica..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(3)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(3, 'APA cítrica')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput3').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput3" class="file-input" accept=".json" onchange="importBeerJSON(event, 3)">
+                            
+                            <div id="beerStatusMessage3" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-amber-medium" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">American Amber</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText4" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta American Amber..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(4)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(4, 'American Amber')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput4').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput4" class="file-input" accept=".json" onchange="importBeerJSON(event, 4)">
+                            
+                            <div id="beerStatusMessage4" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-amber-copper" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Märzen Ale</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText5" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Märzen Ale..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(5)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(5, 'Märzen Ale')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput5').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput5" class="file-input" accept=".json" onchange="importBeerJSON(event, 5)">
+                            
+                            <div id="beerStatusMessage5" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-red-copper" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Irish Red</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText6" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Irish Red..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(6)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(6, 'Irish Red')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput6').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput6" class="file-input" accept=".json" onchange="importBeerJSON(event, 6)">
+                            
+                            <div id="beerStatusMessage6" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-dark-brown" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Porter</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText7" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Porter..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(7)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(7, 'Porter')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput7').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput7" class="file-input" accept=".json" onchange="importBeerJSON(event, 7)">
+                            
+                            <div id="beerStatusMessage7" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="beer-card-header beer-black" onclick="toggleCard(this)">
+                        <span class="beer-card-title-text">Stout</span>
+                        <div class="beer-card-arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <textarea 
+                                id="beerText8" 
+                                class="observations-textarea" 
+                                placeholder="Escribe aquí los datos de la receta Stout..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-save" onclick="saveBeerRecipe(8)">Guardar</button>
+                                <button class="btn btn-export" onclick="exportBeerJSON(8, 'Stout')">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('beerFileInput8').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="beerFileInput8" class="file-input" accept=".json" onchange="importBeerJSON(event, 8)">
+                            
+                            <div id="beerStatusMessage8" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="beer-carousel-indicators" id="beerCarouselIndicators"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-title">Insumos disponibles</span>
+                <div class="arrow"></div>
+            </div>
+            <div class="card-content">
+                <div class="card-body">
+                    <textarea 
+                        id="insumosText" 
+                        class="observations-textarea" 
+                        placeholder="Escribe aquí el inventario de tus insumos disponibles (maltas, lúpulos, levaduras, etc.)..."
+                    ></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-save" onclick="saveInsumos()">Guardar</button>
+                        <button class="btn btn-export" onclick="exportInsumosJSON()">ExJson</button>
+                        <button class="btn btn-import" onclick="document.getElementById('insumosFileInput').click()">ImJson</button>
+                    </div>
+                    
+                    <input type="file" id="insumosFileInput" class="file-input" accept=".json" onchange="importInsumosJSON(event)">
+                    
+                    <div id="insumosStatusMessage" class="status-message"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tasting-cards-carousel">
+            <h3 class="tasting-carousel-title">Cata de cerveza</h3>
+            <div class="tasting-cards-scroll" id="tastingCardsScroll">
+                <!-- Tarjetas de cata generadas dinámicamente -->
+            </div>
+            
+            <div class="tasting-carousel-indicators" id="tastingCarouselIndicators"></div>
+            
+            <div style="padding: 0 12px 12px 12px;">
+                <button class="btn btn-save" onclick="addNewTastingCard()" style="width: 100%;">+ Nueva Cata</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const days = [
+            {date: '02/oct', day: 1, stage: 'Arranque limpio', temp: '19°C – 18°C', class: 'stage-arranque'},
+            {date: '03/oct', day: 2, stage: 'Arranque limpio', temp: '19°C – 18°C', class: 'stage-arranque'},
+            {date: '04/oct', day: 3, stage: 'Fermentación vigorosa', temp: '20°C – 19°C', class: 'stage-vigorosa'},
+            {date: '05/oct', day: 4, stage: 'Fermentación vigorosa', temp: '20°C – 19°C', class: 'stage-vigorosa'},
+            {date: '06/oct', day: 5, stage: 'Fermentación vigorosa', temp: '20°C – 19°C', class: 'stage-vigorosa'},
+            {date: '07/oct', day: 6, stage: 'Final primaria + descanso diacetilo', temp: '21°C – 20°C', class: 'stage-final'},
+            {date: '08/oct', day: 7, stage: 'Final primaria + descanso diacetilo', temp: '21°C – 20°C', class: 'stage-final'},
+            {date: '09/oct', day: 8, stage: 'Final primaria + descanso diacetilo', temp: '21°C – 20°C', class: 'stage-final'},
+            {date: '10/oct', day: 9, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '11/oct', day: 10, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '12/oct', day: 11, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '13/oct', day: 12, stage: 'Maduración cálida', temp: '21°C – 20°C', class: 'stage-maduracion'},
+            {date: '14/oct', day: 13, stage: 'Cold crash inicio', temp: '11°C – 9°C', class: 'stage-cold1'},
+            {date: '15/oct', day: 14, stage: 'Cold crash medio', temp: '6°C – 4°C', class: 'stage-cold2'},
+            {date: '16/oct', day: 15, stage: 'Cold crash final', temp: '4°C – 2°C', class: 'stage-cold3'},
+            {date: '17/oct', day: 16, stage: 'Cold crash final', temp: '4°C – 2°C', class: 'stage-cold3'},
+            {date: '18/oct', day: 17, stage: 'Cold crash final', temp: '4°C – 2°C', class: 'stage-cold3'},
+            {date: '19/oct', day: 18, stage: 'Embotellado + priming', temp: '22°C – 20°C', class: 'stage-embotellado'},
+            {date: '20/oct', day: 19, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '21/oct', day: 20, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '22/oct', day: 21, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '23/oct', day: 22, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '24/oct', day: 23, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '25/oct', day: 24, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '26/oct', day: 25, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '27/oct', day: 26, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '28/oct', day: 27, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '29/oct', day: 28, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '30/oct', day: 29, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '31/oct', day: 30, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '01/nov', day: 31, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '02/nov', day: 32, stage: 'Carbonatación en botella', temp: '22°C – 20°C', class: 'stage-carbonatacion'},
+            {date: '03/nov', day: 33, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '04/nov', day: 34, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '05/nov', day: 35, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '06/nov', day: 36, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '07/nov', day: 37, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '08/nov', day: 38, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '09/nov', day: 39, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '10/nov', day: 40, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '11/nov', day: 41, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '12/nov', day: 42, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '13/nov', day: 43, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '14/nov', day: 44, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '15/nov', day: 45, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '16/nov', day: 46, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '17/nov', day: 47, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '18/nov', day: 48, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '19/nov', day: 49, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '20/nov', day: 50, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '21/nov', day: 51, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '22/nov', day: 52, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '23/nov', day: 53, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '24/nov', day: 54, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '25/nov', day: 55, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '26/nov', day: 56, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '27/nov', day: 57, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '28/nov', day: 58, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '29/nov', day: 59, stage: 'Maduración en botella', temp: '13°C – 12°C', class: 'stage-maduracion-botella'},
+            {date: '30/nov', day: 60, stage: 'Maduración en botella (final)', temp: '13°C – 12°C', class: 'stage-maduracion-botella'}
+        ];
+
+        const daysScroll = document.getElementById('daysScroll');
+        
+        // Calcular el día actual basado en la fecha
+        function getCurrentDay() {
+            // Crear fecha usando año, mes (0-indexed), día para evitar problemas de zona horaria
+            const startDate = new Date(2025, 9, 2); // 2 de octubre de 2025 (mes 9 = octubre)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Calcular diferencia en días
+            const diffTime = today.getTime() - startDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            // El día 1 es el 02/oct (diffDays = 0)
+            // El día 2 es el 03/oct (diffDays = 1)
+            // El día 3 es el 04/oct (diffDays = 2)
+            const dayNumber = diffDays + 1;
+            
+            // Debug
+            console.log('Fecha actual:', today.toLocaleDateString());
+            console.log('Diferencia en días:', diffDays);
+            console.log('Día del proceso:', dayNumber);
+            
+            // Limitar entre día 1 y 60
+            if (dayNumber < 1) return 1;
+            if (dayNumber > 60) return 60;
+            return dayNumber;
+        }
+        
+        const currentDay = getCurrentDay();
+
+        // Calcular y mostrar porcentaje de avance
+        const progressPercentage = Math.round((currentDay / 60) * 100);
+        document.getElementById('progressPercentage').textContent = progressPercentage + '%';
+        
+        // Calcular y mostrar días restantes
+        const daysRemaining = Math.max(0, 60 - currentDay);
+        document.getElementById('daysRemaining').textContent = daysRemaining;
+
+        // Carrusel de tarjetas
+        const cardsScroll = document.getElementById('cardsScroll');
+        const indicators = document.getElementById('carouselIndicators');
+        const totalCards = 5;
+
+        // Crear indicadores
+        for (let i = 0; i < totalCards; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'indicator-dot';
+            if (i === 0) dot.classList.add('active');
+            dot.onclick = () => scrollToCard(i);
+            indicators.appendChild(dot);
+        }
+
+        // Actualizar indicador activo al hacer scroll
+        cardsScroll.addEventListener('scroll', () => {
+            const scrollLeft = cardsScroll.scrollLeft;
+            const cardWidth = cardsScroll.querySelector('.card').offsetWidth + 12; // incluye gap
+            const activeIndex = Math.round(scrollLeft / cardWidth);
+            
+            document.querySelectorAll('.indicator-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === activeIndex);
+            });
+        });
+
+        // Función para scroll a tarjeta específica
+        function scrollToCard(index) {
+            const cardWidth = cardsScroll.querySelector('.card').offsetWidth + 12;
+            cardsScroll.scrollTo({
+                left: cardWidth * index,
+                behavior: 'smooth'
+            });
+        }
+
+        // Carrusel de tarjetas de cerveza
+        const beerCardsScroll = document.getElementById('beerCardsScroll');
+        const beerIndicators = document.getElementById('beerCarouselIndicators');
+        const totalBeerCards = 8;
+
+        // Crear indicadores para tarjetas de cerveza
+        for (let i = 0; i < totalBeerCards; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'beer-indicator-dot';
+            if (i === 0) dot.classList.add('active');
+            dot.onclick = () => scrollToBeerCard(i);
+            beerIndicators.appendChild(dot);
+        }
+
+        // Actualizar indicador activo al hacer scroll en tarjetas de cerveza
+        beerCardsScroll.addEventListener('scroll', () => {
+            const scrollLeft = beerCardsScroll.scrollLeft;
+            const cardWidth = beerCardsScroll.querySelector('.beer-card').offsetWidth + 12;
+            const activeIndex = Math.round(scrollLeft / cardWidth);
+            
+            document.querySelectorAll('.beer-indicator-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === activeIndex);
+            });
+        });
+
+        // Función para scroll a tarjeta de cerveza específica
+        function scrollToBeerCard(index) {
+            const cardWidth = beerCardsScroll.querySelector('.beer-card').offsetWidth + 12;
+            beerCardsScroll.scrollTo({
+                left: cardWidth * index,
+                behavior: 'smooth'
+            });
+        }
+
+        // Cargar observaciones guardadas al iniciar
+        window.addEventListener('DOMContentLoaded', function() {
+            loadObservations();
+            loadInsumos();
+            loadBeerRecipes();
+            loadTastingCards();
+        });
+
+        // Sistema de tarjetas de cata
+        let tastingCards = [];
+
+        function createTastingCardHTML(index) {
+            return `
+                <div class="card">
+                    <div class="card-header" onclick="toggleCard(this)">
+                        <span class="card-title">Cata #${index + 1}</span>
+                        <div class="arrow"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <div class="image-upload-container">
+                                <img id="tastingImage${index}" class="image-preview" alt="Preview">
+                                <label for="tastingImageInput${index}" class="upload-label">
+                                    📷 Subir imagen de la cerveza
+                                </label>
+                                <input type="file" id="tastingImageInput${index}" class="file-input" accept="image/*" onchange="handleImageUpload(event, ${index})">
+                            </div>
+                            
+                            <textarea 
+                                id="tastingNotes${index}" 
+                                class="tasting-textarea" 
+                                placeholder="Escribe las características de la cerveza: apariencia, aroma, sabor, sensación en boca, impresión general..."
+                            ></textarea>
+                            
+                            <div class="button-group">
+                                <button class="btn btn-export" onclick="exportTastingJSON(${index})">ExJson</button>
+                                <button class="btn btn-import" onclick="document.getElementById('tastingFileInput${index}').click()">ImJson</button>
+                            </div>
+                            
+                            <input type="file" id="tastingFileInput${index}" class="file-input" accept=".json" onchange="importTastingJSON(event, ${index})">
+                            
+                            <div id="tastingStatusMessage${index}" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadTastingCards() {
+            const saved = localStorage.getItem('cerveza_tasting_cards');
+            if (saved) {
+                try {
+                    tastingCards = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error al cargar catas:', e);
+                    tastingCards = [];
+                }
+            }
+            
+            if (tastingCards.length === 0) {
+                tastingCards.push({ image: '', notes: '' });
+            }
+            
+            renderTastingCards();
+        }
+
+        function renderTastingCards() {
+            const container = document.getElementById('tastingCardsScroll');
+            const indicators = document.getElementById('tastingCarouselIndicators');
+            
+            container.innerHTML = '';
+            indicators.innerHTML = '';
+            
+            tastingCards.forEach((card, index) => {
+                container.innerHTML += createTastingCardHTML(index);
+                
+                const dot = document.createElement('div');
+                dot.className = 'tasting-indicator-dot';
+                if (index === 0) dot.classList.add('active');
+                dot.onclick = () => scrollToTastingCard(index);
+                indicators.appendChild(dot);
+            });
+            
+            // Restaurar datos
+            tastingCards.forEach((card, index) => {
+                if (card.notes) {
+                    document.getElementById(`tastingNotes${index}`).value = card.notes;
+                }
+                if (card.image) {
+                    const img = document.getElementById(`tastingImage${index}`);
+                    img.src = card.image;
+                    img.classList.add('show');
+                }
+            });
+            
+            setupTastingScroll();
+        }
+
+        function setupTastingScroll() {
+            const tastingScroll = document.getElementById('tastingCardsScroll');
+            tastingScroll.addEventListener('scroll', () => {
+                const scrollLeft = tastingScroll.scrollLeft;
+                const cardWidth = tastingScroll.querySelector('.card').offsetWidth + 12;
+                const activeIndex = Math.round(scrollLeft / cardWidth);
+                
+                document.querySelectorAll('.tasting-indicator-dot').forEach((dot, index) => {
+                    dot.classList.toggle('active', index === activeIndex);
+                });
+            });
+        }
+
+        function scrollToTastingCard(index) {
+            const tastingScroll = document.getElementById('tastingCardsScroll');
+            const cardWidth = tastingScroll.querySelector('.card').offsetWidth + 12;
+            tastingScroll.scrollTo({
+                left: cardWidth * index,
+                behavior: 'smooth'
+            });
+        }
+
+        function handleImageUpload(event, index) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Redimensionar si es muy grande (máximo 800px)
+                    const maxSize = 800;
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = (height / width) * maxSize;
+                            width = maxSize;
+                        } else {
+                            width = (width / height) * maxSize;
+                            height = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Comprimir a 0.7 calidad
+                    const compressedImage = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    tastingCards[index].image = compressedImage;
+                    saveTastingCards();
+                    
+                    const preview = document.getElementById(`tastingImage${index}`);
+                    preview.src = compressedImage;
+                    preview.classList.add('show');
+                    
+                    showTastingMessage(index, 'Imagen cargada correctamente', 'success');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveTastingCards() {
+            // Guardar notas actuales
+            tastingCards.forEach((card, index) => {
+                const notesEl = document.getElementById(`tastingNotes${index}`);
+                if (notesEl) {
+                    card.notes = notesEl.value;
+                }
+            });
+            
+            localStorage.setItem('cerveza_tasting_cards', JSON.stringify(tastingCards));
+        }
+
+        function addNewTastingCard() {
+            saveTastingCards();
+            tastingCards.push({ image: '', notes: '' });
+            renderTastingCards();
+            
+            setTimeout(() => {
+                scrollToTastingCard(tastingCards.length - 1);
+            }, 100);
+        }
+
+        function exportTastingJSON(index) {
+            const notes = document.getElementById(`tastingNotes${index}`).value;
+            tastingCards[index].notes = notes;
+            
+            const data = {
+                tipo: 'Cata de cerveza',
+                numero_cata: index + 1,
+                fecha_exportacion: new Date().toISOString(),
+                imagen: tastingCards[index].image,
+                notas: notes
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cata_cerveza_${index + 1}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            saveTastingCards();
+            showTastingMessage(index, 'Cata exportada correctamente', 'success');
+        }
+
+        function importTastingJSON(event, index) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.imagen) {
+                        tastingCards[index].image = data.imagen;
+                        const img = document.getElementById(`tastingImage${index}`);
+                        img.src = data.imagen;
+                        img.classList.add('show');
+                    }
+                    
+                    if (data.notas !== undefined) {
+                        tastingCards[index].notes = data.notas;
+                        document.getElementById(`tastingNotes${index}`).value = data.notas;
+                    }
+                    
+                    saveTastingCards();
+                    showTastingMessage(index, 'Cata importada correctamente', 'success');
+                } catch (error) {
+                    showTastingMessage(index, 'Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showTastingMessage(index, text, type) {
+            const msg = document.getElementById(`tastingStatusMessage${index}`);
+            msg.textContent = text;
+            msg.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+
+        // Guardar notas al escribir
+        document.addEventListener('input', function(e) {
+            if (e.target.id && e.target.id.startsWith('tastingNotes')) {
+                saveTastingCards();
+            }
+        });
+
+        days.forEach(d => {
+            const btn = document.createElement('div');
+            btn.className = `day-btn ${d.class}`;
+            if (d.day === currentDay) {
+                btn.classList.add('current');
+            }
+            btn.innerHTML = `
+                <span class="day-date">${d.date} (Día ${d.day})</span>
+                <span class="day-stage">${d.stage}</span>
+                <span class="day-temp">${d.temp}</span>
+            `;
+            daysScroll.appendChild(btn);
+        });
+
+        setTimeout(() => {
+            const currentBtn = document.querySelector('.day-btn.current');
+            if (currentBtn) {
+                currentBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        }, 100);
+
+        function toggleCard(header) {
+            const arrow = header.querySelector('.arrow, .beer-card-arrow');
+            const content = header.nextElementSibling;
+            arrow.classList.toggle('open');
+            content.classList.toggle('open');
+        }
+
+        // Funciones para manejar recetas de cerveza
+        function saveBeerRecipe(id) {
+            const text = document.getElementById(`beerText${id}`).value;
+            const beerNames = ['Munich Amber Ale', 'Pilsner SMaSH', 'APA cítrica', 'American Amber', 'Märzen Ale', 'Irish Red', 'Porter', 'Stout'];
+            const data = {
+                receta: beerNames[id - 1],
+                fecha: new Date().toISOString(),
+                datos: text
+            };
+            
+            localStorage.setItem(`cerveza_receta_${id}`, JSON.stringify(data));
+            showBeerMessage(id, 'Receta guardada correctamente', 'success');
+        }
+
+        function loadBeerRecipes() {
+            for (let i = 1; i <= 8; i++) {
+                const saved = localStorage.getItem(`cerveza_receta_${i}`);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        document.getElementById(`beerText${i}`).value = data.datos || '';
+                    } catch (e) {
+                        console.error(`Error al cargar receta ${i}:`, e);
+                    }
+                }
+            }
+        }
+
+        function exportBeerJSON(id, name) {
+            const text = document.getElementById(`beerText${id}`).value;
+            const data = {
+                receta: name,
+                fecha_exportacion: new Date().toISOString(),
+                datos: text
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `receta_${name.replace(/\s+/g, '_').toLowerCase()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showBeerMessage(id, 'Archivo JSON exportado correctamente', 'success');
+        }
+
+        function importBeerJSON(event, id) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.datos !== undefined) {
+                        document.getElementById(`beerText${id}`).value = data.datos;
+                        showBeerMessage(id, 'Archivo JSON importado correctamente', 'success');
+                    } else {
+                        showBeerMessage(id, 'El archivo JSON no contiene datos válidos', 'error');
+                    }
+                } catch (error) {
+                    showBeerMessage(id, 'Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showBeerMessage(id, text, type) {
+            const msg = document.getElementById(`beerStatusMessage${id}`);
+            msg.textContent = text;
+            msg.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+
+        // Funciones para manejar observaciones
+        function saveObservations() {
+            const text = document.getElementById('observationsText').value;
+            const data = {
+                lote: 'Munich Amber Ale lote 54 v1',
+                fecha: new Date().toISOString(),
+                observaciones: text
+            };
+            
+            localStorage.setItem('cerveza_observaciones', JSON.stringify(data));
+            showMessage('Observaciones guardadas correctamente', 'success');
+        }
+
+        function loadObservations() {
+            const saved = localStorage.getItem('cerveza_observaciones');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    document.getElementById('observationsText').value = data.observaciones || '';
+                } catch (e) {
+                    console.error('Error al cargar observaciones:', e);
+                }
+            }
+        }
+
+        function exportJSON() {
+            const text = document.getElementById('observationsText').value;
+            const data = {
+                lote: 'Munich Amber Ale lote 54 v1',
+                estilo: 'American Amber Ale / Munich Amber Ale (BJCP 19A)',
+                fecha_exportacion: new Date().toISOString(),
+                observaciones: text
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'observaciones_lote54.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showMessage('Archivo JSON exportado correctamente', 'success');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.observaciones !== undefined) {
+                        document.getElementById('observationsText').value = data.observaciones;
+                        showMessage('Archivo JSON importado correctamente', 'success');
+                    } else {
+                        showMessage('El archivo JSON no contiene observaciones válidas', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('statusMessage');
+            msg.textContent = text;
+            msg.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+
+        // Funciones para manejar insumos
+        function saveInsumos() {
+            const text = document.getElementById('insumosText').value;
+            const data = {
+                tipo: 'Insumos disponibles',
+                fecha: new Date().toISOString(),
+                inventario: text
+            };
+            
+            localStorage.setItem('cerveza_insumos', JSON.stringify(data));
+            showInsumosMessage('Insumos guardados correctamente', 'success');
+        }
+
+        function loadInsumos() {
+            const saved = localStorage.getItem('cerveza_insumos');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    document.getElementById('insumosText').value = data.inventario || '';
+                } catch (e) {
+                    console.error('Error al cargar insumos:', e);
+                }
+            }
+        }
+
+        function exportInsumosJSON() {
+            const text = document.getElementById('insumosText').value;
+            const data = {
+                tipo: 'Insumos disponibles',
+                fecha_exportacion: new Date().toISOString(),
+                inventario: text
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'insumos_disponibles.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showInsumosMessage('Archivo JSON exportado correctamente', 'success');
+        }
+
+        function importInsumosJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.inventario !== undefined) {
+                        document.getElementById('insumosText').value = data.inventario;
+                        showInsumosMessage('Archivo JSON importado correctamente', 'success');
+                    } else {
+                        showInsumosMessage('El archivo JSON no contiene datos válidos', 'error');
+                    }
+                } catch (error) {
+                    showInsumosMessage('Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showInsumosMessage(text, type) {
+            const msg = document.getElementById('insumosStatusMessage');
+            msg.textContent = text;
+            msg.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

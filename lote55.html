@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Lote 55 - Pilsen Ale</title>
+    <style>
+        :root {
+            --bg-dark: #333333;
+            --bg-light: #f4f4f4;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            /* Colores de la imagen de referencia */
+            --etapa-1: #fff9c4; /* Amarillo */
+            --etapa-2: #ffcdd2; /* Rosa */
+            --etapa-3: #ffe0b2; /* Naranja claro */
+            --etapa-4: #d7ccc8; /* Marrón/Beige */
+            --etapa-5: #bbdefb; /* Azul */
+            --etapa-6: #e1bee7; /* Morado */
+            --etapa-7: #c8e6c9; /* Verde */
+            --etapa-8: #bdbdbd; /* Gris */
+        }
+
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background-color: var(--bg-light); color: var(--text-main); }
+        header { background-color: var(--bg-dark); color: white; padding: 25px 15px; text-align: center; }
+        header h1 { margin: 0; font-size: 1.3rem; }
+        header p { margin: 5px 0 0; font-size: 0.85rem; opacity: 0.8; }
+
+        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
+        .main-card { background: var(--card-bg); border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2 { font-size: 1.05rem; margin-top: 0; color: #444; }
+
+        .days-container { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 20px; scroll-behavior: smooth; }
+        .day-card { min-width: 145px; padding: 15px; border-radius: 12px; text-align: center; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.05); }
+        .day-date { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; }
+        .day-stage { font-size: 0.8rem; margin-bottom: 8px; min-height: 2.4em; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
+        .day-temp { font-size: 1.1rem; font-weight: bold; }
+
+        .progress-section { margin: 20px 0; border-top: 1px solid #eee; padding-top: 20px; }
+        .progress-bar-bg { background: #eee; height: 8px; border-radius: 4px; overflow: hidden; }
+        .progress-bar-fill { background: #777; height: 100%; width: 0%; transition: width 0.6s ease; }
+        .progress-info { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 8px; color: #666; }
+
+        .legend-title { font-size: 0.9rem; font-weight: bold; margin: 15px 0 10px; }
+        .legend-item { display: flex; align-items: center; font-size: 0.8rem; margin-bottom: 6px; color: #555; }
+        .color-box { width: 18px; height: 18px; border-radius: 4px; margin-right: 10px; flex-shrink: 0; }
+
+        .accordion { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+        .accordion::after { content: '▼'; font-size: 0.7rem; color: #999; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Pilsen Ale / lote 55</h1>
+    <p>American Amber Ale / Munich Amber Ale (BJCP 19A)</p>
+</header>
+
+<div class="container">
+    <div class="main-card">
+        <h2>Control Diario de Temperatura</h2>
+        
+        <div class="days-container" id="daysContainer"></div>
+
+        <div class="progress-section">
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+            <div class="progress-info">
+                <span>Avance del proceso: <b id="progressPercent">0%</b></span>
+                <span>Faltan: <b id="daysLeft">0 días</b></span>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-title">Referencia de etapas:</div>
+            <div id="legendItems"></div>
+        </div>
+    </div>
+
+    <div class="accordion">Observaciones</div>
+    <div class="accordion">Datos Generales</div>
+</div>
+
+<script>
+    const startDate = new Date(2026, 1, 20); // 20 Feb 2026
+    const today = new Date();
+    
+    // Configuración de etapas basada en tu texto
+    const etapasCfg = [
+        { n: "Arranque limpio", d: [1, 2], t: "19°C – 18°C", c: "var(--etapa-1)" },
+        { n: "Fermentación vigorosa", d: [3, 5], t: "20°C – 19°C", c: "var(--etapa-2)" },
+        { n: "Final primaria + descanso diacetilo", d: [6, 8], t: "21°C – 20°C", c: "var(--etapa-3)" },
+        { n: "Maduración cálida", d: [9, 12], t: "21°C – 20°C", c: "var(--etapa-4)" },
+        { n: "Cold crash inicio", d: [13, 13], t: "11°C – 9°C", c: "var(--etapa-5)" },
+        { n: "Cold crash medio", d: [14, 14], t: "6°C – 4°C", c: "var(--etapa-5)" },
+        { n: "Cold crash final", d: [15, 17], t: "4°C – 2°C", c: "var(--etapa-5)" },
+        { n: "Embotellado + priming", d: [18, 18], t: "22°C – 20°C", c: "var(--etapa-6)" },
+        { n: "Carbonatación en botella", d: [19, 32], t: "22°C – 20°C", c: "var(--etapa-7)" },
+        { n: "Maduración en botella", d: [33, 60], t: "14°C – 12°C", c: "var(--etapa-8)" }
+    ];
+
+    const container = document.getElementById('daysContainer');
+    const legendContainer = document.getElementById('legendItems');
+    const totalDays = 60;
+
+    // Calcular día actual
+    const diffTime = today - startDate;
+    const currentDay = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const activeDay = Math.max(1, Math.min(currentDay, totalDays));
+
+    // Renderizar Leyenda
+    etapasCfg.forEach(et => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `<div class="color-box" style="background:${et.c}"></div> <span>${et.n} (Días ${et.d[0]}-${et.d[1]})</span>`;
+        legendContainer.appendChild(item);
+    });
+
+    // Renderizar Días
+    for (let i = 1; i <= totalDays; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + (i - 1));
+        
+        const etapa = etapasCfg.find(e => i >= e.d[0] && i <= e.d[1]);
+        
+        const card = document.createElement('div');
+        card.className = 'day-card';
+        card.style.backgroundColor = etapa ? etapa.c : '#eee';
+        if(i === activeDay) card.style.boxShadow = "0 0 0 3px #555 inset";
+
+        const dateStr = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).replace('.', '');
+
+        card.innerHTML = `
+            <div class="day-date">${dateStr} (Día ${i})</div>
+            <div class="day-stage">${etapa ? etapa.n : '-'}</div>
+            <div class="day-temp">${etapa ? etapa.t : '-'}</div>
+        `;
+        container.appendChild(card);
+    }
+
+    // Actualizar Progreso
+    const progress = Math.round((activeDay / totalDays) * 100);
+    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('progressPercent').innerText = progress + '%';
+    document.getElementById('daysLeft').innerText = (totalDays - activeDay) + ' días';
+
+    // Auto-scroll al día actual (con un pequeño retraso para asegurar el render)
+    setTimeout(() => {
+        const scrollPos = (activeDay - 1) * 157; // ancho card + gap
+        container.scrollLeft = scrollPos;
+    }, 100);
+
+</script>
+</body>
+</html>

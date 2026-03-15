@@ -9,11 +9,10 @@
 <style>
   :root {
     --cream: #F5F0E8;
-    --dark: #1A1410;
-    --brown: #C8853A;
+    --dark: #111009;
     --amber: #C8853A;
-    --muted: #6B5E4E;
-    --line: rgba(200,133,58,0.18);
+    --muted: #7A6E60;
+    --line: rgba(200,133,58,0.2);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -53,19 +52,10 @@
     flex-direction: column;
   }
 
-  /* ── FRONT: fondo negro ── */
-  .card-front {
-    background: var(--dark);
-    color: var(--cream);
-  }
+  .card-front { background: var(--dark); }
+  .card-back  { background: var(--dark); transform: rotateY(180deg); color: var(--cream); }
 
-  .card-back {
-    background: var(--dark);
-    transform: rotateY(180deg);
-    color: var(--cream);
-  }
-
-  /* ── FRONT LAYOUT ── */
+  /* ── HEADER ── */
   .front-header {
     padding: 32px 28px 20px;
     flex-shrink: 0;
@@ -80,9 +70,9 @@
 
   .brand {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 42px;
+    font-size: 44px;
     font-weight: 300;
-    color: var(--cream);
+    color: #FFFFFF;
     letter-spacing: 0.08em;
     line-height: 1;
   }
@@ -94,7 +84,7 @@
     font-family: 'DM Mono', monospace;
     letter-spacing: 0.26em;
     color: var(--amber);
-    margin-bottom: 5px;
+    margin-bottom: 6px;
   }
 
   .lot-badge {
@@ -114,47 +104,57 @@
     text-transform: uppercase;
   }
 
-  /* SCORE strip */
-  .score-strip {
-    background: var(--amber);
-    padding: 11px 28px;
+  /* ── VARIEDAD STRIP (reemplaza score) ── */
+  .variedad-strip {
+    padding: 16px 28px 14px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0;
   }
 
-  .score-num {
+  .variedad-left {}
+
+  .variedad-tag {
+    font-size: 8px;
+    letter-spacing: 0.38em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .variedad-name {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 32px;
+    font-size: 36px;
     font-weight: 400;
-    color: var(--dark);
+    color: #FFFFFF;
     letter-spacing: 0.04em;
     line-height: 1;
   }
 
-  .score-label {
-    font-size: 8.5px;
-    letter-spacing: 0.28em;
-    color: var(--dark);
-    opacity: 0.65;
-    text-transform: uppercase;
-  }
-
-  .score-right {
+  .variedad-right {
     text-align: right;
   }
 
-  .score-right-title {
+  .variedad-score {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 14px;
-    color: var(--dark);
-    font-style: italic;
+    font-size: 28px;
     font-weight: 300;
-    margin-bottom: 2px;
+    color: var(--amber);
+    letter-spacing: 0.06em;
+    line-height: 1;
   }
 
-  /* NOTES */
+  .variedad-score-label {
+    font-size: 7.5px;
+    letter-spacing: 0.28em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  /* ── NOTES ── */
   .notes-strip {
     padding: 13px 28px;
     border-bottom: 1px solid var(--line);
@@ -177,7 +177,7 @@
 
   .note-pill {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 13.5px;
+    font-size: 14px;
     font-style: italic;
     color: var(--amber);
     border: 1px solid var(--line);
@@ -186,7 +186,7 @@
     font-weight: 300;
   }
 
-  /* GRID */
+  /* ── INFO GRID ── */
   .info-grid {
     flex: 1;
     overflow: hidden;
@@ -207,15 +207,15 @@
 
   .cell-value {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 400;
-    color: var(--cream);
+    color: #FFFFFF;
     line-height: 1.3;
   }
 
   .cell-sub {
     font-size: 8.5px;
-    color: var(--muted);
+    color: #9A8E7E;
     letter-spacing: 0.07em;
     margin-top: 2px;
   }
@@ -228,7 +228,7 @@
     background: var(--line);
   }
 
-  /* HISTORY */
+  /* ── HISTORY ── */
   .history-block {
     padding: 13px 28px 0;
     flex-shrink: 0;
@@ -244,14 +244,14 @@
 
   .history-text {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 13px;
+    font-size: 13.5px;
     font-style: italic;
-    color: rgba(245,240,232,0.55);
+    color: #9A8E7E;
     line-height: 1.6;
     font-weight: 300;
   }
 
-  /* FLIP BTN */
+  /* ── FLIP BTN ── */
   .flip-btn {
     margin: 14px 28px 22px;
     display: flex;
@@ -271,14 +271,10 @@
     flex-shrink: 0;
   }
 
-  .flip-btn:active {
-    background: var(--amber);
-    color: var(--dark);
-  }
-
+  .flip-btn:active { background: var(--amber); color: var(--dark); }
   .flip-btn svg { width: 14px; height: 14px; stroke: currentColor; }
 
-  /* ── BACK LAYOUT ── */
+  /* ══════════════ BACK ══════════════ */
   .back-header {
     padding: 28px 28px 18px;
     border-bottom: 1px solid rgba(255,255,255,0.07);
@@ -290,15 +286,15 @@
     font-size: 20px;
     font-weight: 300;
     letter-spacing: 0.14em;
-    color: var(--cream);
-    opacity: 0.4;
+    color: #FFFFFF;
+    opacity: 0.35;
   }
 
   .back-title {
     font-family: 'Cormorant Garamond', serif;
     font-size: 30px;
     font-weight: 400;
-    color: var(--cream);
+    color: #FFFFFF;
     letter-spacing: 0.04em;
     line-height: 1.1;
     margin-top: 4px;
@@ -306,11 +302,9 @@
 
   .back-title span { color: var(--amber); }
 
-  /* TABS */
   .recipe-tabs {
     display: flex;
-    margin: 0 28px;
-    margin-top: 18px;
+    margin: 18px 28px 0;
     flex-shrink: 0;
   }
 
@@ -329,14 +323,8 @@
   }
 
   .rtab:first-child { border-right: none; }
+  .rtab.active { background: var(--amber); border-color: var(--amber); color: var(--dark); }
 
-  .rtab.active {
-    background: var(--amber);
-    border-color: var(--amber);
-    color: var(--dark);
-  }
-
-  /* RECIPE PANELS */
   .recipes-container {
     flex: 1;
     overflow: hidden;
@@ -353,10 +341,7 @@
     overflow: hidden;
   }
 
-  .recipe-panel.active {
-    opacity: 1;
-    pointer-events: auto;
-  }
+  .recipe-panel.active { opacity: 1; pointer-events: auto; }
 
   .recipe-header {
     display: flex;
@@ -370,7 +355,7 @@
     font-size: 26px;
     font-style: italic;
     font-weight: 300;
-    color: var(--cream);
+    color: #FFFFFF;
     line-height: 1;
   }
 
@@ -393,7 +378,7 @@
   .rparam-val {
     font-family: 'Cormorant Garamond', serif;
     font-size: 22px;
-    color: var(--cream);
+    color: #FFFFFF;
     font-weight: 300;
     line-height: 1;
     margin-bottom: 3px;
@@ -425,39 +410,20 @@
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
 
-  .pour-num {
-    font-size: 9px;
-    color: var(--amber);
-    letter-spacing: 0.1em;
-  }
+  .pour-num { font-size: 9px; color: var(--amber); letter-spacing: 0.1em; }
 
   .pour-name {
     font-family: 'Cormorant Garamond', serif;
     font-size: 15px;
     font-style: italic;
-    color: var(--cream);
+    color: #FFFFFF;
     font-weight: 300;
   }
 
-  .pour-bar-wrap {
-    height: 2px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 1px;
-    overflow: hidden;
-  }
+  .pour-bar-wrap { height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; }
+  .pour-bar { height: 100%; background: var(--amber); border-radius: 1px; }
 
-  .pour-bar {
-    height: 100%;
-    background: var(--amber);
-    border-radius: 1px;
-  }
-
-  .pour-ml {
-    font-size: 9.5px;
-    color: rgba(255,255,255,0.35);
-    text-align: right;
-    letter-spacing: 0.05em;
-  }
+  .pour-ml { font-size: 9.5px; color: rgba(255,255,255,0.4); text-align: right; letter-spacing: 0.05em; }
 
   .pour-total {
     margin-top: 11px;
@@ -471,7 +437,6 @@
 
   .pour-total strong { color: var(--amber); font-weight: 400; }
 
-  /* ESPRESSO */
   .esp-params {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -479,26 +444,18 @@
     margin-bottom: 16px;
   }
 
-  .esp-cell {
-    border: 1px solid rgba(255,255,255,0.07);
-    padding: 12px;
-  }
+  .esp-cell { border: 1px solid rgba(255,255,255,0.07); padding: 12px; }
 
   .esp-cell-val {
     font-family: 'Cormorant Garamond', serif;
     font-size: 24px;
-    color: var(--cream);
+    color: #FFFFFF;
     font-weight: 300;
     line-height: 1;
     margin-bottom: 4px;
   }
 
-  .esp-cell-label {
-    font-size: 7.5px;
-    letter-spacing: 0.28em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
+  .esp-cell-label { font-size: 7.5px; letter-spacing: 0.28em; color: var(--muted); text-transform: uppercase; }
 
   .esp-steps { display: flex; flex-direction: column; }
 
@@ -510,24 +467,18 @@
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
 
-  .esp-step-n {
-    font-size: 9px;
-    color: var(--amber);
-    margin-top: 2px;
-    min-width: 14px;
-  }
+  .esp-step-n { font-size: 9px; color: var(--amber); margin-top: 2px; min-width: 14px; }
 
   .esp-step-text {
     font-family: 'Cormorant Garamond', serif;
     font-size: 14px;
-    color: rgba(255,255,255,0.65);
+    color: rgba(255,255,255,0.7);
     line-height: 1.45;
     font-weight: 300;
   }
 
-  .esp-step-text strong { color: var(--cream); font-weight: 400; }
+  .esp-step-text strong { color: #FFFFFF; font-weight: 400; }
 
-  /* BACK FLIP BTN */
   .back-flip-btn {
     margin: 14px 28px 22px;
     display: flex;
@@ -536,7 +487,7 @@
     gap: 10px;
     background: none;
     border: 1px solid rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.4);
     font-family: 'DM Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.3em;
@@ -547,20 +498,14 @@
     flex-shrink: 0;
   }
 
-  .back-flip-btn:active {
-    background: rgba(255,255,255,0.07);
-    color: var(--cream);
-  }
+  .back-flip-btn:active { background: rgba(255,255,255,0.07); color: #FFFFFF; }
 
-  /* ANIMATIONS */
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .card-front > * {
-    animation: fadeUp .55s ease both;
-  }
+  .card-front > * { animation: fadeUp .5s ease both; }
   .card-front > *:nth-child(1) { animation-delay: .04s; }
   .card-front > *:nth-child(2) { animation-delay: .10s; }
   .card-front > *:nth-child(3) { animation-delay: .16s; }
@@ -589,19 +534,19 @@
         <div class="front-subline">Microlote · Experimentos Vinueza</div>
       </div>
 
-      <div class="score-strip">
-        <div>
-          <div class="score-num">86.75</div>
-          <div class="score-label">Puntuación SCA</div>
+      <div class="variedad-strip">
+        <div class="variedad-left">
+          <div class="variedad-tag">🌱 Variedad</div>
+          <div class="variedad-name">Catuai rojo</div>
         </div>
-        <div class="score-right">
-          <div class="score-right-title">Especialidad</div>
-          <div class="score-label">20 marzo 2026</div>
+        <div class="variedad-right">
+          <div class="variedad-score">86.75</div>
+          <div class="variedad-score-label">Puntos SCA</div>
         </div>
       </div>
 
       <div class="notes-strip">
-        <div class="notes-label">Notas de cata</div>
+        <div class="notes-label">🍊 Notas de cata</div>
         <div class="notes-row">
           <div class="note-pill">Naranja dulce</div>
           <div class="note-pill">Panela</div>
@@ -611,28 +556,27 @@
       </div>
 
       <div class="info-grid">
-        <div class="info-cell">
-          <div class="cell-label">🌱 Variedad</div>
-          <div class="cell-value">Catuai rojo</div>
+        <div class="info-cell full">
+          <div class="cell-label">📍 Origen</div>
+          <div class="cell-value">Hda. La Niebla Azul</div>
+          <div class="cell-sub">Cordillera Occidental · Ecuador</div>
         </div>
         <div class="info-cell">
           <div class="cell-label">📍 Altitud</div>
           <div class="cell-value">1.870 m</div>
-          <div class="cell-sub">Cordillera Occidental</div>
+        </div>
+        <div class="info-cell">
+          <div class="cell-label">📅 Tueste</div>
+          <div class="cell-value">20 mar 2026</div>
         </div>
         <div class="divider"></div>
-        <div class="info-cell full">
-          <div class="cell-label">📍 Origen</div>
-          <div class="cell-value">Hda. La Niebla Azul</div>
-          <div class="cell-sub">Ecuador</div>
-        </div>
         <div class="info-cell">
           <div class="cell-label">⚙️ Proceso</div>
           <div class="cell-value">Lavado</div>
           <div class="cell-sub">Ferm. 36 h · Camas africanas</div>
         </div>
         <div class="info-cell">
-          <div class="cell-label">🔥 Tueste</div>
+          <div class="cell-label">🔥 Perfil</div>
           <div class="cell-value">Medio claro</div>
           <div class="cell-sub">1er crack 8:45 · Total 10:05</div>
         </div>

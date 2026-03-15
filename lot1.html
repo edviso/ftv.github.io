@@ -50,6 +50,7 @@
         /* Cabecera */
         .header {
             text-align: center;
+            margin-bottom: 2px;
         }
         .header h1 {
             font-size: clamp(2rem, 6vw, 2.5rem);
@@ -57,7 +58,6 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             color: var(--text-dark);
-            margin-bottom: 2px;
         }
         .header p {
             font-size: clamp(0.75rem, 3vw, 0.85rem);
@@ -67,6 +67,29 @@
             letter-spacing: 1px;
         }
 
+        /* Variedad Resaltada (Nueva ubicación y estilo) */
+        .varietal-highlight {
+            background: rgba(178, 106, 66, 0.07); /* Color de acento muy suave */
+            color: var(--accent);
+            padding: 1vh 0;
+            margin: 1vh 0;
+            border-radius: 12px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .varietal-highlight p {
+            font-size: clamp(0.9rem, 3.8vw, 1.1rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .varietal-highlight span {
+            font-size: 1.2rem;
+        }
+
         /* Notas de cata destacadas */
         .tasting-notes {
             background: rgba(178, 106, 66, 0.05);
@@ -74,6 +97,7 @@
             border-radius: 16px;
             padding: 2vh 2vw;
             text-align: center;
+            margin-bottom: 1vh;
         }
         .tasting-notes span {
             display: block;
@@ -87,7 +111,7 @@
         .info-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 1.5vh;
+            gap: 1.2vh; /* Espacio reducido entre filas */
         }
         
         .info-row {
@@ -123,13 +147,6 @@
             margin-top: 1px;
         }
 
-        /* Contenedor en fila para ahorrar espacio */
-        .flex-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
         /* Pie de tarjeta (Historia) */
         .footer {
             background-color: var(--bg-color);
@@ -154,6 +171,11 @@
             <p>Café de Especialidad · Microlote VX-01</p>
         </header>
 
+        <div class="varietal-highlight">
+            <span>🌱</span>
+            <p>Catuai rojo</p>
+        </div>
+
         <div class="tasting-notes">
             <span>🍊 Naranja dulce · Panela</span>
             <span>Cacao suave · Caramelo</span>
@@ -161,23 +183,6 @@
 
         <div class="info-grid">
             
-            <div class="flex-row">
-                <div class="info-row">
-                    <div class="icon">🌱</div>
-                    <div class="details">
-                        <h3>Variedad</h3>
-                        <p>Catuai rojo</p>
-                    </div>
-                </div>
-                <div class="info-row">
-                    <div class="icon">📊</div>
-                    <div class="details">
-                        <h3>Puntuación</h3>
-                        <p>86.75 pts</p>
-                    </div>
-                </div>
-            </div>
-
             <div class="info-row">
                 <div class="icon">📍</div>
                 <div class="details">
@@ -207,6 +212,14 @@
                 <div class="details">
                     <h3>Preparación recomendada</h3>
                     <p>Ideal para V60 y espresso</p>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="icon">📊</div>
+                <div class="details">
+                    <h3>Puntuación</h3>
+                    <p>86.75 pts</p>
                 </div>
             </div>
 

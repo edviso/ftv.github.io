@@ -1,235 +1,802 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vinza - Microlote VX-01</title>
-    <style>
-        :root {
-            --bg-color: #E8E5DF; /* Color hueso/crema para el fondo general */
-            --card-bg: #FFFFFF;
-            --text-dark: #2B2622;
-            --text-light: #7A7065;
-            --accent: #B26A42; /* Tono terracota/café tostado */
-            --border-radius: 24px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vinza · VX-01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --dark: #1A1410;
+    --brown: #C8853A;
+    --amber: #C8853A;
+    --muted: #6B5E4E;
+    --line: rgba(200,133,58,0.18);
+  }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-        }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-dark);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* Evita el scroll vertical y horizontal */
-            padding: 4vh 4vw; /* Espaciado dinámico */
-        }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--dark);
+    font-family: 'DM Mono', monospace;
+  }
 
-        .card {
-            background-color: var(--card-bg);
-            width: 100%;
-            max-width: 420px;
-            height: 100%;
-            border-radius: var(--border-radius);
-            box-shadow: 0 20px 40px rgba(43, 38, 34, 0.08);
-            padding: 4vh 5vw;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; /* Distribuye el espacio sobrante equitativamente */
-        }
+  .stage {
+    width: 100%;
+    height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1200px;
+  }
 
-        /* Cabecera */
-        .header {
-            text-align: center;
-            margin-bottom: 2px;
-        }
-        .header h1 {
-            font-size: clamp(2rem, 6vw, 2.5rem);
-            font-weight: 900;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-dark);
-        }
-        .header p {
-            font-size: clamp(0.75rem, 3vw, 0.85rem);
-            font-weight: 600;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+  .flip-wrap {
+    width: min(390px, 100vw);
+    height: 100dvh;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform .75s cubic-bezier(.77,0,.18,1);
+  }
+  .flip-wrap.flipped { transform: rotateY(180deg); }
 
-        /* Variedad Resaltada (Nueva ubicación y estilo) */
-        .varietal-highlight {
-            background: rgba(178, 106, 66, 0.07); /* Color de acento muy suave */
-            color: var(--accent);
-            padding: 1vh 0;
-            margin: 1vh 0;
-            border-radius: 12px;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        .varietal-highlight p {
-            font-size: clamp(0.9rem, 3.8vw, 1.1rem);
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .varietal-highlight span {
-            font-size: 1.2rem;
-        }
+  .card {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 
-        /* Notas de cata destacadas */
-        .tasting-notes {
-            background: rgba(178, 106, 66, 0.05);
-            border: 1px solid rgba(178, 106, 66, 0.15);
-            border-radius: 16px;
-            padding: 2vh 2vw;
-            text-align: center;
-            margin-bottom: 1vh;
-        }
-        .tasting-notes span {
-            display: block;
-            font-size: clamp(0.85rem, 3.5vw, 1rem);
-            font-weight: 700;
-            color: var(--accent);
-            line-height: 1.4;
-        }
+  /* ── FRONT: fondo negro ── */
+  .card-front {
+    background: var(--dark);
+    color: var(--cream);
+  }
 
-        /* Cuadrícula de información */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.2vh; /* Espacio reducido entre filas */
-        }
-        
-        .info-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        
-        .icon {
-            font-size: clamp(1rem, 4vw, 1.2rem);
-            line-height: 1.2;
-        }
+  .card-back {
+    background: var(--dark);
+    transform: rotateY(180deg);
+    color: var(--cream);
+  }
 
-        .details h3 {
-            font-size: clamp(0.7rem, 2.8vw, 0.8rem);
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
+  /* ── FRONT LAYOUT ── */
+  .front-header {
+    padding: 32px 28px 20px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--line);
+  }
 
-        .details p {
-            font-size: clamp(0.8rem, 3.2vw, 0.9rem);
-            font-weight: 500;
-            line-height: 1.3;
-        }
+  .brand-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
 
-        .details p small {
-            display: block;
-            font-size: 0.8em;
-            color: var(--text-light);
-            font-weight: 400;
-            margin-top: 1px;
-        }
+  .brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px;
+    font-weight: 300;
+    color: var(--cream);
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
 
-        /* Pie de tarjeta (Historia) */
-        .footer {
-            background-color: var(--bg-color);
-            padding: 2vh 4vw;
-            border-radius: 16px;
-            font-size: clamp(0.7rem, 2.8vw, 0.8rem);
-            line-height: 1.4;
-            color: var(--text-light);
-            text-align: justify;
-        }
-        .footer strong {
-            color: var(--text-dark);
-        }
-    </style>
+  .brand em {
+    display: block;
+    font-size: 10px;
+    font-style: normal;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.26em;
+    color: var(--amber);
+    margin-bottom: 5px;
+  }
+
+  .lot-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 4px 9px;
+  }
+
+  .front-subline {
+    margin-top: 10px;
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* SCORE strip */
+  .score-strip {
+    background: var(--amber);
+    padding: 11px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .score-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--dark);
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 8.5px;
+    letter-spacing: 0.28em;
+    color: var(--dark);
+    opacity: 0.65;
+    text-transform: uppercase;
+  }
+
+  .score-right {
+    text-align: right;
+  }
+
+  .score-right-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    color: var(--dark);
+    font-style: italic;
+    font-weight: 300;
+    margin-bottom: 2px;
+  }
+
+  /* NOTES */
+  .notes-strip {
+    padding: 13px 28px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .notes-label {
+    font-size: 7.5px;
+    letter-spacing: 0.36em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .notes-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .note-pill {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13.5px;
+    font-style: italic;
+    color: var(--amber);
+    border: 1px solid var(--line);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 300;
+  }
+
+  /* GRID */
+  .info-grid {
+    flex: 1;
+    overflow: hidden;
+    padding: 16px 28px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 13px 20px;
+    align-content: start;
+  }
+
+  .cell-label {
+    font-size: 7.5px;
+    letter-spacing: 0.32em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .cell-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--cream);
+    line-height: 1.3;
+  }
+
+  .cell-sub {
+    font-size: 8.5px;
+    color: var(--muted);
+    letter-spacing: 0.07em;
+    margin-top: 2px;
+  }
+
+  .info-cell.full { grid-column: 1 / -1; }
+
+  .divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* HISTORY */
+  .history-block {
+    padding: 13px 28px 0;
+    flex-shrink: 0;
+  }
+
+  .history-label {
+    font-size: 7.5px;
+    letter-spacing: 0.32em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .history-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: rgba(245,240,232,0.55);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* FLIP BTN */
+  .flip-btn {
+    margin: 14px 28px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: none;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 12px;
+    cursor: pointer;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+
+  .flip-btn:active {
+    background: var(--amber);
+    color: var(--dark);
+  }
+
+  .flip-btn svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  /* ── BACK LAYOUT ── */
+  .back-header {
+    padding: 28px 28px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+
+  .back-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    color: var(--cream);
+    opacity: 0.4;
+  }
+
+  .back-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: var(--cream);
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    margin-top: 4px;
+  }
+
+  .back-title span { color: var(--amber); }
+
+  /* TABS */
+  .recipe-tabs {
+    display: flex;
+    margin: 0 28px;
+    margin-top: 18px;
+    flex-shrink: 0;
+  }
+
+  .rtab {
+    flex: 1;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.35);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: all .25s;
+  }
+
+  .rtab:first-child { border-right: none; }
+
+  .rtab.active {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--dark);
+  }
+
+  /* RECIPE PANELS */
+  .recipes-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .recipe-panel {
+    position: absolute;
+    inset: 0;
+    padding: 20px 28px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+    overflow: hidden;
+  }
+
+  .recipe-panel.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .recipe-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .recipe-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--cream);
+    line-height: 1;
+  }
+
+  .recipe-ratio {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  .recipe-params {
+    display: flex;
+    gap: 22px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .rparam-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--cream);
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .rparam-label {
+    font-size: 7.5px;
+    letter-spacing: 0.28em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .pours-label {
+    font-size: 7.5px;
+    letter-spacing: 0.32em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .pour-list { display: flex; flex-direction: column; }
+
+  .pour-row {
+    display: grid;
+    grid-template-columns: 26px 1fr 56px 56px;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .pour-num {
+    font-size: 9px;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+  }
+
+  .pour-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-style: italic;
+    color: var(--cream);
+    font-weight: 300;
+  }
+
+  .pour-bar-wrap {
+    height: 2px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .pour-bar {
+    height: 100%;
+    background: var(--amber);
+    border-radius: 1px;
+  }
+
+  .pour-ml {
+    font-size: 9.5px;
+    color: rgba(255,255,255,0.35);
+    text-align: right;
+    letter-spacing: 0.05em;
+  }
+
+  .pour-total {
+    margin-top: 11px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    font-size: 8.5px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+
+  .pour-total strong { color: var(--amber); font-weight: 400; }
+
+  /* ESPRESSO */
+  .esp-params {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .esp-cell {
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 12px;
+  }
+
+  .esp-cell-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    color: var(--cream);
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .esp-cell-label {
+    font-size: 7.5px;
+    letter-spacing: 0.28em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .esp-steps { display: flex; flex-direction: column; }
+
+  .esp-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .esp-step-n {
+    font-size: 9px;
+    color: var(--amber);
+    margin-top: 2px;
+    min-width: 14px;
+  }
+
+  .esp-step-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.45;
+    font-weight: 300;
+  }
+
+  .esp-step-text strong { color: var(--cream); font-weight: 400; }
+
+  /* BACK FLIP BTN */
+  .back-flip-btn {
+    margin: 14px 28px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.35);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 12px;
+    cursor: pointer;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+
+  .back-flip-btn:active {
+    background: rgba(255,255,255,0.07);
+    color: var(--cream);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-front > * {
+    animation: fadeUp .55s ease both;
+  }
+  .card-front > *:nth-child(1) { animation-delay: .04s; }
+  .card-front > *:nth-child(2) { animation-delay: .10s; }
+  .card-front > *:nth-child(3) { animation-delay: .16s; }
+  .card-front > *:nth-child(4) { animation-delay: .22s; }
+  .card-front > *:nth-child(5) { animation-delay: .28s; }
+  .card-front > *:nth-child(6) { animation-delay: .34s; }
+  .card-front > *:nth-child(7) { animation-delay: .40s; }
+</style>
 </head>
 <body>
 
-    <div class="card">
-        
-        <header class="header">
-            <h1>Vinza</h1>
-            <p>Café de Especialidad · Microlote VX-01</p>
-        </header>
+<div class="stage">
+  <div class="flip-wrap" id="flipWrap">
 
-        <div class="varietal-highlight">
-            <span>🌱</span>
-            <p>Catuai rojo</p>
+    <!-- ════════════ FRONT ════════════ -->
+    <div class="card card-front">
+
+      <div class="front-header">
+        <div class="brand-row">
+          <div class="brand">
+            <em>Café de Especialidad</em>
+            Vinza
+          </div>
+          <div class="lot-badge">VX-01</div>
         </div>
+        <div class="front-subline">Microlote · Experimentos Vinueza</div>
+      </div>
 
-        <div class="tasting-notes">
-            <span>🍊 Naranja dulce · Panela</span>
-            <span>Cacao suave · Caramelo</span>
+      <div class="score-strip">
+        <div>
+          <div class="score-num">86.75</div>
+          <div class="score-label">Puntuación SCA</div>
         </div>
-
-        <div class="info-grid">
-            
-            <div class="info-row">
-                <div class="icon">📍</div>
-                <div class="details">
-                    <h3>Origen · Altitud: 1.870 m</h3>
-                    <p>Hda. La Niebla Azul <small>(Finca ficticia) · Cordillera Occidental del Ecuador</small></p>
-                </div>
-            </div>
-
-            <div class="info-row">
-                <div class="icon">⚙️</div>
-                <div class="details">
-                    <h3>Proceso</h3>
-                    <p>Lavado (fermentación 36h)<small>Secado en camas africanas</small></p>
-                </div>
-            </div>
-
-            <div class="info-row">
-                <div class="icon">🔥</div>
-                <div class="details">
-                    <h3>Tueste · 📅 20 Marzo 2026</h3>
-                    <p>Medio claro experimental<small>1er crack: 8:45 · Tiempo total: 10:05</small></p>
-                </div>
-            </div>
-
-            <div class="info-row">
-                <div class="icon">☕</div>
-                <div class="details">
-                    <h3>Preparación recomendada</h3>
-                    <p>Ideal para V60 y espresso</p>
-                </div>
-            </div>
-
-            <div class="info-row">
-                <div class="icon">📊</div>
-                <div class="details">
-                    <h3>Puntuación</h3>
-                    <p>86.75 pts</p>
-                </div>
-            </div>
-
+        <div class="score-right">
+          <div class="score-right-title">Especialidad</div>
+          <div class="score-label">20 marzo 2026</div>
         </div>
+      </div>
 
-        <footer class="footer">
-            <strong>📖 Historia:</strong> VX-01 forma parte de la serie Experimentos Vinueza, tostado en microtostadora de 100 g para estudiar cómo diferentes curvas de tueste resaltan los aromas del Catuai cultivado a gran altitud.
-        </footer>
+      <div class="notes-strip">
+        <div class="notes-label">Notas de cata</div>
+        <div class="notes-row">
+          <div class="note-pill">Naranja dulce</div>
+          <div class="note-pill">Panela</div>
+          <div class="note-pill">Cacao suave</div>
+          <div class="note-pill">Caramelo</div>
+        </div>
+      </div>
 
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="cell-label">🌱 Variedad</div>
+          <div class="cell-value">Catuai rojo</div>
+        </div>
+        <div class="info-cell">
+          <div class="cell-label">📍 Altitud</div>
+          <div class="cell-value">1.870 m</div>
+          <div class="cell-sub">Cordillera Occidental</div>
+        </div>
+        <div class="divider"></div>
+        <div class="info-cell full">
+          <div class="cell-label">📍 Origen</div>
+          <div class="cell-value">Hda. La Niebla Azul</div>
+          <div class="cell-sub">Ecuador</div>
+        </div>
+        <div class="info-cell">
+          <div class="cell-label">⚙️ Proceso</div>
+          <div class="cell-value">Lavado</div>
+          <div class="cell-sub">Ferm. 36 h · Camas africanas</div>
+        </div>
+        <div class="info-cell">
+          <div class="cell-label">🔥 Tueste</div>
+          <div class="cell-value">Medio claro</div>
+          <div class="cell-sub">1er crack 8:45 · Total 10:05</div>
+        </div>
+        <div class="divider"></div>
+        <div class="info-cell full">
+          <div class="cell-label">☕ Preparación recomendada</div>
+          <div class="cell-value">V60 &amp; Espresso</div>
+        </div>
+      </div>
+
+      <div class="history-block">
+        <div class="history-label">📖 Historia</div>
+        <div class="history-text">VX-01, tostado en microtostadora de 100 g para estudiar cómo diferentes curvas de tueste resaltan los aromas del Catuai a gran altitud.</div>
+      </div>
+
+      <button class="flip-btn" onclick="flip()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round">
+          <path d="M9 3L5 7l4 4M5 7h11a4 4 0 010 8h-1"/>
+        </svg>
+        Ver recetas
+      </button>
     </div>
 
+    <!-- ════════════ BACK ════════════ -->
+    <div class="card card-back">
+
+      <div class="back-header">
+        <div class="back-brand">Vinza / VX-01</div>
+        <div class="back-title">Recetas de<br><span>preparación</span></div>
+      </div>
+
+      <div class="recipe-tabs">
+        <button class="rtab active" id="tabV60" onclick="switchTab('v60')">V60</button>
+        <button class="rtab" id="tabEsp" onclick="switchTab('esp')">Espresso</button>
+      </div>
+
+      <div class="recipes-container">
+
+        <!-- V60 -->
+        <div class="recipe-panel active" id="panelV60">
+          <div class="recipe-header">
+            <div class="recipe-name">V60</div>
+            <div class="recipe-ratio">15 g · 240 ml<br>Ratio 1:16</div>
+          </div>
+
+          <div class="recipe-params">
+            <div class="rparam">
+              <div class="rparam-val">15 g</div>
+              <div class="rparam-label">Café molido</div>
+            </div>
+            <div class="rparam">
+              <div class="rparam-val">240 ml</div>
+              <div class="rparam-label">Agua 94°C</div>
+            </div>
+            <div class="rparam">
+              <div class="rparam-val">~2:40</div>
+              <div class="rparam-label">Tiempo total</div>
+            </div>
+          </div>
+
+          <div class="pours-label">Vertidos</div>
+          <div class="pour-list">
+            <div class="pour-row">
+              <div class="pour-num">01</div>
+              <div class="pour-name">Bloom</div>
+              <div class="pour-bar-wrap"><div class="pour-bar" style="width:19%"></div></div>
+              <div class="pour-ml">45 ml · 0:00</div>
+            </div>
+            <div class="pour-row">
+              <div class="pour-num">02</div>
+              <div class="pour-name">Segundo</div>
+              <div class="pour-bar-wrap"><div class="pour-bar" style="width:50%"></div></div>
+              <div class="pour-ml">120 ml · 0:45</div>
+            </div>
+            <div class="pour-row">
+              <div class="pour-num">03</div>
+              <div class="pour-name">Tercero</div>
+              <div class="pour-bar-wrap"><div class="pour-bar" style="width:75%"></div></div>
+              <div class="pour-ml">180 ml · 1:15</div>
+            </div>
+            <div class="pour-row">
+              <div class="pour-num">04</div>
+              <div class="pour-name">Final</div>
+              <div class="pour-bar-wrap"><div class="pour-bar" style="width:100%"></div></div>
+              <div class="pour-ml">240 ml · 1:45</div>
+            </div>
+          </div>
+
+          <div class="pour-total">
+            Total acumulado: <strong>240 ml</strong>
+          </div>
+        </div>
+
+        <!-- ESPRESSO -->
+        <div class="recipe-panel" id="panelEsp">
+          <div class="recipe-header">
+            <div class="recipe-name">Espresso</div>
+            <div class="recipe-ratio">15 g · ~30 ml<br>Ratio 1:2</div>
+          </div>
+
+          <div class="esp-params">
+            <div class="esp-cell">
+              <div class="esp-cell-val">15 g</div>
+              <div class="esp-cell-label">Dosis (in)</div>
+            </div>
+            <div class="esp-cell">
+              <div class="esp-cell-val">30 g</div>
+              <div class="esp-cell-label">Rendimiento (out)</div>
+            </div>
+            <div class="esp-cell">
+              <div class="esp-cell-val">9 bar</div>
+              <div class="esp-cell-label">Presión</div>
+            </div>
+            <div class="esp-cell">
+              <div class="esp-cell-val">25–30 s</div>
+              <div class="esp-cell-label">Tiempo extracción</div>
+            </div>
+          </div>
+
+          <div class="pours-label">Proceso</div>
+          <div class="esp-steps">
+            <div class="esp-step">
+              <div class="esp-step-n">01</div>
+              <div class="esp-step-text">Moler <strong>15 g</strong> finamente. Distribuir y tampar con 20–25 kg de presión uniforme.</div>
+            </div>
+            <div class="esp-step">
+              <div class="esp-step-n">02</div>
+              <div class="esp-step-text">Temperatura: <strong>93–94°C</strong>. Pre-infusión de 3–5 s a baja presión.</div>
+            </div>
+            <div class="esp-step">
+              <div class="esp-step-n">03</div>
+              <div class="esp-step-text">Extraer <strong>30 g</strong> en 25–30 s. Busca un chorro miel-ámbar sin cortes.</div>
+            </div>
+            <div class="esp-step">
+              <div class="esp-step-n">04</div>
+              <div class="esp-step-text">Esperar notas de <strong>naranja, caramelo y cacao</strong>. Ajustar molino si el sabor es amargo o agrio.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="back-flip-btn" onclick="flip()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M15 21l4-4-4-4M19 17H8a4 4 0 010-8h1"/>
+        </svg>
+        Volver al perfil
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function flip() {
+    document.getElementById('flipWrap').classList.toggle('flipped');
+  }
+
+  function switchTab(tab) {
+    document.getElementById('tabV60').classList.toggle('active', tab === 'v60');
+    document.getElementById('tabEsp').classList.toggle('active', tab === 'esp');
+    document.getElementById('panelV60').classList.toggle('active', tab === 'v60');
+    document.getElementById('panelEsp').classList.toggle('active', tab === 'esp');
+  }
+</script>
 </body>
 </html>

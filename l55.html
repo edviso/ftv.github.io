@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Control de Cerveza Artesanal</title>
+  <style>
+    /* Reseteo y configuración de pantalla completa sin scroll vertical */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Sección superior (Inputs y Título) */
+    header {
+      background-color: #ffffff;
+      padding: 6px 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    .app-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1f2937;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+    .full-width { grid-column: span 2; }
+    
+    /* Contenedor de input + etiqueta */
+    .input-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+    .input-wrapper label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 2px;
+      margin-left: 2px;
+    }
+    
+    input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      background-color: #f9fafb;
+      color: #333;
+    }
+    input:focus { outline: none; border-color: #60a5fa; background-color: #fff; }
+    
+    /* Botones */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-top: 6px;
+    }
+    .btn-main {
+      width: 100%;
+      padding: 8px;
+      background-color: #4ade80;
+      color: #14532d;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(74, 222, 128, 0.3);
+    }
+    .btn-main.full-width { grid-column: span 2; }
+    
+    .btn-sec {
+      background-color: #e2e8f0;
+      color: #334155;
+      border: none;
+      border-radius: 8px;
+      padding: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    
+    button:active { transform: scale(0.98); }
+
+    /* Indicadores globales */
+    #status-section {
+      padding: 6px 10px;
+      text-align: center;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    #status-title { font-size: 14px; font-weight: 700; color: #1f2937; }
+    #status-subtitle { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .completed-msg { color: #059669; font-weight: bold; font-size: 14px; }
+
+    /* Progreso global */
+    #global-progress-wrapper {
+      width: 100%;
+      max-width: 320px;
+      margin-top: 6px;
+      display: none;
+    }
+    #global-progress-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 2px;
+    }
+    .global-progress-bar {
+      width: 100%;
+      background: #e5e7eb;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    }
+    #global-progress-fill {
+      height: 100%;
+      background-color: #3b82f6;
+      border-radius: 3px;
+      transition: width 0.6s ease-in-out;
+    }
+
+    /* Tarjeta de Receta Extraída */
+    #receta-card {
+      width: 100%;
+      max-width: 320px;
+      margin-top: 6px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 6px 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+      display: none; /* Controlado por JS */
+    }
+    .receta-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #374151;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .receta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      text-align: left;
+    }
+    .receta-item {
+      background-color: #f9fafb;
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #f3f4f6;
+    }
+    .receta-item strong {
+      display: block;
+      font-size: 10px;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .receta-item span {
+      display: block;
+      font-size: 9px;
+      color: #6b7280;
+      margin-top: 1px;
+    }
+
+    /* Carrusel Horizontal */
+    #carousel-wrapper {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding-bottom: 6px;
+      padding-top: 2px;
+    }
+    #carousel {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+    }
+    #carousel::-webkit-scrollbar { display: none; }
+
+    .card {
+      scroll-snap-align: center;
+      flex: 0 0 82vw;
+      margin: 0 9vw;
+      height: 94%;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: opacity 0.3s;
+    }
+
+    /* Contenido de la tarjeta del carrusel */
+    .card-header h2 { font-size: 17px; margin-bottom: 4px; line-height: 1.1; }
+    .temp-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.7);
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+    }
+    .day-text { font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #111827; }
+    .duration-text { font-size: 12px; color: #4b5563; margin-bottom: 10px; }
+
+    .progress-container {
+      width: 100%;
+      background: rgba(255,255,255,0.6);
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .progress-fill {
+      height: 100%;
+      background-color: #34d399;
+      border-radius: 5px;
+      transition: width 0.5s ease-in-out;
+    }
+
+    /* Controles de navegación */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      padding: 0 15px 10px 15px;
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      background-color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      font-size: 18px;
+      color: #374151;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .nav-btn:active { background-color: #f3f4f6; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 class="app-title">Control de Cerveza Artesanal</h1>
+    <div class="input-grid">
+      <div class="input-wrapper full-width">
+        <label for="nombre">Nombre de la cerveza</label>
+        <input type="text" id="nombre" placeholder="Ej: Pilsen Ale" autocomplete="off">
+      </div>
+      <div class="input-wrapper">
+        <label for="lote">Lote</label>
+        <input type="text" id="lote" placeholder="Ej: 55" autocomplete="off">
+      </div>
+      <div class="input-wrapper">
+        <label for="fecha">Fecha de elaboración</label>
+        <input type="date" id="fecha">
+      </div>
+      <div class="input-wrapper">
+        <label for="ebc">Color (EBC)</label>
+        <input type="number" id="ebc" step="0.1" placeholder="Ej: 8.9">
+      </div>
+      <div class="input-wrapper">
+        <label for="fg">Densidad inicial</label>
+        <input type="number" id="fg" step="0.001" placeholder="Ej: 1.010">
+      </div>
+    </div>
+    <div class="button-group">
+      <button class="btn-main full-width" onclick="guardarLote()">Guardar / Actualizar lote</button>
+      <button class="btn-sec" onclick="exportarJSON()">⬇️ Exportar JSON</button>
+      <button class="btn-sec" onclick="document.getElementById('fileInput').click()">⬆️ Importar JSON</button>
+      <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="importarJSON(event)">
+    </div>
+  </header>
+
+  <section id="status-section">
+    <div id="status-title">Esperando datos...</div>
+    <div id="status-subtitle">Ingresa o importa tu lote para comenzar</div>
+    
+    <div id="global-progress-wrapper">
+      <div id="global-progress-text">Avance Total: 0%</div>
+      <div class="global-progress-bar">
+        <div id="global-progress-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <div id="receta-card">
+      <div class="receta-title">🌾 Receta</div>
+      <div class="receta-grid">
+        <div class="receta-item">
+          <strong>3600g Pilsner (2 Row) Bel</strong>
+          <span>Mash (92.3%) - 3.9 EBC</span>
+        </div>
+        <div class="receta-item">
+          <strong>300g Caramel/Crystal Malt</strong>
+          <span>Mash (7.7%) - 20.0 EBC</span>
+        </div>
+        <div class="receta-item">
+          <strong>10g Simcoe</strong>
+          <span>Boil 25 min (13.9 IBUs)</span>
+        </div>
+        <div class="receta-item">
+          <strong>13g Cascade</strong>
+          <span>Boil 0 min (0.0 IBUs)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="carousel-wrapper">
+    <div id="carousel">
+      </div>
+  </div>
+
+  <div class="controls">
+    <button class="nav-btn" onclick="moverCarrusel(-1)">&#8592;</button>
+    <button class="nav-btn" onclick="moverCarrusel(1)">&#8594;</button>
+  </div>
+
+  <script>
+    const etapasBase = [
+      { nombre: "Arranque limpio", dias: 2, temp: "20–21 °C", color: "#fef9c3" }, 
+      { nombre: "Fermentación vigorosa", dias: 4, temp: "20–21 °C", color: "#fecdd3" }, 
+      { nombre: "Final primaria + descanso", dias: 3, temp: "21–22 °C", color: "#fed7aa" }, 
+      { nombre: "Maduración cálida", dias: 4, temp: "20–21 °C", color: "#f3f4f6" }, 
+      { nombre: "Cold crash", dias: 4, temp: "4–5 °C", color: "#bae6fd" }, 
+      { nombre: "Embotellado + priming", dias: 1, temp: "20–21 °C", color: "#e9d5ff" }, 
+      { nombre: "Carbonatación en botella", dias: 14, temp: "21–22 °C", color: "#bbf7d0" } 
+    ];
+
+    let etapasCompletas = [];
+    let indiceActivoGlobal = 0;
+
+    window.onload = () => {
+      cargarDatos();
+    };
+
+    function calcularDiasMaduracion(ebc, fg) {
+      let dias = Math.round(15 + 0.5 * (ebc - 10) + 800 * (fg - 1.010));
+      return Math.max(10, Math.min(45, dias));
+    }
+
+    function guardarLote() {
+      const lote = {
+        nombre: document.getElementById('nombre').value,
+        numero: document.getElementById('lote').value,
+        fecha: document.getElementById('fecha').value,
+        ebc: parseFloat(document.getElementById('ebc').value),
+        fg: parseFloat(document.getElementById('fg').value)
+      };
+
+      if (!lote.nombre || !lote.numero || !lote.fecha || isNaN(lote.ebc) || isNaN(lote.fg)) {
+        alert("Por favor, completa todos los campos correctamente.");
+        return;
+      }
+
+      localStorage.setItem('lote_activo', JSON.stringify(lote));
+      procesarLote(lote);
+    }
+
+    function cargarDatos() {
+      const data = localStorage.getItem('lote_activo');
+      if (data) {
+        const lote = JSON.parse(data);
+        document.getElementById('nombre').value = lote.nombre;
+        document.getElementById('lote').value = lote.numero;
+        document.getElementById('fecha').value = lote.fecha;
+        document.getElementById('ebc').value = lote.ebc;
+        document.getElementById('fg').value = lote.fg;
+        procesarLote(lote);
+      }
+    }
+
+    function procesarLote(lote) {
+      const diasMaduracion = calcularDiasMaduracion(lote.ebc, lote.fg);
+      
+      etapasCompletas = [...etapasBase];
+      etapasCompletas.push({
+        nombre: "Maduración en botella",
+        dias: diasMaduracion,
+        temp: "11–12 °C",
+        color: "#bfdbfe" 
+      });
+
+      const totalDias = etapasCompletas.reduce((acc, etapa) => acc + etapa.dias, 0);
+      
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
+      
+      const inicio = new Date(lote.fecha + 'T00:00:00'); 
+      inicio.setHours(0,0,0,0);
+      
+      const diffTiempo = hoy.getTime() - inicio.getTime();
+      let diaActualGlobal = Math.floor(diffTiempo / (1000 * 3600 * 24)) + 1;
+      
+      if(diaActualGlobal < 1) diaActualGlobal = 1;
+
+      renderizarInterfaz(diaActualGlobal, totalDias, lote);
+    }
+
+    function renderizarInterfaz(diaActualGlobal, totalDias, lote) {
+      const carousel = document.getElementById('carousel');
+      carousel.innerHTML = ''; 
+
+      let diasAcumulados = 0;
+      let etapaActualIndex = 0;
+      let procesoTerminado = false;
+
+      let avanceGlobal = Math.round((diaActualGlobal / totalDias) * 100);
+      if (avanceGlobal > 100) avanceGlobal = 100;
+
+      if (diaActualGlobal > totalDias) {
+        procesoTerminado = true;
+        etapaActualIndex = etapasCompletas.length - 1;
+      }
+
+      etapasCompletas.forEach((etapa, index) => {
+        let inicioEtapa = diasAcumulados + 1;
+        let finEtapa = diasAcumulados + etapa.dias;
+        let diaDentroDeEtapa = 0;
+
+        if (diaActualGlobal >= inicioEtapa && diaActualGlobal <= finEtapa) {
+          etapaActualIndex = index;
+          diaDentroDeEtapa = diaActualGlobal - inicioEtapa + 1;
+        } else if (diaActualGlobal > finEtapa) {
+          diaDentroDeEtapa = etapa.dias;
+        } else {
+          diaDentroDeEtapa = 0;
+        }
+
+        diasAcumulados += etapa.dias;
+        let porcentaje = Math.round((diaDentroDeEtapa / etapa.dias) * 100);
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.backgroundColor = etapa.color;
+        
+        card.innerHTML = `
+          <div class="card-header">
+            <h2>${index + 1}. ${etapa.nombre}</h2>
+            <div class="temp-badge">🌡️ ${etapa.temp}</div>
+          </div>
+          <div class="card-body">
+            <div class="day-text">Día ${diaDentroDeEtapa} de ${etapa.dias}</div>
+            <div class="duration-text">Duración: ${etapa.dias} días</div>
+            <div class="progress-container">
+              <div class="progress-fill" style="width: ${porcentaje}%;"></div>
+            </div>
+          </div>
+        `;
+        carousel.appendChild(card);
+      });
+
+      const statusTitle = document.getElementById('status-title');
+      const statusSubtitle = document.getElementById('status-subtitle');
+      const globalProgressWrapper = document.getElementById('global-progress-wrapper');
+      const globalProgressText = document.getElementById('global-progress-text');
+      const globalProgressFill = document.getElementById('global-progress-fill');
+      const recetaCard = document.getElementById('receta-card');
+
+      if (procesoTerminado) {
+        statusTitle.innerHTML = `<span class="completed-msg">Proceso completado 🍺</span>`;
+        statusSubtitle.textContent = `${lote.nombre} (Lote ${lote.numero}) listo para disfrutar.`;
+      } else {
+        statusTitle.textContent = `${lote.nombre} - Lote ${lote.numero}`;
+        statusSubtitle.textContent = `Día ${diaActualGlobal} de ${totalDias} | Etapa: ${etapasCompletas[etapaActualIndex].nombre}`;
+      }
+
+      // Mostrar barra global y tarjeta de receta
+      globalProgressWrapper.style.display = 'block';
+      recetaCard.style.display = 'block';
+      
+      globalProgressText.textContent = `Avance Total: ${avanceGlobal}%`;
+      setTimeout(() => {
+        globalProgressFill.style.width = `${avanceGlobal}%`;
+      }, 50);
+
+      indiceActivoGlobal = etapaActualIndex;
+      
+      setTimeout(() => {
+        centrarTarjeta(indiceActivoGlobal);
+      }, 100);
+    }
+
+    function centrarTarjeta(index) {
+      const carousel = document.getElementById('carousel');
+      const tarjetas = carousel.children;
+      if (tarjetas[index]) {
+        tarjetas[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+
+    function moverCarrusel(direccion) {
+      const total = etapasCompletas.length;
+      if (total === 0) return;
+      
+      indiceActivoGlobal += direccion;
+      
+      if (indiceActivoGlobal < 0) indiceActivoGlobal = 0;
+      if (indiceActivoGlobal >= total) indiceActivoGlobal = total - 1;
+
+      centrarTarjeta(indiceActivoGlobal);
+    }
+
+    function exportarJSON() {
+      const data = localStorage.getItem('lote_activo');
+      if (!data) {
+        alert("No hay ningún lote activo para exportar.");
+        return;
+      }
+      
+      const lote = JSON.parse(data);
+      const nombreLimpio = lote.nombre.replace(/[^a-zA-Z0-9]/g, '_');
+      const nombreArchivo = `Lote_${lote.numero}_${nombreLimpio}.json`;
+      
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreArchivo;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importarJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const contenido = e.target.result;
+          const loteImportado = JSON.parse(contenido);
+
+          if (loteImportado.nombre && loteImportado.numero && loteImportado.fecha && loteImportado.ebc !== undefined && loteImportado.fg !== undefined) {
+            localStorage.setItem('lote_activo', JSON.stringify(loteImportado));
+            cargarDatos();
+            alert(`Lote ${loteImportado.numero} - ${loteImportado.nombre} importado con éxito.`);
+          } else {
+            alert("El archivo no tiene el formato de lote correcto.");
+          }
+        } catch (error) {
+          alert("Error al leer el archivo JSON. Asegúrate de que sea válido.");
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>

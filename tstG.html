@@ -166,7 +166,7 @@
 
     <div class="header">
         <div class="title-group">
-            <h1>Roast Lab</h1>
+            <h1>Vinza Lab</h1>
             <p>Tostadora aire · 80g · V60/Kalita</p>
         </div>
         <button class="reset-btn" id="btn-reset">Reset</button>
@@ -208,16 +208,16 @@
     </div>
 
     <script>
-        // Configuración y Modelo Matemático
+        // Configuración y Modelo Matemático Actualizado
         const defaults = {
-            p1: { t: 180, time: 4, v: 2 },
-            p2: { t: 210, time: 4, v: 2 },
-            p3: { t: 220, time: 2, v: 3 },
-            p4: { t: 200, time: 2, v: 3 }
+            p1: { t: 200, time: 4, v: 2 }, // Secado
+            p2: { t: 200, time: 6, v: 2 }, // Maillard
+            p3: { t: 200, time: 2, v: 2 }, // Empuje
+            p4: { t: 200, time: 3, v: 2 }  // Desarrollo
         };
 
         let state = JSON.parse(JSON.stringify(defaults));
-        let ajusteValue = 0; // Nueva variable para el control de calibración
+        let ajusteValue = 0; 
 
         const phasesConfig = {
             p1: { id: 'p1', name: 'Secado', desc: 'Verde a amarillo', color: '#7AAF5A', minT: 160, maxT: 235, minTime: 2, maxTime: 8, base: 0.30, fT: 0.004 },
@@ -432,7 +432,7 @@
         document.getElementById('btn-reset').addEventListener('touchstart', (e) => {
             e.preventDefault();
             state = JSON.parse(JSON.stringify(defaults));
-            ajusteValue = 0; // También reseteamos el ajuste
+            ajusteValue = 0; 
             updateAjusteDisplay();
             calculate();
         });

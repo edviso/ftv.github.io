@@ -46,12 +46,14 @@
         }
         .title-group h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.5px; }
         .title-group p { font-size: 0.65rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; }
-        .reset-btn {
+        .header-btns { display: flex; gap: 6px; }
+        .action-btn {
             background: var(--card-inactive); border: 1px solid var(--border); color: var(--text-main);
             font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.8rem;
-            padding: 6px 12px; border-radius: 6px; outline: none;
+            padding: 6px 10px; border-radius: 6px; outline: none; transition: background 0.2s;
         }
-        .reset-btn:active { background: var(--border); }
+        .action-btn:active { background: var(--border); }
+        .action-btn.success { background: var(--info); color: white; border-color: var(--info); }
 
         /* RESULT STRIP */
         .result-strip {
@@ -169,7 +171,10 @@
             <h1>Vinza Lab</h1>
             <p>Tostadora aire · 80g · V60/Kalita</p>
         </div>
-        <button class="reset-btn" id="btn-reset">Reset</button>
+        <div class="header-btns">
+            <button class="action-btn" id="btn-copy">Copiar</button>
+            <button class="action-btn" id="btn-reset">Reset</button>
+        </div>
     </div>
 
     <div class="result-strip">
@@ -208,7 +213,6 @@
     </div>
 
     <script>
-        // Configuración y Modelo Matemático Actualizado
         const defaults = {
             p1: { t: 200, time: 4, v: 2 }, // Secado
             p2: { t: 200, time: 6, v: 2 }, // Maillard
@@ -240,7 +244,6 @@
         let warningIndex = 0;
         let warningInterval;
 
-        // Sistema de Touch Lock (Debounce)
         let lastTouch = 0;
         function isTouchLocked() {
             const now = Date.now();
@@ -249,7 +252,7 @@
             return false;
         }
 
-        // Eventos del Control de Ajuste
+        // Control de Ajuste
         document.getElementById('ajuste-sub').addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (isTouchLocked()) return;
@@ -271,7 +274,47 @@
             disp.innerText = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
         }
 
-        // Renderizado de UI
+        // Función para Copiar
+        document.getElementById('btn-copy').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+
+            // Obtener fecha y hora en Guayaquil
+            const now = new Date();
+            const dateOptions = {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            };
+            const guayaquilDateStr = new Intl.DateTimeFormat('es-EC', dateOptions).format(now);
+
+            const merma = document.getElementById('merma-val').innerText;
+            const roastName = document.getElementById('roast-name').innerText;
+            const totalTime = state.p1.time + state.p2.time + state.p3.time + state.p4.time;
+            const ajusteStr = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
+
+            let text = `☕ Roast Lab - Perfil de Tueste\n`;
+            text += `📅 Fecha: ${guayaquilDateStr} (Guayaquil)\n`;
+            text += `🔥 Tueste: ${roastName} | Merma: ${merma}% | Ajuste: ${ajusteStr}\n`;
+            text += `--------------------------\n`;
+            text += `1. Secado:     ${state.p1.t}°C | ${state.p1.time}m | Aire: ${state.p1.v}\n`;
+            text += `2. Maillard:   ${state.p2.t}°C | ${state.p2.time}m | Aire: ${state.p2.v}\n`;
+            text += `3. Empuje:     ${state.p3.t}°C | ${state.p3.time}m | Aire: ${state.p3.v}\n`;
+            text += `4. Desarrollo: ${state.p4.t}°C | ${state.p4.time}m | Aire: ${state.p4.v}\n`;
+            text += `--------------------------\n`;
+            text += `⏱️ Tiempo Total: ${totalTime}m\n`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('btn-copy');
+                btn.innerText = '¡Copiado!';
+                btn.classList.add('success');
+                setTimeout(() => { 
+                    btn.innerText = 'Copiar'; 
+                    btn.classList.remove('success');
+                }, 2000);
+            }).catch(err => console.error('Error al copiar: ', err));
+        });
+
         function buildGrid() {
             const container = document.getElementById('phases-container');
             container.innerHTML = '';
@@ -309,7 +352,6 @@
                 container.insertAdjacentHTML('beforeend', html);
             });
 
-            // Bind Touch Events
             document.querySelectorAll('[data-action]').forEach(el => {
                 el.addEventListener('touchstart', handleControl, { passive: false });
             });
@@ -334,7 +376,6 @@
             calculate();
         }
 
-        // Motor Matemático
         function calculate() {
             let totalMermaRaw = 0;
             let totalTime = 0;
@@ -343,21 +384,18 @@
                 const s = state[pId];
                 const c = phasesConfig[pId];
                 
-                // Actualizar UI de controles
                 document.getElementById(`val-t-${pId}`).innerText = s.t;
                 document.getElementById(`val-time-${pId}`).innerText = s.time;
                 document.querySelectorAll(`[data-action^="vent-"][data-phase="${pId}"]`).forEach(btn => {
                     btn.classList.toggle('active', btn.getAttribute('data-action') === `vent-${s.v}`);
                 });
 
-                // Cálculo de merma de la fase
                 const fVent = s.v === 1 ? 0.8 : (s.v === 2 ? 1.0 : 1.2);
                 const mermaFase = (c.base + c.fT * (s.t - 160)) * s.time * fVent;
                 totalMermaRaw += mermaFase;
                 totalTime += s.time;
             });
 
-            // Se suma el valor de calibración (ajusteValue) a la fórmula base y se limita entre 0 y 22
             let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * 0.72) + ajusteValue));
             updateResultUI(finalMerma);
             generateWarnings(finalMerma, totalTime);
@@ -379,7 +417,6 @@
             document.getElementById('score-dots').innerHTML = dotsHtml;
         }
 
-        // Sistema de Advertencias
         function generateWarnings(merma, totalTime) {
             const ws = [];
             const level = roastLevels.find(l => merma <= l.max) || roastLevels[6];
@@ -428,7 +465,6 @@
             pill.style.borderLeftColor = color;
         }
 
-        // Inicialización
         document.getElementById('btn-reset').addEventListener('touchstart', (e) => {
             e.preventDefault();
             state = JSON.parse(JSON.stringify(defaults));

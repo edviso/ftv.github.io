@@ -240,7 +240,6 @@
             p4: { id: 'p4', name: 'Desarrollo', desc: 'Finalización', color: '#8B2500', minT: 180, maxT: 235, minTime: 1, maxTime: 4, base: 0.75, fT: 0.012 }
         };
 
-        // Nueva gama de colores y niveles
         const roastLevels = [
             { max: 8.5, name: 'Muy Claro', color: '#CFA77A', pos: 2, score: 1 },
             { max: 10.5, name: 'Claro', color: '#B8834F', pos: 15, score: 3 },
@@ -264,7 +263,6 @@
             return false;
         }
 
-        // Control de Ajuste
         document.getElementById('ajuste-sub').addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (isTouchLocked()) return;
@@ -286,7 +284,6 @@
             disp.innerText = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
         }
 
-        // Función para Copiar
         document.getElementById('btn-copy').addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (isTouchLocked()) return;
@@ -407,7 +404,8 @@
                 totalTime += s.time;
             });
 
-            let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * 0.72) + ajusteValue));
+            // Factor térmico ajustado de 0.72 a 0.638 para alinear con el tueste real de 7.37%
+            let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * 0.638) + ajusteValue));
             updateResultUI(finalMerma);
             generateWarnings(finalMerma, totalTime);
         }
@@ -442,6 +440,7 @@
             if (Math.abs(merma - 10.0) <= 1.0) ws.push({ type: 'info', msg: 'Ref: Tueste 1 (220°C/12m) ~10% merma' });
             if (Math.abs(merma - 8.25) <= 1.0) ws.push({ type: 'caution', msg: 'Ref: Tueste 2 (205°C/15m) ~8.25% merma' });
             if (Math.abs(merma - 16.62) <= 1.5) ws.push({ type: 'danger', msg: 'Ref: Tueste 3 (235°C/15m) ~16.62% merma' });
+            if (Math.abs(merma - 7.37) <= 0.5) ws.push({ type: 'info', msg: 'Ref: Tueste 4 (12m real) ~7.37% merma' });
 
             if (state.p1.t > 200) ws.push({ type: 'caution', msg: 'Secado: Riesgo de choque térmico' });
             if (state.p3.t >= 235) ws.push({ type: 'danger', msg: 'Empuje: Límite de temp del equipo' });

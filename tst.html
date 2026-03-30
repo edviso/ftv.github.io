@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Roast Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F2EA;
+  --surface: #FFFFFF;
+  --surface2: #F0EAE0;
+  --border: #DDD4C0;
+  --text: #2A1F10;
+  --text-dim: #7A6A50;
+  --text-muted: #B0A088;
+  --accent: #C8762A;
+  --green: #5A9A3E;
+  --yellow: #C49820;
+  --red: #B83A1E;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 7px;
+  border-bottom: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+.header-left {}
+.header-title { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
+.header-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.52rem; color: var(--text-muted); letter-spacing: 0.05em;
+}
+.btn-reset-sm {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem; color: var(--text-muted);
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 9px; cursor: pointer;
+}
+.btn-reset-sm:active { background: var(--surface2); }
+
+/* RESULT STRIP */
+.result-strip {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+}
+.result-color-bar { height: 5px; transition: background 0.5s; }
+.result-inner {
+  display: flex; align-items: center;
+  padding: 6px 14px; gap: 10px;
+}
+.result-left { flex: 1; min-width: 0; }
+.result-name {
+  font-size: 1rem; font-weight: 800; letter-spacing: -0.01em;
+  transition: color 0.4s; white-space: nowrap;
+}
+.result-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.56rem; color: var(--text-dim); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.score-dots { display: flex; gap: 3px; margin-top: 2px; }
+.score-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  border: 1px solid var(--border); transition: background 0.35s;
+}
+.result-merma-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.3rem; font-weight: 500; transition: color 0.4s; flex-shrink: 0;
+}
+.result-merma-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5rem; color: var(--text-muted); text-align:right;
+}
+
+/* SPECTRUM */
+.spectrum-strip {
+  flex-shrink: 0;
+  padding: 5px 14px 3px;
+  border-bottom: 1px solid var(--border);
+}
+.spectrum-track {
+  height: 7px; border-radius: 4px;
+  background: linear-gradient(to right,#F5D99A,#D4A843,#C4845C,#D4632A,#8B2500,#2A0800);
+  position: relative; margin-bottom: 2px;
+}
+.spectrum-cursor {
+  position: absolute; top: -4px;
+  width: 15px; height: 15px; background: white;
+  border: 2.5px solid var(--accent); border-radius: 50%;
+  transform: translateX(-50%);
+  transition: left 0.45s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 1px 6px rgba(200,118,42,0.4);
+}
+.spectrum-labels {
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.48rem; color: var(--text-muted);
+}
+
+/* PHASES GRID */
+.phases-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 5px;
+  padding: 5px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.phase-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  display: flex; flex-direction: column;
+  overflow: hidden; min-height: 0;
+}
+
+.phase-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 9px 4px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.phase-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.phase-name { font-size: 0.7rem; font-weight: 700; flex: 1; }
+.phase-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.48rem; color: var(--text-muted); }
+
+.phase-body {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: space-evenly;
+  padding: 4px 8px 5px; gap: 3px; min-height: 0;
+}
+
+.ctrl-row { display: flex; align-items: center; gap: 4px; }
+.ctrl-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.48rem; color: var(--text-muted);
+  width: 22px; flex-shrink: 0; text-transform: uppercase;
+}
+.ctrl-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem; font-weight: 500;
+  color: var(--accent); width: 38px; text-align: center; flex-shrink: 0;
+}
+.ctrl-btns { display: flex; gap: 3px; flex: 1; }
+.btn-step {
+  flex: 1; height: 28px;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  border-radius: 5px; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  user-select: none; -webkit-user-select: none;
+  transition: background 0.1s;
+}
+.btn-step:active { background: var(--accent); color: white; border-color: var(--accent); }
+
+.vent-row { display: flex; align-items: center; gap: 4px; }
+.vent-btns { display: flex; gap: 3px; flex: 1; }
+.btn-vent {
+  flex: 1; height: 26px;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text-dim);
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+  cursor: pointer; user-select: none; transition: all 0.1s;
+}
+.btn-vent.active {
+  background: var(--accent); border-color: var(--accent);
+  color: white; font-weight: 600;
+}
+
+/* WARNING PILL */
+.warn-pill {
+  flex-shrink: 0;
+  margin: 0 5px 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem; line-height: 1.4;
+  color: var(--text-dim);
+  border-left: 3px solid var(--border);
+  background: var(--surface);
+  transition: border-color 0.3s;
+}
+.warn-pill.info    { border-color: var(--green); }
+.warn-pill.caution { border-color: var(--yellow); }
+.warn-pill.danger  { border-color: var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="header-title">Roast Lab</div>
+      <div class="header-sub">tostadora aire · 80g · v60 / kalita / origami</div>
+    </div>
+    <button class="btn-reset-sm" onclick="resetAll()">↺ Reset</button>
+  </div>
+
+  <div class="result-strip">
+    <div class="result-color-bar" id="resultBar"></div>
+    <div class="result-inner">
+      <div class="result-left">
+        <div class="result-name" id="resultName">—</div>
+        <div class="result-desc" id="resultDesc">Ajusta las fases</div>
+        <div class="score-dots" id="scoreRow"></div>
+      </div>
+      <div>
+        <div class="result-merma-val" id="resultMerma">—%</div>
+        <div class="result-merma-label">merma est.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spectrum-strip">
+    <div class="spectrum-track">
+      <div class="spectrum-cursor" id="specCursor" style="left:10%"></div>
+    </div>
+    <div class="spectrum-labels">
+      <span>Light</span><span>City</span><span>City+</span><span>Full City</span><span>French</span>
+    </div>
+  </div>
+
+  <div class="phases-grid" id="phasesContainer"></div>
+
+  <div class="warn-pill info" id="warnPill">Ajusta las fases para ver el análisis.</div>
+
+</div>
+<script>
+const PH = [
+  {id:'secado',     name:'Secado',     color:'#7AAF5A', sub:'verde→amarillo',
+   tD:180,tMn:160,tMx:235,tS:5, mD:4,mMn:2,mMx:8,mS:1, vD:2, mB:0.30,tF:0.004},
+  {id:'maillard',   name:'Maillard',   color:'#D4A843', sub:'aroma y dulzor',
+   tD:210,tMn:180,tMx:235,tS:5, mD:4,mMn:2,mMx:8,mS:1, vD:2, mB:0.55,tF:0.007},
+  {id:'empuje',     name:'Empuje',     color:'#D4632A', sub:'expansión/chaff',
+   tD:220,tMn:190,tMx:235,tS:5, mD:2,mMn:1,mMx:4,mS:1, vD:3, mB:0.85,tF:0.010},
+  {id:'desarrollo', name:'Desarrollo', color:'#8B2500', sub:'finalización',
+   tD:200,tMn:180,tMx:235,tS:5, mD:2,mMn:1,mMx:4,mS:1, vD:3, mB:0.75,tF:0.012},
+];
+const VF={1:0.80,2:1.00,3:1.20};
+let S=PH.map(p=>({t:p.tD,m:p.mD,v:p.vD}));
+
+const RL=[
+  {name:'Light',      r:[0,8.5],   c:'#C49820',sp:2,  d:'Muy claro. Herbáceo, subdesarrollado.',sc:1},
+  {name:'Light City', r:[8.5,11],  c:'#C4932A',sp:20, d:'Claro ideal. Floral, frutal, acidez brillante.',sc:5},
+  {name:'City',       r:[11,13],   c:'#C4845C',sp:38, d:'Medio-claro. Balance acidez/dulzor perfecto.',sc:5},
+  {name:'City+',      r:[13,15],   c:'#D4632A',sp:58, d:'Medio. Más cuerpo, notas chocolatosas.',sc:3},
+  {name:'Full City',  r:[15,17],   c:'#9B3E1A',sp:76, d:'Medio-oscuro. Acidez mínima, aceites.',sc:2},
+  {name:'Full City+', r:[17,19],   c:'#6B2010',sp:88, d:'Oscuro. Amargo dominante.',sc:1},
+  {name:'French',     r:[19,100],  c:'#3A0E05',sp:97, d:'Quemado. Solo espresso muy intenso.',sc:0},
+];
+
+function merma(){
+  let m=0;
+  PH.forEach((p,i)=>{const s=S[i];m+=(p.mB+p.tF*(s.t-160))*s.m*VF[s.v];});
+  return Math.min(m*0.72,22);
+}
+function classify(m){ return RL.find(r=>m>=r.r[0]&&m<r.r[1])||RL[6]; }
+
+function warnings(m,ro){
+  const w=[],s=S,tot=s.reduce((a,x)=>a+x.m,0);
+  if(ro.sc>=5) w.push({t:'info',   msg:'✅ '+ro.name+' — ideal para V60 / Kalita / Origami.'});
+  if(ro.sc===3) w.push({t:'caution',msg:'🟡 '+ro.name+' — aceptable para filtro, mejor prensa francesa.'});
+  if(ro.sc<=2)  w.push({t:'danger', msg:'❌ '+ro.name+' — demasiado oscuro para métodos de vertido.'});
+  if(Math.abs(m-10.0)<1.0) w.push({t:'info',   msg:'📌 Similar a tu 1er Tueste real (220°C/12min → 10%).'});
+  if(Math.abs(m-8.25)<1.0) w.push({t:'caution',msg:'📌 Cercano a tu 2do Tueste (205°C/15min → 8.25%). Vigila el crack.'});
+  if(Math.abs(m-16.62)<1.5)w.push({t:'danger', msg:'📌 Similar a tu 3er Tueste (235°C/15min → 16.62%). Muy oscuro.'});
+  if(s[0].t>200)  w.push({t:'caution',msg:'⚠️ Secado >200°C: riesgo de choque térmico en el grano.'});
+  if(s[2].t>=235) w.push({t:'danger', msg:'⚠️ Empuje a 235°C: temperatura máxima del equipo.'});
+  if(s[3].t<s[2].t-20) w.push({t:'info',msg:'👍 Buen descenso en Desarrollo (−'+(s[2].t-s[3].t)+'°C). Más dulzor.'});
+  if(s[3].t>s[2].t)    w.push({t:'caution',msg:'⚠️ Desarrollo más caliente que Empuje → tueste más oscuro.'});
+  if(s[1].m<3)  w.push({t:'caution',msg:'⚠️ Maillard <3 min: riesgo de poco dulzor y sabores crudos.'});
+  if(tot>16)    w.push({t:'caution',msg:'⚠️ Total '+tot+' min. Perfil largo → posible sabor "baked".'});
+  if(tot<10)    w.push({t:'caution',msg:'⚠️ Total '+tot+' min. Muy rápido para tostadora de aire.'});
+  return w.length?w:[{t:'info',msg:'Perfil dentro de parámetros normales.'}];
+}
+
+let wp=[],wi=0,wt=null;
+function cycleWarn(ws){
+  clearInterval(wt); wp=ws; wi=0; showW();
+  if(ws.length>1) wt=setInterval(()=>{wi=(wi+1)%wp.length;showW();},4000);
+}
+function showW(){
+  const el=document.getElementById('warnPill'),w=wp[wi];
+  el.textContent=w.msg; el.className='warn-pill '+w.t;
+}
+
+function render(){
+  const c=document.getElementById('phasesContainer'); c.innerHTML='';
+  PH.forEach((p,i)=>{
+    const s=S[i];
+    c.innerHTML+=`<div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-dot" style="background:${p.color}"></div>
+        <div class="phase-name">${p.name}</div>
+        <div class="phase-sub">${p.sub}</div>
+      </div>
+      <div class="phase-body">
+        <div class="ctrl-row">
+          <div class="ctrl-label">°C</div>
+          <div class="ctrl-val" id="tv${i}">${s.t}°</div>
+          <div class="ctrl-btns">
+            <button class="btn-step" ontouchstart="go(event,${i},'t',-1)" onclick="go(event,${i},'t',-1)">−</button>
+            <button class="btn-step" ontouchstart="go(event,${i},'t',+1)" onclick="go(event,${i},'t',+1)">+</button>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">min</div>
+          <div class="ctrl-val" id="mv${i}">${s.m}</div>
+          <div class="ctrl-btns">
+            <button class="btn-step" ontouchstart="go(event,${i},'m',-1)" onclick="go(event,${i},'m',-1)">−</button>
+            <button class="btn-step" ontouchstart="go(event,${i},'m',+1)" onclick="go(event,${i},'m',+1)">+</button>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">aire</div>
+          <div class="vent-btns">
+            ${[1,2,3].map(v=>`<button class="btn-vent${s.v===v?' active':''}" id="vb${i}${v}"
+              ontouchstart="gv(event,${i},${v})" onclick="gv(event,${i},${v})">Nv${v}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+}
+
+function upd(){
+  const m=merma(),ro=classify(m),ws=warnings(m,ro);
+  document.getElementById('resultBar').style.background=ro.c;
+  const rn=document.getElementById('resultName'); rn.textContent=ro.name; rn.style.color=ro.c;
+  document.getElementById('resultDesc').textContent=ro.d;
+  const rm=document.getElementById('resultMerma'); rm.textContent=m.toFixed(1)+'%'; rm.style.color=ro.c;
+  document.getElementById('specCursor').style.left=ro.sp+'%';
+  const sr=document.getElementById('scoreRow'); sr.innerHTML='';
+  for(let i=0;i<5;i++){const d=document.createElement('div');d.className='score-dot';d.style.background=i<ro.sc?ro.c:'transparent';sr.appendChild(d);}
+  PH.forEach((_,i)=>{
+    const s=S[i];
+    const tv=document.getElementById('tv'+i); if(tv) tv.textContent=s.t+'°';
+    const mv=document.getElementById('mv'+i); if(mv) mv.textContent=s.m;
+    [1,2,3].forEach(v=>{const b=document.getElementById('vb'+i+v);if(b)b.className='btn-vent'+(s.v===v?' active':'');});
+  });
+  cycleWarn(ws);
+}
+
+let lk=false;
+function go(e,i,f,d){e.preventDefault();if(lk)return;lk=true;setTimeout(()=>lk=false,170);
+  const p=PH[i],s=S[i];
+  if(f==='t') s.t=Math.max(p.tMn,Math.min(p.tMx,s.t+d*p.tS));
+  else        s.m=Math.max(p.mMn,Math.min(p.mMx,s.m+d*p.mS));
+  upd();
+}
+function gv(e,i,v){e.preventDefault();if(lk)return;lk=true;setTimeout(()=>lk=false,170);S[i].v=v;upd();}
+function resetAll(){S=PH.map(p=>({t:p.tD,m:p.mD,v:p.vD}));render();upd();}
+
+render(); upd();
+</script>
+</body>
+</html>

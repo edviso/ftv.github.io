@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vinza Lab</title>
+    <title>Roast Lab</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #F7F2EA;
@@ -71,9 +71,24 @@
         .score-dots { display: flex; gap: 4px; margin-top: 4px; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--card-inactive); border: 1px solid var(--border); }
         .dot.filled { background: var(--accent); border-color: var(--accent); }
-        .merma-display { text-align: right; }
-        .merma-value { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 2rem; color: var(--text-main); line-height: 1; }
-        .merma-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+        
+        .merma-display { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .merma-value { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.8rem; color: var(--text-main); line-height: 1; }
+        
+        /* CALIBRATION CONTROL (%AJUSTE) */
+        .ajuste-ctrl {
+            display: flex; align-items: center; gap: 4px;
+            background: var(--card-inactive); border: 1px solid var(--border);
+            border-radius: 6px; padding: 2px 4px;
+        }
+        .ajuste-ctrl span { font-size: 0.55rem; color: var(--text-sec); text-transform: uppercase; font-weight: 700; margin-right: 2px; }
+        .btn-ajuste {
+            width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+            background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+            font-size: 1.1rem; color: var(--text-main); font-weight: 500; line-height: 1;
+        }
+        .btn-ajuste:active { background: var(--border); }
+        .ajuste-val { font-size: 0.75rem; font-weight: 700; width: 20px; text-align: center; color: var(--accent); }
 
         /* SPECTRUM STRIP */
         .spectrum-strip {
@@ -103,7 +118,7 @@
             gap: 8px;
             padding: 8px;
             background: var(--bg);
-            min-height: 0; /* Important for flex child */
+            min-height: 0; 
         }
         .phase-card {
             background: var(--card); border: 1px solid var(--border); border-radius: 10px;
@@ -151,7 +166,7 @@
 
     <div class="header">
         <div class="title-group">
-            <h1>Vinza Lab</h1>
+            <h1>Roast Lab</h1>
             <p>Tostadora aire · 80g · V60/Kalita</p>
         </div>
         <button class="reset-btn" id="btn-reset">Reset</button>
@@ -167,7 +182,12 @@
         </div>
         <div class="merma-display">
             <div class="merma-value"><span id="merma-val">12.0</span>%</div>
-            <div class="merma-label">Merma Est.</div>
+            <div class="ajuste-ctrl">
+                <span>Ajuste</span>
+                <div class="btn-ajuste" id="ajuste-sub">−</div>
+                <div class="ajuste-val" id="ajuste-val-disp">0</div>
+                <div class="btn-ajuste" id="ajuste-add">+</div>
+            </div>
         </div>
     </div>
 
@@ -197,6 +217,7 @@
         };
 
         let state = JSON.parse(JSON.stringify(defaults));
+        let ajusteValue = 0; // Nueva variable para el control de calibración
 
         const phasesConfig = {
             p1: { id: 'p1', name: 'Secado', desc: 'Verde a amarillo', color: '#7AAF5A', minT: 160, maxT: 235, minTime: 2, maxTime: 8, base: 0.30, fT: 0.004 },
@@ -226,6 +247,28 @@
             if (now - lastTouch < 170) return true;
             lastTouch = now;
             return false;
+        }
+
+        // Eventos del Control de Ajuste
+        document.getElementById('ajuste-sub').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            ajusteValue--;
+            updateAjusteDisplay();
+            calculate();
+        });
+
+        document.getElementById('ajuste-add').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            ajusteValue++;
+            updateAjusteDisplay();
+            calculate();
+        });
+
+        function updateAjusteDisplay() {
+            const disp = document.getElementById('ajuste-val-disp');
+            disp.innerText = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
         }
 
         // Renderizado de UI
@@ -314,7 +357,8 @@
                 totalTime += s.time;
             });
 
-            let finalMerma = Math.min(22, totalMermaRaw * 0.72);
+            // Se suma el valor de calibración (ajusteValue) a la fórmula base y se limita entre 0 y 22
+            let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * 0.72) + ajusteValue));
             updateResultUI(finalMerma);
             generateWarnings(finalMerma, totalTime);
         }
@@ -340,17 +384,14 @@
             const ws = [];
             const level = roastLevels.find(l => merma <= l.max) || roastLevels[6];
 
-            // 1. Compatibilidad Filtro
             if (level.score === 5) ws.push({ type: 'info', msg: '✅ Ideal para V60 / Kalita / Origami' });
             else if (level.score === 3) ws.push({ type: 'caution', msg: '🟡 Aceptable filtro, mejor francesa' });
             else if (level.score <= 2) ws.push({ type: 'danger', msg: '❌ Demasiado oscuro para vertido' });
 
-            // 2. Referencias del usuario
             if (Math.abs(merma - 10.0) <= 1.0) ws.push({ type: 'info', msg: 'Ref: Tueste 1 (220°C/12m) ~10% merma' });
             if (Math.abs(merma - 8.25) <= 1.0) ws.push({ type: 'caution', msg: 'Ref: Tueste 2 (205°C/15m) ~8.25% merma' });
             if (Math.abs(merma - 16.62) <= 1.5) ws.push({ type: 'danger', msg: 'Ref: Tueste 3 (235°C/15m) ~16.62% merma' });
 
-            // 3. Reglas Técnicas
             if (state.p1.t > 200) ws.push({ type: 'caution', msg: 'Secado: Riesgo de choque térmico' });
             if (state.p3.t >= 235) ws.push({ type: 'danger', msg: 'Empuje: Límite de temp del equipo' });
             if (state.p4.t < state.p3.t - 20) ws.push({ type: 'info', msg: 'Buen descenso, mayor dulzor' });
@@ -391,10 +432,13 @@
         document.getElementById('btn-reset').addEventListener('touchstart', (e) => {
             e.preventDefault();
             state = JSON.parse(JSON.stringify(defaults));
+            ajusteValue = 0; // También reseteamos el ajuste
+            updateAjusteDisplay();
             calculate();
         });
 
         buildGrid();
+        updateAjusteDisplay();
         calculate();
 
     </script>

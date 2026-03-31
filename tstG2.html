@@ -404,8 +404,10 @@
                 totalTime += s.time;
             });
 
-            // Factor térmico ajustado de 0.72 a 0.638 para alinear con el tueste real de 7.37%
-            let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * 0.638) + ajusteValue));
+            // NUEVO MODELO DINÁMICO: La merma se acelera exponencialmente a mayor intensidad térmica
+            let dynamicFactor = 0.50 + (totalMermaRaw * 0.011);
+            let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * dynamicFactor) + ajusteValue));
+            
             updateResultUI(finalMerma);
             generateWarnings(finalMerma, totalTime);
         }
@@ -441,6 +443,7 @@
             if (Math.abs(merma - 8.25) <= 1.0) ws.push({ type: 'caution', msg: 'Ref: Tueste 2 (205°C/15m) ~8.25% merma' });
             if (Math.abs(merma - 16.62) <= 1.5) ws.push({ type: 'danger', msg: 'Ref: Tueste 3 (235°C/15m) ~16.62% merma' });
             if (Math.abs(merma - 7.37) <= 0.5) ws.push({ type: 'info', msg: 'Ref: Tueste 4 (12m real) ~7.37% merma' });
+            if (Math.abs(merma - 13.75) <= 0.5) ws.push({ type: 'caution', msg: 'Ref: Tueste 5 (17m intenso) ~13.75% merma' });
 
             if (state.p1.t > 200) ws.push({ type: 'caution', msg: 'Secado: Riesgo de choque térmico' });
             if (state.p3.t >= 235) ws.push({ type: 'danger', msg: 'Empuje: Límite de temp del equipo' });

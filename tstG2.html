@@ -41,16 +41,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-bottom: 1px solid var(--border);
         }
-        .title-group h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.5px; }
-        .title-group p { font-size: 0.65rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; }
-        .header-btns { display: flex; gap: 6px; }
+        .title-group h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.5px; line-height: 1.1; }
+        .title-group p { font-size: 0.6rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .header-btns { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 4px; 
+            max-width: 140px; 
+        }
         .action-btn {
             background: var(--card-inactive); border: 1px solid var(--border); color: var(--text-main);
-            font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.8rem;
-            padding: 6px 10px; border-radius: 6px; outline: none; transition: background 0.2s;
+            font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.65rem;
+            padding: 5px; border-radius: 6px; outline: none; transition: background 0.2s;
+            text-align: center; white-space: nowrap;
         }
         .action-btn:active { background: var(--border); }
         .action-btn.success { background: var(--info); color: white; border-color: var(--info); }
@@ -60,7 +67,7 @@
             flex: 0 0 auto;
             position: relative;
             background: var(--card);
-            padding: 12px 15px;
+            padding: 10px 15px;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -68,21 +75,21 @@
         }
         .top-color-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; transition: background-color 0.4s ease; }
         
-        .roast-primary { display: flex; align-items: center; gap: 12px; }
+        .roast-primary { display: flex; align-items: center; gap: 10px; }
         .color-swatch {
-            width: 38px; height: 38px; border-radius: 8px;
+            width: 34px; height: 34px; border-radius: 8px;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.25); border: 1px solid rgba(0,0,0,0.1);
             transition: background-color 0.4s ease;
         }
         
         .roast-info { display: flex; flex-direction: column; gap: 2px; }
-        .roast-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.25rem; transition: color 0.4s ease; white-space: nowrap; }
+        .roast-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.15rem; transition: color 0.4s ease; white-space: nowrap; }
         .score-dots { display: flex; gap: 4px; margin-top: 2px; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--card-inactive); border: 1px solid var(--border); }
         .dot.filled { background: var(--accent); border-color: var(--accent); }
         
-        .merma-display { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-        .merma-value { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.8rem; color: var(--text-main); line-height: 1; }
+        .merma-display { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+        .merma-value { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.6rem; color: var(--text-main); line-height: 1; }
         
         /* CALIBRATION CONTROL (%AJUSTE) */
         .ajuste-ctrl {
@@ -102,7 +109,7 @@
         /* SPECTRUM STRIP */
         .spectrum-strip {
             flex: 0 0 auto;
-            padding: 10px 15px;
+            padding: 8px 15px;
             border-bottom: 1px solid var(--border);
             background: var(--bg);
         }
@@ -116,7 +123,7 @@
             width: 14px; height: 14px; background: #FFF; border: 2px solid var(--text-main); border-radius: 50%;
             transition: left 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        .spectrum-labels { display: flex; justify-content: space-between; font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; }
+        .spectrum-labels { display: flex; justify-content: space-between; font-size: 0.5rem; color: var(--text-muted); text-transform: uppercase; }
 
         /* PHASES GRID */
         .phases-grid {
@@ -133,26 +140,26 @@
             background: var(--card); border: 1px solid var(--border); border-radius: 10px;
             padding: 8px; display: flex; flex-direction: column; justify-content: space-between;
         }
-        .phase-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+        .phase-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
         .phase-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-        .phase-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; line-height: 1; }
-        .phase-desc { font-size: 0.55rem; color: var(--text-muted); line-height: 1; margin-top: 2px; }
+        .phase-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; line-height: 1; }
+        .phase-desc { font-size: 0.5rem; color: var(--text-muted); line-height: 1; margin-top: 2px; }
         
         .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
         .control-row:last-child { margin-bottom: 0; }
-        .control-label { font-size: 0.65rem; color: var(--text-sec); width: 25px; }
+        .control-label { font-size: 0.6rem; color: var(--text-sec); width: 22px; }
         
         .btn-sm {
-            width: 28px; height: 28px; border-radius: 6px; background: var(--card-inactive);
+            width: 26px; height: 26px; border-radius: 6px; background: var(--card-inactive);
             border: 1px solid var(--border); color: var(--text-main); font-weight: 500; font-size: 1rem;
             display: flex; align-items: center; justify-content: center;
         }
         .btn-sm:active { background: var(--border); }
-        .val-display { font-size: 0.85rem; font-weight: 500; color: var(--accent); text-align: center; flex: 1; }
+        .val-display { font-size: 0.8rem; font-weight: 500; color: var(--accent); text-align: center; flex: 1; }
         
         .vent-group { display: flex; gap: 4px; flex: 1; justify-content: flex-end; }
         .btn-vent {
-            flex: 1; height: 24px; border-radius: 5px; background: var(--card-inactive);
+            flex: 1; height: 22px; border-radius: 5px; background: var(--card-inactive);
             border: 1px solid var(--border); font-size: 0.6rem; color: var(--text-sec);
             display: flex; align-items: center; justify-content: center;
         }
@@ -161,11 +168,11 @@
         /* WARNING PILL */
         .warning-pill {
             flex: 0 0 auto;
-            margin: 8px; padding: 8px 12px;
+            margin: 6px 8px 8px 8px; padding: 8px 12px;
             background: var(--card); border: 1px solid var(--border); border-radius: 8px;
             border-left: 4px solid var(--info);
-            display: flex; align-items: center;
-            font-size: 0.7rem; color: var(--text-main); font-weight: 500;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; color: var(--text-main); font-weight: 500;
             transition: border-left-color 0.3s ease;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
@@ -175,14 +182,18 @@
 
     <div class="header">
         <div class="title-group">
-            <h1>Vinza Lab</h1>
-            <p>Tostadora aire · 80g · V60/Kalita</p>
+            <h1>Roast Lab</h1>
+            <p>Tostadora aire · 80g</p>
         </div>
         <div class="header-btns">
+            <button class="action-btn" id="btn-save">Guardar</button>
+            <button class="action-btn" id="btn-load">Cargar</button>
             <button class="action-btn" id="btn-copy">Copiar</button>
             <button class="action-btn" id="btn-reset">Reset</button>
         </div>
     </div>
+    
+    <input type="file" id="file-loader" style="display:none;" accept=".roast,.json">
 
     <div class="result-strip">
         <div class="top-color-bar" id="top-bar"></div>
@@ -263,6 +274,7 @@
             return false;
         }
 
+        // --- MANEJO DEL AJUSTE ---
         document.getElementById('ajuste-sub').addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (isTouchLocked()) return;
@@ -284,6 +296,76 @@
             disp.innerText = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
         }
 
+        // --- GUARDAR RECETA (.roast JSON) ---
+        document.getElementById('btn-save').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            
+            const recipeName = prompt("Nombre de la receta:", "Perfil Espresso");
+            if (!recipeName) return;
+
+            const recipeData = {
+                app: "Roast Lab",
+                version: "1.0",
+                name: recipeName,
+                date: new Date().toISOString(),
+                state: state,
+                ajusteValue: ajusteValue
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(recipeData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", recipeName.replace(/\s+/g, '_') + ".roast");
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            document.body.removeChild(dlAnchorElem);
+        });
+
+        // --- CARGAR RECETA (.roast JSON) ---
+        document.getElementById('btn-load').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            document.getElementById('file-loader').click();
+        });
+
+        document.getElementById('file-loader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const contents = JSON.parse(e.target.result);
+                    if (contents.state && contents.app === "Roast Lab") {
+                        state = contents.state;
+                        ajusteValue = contents.ajusteValue || 0;
+                        updateAjusteDisplay();
+                        calculate();
+                        
+                        // Mensaje temporal de éxito en el warning pill
+                        clearInterval(warningInterval);
+                        const pill = document.getElementById('warning-pill');
+                        pill.style.display = 'flex';
+                        pill.innerText = `📂 Receta cargada: ${contents.name}`;
+                        pill.style.borderLeftColor = 'var(--info)';
+                        
+                        setTimeout(() => {
+                            generateWarnings(parseFloat(document.getElementById('merma-val').innerText), getTotalTime());
+                        }, 3000);
+
+                    } else {
+                        alert("El archivo no es una receta válida de Roast Lab.");
+                    }
+                } catch (err) {
+                    alert("Error al leer el archivo de receta.");
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; // Limpiar el input para permitir recargar el mismo archivo
+        });
+
+        // --- COPIAR AL PORTAPAPELES ---
         document.getElementById('btn-copy').addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (isTouchLocked()) return;
@@ -298,7 +380,7 @@
 
             const merma = document.getElementById('merma-val').innerText;
             const roastName = document.getElementById('roast-name').innerText;
-            const totalTime = state.p1.time + state.p2.time + state.p3.time + state.p4.time;
+            const totalTime = getTotalTime();
             const ajusteStr = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
 
             let text = `☕ Roast Lab - Perfil de Tueste\n`;
@@ -322,6 +404,10 @@
                 }, 2000);
             }).catch(err => console.error('Error al copiar: ', err));
         });
+
+        function getTotalTime() {
+            return state.p1.time + state.p2.time + state.p3.time + state.p4.time;
+        }
 
         function buildGrid() {
             const container = document.getElementById('phases-container');
@@ -404,7 +490,7 @@
                 totalTime += s.time;
             });
 
-            // NUEVO MODELO DINÁMICO: La merma se acelera exponencialmente a mayor intensidad térmica
+            // Motor Dinámico Exponencial
             let dynamicFactor = 0.50 + (totalMermaRaw * 0.011);
             let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * dynamicFactor) + ajusteValue));
             

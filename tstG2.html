@@ -20,6 +20,7 @@
             --danger: #D32F2F;
             --caution: #FBC02D;
             --info: #388E3C;
+            --brilliant-green: #00FF00; /* Nuevo color verde intenso y brillante */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: manipulation; }
@@ -44,14 +45,22 @@
             padding: 8px 12px;
             border-bottom: 1px solid var(--border);
         }
+        .title-group { flex: 1; min-width: 0; padding-right: 8px; }
         .title-group h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.5px; line-height: 1.1; }
-        .title-group p { font-size: 0.6rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; }
+        .title-group p { font-size: 0.6rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Estilo específico para que el nombre de la receta resalte */
+        #recipe-name-disp {
+            color: var(--brilliant-green);
+            font-weight: 700; /* Negrita para mayor realce */
+        }
         
         .header-btns { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 4px; 
             max-width: 140px; 
+            flex-shrink: 0;
         }
         .action-btn {
             background: var(--card-inactive); border: 1px solid var(--border); color: var(--text-main);
@@ -183,7 +192,7 @@
     <div class="header">
         <div class="title-group">
             <h1>Vinza Lab</h1>
-            <p>Tostadora aire · 80g</p>
+            <p id="recipe-name-disp">Tostadora aire · 80g</p>
         </div>
         <div class="header-btns">
             <button class="action-btn" id="btn-save">Guardar</button>
@@ -243,6 +252,7 @@
 
         let state = JSON.parse(JSON.stringify(defaults));
         let ajusteValue = 0; 
+        let currentRecipeName = "Tostadora aire · 80g"; // Variable global para el nombre de la receta
 
         const phasesConfig = {
             p1: { id: 'p1', name: 'Secado', desc: 'Verde a amarillo', color: '#7AAF5A', minT: 160, maxT: 235, minTime: 2, maxTime: 8, base: 0.30, fT: 0.004 },
@@ -301,8 +311,12 @@
             e.preventDefault();
             if (isTouchLocked()) return;
             
-            const recipeName = prompt("Nombre de la receta:", "Perfil Espresso");
+            let defaultName = currentRecipeName === "Tostadora aire · 80g" ? "Perfil Espresso" : currentRecipeName;
+            const recipeName = prompt("Nombre de la receta:", defaultName);
             if (!recipeName) return;
+
+            currentRecipeName = recipeName;
+            document.getElementById('recipe-name-disp').innerText = currentRecipeName;
 
             const recipeData = {
                 app: "Roast Lab",
@@ -340,10 +354,12 @@
                     if (contents.state && contents.app === "Roast Lab") {
                         state = contents.state;
                         ajusteValue = contents.ajusteValue || 0;
+                        currentRecipeName = contents.name; // Actualizar el nombre global
+                        
+                        document.getElementById('recipe-name-disp').innerText = currentRecipeName; // Mostrar en interfaz
                         updateAjusteDisplay();
                         calculate();
                         
-                        // Mensaje temporal de éxito en el warning pill
                         clearInterval(warningInterval);
                         const pill = document.getElementById('warning-pill');
                         pill.style.display = 'flex';
@@ -362,7 +378,7 @@
                 }
             };
             reader.readAsText(file);
-            e.target.value = ''; // Limpiar el input para permitir recargar el mismo archivo
+            e.target.value = ''; 
         });
 
         // --- COPIAR AL PORTAPAPELES ---
@@ -382,8 +398,11 @@
             const roastName = document.getElementById('roast-name').innerText;
             const totalTime = getTotalTime();
             const ajusteStr = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
+            
+            // Usar el nombre de la receta en el título si fue modificada
+            const textTitle = currentRecipeName === "Tostadora aire · 80g" ? "Perfil de Tueste" : currentRecipeName;
 
-            let text = `☕ Roast Lab - Perfil de Tueste\n`;
+            let text = `☕ Roast Lab - ${textTitle}\n`;
             text += `📅 Fecha: ${guayaquilDateStr} (Guayaquil)\n`;
             text += `🔥 Tueste: ${roastName} | Merma: ${merma}% | Ajuste: ${ajusteStr}\n`;
             text += `--------------------------\n`;
@@ -403,6 +422,17 @@
                     btn.classList.remove('success');
                 }, 2000);
             }).catch(err => console.error('Error al copiar: ', err));
+        });
+
+        // --- RESETEAR APP ---
+        document.getElementById('btn-reset').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            state = JSON.parse(JSON.stringify(defaults));
+            ajusteValue = 0; 
+            currentRecipeName = "Tostadora aire · 80g"; 
+            document.getElementById('recipe-name-disp').innerText = currentRecipeName;
+            updateAjusteDisplay();
+            calculate();
         });
 
         function getTotalTime() {
@@ -571,6 +601,8 @@
             e.preventDefault();
             state = JSON.parse(JSON.stringify(defaults));
             ajusteValue = 0; 
+            currentRecipeName = "Tostadora aire · 80g"; 
+            document.getElementById('recipe-name-disp').innerText = currentRecipeName;
             updateAjusteDisplay();
             calculate();
         });

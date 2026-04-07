@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora de Café - VINZA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+        .range-slider { accent-color: #4b5563; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 p-2 md:p-8 font-sans text-gray-800 relative">
+
+    <div class="max-w-5xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-lg relative mb-10">
+        
+        <div class="flex flex-col md:flex-row justify-between items-center border-b-2 border-gray-300 pb-4 mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 tracking-wide mb-4 md:mb-0">BITÁCORA DE CAFÉ</h1>
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-semibold text-gray-500 uppercase">Fecha:</label>
+                <input type="date" id="f_fecha" class="border-b border-gray-400 outline-none focus:border-gray-800 text-gray-700 bg-transparent text-lg">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-8">
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Varietal:</label>
+                <input type="text" id="f_varietal" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Tostador:</label>
+                <input type="text" id="f_tostador" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Origen:</label>
+                <input type="text" id="f_origen" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+            </div>
+            
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Nivel de Tueste:</label>
+                <div class="flex items-center mt-1">
+                    <div class="flex space-x-2">
+                        <button type="button" class="roast-btn w-6 h-6 rounded-full bg-[#d4a373] ring-offset-2 transition-all focus:outline-none" data-level="Ligero"></button>
+                        <button type="button" class="roast-btn w-6 h-6 rounded-full bg-[#b07d54] ring-offset-2 transition-all focus:outline-none" data-level="Medio-Ligero"></button>
+                        <button type="button" class="roast-btn w-6 h-6 rounded-full bg-[#8b5a33] ring-offset-2 transition-all focus:outline-none" data-level="Medio"></button>
+                        <button type="button" class="roast-btn w-6 h-6 rounded-full bg-[#5c3a21] ring-offset-2 transition-all focus:outline-none" data-level="Medio-Oscuro"></button>
+                        <button type="button" class="roast-btn w-6 h-6 rounded-full bg-[#362214] ring-offset-2 transition-all focus:outline-none" data-level="Oscuro"></button>
+                    </div>
+                    <span id="roast-label" class="ml-3 text-sm font-semibold text-gray-700">Seleccione...</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Productor:</label>
+                <input type="text" id="f_productor" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-500 uppercase mb-1">Fecha de Tueste:</label>
+                    <input type="date" id="f_fechatueste" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-500 uppercase mb-1">Lote:</label>
+                    <input type="text" id="f_lote" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b-2 border-dashed border-gray-300 mb-8"></div>
+
+        <h2 class="text-xl font-bold text-gray-800 mb-4">PREPARACIÓN</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-8">
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Método:</label>
+                <input type="text" id="f_metodo" value="Origami Air S / V60" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Ratio:</label>
+                <div class="flex items-center border-b border-gray-300 focus-within:border-gray-800 transition-colors">
+                    <span class="mr-2 text-gray-500 font-medium text-lg whitespace-nowrap">1 :</span>
+                    <input type="number" id="f_ratio" step="0.1" value="15" class="outline-none bg-transparent py-1 w-full text-lg">
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Molino:</label>
+                <input type="text" id="f_molino" value="Timemore C3S" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-500 uppercase mb-1">Dosis (g):</label>
+                    <input type="number" id="f_dosis" step="0.1" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-500 uppercase mb-1">Agua (ml):</label>
+                    <input type="number" id="f_agua" step="1" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-gray-500 uppercase mb-1">Molienda (clics):</label>
+                <input type="number" id="f_molienda" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-500 uppercase mb-1">Temperatura (°C):</label>
+                    <input type="number" id="f_temperatura" step="1" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-500 uppercase mb-1">Tiempo Total:</label>
+                    <input type="text" id="f_tiempototal" placeholder="ej. 2:30" class="border-b border-gray-300 outline-none focus:border-gray-800 py-1 time-input" readonly onclick="openTimePicker(event)">
+                </div>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-bold text-gray-800 mb-4">RECETA</h2>
+        <div class="overflow-x-auto mb-8 border border-gray-300 rounded-lg">
+            <table class="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border-b border-gray-300 p-3 font-semibold text-gray-700 w-1/4 text-center">Tiempo (Min:Seg)</th>
+                        <th class="border-b border-l border-gray-300 p-3 font-semibold text-gray-700 w-1/3">Acción</th>
+                        <th class="border-b border-l border-gray-300 p-3 font-semibold text-gray-700">Observación</th>
+                        <th class="border-b border-l border-gray-300 p-3 w-10 text-center"></th>
+                    </tr>
+                </thead>
+                <tbody id="recipe-body">
+                    </tbody>
+            </table>
+            <button onclick="addRecipeRow()" class="w-full py-2 bg-gray-50 text-gray-600 hover:bg-gray-200 transition-colors text-sm font-semibold">
+                + Añadir Paso
+            </button>
+        </div>
+
+        <div class="border-b-2 border-dashed border-gray-300 mb-8"></div>
+
+        <h2 class="text-xl font-bold text-gray-800 mb-6">VARIABLES SENSORIALES</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            
+            <div class="flex justify-center items-center aspect-square w-full max-w-sm mx-auto">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <div class="flex flex-col justify-center space-y-4">
+                <div id="sensor-controls" class="space-y-3"></div>
+            </div>
+
+            <div class="flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-3">Perfil</h3>
+                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-700" id="perfil-container">
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Frutal"> <span>Frutal</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Floral"> <span>Floral</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Dulce"> <span>Dulce</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Frutos Secos"> <span>Frutos Secos</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Cacao"> <span>Cacao</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Especias"> <span>Especias</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Ácido"> <span>Ácido</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Fermentado"> <span>Fermentado</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Leguminoso"> <span>Leguminoso</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="accent-gray-800 chk-perfil" value="Tostado"> <span>Tostado</span></label>
+                    </div>
+                    <div class="mt-4">
+                        <label class="text-sm font-semibold text-gray-700">Otros:</label>
+                        <input type="text" id="f_otros" class="w-full border-b border-gray-300 outline-none focus:border-gray-800 py-1 mt-1 text-sm">
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 text-center transition-colors duration-300" id="score-card">
+                    <p class="text-xs font-bold text-gray-500 mb-1">PUNTAJE FINAL (Escala 1 al 10)</p>
+                    <div class="text-5xl font-black text-gray-500 transition-colors duration-300" id="final-score">0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label class="font-bold text-gray-800">Observaciones:</label>
+            <textarea id="f_obs" class="w-full border border-gray-300 rounded-lg p-3 mt-2 outline-none focus:border-gray-800 min-h-[100px]" placeholder="Notas adicionales sobre la taza..."></textarea>
+        </div>
+
+        <div class="mt-10 flex flex-col md:flex-row gap-4 justify-end">
+            <button onclick="document.getElementById('json-upload').click()" class="px-6 py-3 bg-gray-800 text-white font-bold rounded-lg shadow hover:bg-gray-700 transition-colors">
+                Cargar Receta
+            </button>
+            <button onclick="guardarJSON()" class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow hover:bg-green-500 transition-colors">
+                Guardar Receta
+            </button>
+            <input type="file" id="json-upload" accept=".json" class="hidden" onchange="cargarJSON(event)">
+        </div>
+
+    </div>
+
+    <div id="time-picker" class="hidden absolute bg-white border border-gray-300 shadow-2xl rounded-lg p-3 z-50 flex space-x-4 select-none">
+        <div>
+            <div class="text-xs font-bold text-gray-500 mb-2 text-center">Minutos</div>
+            <div class="grid grid-cols-2 gap-1 h-32 overflow-y-auto no-scrollbar" id="tp-mins"></div>
+        </div>
+        <div>
+            <div class="text-xs font-bold text-gray-500 mb-2 text-center">Segundos</div>
+            <div class="grid grid-cols-2 gap-1 h-32 overflow-y-auto no-scrollbar" id="tp-secs"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- LÓGICA DE NIVEL DE TUESTE ---
+        const roastBtns = document.querySelectorAll('.roast-btn');
+        const roastLabel = document.getElementById('roast-label');
+        roastBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                roastBtns.forEach(b => b.classList.remove('ring-2', 'ring-gray-800', 'scale-110'));
+                e.target.classList.add('ring-2', 'ring-gray-800', 'scale-110');
+                roastLabel.innerText = e.target.getAttribute('data-level');
+            });
+        });
+
+        function setRoastLevel(level) {
+            roastBtns.forEach(b => b.classList.remove('ring-2', 'ring-gray-800', 'scale-110'));
+            roastLabel.innerText = level || 'Seleccione...';
+            if (level) {
+                const btn = document.querySelector(`.roast-btn[data-level="${level}"]`);
+                if (btn) btn.classList.add('ring-2', 'ring-gray-800', 'scale-110');
+            }
+        }
+
+        // --- LÓGICA DEL SELECTOR DE TIEMPO DINÁMICO ---
+        const timePicker = document.getElementById('time-picker');
+        let activeTimeInput = null;
+        let currentMin = '0';
+        let currentSec = '00';
+
+        const minContainer = document.getElementById('tp-mins');
+        for(let i=0; i<=9; i++) {
+            minContainer.innerHTML += `<button type="button" class="px-3 py-1 bg-gray-100 hover:bg-gray-300 rounded text-sm font-semibold" onclick="setTPValue('min', '${i}')">${i}</button>`;
+        }
+        const secContainer = document.getElementById('tp-secs');
+        for(let i=0; i<60; i+=5) {
+            let s = i < 10 ? '0'+i : i;
+            secContainer.innerHTML += `<button type="button" class="px-3 py-1 bg-gray-100 hover:bg-gray-300 rounded text-sm font-semibold" onclick="setTPValue('sec', '${s}')">${s}</button>`;
+        }
+
+        window.openTimePicker = function(e) {
+            activeTimeInput = e.target;
+            const rect = activeTimeInput.getBoundingClientRect();
+            timePicker.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+            timePicker.style.left = (rect.left + window.scrollX - 20) + 'px';
+            timePicker.classList.remove('hidden');
+
+            const parts = activeTimeInput.value.split(':');
+            if(parts.length === 2) {
+                currentMin = parts[0];
+                currentSec = parts[1];
+            } else {
+                currentMin = '0'; currentSec = '00';
+            }
+        };
+
+        window.setTPValue = function(type, val) {
+            if(type === 'min') currentMin = val;
+            if(type === 'sec') currentSec = val;
+            if(activeTimeInput) {
+                activeTimeInput.value = `${currentMin}:${currentSec}`;
+            }
+        };
+
+        document.addEventListener('click', (e) => {
+            if(!timePicker.contains(e.target) && !e.target.classList.contains('time-input')) {
+                timePicker.classList.add('hidden');
+            }
+        });
+
+        // --- LÓGICA DE RECETA ---
+        function addRecipeRow(start = '', end = '', action = '', obs = '') {
+            const tbody = document.getElementById('recipe-body');
+            const tr = document.createElement('tr');
+            tr.className = 'group paso-receta'; 
+            tr.innerHTML = `
+                <td class="border-b border-gray-200 px-2 py-3">
+                    <div class="flex items-center justify-center space-x-1">
+                        <input type="text" value="${start}" class="time-input w-12 text-center bg-transparent border-b border-dashed border-gray-400 outline-none cursor-pointer focus:border-gray-800 focus:border-solid transition-colors" placeholder="0:00" readonly onclick="openTimePicker(event)">
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="text" value="${end}" class="time-input w-12 text-center bg-transparent border-b border-dashed border-gray-400 outline-none cursor-pointer focus:border-gray-800 focus:border-solid transition-colors" placeholder="0:45" readonly onclick="openTimePicker(event)">
+                    </div>
+                </td>
+                <td class="border-b border-l border-gray-200"><input type="text" value="${action}" class="w-full p-3 bg-transparent outline-none" placeholder="ej. Bloom"></td>
+                <td class="border-b border-l border-gray-200"><input type="text" value="${obs}" class="w-full p-3 bg-transparent outline-none" placeholder="..."></td>
+                <td class="border-b border-l border-gray-200 text-center w-10">
+                    <button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-600 font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Eliminar fila">&times;</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+        
+        addRecipeRow('0:00', '0:45', 'Bloom', ''); 
+        addRecipeRow('0:45', '1:30', '1er vertido', ''); 
+        addRecipeRow('1:30', '2:15', '2do vertido', ''); 
+        addRecipeRow('2:15', '3:00', 'Drenaje', '');
+
+        // --- GRÁFICO DE RADAR Y PUNTAJE ---
+        const variables = ['Aroma', 'Dulzor', 'Amargor', 'Acidez', 'Cuerpo', 'Claridad', 'Complejidad', 'Postgusto'];
+        const values = { Aroma: 0, Dulzor: 0, Amargor: 0, Acidez: 0, Cuerpo: 0, Claridad: 0, Complejidad: 0, Postgusto: 0 };
+
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        const radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: variables,
+                datasets: [{
+                    label: 'Intensidad',
+                    data: Object.values(values),
+                    backgroundColor: 'rgba(156, 163, 175, 0.2)',
+                    borderColor: 'rgba(156, 163, 175, 1)',
+                    pointBackgroundColor: 'rgba(156, 163, 175, 1)',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        min: 0, max: 5,
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: { font: { size: 12, family: 'sans-serif', weight: 'bold' }, color: '#374151' },
+                        ticks: { stepSize: 1, display: false }
+                    }
+                },
+                plugins: { legend: { display: false } },
+                animation: { duration: 400 }
+            }
+        });
+
+        const controlsContainer = document.getElementById('sensor-controls');
+        variables.forEach(v => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex items-center justify-between text-sm';
+            wrapper.innerHTML = `
+                <label class="w-24 font-semibold text-gray-700">${v}</label>
+                <input type="range" min="0" max="5" step="0.5" value="0" class="range-slider flex-1 mx-3" id="range-${v}">
+                <span class="w-8 text-right font-bold text-gray-900" id="val-${v}">0</span>
+            `;
+            controlsContainer.appendChild(wrapper);
+
+            document.getElementById(`range-${v}`).addEventListener('input', (e) => {
+                updateSensor(v, parseFloat(e.target.value));
+            });
+        });
+
+        function updateSensor(v, val) {
+            document.getElementById(`val-${v}`).innerText = val;
+            document.getElementById(`range-${v}`).value = val;
+            values[v] = val;
+            radarChart.data.datasets[0].data = variables.map(key => values[key]);
+            calculateScore();
+            radarChart.update();
+        }
+
+        function calculateScore() {
+            const { Dulzor, Aroma, Acidez, Claridad, Complejidad, Postgusto, Cuerpo, Amargor } = values;
+            const numerator = Dulzor + Aroma + Acidez + Claridad + Complejidad + Postgusto + 
+                              (5 - Math.abs(Cuerpo - 2.5)) + (5 - Math.abs(Amargor - 1.5));
+            const baseScore = numerator / 40; 
+            let finalScore = baseScore * 10;
+            if(finalScore > 10) finalScore = 10;
+            if(finalScore < 0) finalScore = 0;
+
+            let colorData = { bg: 'rgba(156, 163, 175, 0.2)', border: 'rgba(156, 163, 175, 1)', textClass: 'text-gray-500', borderClass: 'border-gray-200' };
+            if (finalScore > 0) {
+                if (finalScore < 4) colorData = { bg: 'rgba(239, 68, 68, 0.3)', border: '#ef4444', textClass: 'text-red-500', borderClass: 'border-red-300' };
+                else if (finalScore >= 4 && finalScore < 6) colorData = { bg: 'rgba(249, 115, 22, 0.3)', border: '#f97316', textClass: 'text-orange-500', borderClass: 'border-orange-300' };
+                else if (finalScore >= 6 && finalScore < 8) colorData = { bg: 'rgba(132, 204, 22, 0.3)', border: '#84cc16', textClass: 'text-lime-500', borderClass: 'border-lime-300' };
+                else colorData = { bg: 'rgba(34, 197, 94, 0.3)', border: '#22c55e', textClass: 'text-green-500', borderClass: 'border-green-300' };
+            }
+
+            radarChart.data.datasets[0].backgroundColor = colorData.bg;
+            radarChart.data.datasets[0].borderColor = colorData.border;
+            radarChart.data.datasets[0].pointBackgroundColor = colorData.border;
+
+            document.getElementById('final-score').innerText = finalScore.toFixed(2);
+            document.getElementById('final-score').className = `text-5xl font-black transition-colors duration-300 ${colorData.textClass}`;
+            document.getElementById('score-card').className = `mt-8 bg-gray-50 p-4 rounded-lg border-2 text-center transition-colors duration-300 ${colorData.borderClass}`;
+        }
+
+        // --- LÓGICA DE GUARDAR Y CARGAR JSON ---
+        function guardarJSON() {
+            // Recopilar tabla de preparación
+            const recetaPasos = [];
+            document.querySelectorAll('.paso-receta').forEach(tr => {
+                const inputs = tr.querySelectorAll('input');
+                recetaPasos.push({
+                    inicio: inputs[0].value,
+                    fin: inputs[1].value,
+                    accion: inputs[2].value,
+                    observacion: inputs[3].value
+                });
+            });
+
+            // Recopilar checkboxes de perfil
+            const perfilActivos = [];
+            document.querySelectorAll('.chk-perfil').forEach(chk => {
+                if(chk.checked) perfilActivos.push(chk.value);
+            });
+
+            // Construir objeto maestro
+            const data = {
+                fecha: document.getElementById('f_fecha').value,
+                varietal: document.getElementById('f_varietal').value,
+                tostador: document.getElementById('f_tostador').value,
+                origen: document.getElementById('f_origen').value,
+                nivelTueste: document.getElementById('roast-label').innerText === 'Seleccione...' ? '' : document.getElementById('roast-label').innerText,
+                productor: document.getElementById('f_productor').value,
+                fechaTueste: document.getElementById('f_fechatueste').value,
+                lote: document.getElementById('f_lote').value,
+                metodo: document.getElementById('f_metodo').value,
+                ratio: document.getElementById('f_ratio').value,
+                molino: document.getElementById('f_molino').value,
+                dosis: document.getElementById('f_dosis').value,
+                agua: document.getElementById('f_agua').value,
+                molienda: document.getElementById('f_molienda').value,
+                temperatura: document.getElementById('f_temperatura').value,
+                tiempoTotal: document.getElementById('f_tiempototal').value,
+                recetaPasos: recetaPasos,
+                sensorial: values,
+                perfiles: perfilActivos,
+                otros: document.getElementById('f_otros').value,
+                observaciones: document.getElementById('f_obs').value
+            };
+
+            // Lógica del nombre y secuencial
+            let secuencial = parseInt(localStorage.getItem('vinza_seq') || '1');
+            const numFormateado = secuencial.toString().padStart(3, '0');
+            
+            const fechaStr = data.fecha ? data.fecha : new Date().toISOString().split('T')[0];
+            const varietalStr = data.varietal.trim() ? data.varietal.trim().replace(/\s+/g, '_') : 'SinVarietal';
+            
+            const nombreArchivo = `${numFormateado}_${fechaStr}_${varietalStr}.json`;
+
+            // Descargar el archivo
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+            const enlace = document.createElement('a');
+            enlace.href = dataStr;
+            enlace.download = nombreArchivo;
+            document.body.appendChild(enlace);
+            enlace.click();
+            enlace.remove();
+
+            // Aumentar el secuencial
+            localStorage.setItem('vinza_seq', secuencial + 1);
+        }
+
+        function cargarJSON(evento) {
+            const archivo = evento.target.files[0];
+            if (!archivo) return;
+
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    // Poblar campos básicos
+                    document.getElementById('f_fecha').value = data.fecha || '';
+                    document.getElementById('f_varietal').value = data.varietal || '';
+                    document.getElementById('f_tostador').value = data.tostador || '';
+                    document.getElementById('f_origen').value = data.origen || '';
+                    setRoastLevel(data.nivelTueste);
+                    document.getElementById('f_productor').value = data.productor || '';
+                    document.getElementById('f_fechatueste').value = data.fechaTueste || '';
+                    document.getElementById('f_lote').value = data.lote || '';
+                    document.getElementById('f_metodo').value = data.metodo || 'Origami Air S / V60';
+                    document.getElementById('f_ratio').value = data.ratio || '15';
+                    document.getElementById('f_molino').value = data.molino || 'Timemore C3S';
+                    document.getElementById('f_dosis').value = data.dosis || '';
+                    document.getElementById('f_agua').value = data.agua || '';
+                    document.getElementById('f_molienda').value = data.molienda || '';
+                    document.getElementById('f_temperatura').value = data.temperatura || '';
+                    document.getElementById('f_tiempototal').value = data.tiempoTotal || '';
+                    document.getElementById('f_otros').value = data.otros || '';
+                    document.getElementById('f_obs').value = data.observaciones || '';
+
+                    // Poblar tabla de preparación
+                    document.getElementById('recipe-body').innerHTML = '';
+                    if (data.recetaPasos && data.recetaPasos.length > 0) {
+                        data.recetaPasos.forEach(p => addRecipeRow(p.inicio, p.fin, p.accion, p.observacion));
+                    } else {
+                        addRecipeRow('0:00', '0:45', 'Bloom', ''); 
+                    }
+
+                    // Poblar datos sensoriales
+                    if (data.sensorial) {
+                        Object.keys(data.sensorial).forEach(k => updateSensor(k, data.sensorial[k]));
+                    }
+
+                    // Poblar checkboxes de perfil
+                    document.querySelectorAll('.chk-perfil').forEach(chk => {
+                        chk.checked = data.perfiles && data.perfiles.includes(chk.value);
+                    });
+
+                } catch (error) {
+                    alert("Error al cargar la receta. El archivo podría estar corrupto.");
+                    console.error(error);
+                }
+            };
+            lector.readAsText(archivo);
+            evento.target.value = ''; // Limpiar input para permitir recargar el mismo archivo
+        }
+    </script>
+</body>
+</html>

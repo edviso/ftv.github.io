@@ -179,9 +179,19 @@
             </div>
         </div>
 
-        <div>
+        <div class="mb-8">
             <label class="font-bold text-gray-800">Observaciones:</label>
             <textarea id="f_obs" class="w-full border border-gray-300 rounded-lg p-3 mt-2 outline-none focus:border-gray-800 min-h-[100px]" placeholder="Notas adicionales sobre la taza..."></textarea>
+        </div>
+
+        <div class="pt-8 border-t-2 border-dashed border-gray-300 mb-8 bg-gray-50 p-6 rounded-lg">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <h2 class="text-xl font-bold text-gray-800">RESUMEN DE CATA</h2>
+                <button onclick="generarResumen()" class="px-5 py-2 bg-gray-800 text-white text-sm font-bold rounded-lg shadow hover:bg-gray-700 transition-colors w-full md:w-auto">
+                    ✨ Generar Resumen
+                </button>
+            </div>
+            <textarea id="f_resumen" class="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none focus:border-gray-800 min-h-[180px] leading-relaxed text-gray-700" placeholder="Presiona el botón para generar una narrativa automática basada en los datos ingresados..."></textarea>
         </div>
 
         <div class="mt-10 flex flex-col md:flex-row gap-4 justify-end">
@@ -222,7 +232,7 @@
         function setRoastLevel(level) {
             roastBtns.forEach(b => b.classList.remove('ring-2', 'ring-gray-800', 'scale-110'));
             roastLabel.innerText = level || 'Seleccione...';
-            if (level) {
+            if (level && level !== 'Seleccione...') {
                 const btn = document.querySelector(`.roast-btn[data-level="${level}"]`);
                 if (btn) btn.classList.add('ring-2', 'ring-gray-800', 'scale-110');
             }
@@ -386,9 +396,86 @@
             document.getElementById('score-card').className = `mt-8 bg-gray-50 p-4 rounded-lg border-2 text-center transition-colors duration-300 ${colorData.borderClass}`;
         }
 
+        // --- LÓGICA DE GENERAR RESUMEN NARRATIVO ---
+        function generarResumen() {
+            // Recolectar info actual
+            const fecha = document.getElementById('f_fecha').value || 'recientemente';
+            const varietal = document.getElementById('f_varietal').value || 'un café especial';
+            const origen = document.getElementById('f_origen').value || 'origen por descubrir';
+            const productor = document.getElementById('f_productor').value;
+            const tostador = document.getElementById('f_tostador').value || 'un tostador local';
+            const nivelTueste = document.getElementById('roast-label').innerText !== 'Seleccione...' ? document.getElementById('roast-label').innerText.toLowerCase() : 'medio';
+            const fechaTueste = document.getElementById('f_fechatueste').value;
+            const lote = document.getElementById('f_lote').value;
+
+            const metodo = document.getElementById('f_metodo').value || 'filtro';
+            const molino = document.getElementById('f_molino').value || 'mi molino habitual';
+            const molienda = document.getElementById('f_molienda').value || 'algunos';
+            const ratio = document.getElementById('f_ratio').value || '15';
+            const dosis = document.getElementById('f_dosis').value || 'una cantidad precisa de';
+            const agua = document.getElementById('f_agua').value || 'suficiente';
+            const temperatura = document.getElementById('f_temperatura').value || 'la temperatura adecuada';
+            const tiempoTotal = document.getElementById('f_tiempototal').value || 'el tiempo necesario';
+
+            // Obtener pasos de la tabla
+            const pasos = [];
+            document.querySelectorAll('.paso-receta').forEach(tr => {
+                const inputs = tr.querySelectorAll('input');
+                if(inputs[2].value.trim() !== '') {
+                    pasos.push(`${inputs[2].value.toLowerCase()} (${inputs[0].value} a ${inputs[1].value})`);
+                }
+            });
+
+            // Función para traducir números a descripciones
+            const dSensorial = (val) => {
+                if (val <= 1) return 'muy sutil';
+                if (val <= 2) return 'ligero';
+                if (val <= 3) return 'equilibrado';
+                if (val <= 4) return 'marcado';
+                return 'muy intenso';
+            };
+
+            // Perfiles
+            const perfiles = [];
+            document.querySelectorAll('.chk-perfil').forEach(chk => {
+                if(chk.checked) perfiles.push(chk.value.toLowerCase());
+            });
+            const otros = document.getElementById('f_otros').value;
+            if(otros) perfiles.push(...otros.split(',').map(s => s.trim().toLowerCase()));
+
+            const observaciones = document.getElementById('f_obs').value;
+
+            // Construir Narrativa
+            let narrativa = `Esta sesión de cata comenzó con un lote de ${varietal} cultivado en ${origen}`;
+            if(productor) narrativa += ` por ${productor}`;
+            narrativa += `. Tostado por ${tostador}`;
+            if(fechaTueste) narrativa += ` el ${fechaTueste}`;
+            if(lote) narrativa += ` (lote ${lote})`;
+            narrativa += `, este grano presenta un desarrollo de tueste ${nivelTueste}.\n\n`;
+
+            narrativa += `Para extraer su máximo potencial, me decanté por usar el método ${metodo} y una molienda de ${molienda} clics en el ${molino}. Trabajé con un ratio de 1:${ratio}, utilizando ${dosis}g de café y vertiendo ${agua}ml de agua a ${temperatura}°C. El flujo de trabajo duró ${tiempoTotal} en total`;
+            if(pasos.length > 0) {
+                narrativa += `, estructurado de la siguiente forma: ${pasos.join(', ')}.`;
+            } else {
+                narrativa += `.`;
+            }
+            narrativa += `\n\n`;
+
+            narrativa += `Al evaluar la taza, lo primero que destaca es un aroma ${dSensorial(values.Aroma)}. En boca, revela un dulzor ${dSensorial(values.Dulzor)} que interactúa con una acidez ${dSensorial(values.Acidez)} y un amargor ${dSensorial(values.Amargor)}. Es una bebida de cuerpo ${dSensorial(values.Cuerpo)}, con una claridad ${dSensorial(values.Claridad)} que permite apreciar una complejidad ${dSensorial(values.Complejidad)}. El postgusto resulta ${dSensorial(values.Postgusto)}.`;
+
+            if(perfiles.length > 0) {
+                narrativa += ` En su perfil de sabor, encontré evidentes notas a ${perfiles.join(', ')}.`;
+            }
+
+            if(observaciones) {
+                narrativa += `\n\nEn definitiva, ${observaciones}`;
+            }
+
+            document.getElementById('f_resumen').value = narrativa;
+        }
+
         // --- LÓGICA DE GUARDAR Y CARGAR JSON ---
         function guardarJSON() {
-            // Recopilar tabla de preparación
             const recetaPasos = [];
             document.querySelectorAll('.paso-receta').forEach(tr => {
                 const inputs = tr.querySelectorAll('input');
@@ -400,13 +487,11 @@
                 });
             });
 
-            // Recopilar checkboxes de perfil
             const perfilActivos = [];
             document.querySelectorAll('.chk-perfil').forEach(chk => {
                 if(chk.checked) perfilActivos.push(chk.value);
             });
 
-            // Construir objeto maestro
             const data = {
                 fecha: document.getElementById('f_fecha').value,
                 varietal: document.getElementById('f_varietal').value,
@@ -428,10 +513,10 @@
                 sensorial: values,
                 perfiles: perfilActivos,
                 otros: document.getElementById('f_otros').value,
-                observaciones: document.getElementById('f_obs').value
+                observaciones: document.getElementById('f_obs').value,
+                resumenCata: document.getElementById('f_resumen').value
             };
 
-            // Lógica del nombre y secuencial
             let secuencial = parseInt(localStorage.getItem('vinza_seq') || '1');
             const numFormateado = secuencial.toString().padStart(3, '0');
             
@@ -440,27 +525,19 @@
             
             const nombreArchivo = `${numFormateado}_${fechaStr}_${varietalStr}.json`;
 
-            // Convertir a string JSON
             const jsonString = JSON.stringify(data, null, 2);
-            
-            // Crear un objeto Blob con el tipo MIME explícito para JSON
             const blob = new Blob([jsonString], { type: "application/json" });
-            
-            // Crear una URL temporal para el Blob
             const url = URL.createObjectURL(blob);
             
-            // Crear el enlace de descarga y forzar el clic
             const enlace = document.createElement('a');
             enlace.href = url;
             enlace.download = nombreArchivo;
             document.body.appendChild(enlace);
             enlace.click();
             
-            // Limpieza de memoria y DOM
             document.body.removeChild(enlace);
             URL.revokeObjectURL(url);
 
-            // Aumentar el secuencial
             localStorage.setItem('vinza_seq', secuencial + 1);
         }
 
@@ -473,7 +550,6 @@
                 try {
                     const data = JSON.parse(e.target.result);
 
-                    // Poblar campos básicos
                     document.getElementById('f_fecha').value = data.fecha || '';
                     document.getElementById('f_varietal').value = data.varietal || '';
                     document.getElementById('f_tostador').value = data.tostador || '';
@@ -492,8 +568,8 @@
                     document.getElementById('f_tiempototal').value = data.tiempoTotal || '';
                     document.getElementById('f_otros').value = data.otros || '';
                     document.getElementById('f_obs').value = data.observaciones || '';
+                    document.getElementById('f_resumen').value = data.resumenCata || '';
 
-                    // Poblar tabla de preparación
                     document.getElementById('recipe-body').innerHTML = '';
                     if (data.recetaPasos && data.recetaPasos.length > 0) {
                         data.recetaPasos.forEach(p => addRecipeRow(p.inicio, p.fin, p.accion, p.observacion));
@@ -501,12 +577,10 @@
                         addRecipeRow('0:00', '0:45', 'Bloom', ''); 
                     }
 
-                    // Poblar datos sensoriales
                     if (data.sensorial) {
                         Object.keys(data.sensorial).forEach(k => updateSensor(k, data.sensorial[k]));
                     }
 
-                    // Poblar checkboxes de perfil
                     document.querySelectorAll('.chk-perfil').forEach(chk => {
                         chk.checked = data.perfiles && data.perfiles.includes(chk.value);
                     });
@@ -517,7 +591,7 @@
                 }
             };
             lector.readAsText(archivo);
-            evento.target.value = ''; // Limpiar input para permitir recargar el mismo archivo
+            evento.target.value = ''; 
         }
     </script>
 </body>

@@ -440,14 +440,25 @@
             
             const nombreArchivo = `${numFormateado}_${fechaStr}_${varietalStr}.json`;
 
-            // Descargar el archivo
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+            // Convertir a string JSON
+            const jsonString = JSON.stringify(data, null, 2);
+            
+            // Crear un objeto Blob con el tipo MIME explícito para JSON
+            const blob = new Blob([jsonString], { type: "application/json" });
+            
+            // Crear una URL temporal para el Blob
+            const url = URL.createObjectURL(blob);
+            
+            // Crear el enlace de descarga y forzar el clic
             const enlace = document.createElement('a');
-            enlace.href = dataStr;
+            enlace.href = url;
             enlace.download = nombreArchivo;
             document.body.appendChild(enlace);
             enlace.click();
-            enlace.remove();
+            
+            // Limpieza de memoria y DOM
+            document.body.removeChild(enlace);
+            URL.revokeObjectURL(url);
 
             // Aumentar el secuencial
             localStorage.setItem('vinza_seq', secuencial + 1);

@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Roast Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F7F2EA;
+            --card: #FFFFFF;
+            --card-inactive: #F0EAE0;
+            --border: #DDD4C0;
+            --text-main: #2A1F10;
+            --text-sec: #7A6A50;
+            --text-muted: #B0A088;
+            --accent: #C8762A;
+            --danger: #D32F2F;
+            --caution: #FBC02D;
+            --info: #388E3C;
+            --brilliant-green: #00FF00;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: manipulation; }
+
+        body, html {
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        .header {
+            flex: 0 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .title-group { flex: 1; min-width: 0; padding-right: 8px; }
+        .title-group h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.5px; line-height: 1.1; }
+        .title-group p { font-size: 0.6rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        #recipe-name-disp {
+            color: var(--brilliant-green);
+            font-weight: 700;
+        }
+        
+        .header-btns { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 4px; 
+            max-width: 140px; 
+            flex-shrink: 0;
+        }
+        .action-btn {
+            background: var(--card-inactive); border: 1px solid var(--border); color: var(--text-main);
+            font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.65rem;
+            padding: 5px; border-radius: 6px; outline: none; transition: background 0.2s;
+            text-align: center; white-space: nowrap;
+        }
+        .action-btn:active { background: var(--border); }
+        .action-btn.success { background: var(--info); color: white; border-color: var(--info); }
+
+        /* RESULT STRIP */
+        .result-strip {
+            flex: 0 0 auto;
+            position: relative;
+            background: var(--card);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-color-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; transition: background-color 0.4s ease; }
+        
+        .roast-primary { display: flex; align-items: center; gap: 10px; }
+        .color-swatch {
+            width: 34px; height: 34px; border-radius: 8px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.25); border: 1px solid rgba(0,0,0,0.1);
+            transition: background-color 0.4s ease;
+        }
+        
+        .roast-info { display: flex; flex-direction: column; gap: 2px; }
+        .roast-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.15rem; transition: color 0.4s ease; white-space: nowrap; }
+        .score-dots { display: flex; gap: 4px; margin-top: 2px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--card-inactive); border: 1px solid var(--border); }
+        .dot.filled { background: var(--accent); border-color: var(--accent); }
+        
+        .merma-display { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+        .merma-value { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.6rem; color: var(--text-main); line-height: 1; }
+        
+        /* CALIBRATION CONTROL (%AJUSTE) */
+        .ajuste-ctrl {
+            display: flex; align-items: center; gap: 4px;
+            background: var(--card-inactive); border: 1px solid var(--border);
+            border-radius: 6px; padding: 2px 4px;
+        }
+        .ajuste-ctrl span { font-size: 0.55rem; color: var(--text-sec); text-transform: uppercase; font-weight: 700; margin-right: 2px; }
+        .btn-ajuste {
+            width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+            background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+            font-size: 1.1rem; color: var(--text-main); font-weight: 500; line-height: 1;
+        }
+        .btn-ajuste:active { background: var(--border); }
+        .ajuste-val { font-size: 0.75rem; font-weight: 700; width: 20px; text-align: center; color: var(--accent); }
+
+        /* SPECTRUM STRIP */
+        .spectrum-strip {
+            flex: 0 0 auto;
+            padding: 8px 15px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+        }
+        .spectrum-bar {
+            height: 8px; border-radius: 4px; position: relative;
+            background: linear-gradient(to right, #CFA77A, #B8834F, #A36B3C, #8B5A2B, #6F4422, #4B2E1F, #2B1B17, #1A0F0B);
+            margin-bottom: 6px;
+        }
+        .cursor {
+            position: absolute; top: 50%; transform: translate(-50%, -50%);
+            width: 14px; height: 14px; background: #FFF; border: 2px solid var(--text-main); border-radius: 50%;
+            transition: left 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .spectrum-labels { display: flex; justify-content: space-between; font-size: 0.5rem; color: var(--text-muted); text-transform: uppercase; }
+
+        /* PHASES GRID (Adaptada a 3 Fases) */
+        .phases-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px;
+            padding: 8px;
+            background: var(--bg);
+            min-height: 0; 
+        }
+        .phase-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+            padding: 8px; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        
+        /* La fase 3 ocupa todo el ancho inferior */
+        .phase-card:nth-child(3) {
+            grid-column: 1 / -1; 
+        }
+
+        .phase-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .phase-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .phase-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; line-height: 1; }
+        .phase-desc { font-size: 0.5rem; color: var(--text-muted); line-height: 1; margin-top: 2px; }
+        
+        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .control-row:last-child { margin-bottom: 0; }
+        .control-label { font-size: 0.6rem; color: var(--text-sec); width: 22px; }
+        
+        .btn-sm {
+            width: 26px; height: 26px; border-radius: 6px; background: var(--card-inactive);
+            border: 1px solid var(--border); color: var(--text-main); font-weight: 500; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-sm:active { background: var(--border); }
+        .val-display { font-size: 0.8rem; font-weight: 500; color: var(--accent); text-align: center; flex: 1; }
+        
+        .vent-group { display: flex; gap: 4px; flex: 1; justify-content: flex-end; }
+        .btn-vent {
+            flex: 1; height: 22px; border-radius: 5px; background: var(--card-inactive);
+            border: 1px solid var(--border); font-size: 0.6rem; color: var(--text-sec);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-vent.active { background: var(--accent); color: #FFF; border-color: var(--accent); }
+
+        /* WARNING PILL */
+        .warning-pill {
+            flex: 0 0 auto;
+            margin: 6px 8px 8px 8px; padding: 8px 12px;
+            background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+            border-left: 4px solid var(--info);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; color: var(--text-main); font-weight: 500;
+            transition: border-left-color 0.3s ease;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-group">
+            <h1>Vinza Lab</h1>
+            <p id="recipe-name-disp">Tostadora aire · 80g</p>
+        </div>
+        <div class="header-btns">
+            <button class="action-btn" id="btn-save">Guardar</button>
+            <button class="action-btn" id="btn-load">Cargar</button>
+            <button class="action-btn" id="btn-copy">Copiar</button>
+            <button class="action-btn" id="btn-reset">Reset</button>
+        </div>
+    </div>
+    
+    <input type="file" id="file-loader" style="display:none;" accept=".roast,.json">
+
+    <div class="result-strip">
+        <div class="top-color-bar" id="top-bar"></div>
+        <div class="roast-primary">
+            <div class="color-swatch" id="color-swatch"></div>
+            <div class="roast-info">
+                <div class="roast-name" id="roast-name">Medio</div>
+                <div class="score-dots" id="score-dots">
+                    <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                </div>
+            </div>
+        </div>
+        <div class="merma-display">
+            <div class="merma-value"><span id="merma-val">12.0</span>%</div>
+            <div class="ajuste-ctrl">
+                <span>Ajuste</span>
+                <div class="btn-ajuste" id="ajuste-sub">−</div>
+                <div class="ajuste-val" id="ajuste-val-disp">0</div>
+                <div class="btn-ajuste" id="ajuste-add">+</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="spectrum-strip">
+        <div class="spectrum-bar">
+            <div class="cursor" id="spectrum-cursor" style="left: 45%;"></div>
+        </div>
+        <div class="spectrum-labels">
+            <span>M.Claro</span><span>Rubio</span><span>Medio</span><span>Oscuro</span><span>Italiano</span>
+        </div>
+    </div>
+
+    <div class="phases-grid" id="phases-container">
+        </div>
+
+    <div class="warning-pill" id="warning-pill">
+        Cargando modelo térmico...
+    </div>
+
+    <script>
+        // Actualizado a 3 fases con distribución de peso (45%, ~35%, ~20%)
+        const defaults = {
+            p1: { t: 200, time: 5, v: 2 }, // Secado
+            p2: { t: 200, time: 4, v: 2 }, // Maillard
+            p3: { t: 200, time: 2, v: 2 }  // Desarrollo (Crack y Final)
+        };
+
+        let state = JSON.parse(JSON.stringify(defaults));
+        let ajusteValue = 0; 
+        let currentRecipeName = "Tostadora aire · 80g"; 
+
+        const phasesConfig = {
+            p1: { id: 'p1', name: 'Secado', desc: 'Evaporación', color: '#7AAF5A', minT: 160, maxT: 235, minTime: 2, maxTime: 8, base: 0.30, fT: 0.004 },
+            p2: { id: 'p2', name: 'Maillard', desc: 'Color y aromas', color: '#D4A843', minT: 180, maxT: 235, minTime: 2, maxTime: 8, base: 0.55, fT: 0.007 },
+            p3: { id: 'p3', name: 'Desarrollo', desc: 'Crack / Final', color: '#D4632A', minT: 180, maxT: 235, minTime: 1, maxTime: 6, base: 0.80, fT: 0.011 }
+        };
+
+        const roastLevels = [
+            { max: 8.5, name: 'Muy Claro', color: '#CFA77A', pos: 2, score: 1 },
+            { max: 10.5, name: 'Claro', color: '#B8834F', pos: 15, score: 3 },
+            { max: 12.0, name: 'Rubio', color: '#A36B3C', pos: 30, score: 5 },
+            { max: 13.5, name: 'Medio', color: '#8B5A2B', pos: 45, score: 5 },
+            { max: 15.0, name: 'Medio-Oscuro', color: '#6F4422', pos: 60, score: 3 },
+            { max: 17.0, name: 'Oscuro', color: '#4B2E1F', pos: 75, score: 2 },
+            { max: 19.0, name: 'Francés', color: '#2B1B17', pos: 88, score: 1 },
+            { max: 100, name: 'Italiano', color: '#1A0F0B', pos: 97, score: 0 }
+        ];
+
+        let currentWarnings = [];
+        let warningIndex = 0;
+        let warningInterval;
+
+        let lastTouch = 0;
+        function isTouchLocked() {
+            const now = Date.now();
+            if (now - lastTouch < 170) return true;
+            lastTouch = now;
+            return false;
+        }
+
+        // --- MANEJO DEL AJUSTE ---
+        document.getElementById('ajuste-sub').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            ajusteValue--;
+            updateAjusteDisplay();
+            calculate();
+        });
+
+        document.getElementById('ajuste-add').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            ajusteValue++;
+            updateAjusteDisplay();
+            calculate();
+        });
+
+        function updateAjusteDisplay() {
+            const disp = document.getElementById('ajuste-val-disp');
+            disp.innerText = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
+        }
+
+        // --- GUARDAR RECETA (.roast JSON) ---
+        document.getElementById('btn-save').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            
+            let defaultName = currentRecipeName === "Tostadora aire · 80g" ? "Perfil Espresso" : currentRecipeName;
+            const recipeName = prompt("Nombre de la receta:", defaultName);
+            if (!recipeName) return;
+
+            currentRecipeName = recipeName;
+            document.getElementById('recipe-name-disp').innerText = currentRecipeName;
+
+            const recipeData = {
+                app: "Roast Lab",
+                version: "1.1", // Versión 3 fases
+                name: recipeName,
+                date: new Date().toISOString(),
+                state: state,
+                ajusteValue: ajusteValue
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(recipeData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", recipeName.replace(/\s+/g, '_') + ".roast");
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            document.body.removeChild(dlAnchorElem);
+        });
+
+        // --- CARGAR RECETA (.roast JSON) ---
+        document.getElementById('btn-load').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+            document.getElementById('file-loader').click();
+        });
+
+        document.getElementById('file-loader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const contents = JSON.parse(e.target.result);
+                    if (contents.state && contents.app === "Roast Lab") {
+                        
+                        // Sistema de retrocompatibilidad: Ignora viejas fases 'p4' si existen
+                        state = {
+                            p1: contents.state.p1 || defaults.p1,
+                            p2: contents.state.p2 || defaults.p2,
+                            p3: contents.state.p3 || defaults.p3
+                        };
+
+                        ajusteValue = contents.ajusteValue || 0;
+                        currentRecipeName = contents.name; 
+                        
+                        document.getElementById('recipe-name-disp').innerText = currentRecipeName; 
+                        updateAjusteDisplay();
+                        calculate();
+                        
+                        clearInterval(warningInterval);
+                        const pill = document.getElementById('warning-pill');
+                        pill.style.display = 'flex';
+                        pill.innerText = `📂 Receta cargada: ${contents.name}`;
+                        pill.style.borderLeftColor = 'var(--info)';
+                        
+                        setTimeout(() => {
+                            generateWarnings(parseFloat(document.getElementById('merma-val').innerText), getTotalTime());
+                        }, 3000);
+
+                    } else {
+                        alert("El archivo no es una receta válida de Roast Lab.");
+                    }
+                } catch (err) {
+                    alert("Error al leer el archivo de receta.");
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; 
+        });
+
+        // --- COPIAR AL PORTAPAPELES ---
+        document.getElementById('btn-copy').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+
+            const now = new Date();
+            const dateOptions = {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            };
+            const guayaquilDateStr = new Intl.DateTimeFormat('es-EC', dateOptions).format(now);
+
+            const merma = document.getElementById('merma-val').innerText;
+            const roastName = document.getElementById('roast-name').innerText;
+            const totalTime = getTotalTime();
+            const ajusteStr = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
+            
+            const textTitle = currentRecipeName === "Tostadora aire · 80g" ? "Perfil de Tueste" : currentRecipeName;
+
+            let text = `☕ Roast Lab - ${textTitle}\n`;
+            text += `📅 Fecha: ${guayaquilDateStr} (Guayaquil)\n`;
+            text += `🔥 Tueste: ${roastName} | Merma: ${merma}% | Ajuste: ${ajusteStr}\n`;
+            text += `--------------------------\n`;
+            text += `1. Secado:     ${state.p1.t}°C | ${state.p1.time}m | Aire: ${state.p1.v}\n`;
+            text += `2. Maillard:   ${state.p2.t}°C | ${state.p2.time}m | Aire: ${state.p2.v}\n`;
+            text += `3. Desarrollo: ${state.p3.t}°C | ${state.p3.time}m | Aire: ${state.p3.v}\n`;
+            text += `--------------------------\n`;
+            text += `⏱️ Tiempo Total: ${totalTime}m\n`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('btn-copy');
+                btn.innerText = '¡Copiado!';
+                btn.classList.add('success');
+                setTimeout(() => { 
+                    btn.innerText = 'Copiar'; 
+                    btn.classList.remove('success');
+                }, 2000);
+            }).catch(err => console.error('Error al copiar: ', err));
+        });
+
+        // --- RESETEAR APP ---
+        document.getElementById('btn-reset').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            state = JSON.parse(JSON.stringify(defaults));
+            ajusteValue = 0; 
+            currentRecipeName = "Tostadora aire · 80g"; 
+            document.getElementById('recipe-name-disp').innerText = currentRecipeName;
+            updateAjusteDisplay();
+            calculate();
+        });
+
+        function getTotalTime() {
+            return state.p1.time + state.p2.time + state.p3.time;
+        }
+
+        function buildGrid() {
+            const container = document.getElementById('phases-container');
+            container.innerHTML = '';
+            Object.values(phasesConfig).forEach(p => {
+                const html = `
+                <div class="phase-card">
+                    <div class="phase-header">
+                        <div class="phase-dot" style="background:${p.color}"></div>
+                        <div>
+                            <div class="phase-title">${p.name}</div>
+                            <div class="phase-desc">${p.desc}</div>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label">°C</span>
+                        <div class="btn-sm" data-action="temp-sub" data-phase="${p.id}">−</div>
+                        <span class="val-display" id="val-t-${p.id}"></span>
+                        <div class="btn-sm" data-action="temp-add" data-phase="${p.id}">+</div>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label">min</span>
+                        <div class="btn-sm" data-action="time-sub" data-phase="${p.id}">−</div>
+                        <span class="val-display" id="val-time-${p.id}"></span>
+                        <div class="btn-sm" data-action="time-add" data-phase="${p.id}">+</div>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label">aire</span>
+                        <div class="vent-group">
+                            <div class="btn-vent" data-action="vent-1" data-phase="${p.id}">1</div>
+                            <div class="btn-vent" data-action="vent-2" data-phase="${p.id}">2</div>
+                            <div class="btn-vent" data-action="vent-3" data-phase="${p.id}">3</div>
+                        </div>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+
+            document.querySelectorAll('[data-action]').forEach(el => {
+                el.addEventListener('touchstart', handleControl, { passive: false });
+            });
+        }
+
+        function handleControl(e) {
+            e.preventDefault();
+            if (isTouchLocked()) return;
+
+            const action = this.getAttribute('data-action');
+            const pId = this.getAttribute('data-phase');
+            const conf = phasesConfig[pId];
+
+            if (action === 'temp-sub') state[pId].t = Math.max(conf.minT, state[pId].t - 5);
+            if (action === 'temp-add') state[pId].t = Math.min(conf.maxT, state[pId].t + 5);
+            if (action === 'time-sub') state[pId].time = Math.max(conf.minTime, state[pId].time - 1);
+            if (action === 'time-add') state[pId].time = Math.min(conf.maxTime, state[pId].time + 1);
+            if (action === 'vent-1') state[pId].v = 1;
+            if (action === 'vent-2') state[pId].v = 2;
+            if (action === 'vent-3') state[pId].v = 3;
+
+            calculate();
+        }
+
+        function calculate() {
+            let totalMermaRaw = 0;
+            let totalTime = 0;
+
+            Object.keys(phasesConfig).forEach(pId => {
+                const s = state[pId];
+                const c = phasesConfig[pId];
+                
+                document.getElementById(`val-t-${pId}`).innerText = s.t;
+                document.getElementById(`val-time-${pId}`).innerText = s.time;
+                document.querySelectorAll(`[data-action^="vent-"][data-phase="${pId}"]`).forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-action') === `vent-${s.v}`);
+                });
+
+                const fVent = s.v === 1 ? 0.8 : (s.v === 2 ? 1.0 : 1.2);
+                const mermaFase = (c.base + c.fT * (s.t - 160)) * s.time * fVent;
+                totalMermaRaw += mermaFase;
+                totalTime += s.time;
+            });
+
+            // Motor Dinámico Exponencial adaptado a las nuevas 3 bases
+            let dynamicFactor = 0.50 + (totalMermaRaw * 0.011);
+            let finalMerma = Math.max(0, Math.min(22, (totalMermaRaw * dynamicFactor) + ajusteValue));
+            
+            updateResultUI(finalMerma);
+            generateWarnings(finalMerma, totalTime);
+        }
+
+        function updateResultUI(merma) {
+            const level = roastLevels.find(l => merma <= l.max) || roastLevels[7];
+            
+            document.getElementById('merma-val').innerText = merma.toFixed(2);
+            document.getElementById('roast-name').innerText = level.name;
+            document.getElementById('roast-name').style.color = level.color;
+            document.getElementById('top-bar').style.backgroundColor = level.color;
+            
+            document.getElementById('color-swatch').style.backgroundColor = level.color;
+            
+            document.getElementById('spectrum-cursor').style.left = level.pos + '%';
+
+            let dotsHtml = '';
+            for(let i=1; i<=5; i++) {
+                dotsHtml += `<div class="dot ${i <= level.score ? 'filled' : ''}"></div>`;
+            }
+            document.getElementById('score-dots').innerHTML = dotsHtml;
+        }
+
+        function generateWarnings(merma, totalTime) {
+            const ws = [];
+            const level = roastLevels.find(l => merma <= l.max) || roastLevels[7];
+
+            if (level.score === 5) ws.push({ type: 'info', msg: '✅ Ideal para V60 / Kalita / Origami' });
+            else if (level.score === 3) ws.push({ type: 'caution', msg: '🟡 Aceptable filtro, mejor francesa' });
+            else if (level.score <= 2) ws.push({ type: 'danger', msg: '❌ Demasiado oscuro para vertido' });
+
+            if (state.p1.t > 200) ws.push({ type: 'caution', msg: 'Secado: Riesgo de choque térmico' });
+            if (state.p3.t >= 235) ws.push({ type: 'danger', msg: 'Desarrollo: Límite de temp del equipo' });
+            if (state.p3.t < state.p2.t - 20) ws.push({ type: 'info', msg: 'Buen descenso, mayor dulzor' });
+            if (state.p3.t > state.p2.t) ws.push({ type: 'caution', msg: 'El perfil sube tras el Maillard' });
+            if (state.p2.time < 3) ws.push({ type: 'caution', msg: 'Maillard corto: poco dulzor' });
+            if (totalTime > 16) ws.push({ type: 'caution', msg: 'Riesgo de sabor "baked"' });
+            if (totalTime < 10) ws.push({ type: 'caution', msg: 'Tueste muy rápido para aire' });
+            if (state.p1.v === 1) ws.push({ type: 'caution', msg: 'Riesgo recalentamiento en secado' });
+
+            currentWarnings = ws;
+            warningIndex = 0;
+            showWarning();
+            
+            clearInterval(warningInterval);
+            warningInterval = setInterval(() => {
+                warningIndex = (warningIndex + 1) % currentWarnings.length;
+                showWarning();
+            }, 4000);
+        }
+
+        function showWarning() {
+            const pill = document.getElementById('warning-pill');
+            if (currentWarnings.length === 0) {
+                pill.style.display = 'none';
+                return;
+            }
+            pill.style.display = 'flex';
+            const w = currentWarnings[warningIndex];
+            pill.innerText = w.msg;
+            
+            let color = 'var(--info)';
+            if (w.type === 'caution') color = 'var(--caution)';
+            if (w.type === 'danger') color = 'var(--danger)';
+            pill.style.borderLeftColor = color;
+        }
+
+        document.getElementById('btn-reset').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            state = JSON.parse(JSON.stringify(defaults));
+            ajusteValue = 0; 
+            currentRecipeName = "Tostadora aire · 80g"; 
+            document.getElementById('recipe-name-disp').innerText = currentRecipeName;
+            updateAjusteDisplay();
+            calculate();
+        });
+
+        buildGrid();
+        updateAjusteDisplay();
+        calculate();
+
+    </script>
+</body>
+</html>

@@ -70,6 +70,31 @@
         .action-btn:active { background: var(--border); }
         .action-btn.success { background: var(--info); color: white; border-color: var(--info); }
 
+        /* CAMPO NOMBRE DEL GRANO */
+        .grain-input-strip {
+            flex: 0 0 auto;
+            padding: 6px 15px;
+            background: var(--card-inactive);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .grain-label { font-size: 0.6rem; font-weight: 800; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        .grain-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            padding: 2px 0;
+            outline: none;
+            user-select: text;
+        }
+
         /* RESULT STRIP */
         .result-strip {
             flex: 0 0 auto;
@@ -134,7 +159,7 @@
         }
         .spectrum-labels { display: flex; justify-content: space-between; font-size: 0.5rem; color: var(--text-muted); text-transform: uppercase; }
 
-        /* PHASES GRID (Adaptada al Perfil Global) */
+        /* PHASES GRID */
         .phases-grid {
             flex: 1;
             display: grid;
@@ -190,6 +215,11 @@
             <button class="action-btn" id="btn-copy">Copiar</button>
             <button class="action-btn" id="btn-reset">Reset</button>
         </div>
+    </div>
+
+    <div class="grain-input-strip">
+        <span class="grain-label">Grano / Lote:</span>
+        <input type="text" class="grain-input" id="grain-name-input" placeholder="Ej. Bourbon Amarillo..." spellcheck="false">
     </div>
     
     <input type="file" id="file-loader" style="display:none;" accept=".roast,.json">
@@ -269,8 +299,8 @@
         </div>
         
         <div style="grid-column: 1 / -1; background:var(--card-inactive); border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:4px; text-align:center;">
-            <div style="font-size:0.65rem; color:var(--text-main); font-weight: 700; display:flex; align-items:center; justify-content:center; gap:6px;">
-                <span>💨 Fuerza de Aire: Secado y Maillard (Nivel 2) · Desarrollo (Nivel 3)</span>
+            <div style="font-size:0.65rem; color:var(--text-main); font-weight: 700;">
+                💨 Aire: Secado y Maillard (Nivel 2) · Desarrollo (Nivel 3)
             </div>
         </div>
     </div>
@@ -309,7 +339,7 @@
             return false;
         }
 
-        // --- CONTROLES GLOBALES (TEMP de 1 en 1, TIEMPO de 0.5 en 0.5) ---
+        // --- CONTROLES GLOBALES ---
         document.getElementById('g-temp-sub').addEventListener('touchstart', (e) => {
             e.preventDefault(); if (isTouchLocked()) return;
             globalTemp = Math.max(160, globalTemp - 1); calculate();
@@ -327,12 +357,11 @@
             globalTime = Math.min(30, globalTime + 0.5); calculate();
         });
 
-        // --- MANEJO DEL AJUSTE MANUAL ---
+        // --- MANEJO DEL AJUSTE ---
         document.getElementById('ajuste-sub').addEventListener('touchstart', (e) => {
             e.preventDefault(); if (isTouchLocked()) return;
             ajusteValue--; updateAjusteDisplay(); calculate();
         });
-
         document.getElementById('ajuste-add').addEventListener('touchstart', (e) => {
             e.preventDefault(); if (isTouchLocked()) return;
             ajusteValue++; updateAjusteDisplay(); calculate();
@@ -357,8 +386,9 @@
 
             const recipeData = {
                 app: "Roast Lab",
-                version: "2.1", // Versión Alta Precisión
+                version: "2.2",
                 name: recipeName,
+                grainName: document.getElementById('grain-name-input').value, // INCLUIR GRANO
                 date: new Date().toISOString(),
                 globalTemp: globalTemp,
                 globalTime: globalTime,
@@ -374,7 +404,7 @@
             document.body.removeChild(dlAnchorElem);
         });
 
-        // --- CARGAR RECETA (.roast JSON) Y RETROCOMPATIBILIDAD ---
+        // --- CARGAR RECETA ---
         document.getElementById('btn-load').addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (isTouchLocked()) return;
@@ -390,41 +420,32 @@
                 try {
                     const contents = JSON.parse(e.target.result);
                     if (contents.app === "Roast Lab") {
-                        
                         if (contents.globalTemp !== undefined) {
                             globalTemp = contents.globalTemp;
                             globalTime = contents.globalTime;
                         } 
-                        else if (contents.state && contents.state.p1) {
-                            let old = contents.state;
-                            globalTime = old.p1.time + old.p2.time + old.p3.time + (old.p4 ? old.p4.time : 0);
-                            let totalT = old.p1.t + old.p2.t + old.p3.t;
-                            globalTemp = Math.round((totalT / 3) / 5) * 5; 
-                        }
-
+                        
                         ajusteValue = contents.ajusteValue || 0;
                         currentRecipeName = contents.name || "Receta Importada"; 
-                        
                         document.getElementById('recipe-name-disp').innerText = currentRecipeName; 
+                        
+                        // CARGAR NOMBRE DEL GRANO
+                        document.getElementById('grain-name-input').value = contents.grainName || "";
+                        
                         updateAjusteDisplay();
                         calculate();
                         
                         clearInterval(warningInterval);
                         const pill = document.getElementById('warning-pill');
                         pill.style.display = 'flex';
-                        pill.innerText = `📂 Receta cargada: ${contents.name}`;
+                        pill.innerText = `📂 Receta: ${contents.name}`;
                         pill.style.borderLeftColor = 'var(--info)';
                         
                         setTimeout(() => {
                             generateWarnings(parseFloat(document.getElementById('merma-val').innerText), globalTime, globalTemp);
                         }, 3000);
-
-                    } else {
-                        alert("El archivo no es una receta válida de Roast Lab.");
                     }
-                } catch (err) {
-                    alert("Error al leer el archivo de receta.");
-                }
+                } catch (err) { alert("Error al leer receta."); }
             };
             reader.readAsText(file);
             e.target.value = ''; 
@@ -436,42 +457,34 @@
             if (isTouchLocked()) return;
 
             const now = new Date();
-            const dateOptions = {
+            const guayaquilDateStr = new Intl.DateTimeFormat('es-EC', {
                 timeZone: 'America/Guayaquil',
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit', hour12: false
-            };
-            const guayaquilDateStr = new Intl.DateTimeFormat('es-EC', dateOptions).format(now);
+            }).format(now);
 
             const merma = document.getElementById('merma-val').innerText;
             const mermaGramos = document.getElementById('merma-g-val').innerText;
             const roastName = document.getElementById('roast-name').innerText;
-            const ajusteStr = ajusteValue > 0 ? `+${ajusteValue}` : ajusteValue;
-            
-            const textTitle = currentRecipeName === "Tostadora aire · 80g" ? "Perfil de Tueste" : currentRecipeName;
+            const grainName = document.getElementById('grain-name-input').value || "Sin nombre";
+            const recipeTitle = currentRecipeName === "Tostadora aire · 80g" ? "Perfil de Tueste" : currentRecipeName;
 
-            let text = `☕ Roast Lab - ${textTitle}\n`;
+            let text = `☕ Roast Lab - ${recipeTitle}\n`;
+            text += `🌿 Grano: ${grainName}\n`; // INCLUIR EN COPIADO
             text += `📅 Fecha: ${guayaquilDateStr} (Guayaquil)\n`;
-            text += `🔥 Tueste: ${roastName} | Merma: ${merma}% ${mermaGramos} | Ajuste: ${ajusteStr}\n`;
+            text += `🔥 Tueste: ${roastName} | Merma: ${merma}% ${mermaGramos} | Ajuste: ${ajusteValue}\n`;
             text += `--------------------------\n`;
-            text += `🌡️ Temperatura Fija: ${globalTemp}°C\n`;
-            text += `⏱️ Tiempo Total:     ${Number.isInteger(globalTime) ? globalTime + ".0" : globalTime}m\n`;
-            text += `💨 Aire: Sec(2)/Mail(2)/Des(3)\n`;
+            text += `🌡️ Temp Global: ${globalTemp}°C | ⏱️ Tiempo: ${globalTime.toFixed(1)}m\n`;
+            text += `💨 Aire: Sec(2) Mail(2) Des(3)\n`;
             text += `--------------------------\n`;
-            text += `Desglose de Tiempos:\n`;
-            text += `1. Secado (~45%):     ${document.getElementById('t1-disp').innerText}\n`;
-            text += `2. Maillard (~35%):   ${document.getElementById('t2-disp').innerText}\n`;
-            text += `3. Desarrollo (~20%): ${document.getElementById('t3-disp').innerText}\n`;
+            text += `Tiempos: Sec: ${document.getElementById('t1-disp').innerText} | Mail: ${document.getElementById('t2-disp').innerText} | Des: ${document.getElementById('t3-disp').innerText}\n`;
 
             navigator.clipboard.writeText(text).then(() => {
                 const btn = document.getElementById('btn-copy');
                 btn.innerText = '¡Copiado!';
                 btn.classList.add('success');
-                setTimeout(() => { 
-                    btn.innerText = 'Copiar'; 
-                    btn.classList.remove('success');
-                }, 2000);
-            }).catch(err => console.error('Error al copiar: ', err));
+                setTimeout(() => { btn.innerText = 'Copiar'; btn.classList.remove('success'); }, 2000);
+            });
         });
 
         // --- RESETEAR APP ---
@@ -482,14 +495,15 @@
             ajusteValue = 0; 
             currentRecipeName = "Tostadora aire · 80g"; 
             document.getElementById('recipe-name-disp').innerText = currentRecipeName;
+            document.getElementById('grain-name-input').value = ""; // LIMPIAR GRANO
             updateAjusteDisplay();
             calculate();
         });
 
-        // --- EL CORAZÓN MATEMÁTICO ---
+        // --- MATEMÁTICA ---
         function calculate() {
             document.getElementById('g-temp-val').innerText = globalTemp + "°C";
-            document.getElementById('g-time-val').innerText = (Number.isInteger(globalTime) ? globalTime + ".0" : globalTime) + "m";
+            document.getElementById('g-time-val').innerText = globalTime.toFixed(1) + "m";
 
             let t1 = globalTime * 0.45;
             let t2 = globalTime * 0.35;
@@ -499,7 +513,6 @@
             document.getElementById('t2-disp').innerText = t2.toFixed(1) + "m";
             document.getElementById('t3-disp').innerText = t3.toFixed(1) + "m";
 
-            // FÓRMULA DE REGRESIÓN EXPONENCIAL 
             const a = 0.010141102;
             const b = 0.023346453;
             const c = 0.70727969;
@@ -513,75 +526,45 @@
 
         function updateResultUI(merma) {
             const level = roastLevels.find(l => merma <= l.max) || roastLevels[7];
-            
             document.getElementById('merma-val').innerText = merma.toFixed(2);
-            
-            // Calculo exacto de gramos perdidos (Base: 80g)
-            let mermaGramos = (80 * (merma / 100)).toFixed(1);
-            document.getElementById('merma-g-val').innerText = `(${mermaGramos}g)`;
-
+            document.getElementById('merma-g-val').innerText = `(${(80 * (merma / 100)).toFixed(1)}g)`;
             document.getElementById('roast-name').innerText = level.name;
             document.getElementById('roast-name').style.color = level.color;
             document.getElementById('top-bar').style.backgroundColor = level.color;
-            
             document.getElementById('color-swatch').style.backgroundColor = level.color;
             document.getElementById('spectrum-cursor').style.left = level.pos + '%';
-
             let dotsHtml = '';
-            for(let i=1; i<=5; i++) {
-                dotsHtml += `<div class="dot ${i <= level.score ? 'filled' : ''}"></div>`;
-            }
+            for(let i=1; i<=5; i++) { dotsHtml += `<div class="dot ${i <= level.score ? 'filled' : ''}"></div>`; }
             document.getElementById('score-dots').innerHTML = dotsHtml;
         }
 
         function generateWarnings(merma, totalTime, temp) {
             const ws = [];
             const level = roastLevels.find(l => merma <= l.max) || roastLevels[7];
-
             if (level.score === 5) ws.push({ type: 'info', msg: '✅ Ideal para V60 / Kalita / Origami' });
-            else if (level.score === 3) ws.push({ type: 'caution', msg: '🟡 Aceptable filtro, mejor francesa / espresso' });
-            else if (level.score <= 2) ws.push({ type: 'danger', msg: '❌ Demasiado oscuro para vertido' });
-
-            if (temp >= 230) ws.push({ type: 'danger', msg: '🔥 Riesgo de quemar el exterior del grano (Scorching)' });
-            if (temp <= 190) ws.push({ type: 'caution', msg: '❄️ Perfil muy frío, posible tueste horneado (Baked)' });
-            if (totalTime < 10) ws.push({ type: 'info', msg: '⏱️ Perfil muy rápido, resaltará acidez enzimática' });
-            if (totalTime > 16) ws.push({ type: 'caution', msg: '⏱️ Tueste muy prolongado, se perderá acidez floral' });
-            
-            if (Math.abs(merma - 10.0) <= 0.2 && temp === 220 && totalTime === 12) ws.push({ type: 'info', msg: '🎯 Calibración exacta: Tu 1er Tueste Real' });
-            if (Math.abs(merma - 8.25) <= 0.2 && temp === 205 && totalTime === 15) ws.push({ type: 'info', msg: '🎯 Calibración exacta: Tu 2do Tueste Real' });
-            if (Math.abs(merma - 16.62) <= 0.2 && temp === 235 && totalTime === 15) ws.push({ type: 'info', msg: '🎯 Calibración exacta: Tu 3er Tueste Real' });
-
+            else if (level.score === 3) ws.push({ type: 'caution', msg: '🟡 Aceptable para francesa / espresso' });
+            if (temp >= 230) ws.push({ type: 'danger', msg: '🔥 Riesgo de quemar exterior (Scorching)' });
+            if (temp <= 190) ws.push({ type: 'caution', msg: '❄️ Perfil frío, posible tueste horneado' });
             currentWarnings = ws;
             warningIndex = 0;
             showWarning();
-            
             clearInterval(warningInterval);
-            warningInterval = setInterval(() => {
-                warningIndex = (warningIndex + 1) % currentWarnings.length;
-                showWarning();
-            }, 4000);
+            warningInterval = setInterval(() => { warningIndex = (warningIndex + 1) % currentWarnings.length; showWarning(); }, 4000);
         }
 
         function showWarning() {
             const pill = document.getElementById('warning-pill');
-            if (currentWarnings.length === 0) {
-                pill.style.display = 'none';
-                return;
-            }
+            if (currentWarnings.length === 0) { pill.style.display = 'none'; return; }
             pill.style.display = 'flex';
             const w = currentWarnings[warningIndex];
             pill.innerText = w.msg;
-            
             let color = 'var(--info)';
             if (w.type === 'caution') color = 'var(--caution)';
             if (w.type === 'danger') color = 'var(--danger)';
             pill.style.borderLeftColor = color;
         }
 
-        // --- ARRANQUE ---
-        updateAjusteDisplay();
         calculate();
-
     </script>
 </body>
 </html>

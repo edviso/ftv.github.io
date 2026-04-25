@@ -64,7 +64,6 @@
             font-size: 1rem;
             font-family: inherit;
         }
-        /* Controles de número con botones */
         .stepper {
             display: flex;
             align-items: center;
@@ -85,7 +84,6 @@
             text-align: center;
             padding: 5px;
         }
-
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
@@ -101,8 +99,6 @@
             gap: 8px;
             font-size: 0.9rem;
         }
-        
-        /* Grid de cata */
         .grid-header {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr;
@@ -161,7 +157,6 @@
 
         <div class="card">
             <div class="card-title">⚖️ Preparación y Extracción</div>
-            
             <div class="row">
                 <div class="input-group">
                     <label>Método:</label>
@@ -176,14 +171,12 @@
                     </div>
                 </div>
             </div>
-
             <div class="row">
                 <div class="input-group">
                     <label>Tipo de Filtro:</label>
                     <input type="text" id="filtro" name="filtro" placeholder="Ej. Kalita Wave">
                 </div>
             </div>
-
             <div class="row">
                 <div class="input-group">
                     <label>Café (g):</label>
@@ -194,7 +187,6 @@
                     <input type="number" id="agua_total" name="agua_total" placeholder="0">
                 </div>
             </div>
-
             <div class="checkbox-group">
                 <div class="checkbox-item">
                     <input type="checkbox" id="usa_ducha" name="usa_ducha">
@@ -209,14 +201,11 @@
                     <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" placeholder="0">
                 </div>
             </div>
-
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-            
             <div class="checkbox-item" style="margin-bottom:10px">
                 <input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos()">
                 <label for="un_solo_vertido"><b>Hacer un solo vertido</b></label>
             </div>
-
             <div class="input-group">
                 <label>Blooming (ml):</label>
                 <div class="stepper">
@@ -225,7 +214,6 @@
                     <button type="button" onclick="step('blooming', 5)">+</button>
                 </div>
             </div>
-
             <div class="input-group">
                 <label>1er Vertido (ml):</label>
                 <div class="stepper">
@@ -234,7 +222,6 @@
                     <button type="button" onclick="step('v1', 10)">+</button>
                 </div>
             </div>
-
             <div id="vertidos_extras">
                 <div class="input-group">
                     <label>2do Vertido (ml):</label>
@@ -244,7 +231,6 @@
                         <button type="button" onclick="step('v2', 10)">+</button>
                     </div>
                 </div>
-
                 <div class="input-group">
                     <label>3er Vertido (ml):</label>
                     <div class="stepper">
@@ -366,25 +352,62 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(evt) {
-                const d = JSON.parse(evt.target.result);
-                document.getElementById('variedad').value = d.datos_cafe.variedad;
-                document.getElementById('codigo').value = d.datos_cafe.codigo;
-                document.getElementById('metodo').value = d.extraccion.metodo;
-                document.getElementById('clics').value = d.extraccion.clics;
-                document.getElementById('filtro').value = d.extraccion.filtro;
-                document.getElementById('gramos_cafe').value = d.extraccion.gramos;
-                document.getElementById('agua_total').value = d.extraccion.agua_total;
-                document.getElementById('usa_ducha').checked = d.extraccion.ducha;
-                document.getElementById('bola_fria').checked = d.extraccion.bola_fria;
-                document.getElementById('hielo_ml').value = d.extraccion.hielo_jarra;
-                document.getElementById('un_solo_vertido').checked = d.extraccion.un_solo_vertido;
-                document.getElementById('blooming').value = d.extraccion.blooming;
-                document.getElementById('v1').value = d.extraccion.v1;
-                document.getElementById('v2').value = d.extraccion.v2;
-                document.getElementById('v3').value = d.extraccion.v3;
-                document.getElementById('observaciones').value = d.observaciones;
-                toggleVertidos();
-                alert("Cata cargada: " + d.registro);
+                try {
+                    const d = JSON.parse(evt.target.result);
+                    
+                    // Cargar Datos del Café
+                    document.getElementById('variedad').value = d.datos_cafe.variedad || "";
+                    document.getElementById('codigo').value = d.datos_cafe.codigo || "";
+                    
+                    // Cargar Extracción
+                    document.getElementById('metodo').value = d.extraccion.metodo || "";
+                    document.getElementById('clics').value = d.extraccion.clics || 40;
+                    document.getElementById('filtro').value = d.extraccion.filtro || "";
+                    document.getElementById('gramos_cafe').value = d.extraccion.gramos || "";
+                    document.getElementById('agua_total').value = d.extraccion.agua_total || "";
+                    document.getElementById('usa_ducha').checked = d.extraccion.ducha;
+                    document.getElementById('bola_fria').checked = d.extraccion.bola_fria;
+                    document.getElementById('hielo_ml').value = d.extraccion.hielo_jarra || 0;
+                    document.getElementById('un_solo_vertido').checked = d.extraccion.un_solo_vertido;
+                    document.getElementById('blooming').value = d.extraccion.blooming || 45;
+                    document.getElementById('v1').value = d.extraccion.v1 || 120;
+                    document.getElementById('v2').value = d.extraccion.v2 || 180;
+                    document.getElementById('v3').value = d.extraccion.v3 || 240;
+                    
+                    // --- LÓGICA PARA CARGAR RADIO BUTTONS ---
+
+                    // 1. Cargar Evaluación Sensorial (sens_0, sens_1...)
+                    paramSensoriales.forEach((it, i) => {
+                        const val = d.sensorial[it];
+                        if (val) {
+                            const radio = document.querySelector(`input[name="sens_${i}"][value="${val}"]`);
+                            if (radio) radio.checked = true;
+                        }
+                    });
+
+                    // 2. Cargar Notas Sensoriales (nota_0, nota_1...)
+                    paramNotas.forEach((it, i) => {
+                        const val = d.notas[it];
+                        if (val) {
+                            const radio = document.querySelector(`input[name="nota_${i}"][value="${val}"]`);
+                            if (radio) radio.checked = true;
+                        }
+                    });
+
+                    // 3. Cargar Evaluación Global
+                    if (d.global) {
+                        const radio = document.querySelector(`input[name="global_eval"][value="${d.global}"]`);
+                        if (radio) radio.checked = true;
+                    }
+
+                    document.getElementById('observaciones').value = d.observaciones || "";
+                    
+                    toggleVertidos();
+                    alert("Cata cargada exitosamente: " + (d.registro || "Fecha desconocida"));
+                } catch (error) {
+                    alert("Error al procesar el archivo JSON.");
+                    console.error(error);
+                }
             };
             reader.readAsText(file);
         }

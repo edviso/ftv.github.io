@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Cata de café</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            padding-bottom: 40px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #4a3b32;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #4a3b32;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .row > div {
+            flex: 1;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        /* Controles de número con botones */
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .stepper button {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4a3b32;
+            flex: none;
+        }
+        .stepper input {
+            text-align: center;
+            padding: 5px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+            background: #fcfaf8;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        /* Grid de cata */
+        .grid-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .grid-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f9f9f9;
+            font-size: 0.9rem;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button.main-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-save { background-color: #6d4c41; color: white; }
+        .btn-load { background-color: #e0e0e0; color: #333; }
+        #fileInput { display: none; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>☕ Registro de Cata de café</h1>
+
+    <form id="cataForm">
+        <div class="card">
+            <div class="card-title">📍 Datos del Café</div>
+            <div class="row">
+                <div class="input-group">
+                    <label>Variedad:</label>
+                    <input type="text" id="variedad" name="variedad" required placeholder="Ej. Geisha">
+                </div>
+                <div class="input-group">
+                    <label>Código:</label>
+                    <input type="text" id="codigo" name="codigo" required placeholder="Alfanumérico">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">⚖️ Preparación y Extracción</div>
+            
+            <div class="row">
+                <div class="input-group">
+                    <label>Método:</label>
+                    <input type="text" id="metodo" name="metodo" value="Origami">
+                </div>
+                <div class="input-group">
+                    <label>Clics:</label>
+                    <div class="stepper">
+                        <button type="button" onclick="step('clics', -1)">-</button>
+                        <input type="number" id="clics" name="clics" value="40">
+                        <button type="button" onclick="step('clics', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label>Tipo de Filtro:</label>
+                    <input type="text" id="filtro" name="filtro" placeholder="Ej. Kalita Wave">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label>Café (g):</label>
+                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" placeholder="0.0">
+                </div>
+                <div class="input-group">
+                    <label>Agua Total (ml):</label>
+                    <input type="number" id="agua_total" name="agua_total" placeholder="0">
+                </div>
+            </div>
+
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="usa_ducha" name="usa_ducha">
+                    <label for="usa_ducha">Ducha</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="bola_fria" name="bola_fria">
+                    <label for="bola_fria">Bola Fría</label>
+                </div>
+                <div class="checkbox-item" style="width:100%">
+                    <label>Hielo en jarra (ml):</label>
+                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" placeholder="0">
+                </div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+            
+            <div class="checkbox-item" style="margin-bottom:10px">
+                <input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos()">
+                <label for="un_solo_vertido"><b>Hacer un solo vertido</b></label>
+            </div>
+
+            <div class="input-group">
+                <label>Blooming (ml):</label>
+                <div class="stepper">
+                    <button type="button" onclick="step('blooming', -5)">-</button>
+                    <input type="number" id="blooming" name="blooming" value="45">
+                    <button type="button" onclick="step('blooming', 5)">+</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>1er Vertido (ml):</label>
+                <div class="stepper">
+                    <button type="button" onclick="step('v1', -10)">-</button>
+                    <input type="number" id="v1" name="v1" value="120">
+                    <button type="button" onclick="step('v1', 10)">+</button>
+                </div>
+            </div>
+
+            <div id="vertidos_extras">
+                <div class="input-group">
+                    <label>2do Vertido (ml):</label>
+                    <div class="stepper">
+                        <button type="button" onclick="step('v2', -10)">-</button>
+                        <input type="number" id="v2" name="v2" value="180">
+                        <button type="button" onclick="step('v2', 10)">+</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>3er Vertido (ml):</label>
+                    <div class="stepper">
+                        <button type="button" onclick="step('v3', -10)">-</button>
+                        <input type="number" id="v3" name="v3" value="240">
+                        <button type="button" onclick="step('v3', 10)">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">☕ EVALUACIÓN SENSORIAL</div>
+            <div class="grid-header">
+                <div style="text-align: left;">Parámetro</div>
+                <div>Alta</div><div>Media</div><div>Baja</div>
+            </div>
+            <div id="evaluacionSensorial"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🌸 NOTAS SENSORIALES</div>
+            <div class="grid-header">
+                <div style="text-align: left;">Nota</div>
+                <div>Alta</div><div>Media</div><div>Baja</div>
+            </div>
+            <div id="notasSensoriales"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">✅ EVALUACIÓN GLOBAL</div>
+            <div id="evaluacionGlobal"></div>
+            <div class="input-group" style="margin-top:15px">
+                <label>Observaciones:</label>
+                <textarea id="observaciones" name="observaciones" placeholder="Detalles finales..."></textarea>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button type="button" class="main-btn btn-save" onclick="guardarJSON()">💾 Grabar Cata</button>
+            <button type="button" class="main-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Cata</button>
+            <input type="file" id="fileInput" accept=".json" onchange="cargarJSON(event)">
+        </div>
+    </form>
+
+    <script>
+        const paramSensoriales = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Uniformidad"];
+        const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
+        const paramGlobal = ["Excelente", "Buena", "Aceptable", "Deficiente"];
+
+        function step(id, delta) {
+            const input = document.getElementById(id);
+            input.value = parseInt(input.value) + delta;
+        }
+
+        function toggleVertidos() {
+            const extra = document.getElementById('vertidos_extras');
+            extra.classList.toggle('hidden', document.getElementById('un_solo_vertido').checked);
+        }
+
+        function generarGridHTML(items, contenedorId, prefijo) {
+            const contenedor = document.getElementById(contenedorId);
+            items.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'grid-row';
+                row.innerHTML = `<div>${item}</div>
+                    <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Alta"></div>
+                    <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Media"></div>
+                    <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Baja"></div>`;
+                contenedor.appendChild(row);
+            });
+        }
+
+        function generarGlobalHTML() {
+            const contenedor = document.getElementById('evaluacionGlobal');
+            paramGlobal.forEach((item, index) => {
+                contenedor.innerHTML += `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px">
+                    <input type="radio" name="global_eval" id="g_${index}" value="${item}">
+                    <label for="g_${index}" style="margin:0">${item}</label></div>`;
+            });
+        }
+
+        generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens');
+        generarGridHTML(paramNotas, 'notasSensoriales', 'nota');
+        generarGlobalHTML();
+
+        function obtenerFechaGuayaquil() {
+            return new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" });
+        }
+
+        function guardarJSON() {
+            const form = document.getElementById('cataForm');
+            const fd = new FormData(form);
+            const data = {
+                registro: obtenerFechaGuayaquil(),
+                datos_cafe: { variedad: fd.get('variedad'), codigo: fd.get('codigo') },
+                extraccion: {
+                    metodo: fd.get('metodo'), clics: fd.get('clics'), filtro: fd.get('filtro'),
+                    gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'),
+                    ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'),
+                    un_solo_vertido: fd.get('un_solo_vertido') === 'on',
+                    blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3')
+                },
+                sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones')
+            };
+
+            paramSensoriales.forEach((it, i) => data.sensorial[it] = fd.get(`sens_${i}`));
+            paramNotas.forEach((it, i) => data.notas[it] = fd.get(`nota_${i}`));
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Cata_${data.datos_cafe.codigo || 'sin_nombre'}.json`;
+            a.click();
+        }
+
+        function cargarJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const d = JSON.parse(evt.target.result);
+                document.getElementById('variedad').value = d.datos_cafe.variedad;
+                document.getElementById('codigo').value = d.datos_cafe.codigo;
+                document.getElementById('metodo').value = d.extraccion.metodo;
+                document.getElementById('clics').value = d.extraccion.clics;
+                document.getElementById('filtro').value = d.extraccion.filtro;
+                document.getElementById('gramos_cafe').value = d.extraccion.gramos;
+                document.getElementById('agua_total').value = d.extraccion.agua_total;
+                document.getElementById('usa_ducha').checked = d.extraccion.ducha;
+                document.getElementById('bola_fria').checked = d.extraccion.bola_fria;
+                document.getElementById('hielo_ml').value = d.extraccion.hielo_jarra;
+                document.getElementById('un_solo_vertido').checked = d.extraccion.un_solo_vertido;
+                document.getElementById('blooming').value = d.extraccion.blooming;
+                document.getElementById('v1').value = d.extraccion.v1;
+                document.getElementById('v2').value = d.extraccion.v2;
+                document.getElementById('v3').value = d.extraccion.v3;
+                document.getElementById('observaciones').value = d.observaciones;
+                toggleVertidos();
+                alert("Cata cargada: " + d.registro);
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>

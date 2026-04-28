@@ -279,7 +279,9 @@
     <script>
         const paramSensoriales = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Uniformidad"];
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
-        const paramGlobal = ["Excelente", "Buena", "Aceptable", "Deficiente"];
+        
+        // --- PARÁMETROS GLOBALES ACTUALIZADOS ---
+        const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
         function step(id, delta) {
             const input = document.getElementById(id);
@@ -374,8 +376,6 @@
                     document.getElementById('v2').value = d.extraccion.v2 || 180;
                     document.getElementById('v3').value = d.extraccion.v3 || 240;
                     
-                    // --- LÓGICA PARA CARGAR RADIO BUTTONS ---
-
                     // 1. Cargar Evaluación Sensorial (sens_0, sens_1...)
                     paramSensoriales.forEach((it, i) => {
                         const val = d.sensorial[it];

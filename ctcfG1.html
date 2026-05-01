@@ -64,6 +64,14 @@
             font-size: 1rem;
             font-family: inherit;
         }
+        input[readonly] {
+            background-color: #f5f5f5;
+            color: #555;
+        }
+        #evaluacion_final {
+            min-height: 450px; 
+            line-height: 1.5;
+        }
         .stepper {
             display: flex;
             align-items: center;
@@ -129,7 +137,10 @@
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
+        .btn-gen { background-color: #ff9800; color: white; margin-bottom: 15px; width: 100%; }
+        .btn-copy { background-color: #2196F3; color: white; margin-top: 10px; width: 100%; }
         .btn-save { background-color: #6d4c41; color: white; }
         .btn-load { background-color: #e0e0e0; color: #333; }
         #fileInput { display: none; }
@@ -146,11 +157,21 @@
             <div class="row">
                 <div class="input-group">
                     <label>Variedad:</label>
-                    <input type="text" id="variedad" name="variedad" required placeholder="Ej. Geisha">
+                    <input type="text" id="variedad" name="variedad" required placeholder="Ej. Bourbon Rosado">
                 </div>
                 <div class="input-group">
                     <label>Código:</label>
-                    <input type="text" id="codigo" name="codigo" required placeholder="Alfanumérico">
+                    <input type="text" id="codigo" name="codigo" required placeholder="Ej. BOR-L01-23ABR-T05" oninput="analizarCodigo()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-group">
+                    <label>Fecha y Hora (Ecuador):</label>
+                    <input type="text" id="fecha_hora" name="fecha_hora" readonly>
+                </div>
+                <div class="input-group">
+                    <label>Días desde el tueste:</label>
+                    <input type="text" id="dias_tueste" name="dias_tueste" readonly placeholder="Auto-calculado">
                 </div>
             </div>
         </div>
@@ -265,8 +286,17 @@
             <div id="evaluacionGlobal"></div>
             <div class="input-group" style="margin-top:15px">
                 <label>Observaciones:</label>
-                <textarea id="observaciones" name="observaciones" placeholder="Detalles finales..."></textarea>
+                <textarea id="observaciones" name="observaciones" placeholder="Detalles del tueste, mermas..."></textarea>
             </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🧠 EVALUACIÓN FINAL</div>
+            <button type="button" class="main-btn btn-gen" onclick="generarEvaluacion()">✨ Generar Resumen Interpretativo</button>
+            <div class="input-group">
+                <textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el texto analítico de esta cata..."></textarea>
+            </div>
+            <button type="button" class="main-btn btn-copy" id="btnCopiar" onclick="copiarTexto()">📋 Copiar Texto</button>
         </div>
 
         <div class="button-group">
@@ -279,8 +309,6 @@
     <script>
         const paramSensoriales = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Uniformidad"];
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
-        
-        // --- PARÁMETROS GLOBALES ACTUALIZADOS ---
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
         function step(id, delta) {
@@ -315,20 +343,237 @@
             });
         }
 
+        function obtenerFechaHoraActualFormateada() {
+            const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" }));
+            const dia = String(d.getDate()).padStart(2, '0');
+            const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+            const mes = meses[d.getMonth()];
+            const anio = d.getFullYear();
+            const hora = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            
+            return `${dia}-${mes}-${anio} ${hora}H:${min}m`;
+        }
+
+        function obtenerFechaActualEcuador() {
+            const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" }));
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        // --- Novedad: Lógica para parsear cualquier formato guardado en "fecha_hora" ---
+        function obtenerFechaDesdeInput(fechaStr) {
+            const hoyDefault = obtenerFechaActualEcuador();
+            if (!fechaStr) return hoyDefault;
+            
+            try {
+                // Formato de tu teléfono en la imagen: "30/4/2026, 9:27:16 p"
+                if (fechaStr.includes('/')) {
+                    const fechaPart = fechaStr.split(',')[0].trim();
+                    const partes = fechaPart.split('/');
+                    if (partes.length === 3) {
+                        return new Date(parseInt(partes[2], 10), parseInt(partes[1], 10) - 1, parseInt(partes[0], 10));
+                    }
+                }
+                // Formato actual de la app: "01-MAY-2026 13H:40m"
+                else if (fechaStr.includes('-')) {
+                    const fechaPart = fechaStr.split(' ')[0].trim();
+                    const partes = fechaPart.split('-');
+                    if (partes.length === 3) {
+                        const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
+                        const mes = mesesStr[partes[1].toUpperCase()];
+                        if (mes !== undefined) {
+                            return new Date(parseInt(partes[2], 10), mes, parseInt(partes[0], 10));
+                        }
+                    }
+                }
+            } catch(e) {
+                console.error("Error parseando fecha:", e);
+            }
+            return hoyDefault;
+        }
+
+        function analizarCodigo() {
+            const codigoRaw = document.getElementById('codigo').value;
+            const codigo = codigoRaw.toUpperCase();
+            const inputDias = document.getElementById('dias_tueste');
+            const inputVariedad = document.getElementById('variedad');
+            const fechaHoraStr = document.getElementById('fecha_hora').value;
+            
+            if (!codigo) {
+                inputDias.value = "";
+                return;
+            }
+
+            // 1. Extraer Variedad Automáticamente
+            const diccionarioVariedades = {
+                'GES': 'Geisha',
+                'BOR': 'Bourbon Rosado',
+                'SID': 'Sidra',
+                'CAT': 'Caturra',
+                'PAC': 'Pacamara',
+                'TYP': 'Typica',
+                'BOU': 'Bourbon',
+                'CAS': 'Castillo',
+                'MAR': 'Maragogype'
+            };
+            
+            const prefijo = codigo.substring(0, 3);
+            if (diccionarioVariedades[prefijo]) {
+                inputVariedad.value = diccionarioVariedades[prefijo];
+            }
+
+            // 2. Extraer Fecha y calcular días
+            const mesesStr = {
+                'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
+                'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
+            };
+
+            const regexNuevo = /(\d{2})([A-Z]{3})/;
+            const matchNuevo = codigo.match(regexNuevo);
+            
+            const regexAntiguo = /(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/;
+            const matchAntiguo = codigo.match(regexAntiguo);
+
+            // CORRECCIÓN: Toma la fecha que está escrita en el campo de texto (del JSON o la actual)
+            const fechaReferencia = obtenerFechaDesdeInput(fechaHoraStr);
+            fechaReferencia.setHours(0, 0, 0, 0); // Asegurar medianoche para cálculo limpio
+            
+            let fechaTueste = null;
+
+            if (matchNuevo && mesesStr[matchNuevo[2]] !== undefined) {
+                let d = parseInt(matchNuevo[1], 10);
+                let m = mesesStr[matchNuevo[2]];
+                let y = fechaReferencia.getFullYear(); 
+                
+                fechaTueste = new Date(y, m, d);
+                
+                if (fechaTueste > fechaReferencia) {
+                    fechaTueste.setFullYear(y - 1);
+                }
+            } 
+            else if (matchAntiguo) {
+                let d = parseInt(matchAntiguo[1], 10);
+                let m = parseInt(matchAntiguo[2], 10) - 1;
+                let y = parseInt(matchAntiguo[3], 10);
+                if (y < 100) y += 2000;
+                fechaTueste = new Date(y, m, d);
+            }
+
+            if (fechaTueste) {
+                fechaTueste.setHours(0, 0, 0, 0);
+                const diffTime = fechaReferencia.getTime() - fechaTueste.getTime();
+                // Usar Math.round previene fallos de horas por cambios de zona horaria / daylight savings
+                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+                
+                if (diffDays >= 0) {
+                    inputDias.value = diffDays;
+                } else {
+                    inputDias.value = "Fecha futura";
+                }
+            } else {
+                inputDias.value = "Sin fecha detectada";
+            }
+        }
+
+        // Inicializar
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens');
         generarGridHTML(paramNotas, 'notasSensoriales', 'nota');
         generarGlobalHTML();
+        
+        window.onload = function() {
+            document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada();
+            analizarCodigo();
+        };
 
-        function obtenerFechaGuayaquil() {
-            return new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" });
+        function generarEvaluacion() {
+            const fd = new FormData(document.getElementById('cataForm'));
+            
+            const variedad = fd.get('variedad') || "de variedad no especificada";
+            const codigo = fd.get('codigo') || "Sin especificar";
+            const diasReposo = fd.get('dias_tueste');
+            const metodo = fd.get('metodo') || "filtro";
+            const gramos = parseFloat(fd.get('gramos_cafe')) || 0;
+            const agua = parseFloat(fd.get('agua_total')) || 0;
+            
+            let ratio = "";
+            if (gramos > 0 && agua > 0) {
+                ratio = ` (ratio 1:${(agua / gramos).toFixed(1)})`;
+            }
+
+            let textoReposo = "";
+            if (diasReposo && !isNaN(diasReposo)) {
+                textoReposo = ` (${diasReposo} días post-tueste)`;
+            }
+
+            let notasAltas = [];
+            paramNotas.forEach((nota, i) => {
+                if(fd.get(`nota_${i}`) === 'Alta') notasAltas.push(nota.toLowerCase());
+            });
+
+            const acidez = fd.get(`sens_${paramSensoriales.indexOf('Acidez')}`);
+            const cuerpo = fd.get(`sens_${paramSensoriales.indexOf('Cuerpo')}`);
+            const dulzor = fd.get(`sens_${paramSensoriales.indexOf('Dulzor')}`);
+            const global = fd.get('global_eval');
+            const usaBola = fd.get('bola_fria') === 'on';
+            const observaciones = fd.get('observaciones');
+
+            let texto = `Código del tueste: ${codigo}\n\n`;
+            
+            texto += `Esta extracción de la variedad ${variedad}${textoReposo}, elaborada en ${metodo}${ratio}, ha resultado en una taza calificada de forma global como "${global ? global : 'Sin evaluar'}". `;
+
+            if (notasAltas.length > 0) {
+                texto += `Su perfil se distingue principalmente por sus marcadas notas ${notasAltas.join(", y ")}, `;
+            } else {
+                texto += `Presenta un perfil aromático más sutil, `;
+            }
+
+            texto += `sostenido por una acidez ${acidez ? acidez.toLowerCase() : 'moderada'}, un cuerpo ${cuerpo ? cuerpo.toLowerCase() : 'medio'} y un nivel de dulzor ${dulzor ? dulzor.toLowerCase() : 'balanceado'}. `;
+
+            if (usaBola) {
+                texto += `El uso del extract chilling (bola fría) ha contribuido positivamente a atrapar y preservar los compuestos volátiles, potenciando su complejidad aromática. `;
+            }
+
+            if (observaciones && observaciones.trim() !== "") {
+                texto += `\n\nObservaciones adicionales: ${observaciones.trim()}`;
+            }
+
+            document.getElementById('evaluacion_final').value = texto;
+        }
+
+        function copiarTexto() {
+            const textoArea = document.getElementById("evaluacion_final");
+            if (textoArea.value.trim() === "") {
+                alert("No hay texto para copiar. Genera primero el resumen.");
+                return;
+            }
+            textoArea.select();
+            textoArea.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(textoArea.value).then(() => {
+                const btn = document.getElementById("btnCopiar");
+                const textoOriginal = btn.innerHTML;
+                btn.innerHTML = "✅ ¡Copiado!";
+                btn.style.backgroundColor = "#4CAF50"; 
+                setTimeout(() => {
+                    btn.innerHTML = textoOriginal;
+                    btn.style.backgroundColor = "#2196F3"; 
+                }, 2000);
+            }).catch(err => {
+                alert("Error al copiar el texto: " + err);
+            });
         }
 
         function guardarJSON() {
             const form = document.getElementById('cataForm');
             const fd = new FormData(form);
             const data = {
-                registro: obtenerFechaGuayaquil(),
-                datos_cafe: { variedad: fd.get('variedad'), codigo: fd.get('codigo') },
+                registro: document.getElementById('fecha_hora').value, 
+                datos_cafe: { 
+                    variedad: fd.get('variedad'), 
+                    codigo: fd.get('codigo'),
+                    fecha_hora: fd.get('fecha_hora'),
+                    dias_tueste: fd.get('dias_tueste')
+                },
                 extraccion: {
                     metodo: fd.get('metodo'), clics: fd.get('clics'), filtro: fd.get('filtro'),
                     gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'),
@@ -336,7 +581,10 @@
                     un_solo_vertido: fd.get('un_solo_vertido') === 'on',
                     blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3')
                 },
-                sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones')
+                sensorial: {}, notas: {}, 
+                global: fd.get('global_eval'), 
+                observaciones: fd.get('observaciones'),
+                evaluacion_final: fd.get('evaluacion_final')
             };
 
             paramSensoriales.forEach((it, i) => data.sensorial[it] = fd.get(`sens_${i}`));
@@ -357,53 +605,56 @@
                 try {
                     const d = JSON.parse(evt.target.result);
                     
-                    // Cargar Datos del Café
-                    document.getElementById('variedad').value = d.datos_cafe.variedad || "";
-                    document.getElementById('codigo').value = d.datos_cafe.codigo || "";
+                    document.getElementById('variedad').value = d.datos_cafe?.variedad || "";
+                    document.getElementById('codigo').value = d.datos_cafe?.codigo || "";
                     
-                    // Cargar Extracción
-                    document.getElementById('metodo').value = d.extraccion.metodo || "";
-                    document.getElementById('clics').value = d.extraccion.clics || 40;
-                    document.getElementById('filtro').value = d.extraccion.filtro || "";
-                    document.getElementById('gramos_cafe').value = d.extraccion.gramos || "";
-                    document.getElementById('agua_total').value = d.extraccion.agua_total || "";
-                    document.getElementById('usa_ducha').checked = d.extraccion.ducha;
-                    document.getElementById('bola_fria').checked = d.extraccion.bola_fria;
-                    document.getElementById('hielo_ml').value = d.extraccion.hielo_jarra || 0;
-                    document.getElementById('un_solo_vertido').checked = d.extraccion.un_solo_vertido;
-                    document.getElementById('blooming').value = d.extraccion.blooming || 45;
-                    document.getElementById('v1').value = d.extraccion.v1 || 120;
-                    document.getElementById('v2').value = d.extraccion.v2 || 180;
-                    document.getElementById('v3').value = d.extraccion.v3 || 240;
+                    // Asegurar que se cargue la fecha exacta de la cata antes de analizar
+                    document.getElementById('fecha_hora').value = d.datos_cafe?.fecha_hora || d.registro || "";
                     
-                    // 1. Cargar Evaluación Sensorial (sens_0, sens_1...)
+                    document.getElementById('metodo').value = d.extraccion?.metodo || "";
+                    document.getElementById('clics').value = d.extraccion?.clics || 40;
+                    document.getElementById('filtro').value = d.extraccion?.filtro || "";
+                    document.getElementById('gramos_cafe').value = d.extraccion?.gramos || "";
+                    document.getElementById('agua_total').value = d.extraccion?.agua_total || "";
+                    document.getElementById('usa_ducha').checked = !!d.extraccion?.ducha;
+                    document.getElementById('bola_fria').checked = !!d.extraccion?.bola_fria;
+                    document.getElementById('hielo_ml').value = d.extraccion?.hielo_jarra || 0;
+                    document.getElementById('un_solo_vertido').checked = !!d.extraccion?.un_solo_vertido;
+                    document.getElementById('blooming').value = d.extraccion?.blooming || 45;
+                    document.getElementById('v1').value = d.extraccion?.v1 || 120;
+                    document.getElementById('v2').value = d.extraccion?.v2 || 180;
+                    document.getElementById('v3').value = d.extraccion?.v3 || 240;
+                    
                     paramSensoriales.forEach((it, i) => {
-                        const val = d.sensorial[it];
+                        const val = d.sensorial?.[it];
                         if (val) {
                             const radio = document.querySelector(`input[name="sens_${i}"][value="${val}"]`);
                             if (radio) radio.checked = true;
                         }
                     });
 
-                    // 2. Cargar Notas Sensoriales (nota_0, nota_1...)
                     paramNotas.forEach((it, i) => {
-                        const val = d.notas[it];
+                        const val = d.notas?.[it];
                         if (val) {
                             const radio = document.querySelector(`input[name="nota_${i}"][value="${val}"]`);
                             if (radio) radio.checked = true;
                         }
                     });
 
-                    // 3. Cargar Evaluación Global
                     if (d.global) {
                         const radio = document.querySelector(`input[name="global_eval"][value="${d.global}"]`);
                         if (radio) radio.checked = true;
                     }
 
                     document.getElementById('observaciones').value = d.observaciones || "";
+                    document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
                     
                     toggleVertidos();
-                    alert("Cata cargada exitosamente: " + (d.registro || "Fecha desconocida"));
+
+                    // Recalcula los días usando la fecha cargada y no la fecha de hoy
+                    analizarCodigo(); 
+                    
+                    alert("Cata cargada exitosamente: " + (d.datos_cafe?.fecha_hora || d.registro || "Fecha desconocida"));
                 } catch (error) {
                     alert("Error al procesar el archivo JSON.");
                     console.error(error);

@@ -71,6 +71,7 @@
         #evaluacion_final {
             min-height: 450px; 
             line-height: 1.5;
+            font-size: 0.95rem;
         }
         .stepper {
             display: flex;
@@ -292,7 +293,7 @@
 
         <div class="card">
             <div class="card-title">🧠 EVALUACIÓN FINAL</div>
-            <button type="button" class="main-btn btn-gen" onclick="generarEvaluacion()">✨ Generar Resumen Interpretativo</button>
+            <button type="button" class="main-btn btn-gen" onclick="dispararGeneracion()">✨ Generar Resumen Interpretativo</button>
             <div class="input-group">
                 <textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el texto analítico de esta cata..."></textarea>
             </div>
@@ -361,13 +362,10 @@
             return d;
         }
 
-        // --- Novedad: Lógica para parsear cualquier formato guardado en "fecha_hora" ---
         function obtenerFechaDesdeInput(fechaStr) {
             const hoyDefault = obtenerFechaActualEcuador();
             if (!fechaStr) return hoyDefault;
-            
             try {
-                // Formato de tu teléfono en la imagen: "30/4/2026, 9:27:16 p"
                 if (fechaStr.includes('/')) {
                     const fechaPart = fechaStr.split(',')[0].trim();
                     const partes = fechaPart.split('/');
@@ -375,7 +373,6 @@
                         return new Date(parseInt(partes[2], 10), parseInt(partes[1], 10) - 1, parseInt(partes[0], 10));
                     }
                 }
-                // Formato actual de la app: "01-MAY-2026 13H:40m"
                 else if (fechaStr.includes('-')) {
                     const fechaPart = fechaStr.split(' ')[0].trim();
                     const partes = fechaPart.split('-');
@@ -387,9 +384,7 @@
                         }
                     }
                 }
-            } catch(e) {
-                console.error("Error parseando fecha:", e);
-            }
+            } catch(e) { console.error(e); }
             return hoyDefault;
         }
 
@@ -405,39 +400,25 @@
                 return;
             }
 
-            // 1. Extraer Variedad Automáticamente
             const diccionarioVariedades = {
-                'GES': 'Geisha',
-                'BOR': 'Bourbon Rosado',
-                'SID': 'Sidra',
-                'CAT': 'Caturra',
-                'PAC': 'Pacamara',
-                'TYP': 'Typica',
-                'BOU': 'Bourbon',
-                'CAS': 'Castillo',
-                'MAR': 'Maragogype'
+                'GES': 'Geisha', 'BOR': 'Bourbon Rosado', 'SID': 'Sidra',
+                'CAT': 'Caturra', 'PAC': 'Pacamara', 'TYP': 'Typica',
+                'BOU': 'Bourbon', 'CAS': 'Castillo', 'MAR': 'Maragogype'
             };
             
             const prefijo = codigo.substring(0, 3);
-            if (diccionarioVariedades[prefijo]) {
+            if (diccionarioVariedades[prefijo] && !inputVariedad.value) {
                 inputVariedad.value = diccionarioVariedades[prefijo];
             }
 
-            // 2. Extraer Fecha y calcular días
-            const mesesStr = {
-                'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
-                'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
-            };
-
+            const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
             const regexNuevo = /(\d{2})([A-Z]{3})/;
             const matchNuevo = codigo.match(regexNuevo);
-            
             const regexAntiguo = /(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/;
             const matchAntiguo = codigo.match(regexAntiguo);
 
-            // CORRECCIÓN: Toma la fecha que está escrita en el campo de texto (del JSON o la actual)
             const fechaReferencia = obtenerFechaDesdeInput(fechaHoraStr);
-            fechaReferencia.setHours(0, 0, 0, 0); // Asegurar medianoche para cálculo limpio
+            fechaReferencia.setHours(0, 0, 0, 0); 
             
             let fechaTueste = null;
 
@@ -445,12 +426,8 @@
                 let d = parseInt(matchNuevo[1], 10);
                 let m = mesesStr[matchNuevo[2]];
                 let y = fechaReferencia.getFullYear(); 
-                
                 fechaTueste = new Date(y, m, d);
-                
-                if (fechaTueste > fechaReferencia) {
-                    fechaTueste.setFullYear(y - 1);
-                }
+                if (fechaTueste > fechaReferencia) fechaTueste.setFullYear(y - 1);
             } 
             else if (matchAntiguo) {
                 let d = parseInt(matchAntiguo[1], 10);
@@ -463,20 +440,13 @@
             if (fechaTueste) {
                 fechaTueste.setHours(0, 0, 0, 0);
                 const diffTime = fechaReferencia.getTime() - fechaTueste.getTime();
-                // Usar Math.round previene fallos de horas por cambios de zona horaria / daylight savings
                 const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
-                
-                if (diffDays >= 0) {
-                    inputDias.value = diffDays;
-                } else {
-                    inputDias.value = "Fecha futura";
-                }
+                inputDias.value = diffDays >= 0 ? diffDays : "Fecha futura";
             } else {
                 inputDias.value = "Sin fecha detectada";
             }
         }
 
-        // Inicializar
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens');
         generarGridHTML(paramNotas, 'notasSensoriales', 'nota');
         generarGlobalHTML();
@@ -486,80 +456,114 @@
             analizarCodigo();
         };
 
-        function generarEvaluacion() {
+        // --- FUNCIÓN GENERADORA INTERPRETATIVA ---
+        function generarParrafoInterpretativo(variedad, codigo, metodo, clics, filtro, gramos, agua_total, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, frutal, chocolate_cacao, floral, especiado, tostado, caramelo, global, observaciones) {
+            
+            const lower = (str) => str ? str.toLowerCase() : '';
+            
+            // 1. Oración de introducción y balance
+            let intro = `Este ${variedad || 'café'} preparado en ${metodo || 'filtro'} ofrece una taza `;
+            let balanceGral = balance === 'Alta' ? 'muy equilibrada y armónica' : (balance === 'Media' ? 'equilibrada y fácil de disfrutar' : 'con contrastes marcados');
+            
+            // 2. Sabor, Acidez, Dulzor y Amargor
+            let saborTxt = sabor === 'Alta' ? 'un sabor destacado' : (sabor === 'Media' ? 'un sabor agradable' : 'un sabor suave');
+            
+            let aciDulTxt = `acidez ${lower(acidez)} y dulzor ${lower(dulzor)}`;
+            if (acidez === dulzor) {
+                aciDulTxt = `acidez y dulzor ${acidez === 'Alta' ? 'altos' : (acidez === 'Media' ? 'medios' : 'bajos')}`;
+            }
+
+            let amarTxt = amargor === 'Alta' ? 'un amargor pronunciado que aporta carácter' : (amargor === 'Media' ? 'un amargor presente pero moderado' : 'un amargor bajo que aporta suavidad');
+
+            let oracion1 = `${intro}${balanceGral}, con ${saborTxt} acompañado de ${aciDulTxt} y ${amarTxt}. `;
+
+            // 3. Notas Sensoriales (Solo Altas y Medias)
+            let notas = [];
+            if (frutal === 'Alta' || frutal === 'Media') notas.push('frutales');
+            if (chocolate_cacao === 'Alta' || chocolate_cacao === 'Media') notas.push('de cacao');
+            if (floral === 'Alta' || floral === 'Media') notas.push('florales');
+            if (especiado === 'Alta' || especiado === 'Media') notas.push('especiadas');
+            if (tostado === 'Alta' || tostado === 'Media') notas.push('tostadas');
+            if (caramelo === 'Alta' || caramelo === 'Media') notas.push('acarameladas');
+
+            let oracion2 = "";
+            if (notas.length > 0) {
+                let notasStr = notas.join(', ').replace(/, ([^,]*)$/, ' y $1');
+                oracion2 = `Se perciben notas ${notasStr} que enriquecen el perfil sin dominarlo, manteniendo una buena armonía general. `;
+            } else {
+                oracion2 = `Presenta un perfil aromático sutil. `;
+            }
+
+            // 4. Cuerpo y Retrogusto
+            let cuerpoTxt = cuerpo === 'Alta' ? 'cuerpo denso' : (cuerpo === 'Media' ? 'cuerpo medio' : 'cuerpo ligero');
+            let retroTxt = retrogusto === 'Alta' ? 'retrogusto prolongado y persistente' : (retrogusto === 'Media' ? 'retrogusto agradable' : 'retrogusto corto');
+            
+            let oracion3 = `El ${cuerpoTxt} y la limpieza de taza hacen que sea interesante en boca, dejando un ${retroTxt}. `;
+
+            // 5. Cierre: Global y Observaciones
+            let evalGral = global ? global.toLowerCase() : 'sin calificación';
+            let obsTxt = observaciones ? `, ${observaciones.trim()}` : '';
+            
+            let oracion4 = `En conjunto, es un café evaluado como ${evalGral}${obsTxt}.`;
+
+            return oracion1 + oracion2 + oracion3 + oracion4;
+        }
+
+        // --- DISPARADOR CON ENCABEZADO CORREGIDO ---
+        function dispararGeneracion() {
             const fd = new FormData(document.getElementById('cataForm'));
             
-            const variedad = fd.get('variedad') || "de variedad no especificada";
-            const codigo = fd.get('codigo') || "Sin especificar";
-            const diasReposo = fd.get('dias_tueste');
-            const metodo = fd.get('metodo') || "filtro";
-            const gramos = parseFloat(fd.get('gramos_cafe')) || 0;
-            const agua = parseFloat(fd.get('agua_total')) || 0;
+            const variedad = fd.get('variedad');
+            const codigo = fd.get('codigo');
+            const diasReposo = fd.get('dias_tueste'); // Capturamos el cálculo de días
+            const metodo = fd.get('metodo');
+            const clics = fd.get('clics');
+            const filtro = fd.get('filtro');
+            const gramos = fd.get('gramos_cafe');
+            const agua_total = fd.get('agua_total');
             
-            let ratio = "";
-            if (gramos > 0 && agua > 0) {
-                ratio = ` (ratio 1:${(agua / gramos).toFixed(1)})`;
-            }
-
-            let textoReposo = "";
-            if (diasReposo && !isNaN(diasReposo)) {
-                textoReposo = ` (${diasReposo} días post-tueste)`;
-            }
-
-            let notasAltas = [];
-            paramNotas.forEach((nota, i) => {
-                if(fd.get(`nota_${i}`) === 'Alta') notasAltas.push(nota.toLowerCase());
-            });
-
+            const sabor = fd.get(`sens_${paramSensoriales.indexOf('Sabor')}`);
             const acidez = fd.get(`sens_${paramSensoriales.indexOf('Acidez')}`);
-            const cuerpo = fd.get(`sens_${paramSensoriales.indexOf('Cuerpo')}`);
             const dulzor = fd.get(`sens_${paramSensoriales.indexOf('Dulzor')}`);
+            const amargor = fd.get(`sens_${paramSensoriales.indexOf('Amargor')}`);
+            const cuerpo = fd.get(`sens_${paramSensoriales.indexOf('Cuerpo')}`);
+            const balance = fd.get(`sens_${paramSensoriales.indexOf('Balance')}`);
+            const retrogusto = fd.get(`sens_${paramSensoriales.indexOf('Retrogusto')}`);
+            
+            const frutal = fd.get(`nota_${paramNotas.indexOf('Frutal')}`);
+            const chocolate_cacao = fd.get(`nota_${paramNotas.indexOf('Chocolate/Cacao')}`);
+            const floral = fd.get(`nota_${paramNotas.indexOf('Floral')}`);
+            const especiado = fd.get(`nota_${paramNotas.indexOf('Especiado')}`);
+            const tostado = fd.get(`nota_${paramNotas.indexOf('Tostado')}`);
+            const caramelo = fd.get(`nota_${paramNotas.indexOf('Caramelo/Dulce')}`);
+            
             const global = fd.get('global_eval');
-            const usaBola = fd.get('bola_fria') === 'on';
             const observaciones = fd.get('observaciones');
 
-            let texto = `Código del tueste: ${codigo}\n\n`;
+            const parrafoGenerado = generarParrafoInterpretativo(variedad, codigo, metodo, clics, filtro, gramos, agua_total, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, frutal, chocolate_cacao, floral, especiado, tostado, caramelo, global, observaciones);
             
-            texto += `Esta extracción de la variedad ${variedad}${textoReposo}, elaborada en ${metodo}${ratio}, ha resultado en una taza calificada de forma global como "${global ? global : 'Sin evaluar'}". `;
-
-            if (notasAltas.length > 0) {
-                texto += `Su perfil se distingue principalmente por sus marcadas notas ${notasAltas.join(", y ")}, `;
-            } else {
-                texto += `Presenta un perfil aromático más sutil, `;
+            // CONSTRUCCIÓN DEL ENCABEZADO CON CÓDIGO Y DÍAS
+            let encabezado = `Código del tueste: ${codigo || 'Sin especificar'}`;
+            if (diasReposo && !isNaN(diasReposo)) {
+                encabezado += ` (${diasReposo} días post-tueste)`;
             }
 
-            texto += `sostenido por una acidez ${acidez ? acidez.toLowerCase() : 'moderada'}, un cuerpo ${cuerpo ? cuerpo.toLowerCase() : 'medio'} y un nivel de dulzor ${dulzor ? dulzor.toLowerCase() : 'balanceado'}. `;
-
-            if (usaBola) {
-                texto += `El uso del extract chilling (bola fría) ha contribuido positivamente a atrapar y preservar los compuestos volátiles, potenciando su complejidad aromática. `;
-            }
-
-            if (observaciones && observaciones.trim() !== "") {
-                texto += `\n\nObservaciones adicionales: ${observaciones.trim()}`;
-            }
-
-            document.getElementById('evaluacion_final').value = texto;
+            document.getElementById('evaluacion_final').value = `${encabezado}\n\n${parrafoGenerado}`;
         }
 
         function copiarTexto() {
             const textoArea = document.getElementById("evaluacion_final");
-            if (textoArea.value.trim() === "") {
-                alert("No hay texto para copiar. Genera primero el resumen.");
-                return;
-            }
+            if (textoArea.value.trim() === "") return;
             textoArea.select();
             textoArea.setSelectionRange(0, 99999); 
             navigator.clipboard.writeText(textoArea.value).then(() => {
                 const btn = document.getElementById("btnCopiar");
-                const textoOriginal = btn.innerHTML;
                 btn.innerHTML = "✅ ¡Copiado!";
                 btn.style.backgroundColor = "#4CAF50"; 
                 setTimeout(() => {
-                    btn.innerHTML = textoOriginal;
+                    btn.innerHTML = "📋 Copiar Texto";
                     btn.style.backgroundColor = "#2196F3"; 
                 }, 2000);
-            }).catch(err => {
-                alert("Error al copiar el texto: " + err);
             });
         }
 
@@ -569,10 +573,8 @@
             const data = {
                 registro: document.getElementById('fecha_hora').value, 
                 datos_cafe: { 
-                    variedad: fd.get('variedad'), 
-                    codigo: fd.get('codigo'),
-                    fecha_hora: fd.get('fecha_hora'),
-                    dias_tueste: fd.get('dias_tueste')
+                    variedad: fd.get('variedad'), codigo: fd.get('codigo'),
+                    fecha_hora: fd.get('fecha_hora'), dias_tueste: fd.get('dias_tueste')
                 },
                 extraccion: {
                     metodo: fd.get('metodo'), clics: fd.get('clics'), filtro: fd.get('filtro'),
@@ -581,15 +583,11 @@
                     un_solo_vertido: fd.get('un_solo_vertido') === 'on',
                     blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3')
                 },
-                sensorial: {}, notas: {}, 
-                global: fd.get('global_eval'), 
-                observaciones: fd.get('observaciones'),
+                sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'),
                 evaluacion_final: fd.get('evaluacion_final')
             };
-
             paramSensoriales.forEach((it, i) => data.sensorial[it] = fd.get(`sens_${i}`));
             paramNotas.forEach((it, i) => data.notas[it] = fd.get(`nota_${i}`));
-
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
@@ -604,13 +602,9 @@
             reader.onload = function(evt) {
                 try {
                     const d = JSON.parse(evt.target.result);
-                    
                     document.getElementById('variedad').value = d.datos_cafe?.variedad || "";
                     document.getElementById('codigo').value = d.datos_cafe?.codigo || "";
-                    
-                    // Asegurar que se cargue la fecha exacta de la cata antes de analizar
                     document.getElementById('fecha_hora').value = d.datos_cafe?.fecha_hora || d.registro || "";
-                    
                     document.getElementById('metodo').value = d.extraccion?.metodo || "";
                     document.getElementById('clics').value = d.extraccion?.clics || 40;
                     document.getElementById('filtro').value = d.extraccion?.filtro || "";
@@ -624,7 +618,6 @@
                     document.getElementById('v1').value = d.extraccion?.v1 || 120;
                     document.getElementById('v2').value = d.extraccion?.v2 || 180;
                     document.getElementById('v3').value = d.extraccion?.v3 || 240;
-                    
                     paramSensoriales.forEach((it, i) => {
                         const val = d.sensorial?.[it];
                         if (val) {
@@ -632,7 +625,6 @@
                             if (radio) radio.checked = true;
                         }
                     });
-
                     paramNotas.forEach((it, i) => {
                         const val = d.notas?.[it];
                         if (val) {
@@ -640,25 +632,15 @@
                             if (radio) radio.checked = true;
                         }
                     });
-
                     if (d.global) {
                         const radio = document.querySelector(`input[name="global_eval"][value="${d.global}"]`);
                         if (radio) radio.checked = true;
                     }
-
                     document.getElementById('observaciones').value = d.observaciones || "";
                     document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
-                    
                     toggleVertidos();
-
-                    // Recalcula los días usando la fecha cargada y no la fecha de hoy
                     analizarCodigo(); 
-                    
-                    alert("Cata cargada exitosamente: " + (d.datos_cafe?.fecha_hora || d.registro || "Fecha desconocida"));
-                } catch (error) {
-                    alert("Error al procesar el archivo JSON.");
-                    console.error(error);
-                }
+                } catch (error) { console.error(error); }
             };
             reader.readAsText(file);
         }

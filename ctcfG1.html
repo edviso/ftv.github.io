@@ -456,28 +456,23 @@
             analizarCodigo();
         };
 
-        // --- FUNCIÓN GENERADORA INTERPRETATIVA ---
+        // --- FUNCIÓN GENERADORA INTERPRETATIVA NEUTRA ---
         function generarParrafoInterpretativo(variedad, codigo, metodo, clics, filtro, gramos, agua_total, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, frutal, chocolate_cacao, floral, especiado, tostado, caramelo, global, observaciones) {
             
-            const lower = (str) => str ? str.toLowerCase() : '';
-            
-            // 1. Oración de introducción y balance
-            let intro = `Este ${variedad || 'café'} preparado en ${metodo || 'filtro'} ofrece una taza `;
-            let balanceGral = balance === 'Alta' ? 'muy equilibrada y armónica' : (balance === 'Media' ? 'equilibrada y fácil de disfrutar' : 'con contrastes marcados');
-            
-            // 2. Sabor, Acidez, Dulzor y Amargor
-            let saborTxt = sabor === 'Alta' ? 'un sabor destacado' : (sabor === 'Media' ? 'un sabor agradable' : 'un sabor suave');
-            
-            let aciDulTxt = `acidez ${lower(acidez)} y dulzor ${lower(dulzor)}`;
-            if (acidez === dulzor) {
-                aciDulTxt = `acidez y dulzor ${acidez === 'Alta' ? 'altos' : (acidez === 'Media' ? 'medios' : 'bajos')}`;
-            }
+            // Función auxiliar para convertir "Alta, Media, Baja" a descriptores neutros y gramaticalmente correctos
+            const formatLvl = (val, tipo) => {
+                if (!val) return 'no definido';
+                const v = val.toLowerCase();
+                if (tipo === 'fem') return v; // alta, media, baja
+                if (tipo === 'masc') return v === 'alta' ? 'alto' : (v === 'media' ? 'medio' : 'bajo');
+                if (tipo === 'retro') return v === 'alta' ? 'prolongado' : (v === 'media' ? 'medio' : 'corto');
+                return v;
+            };
 
-            let amarTxt = amargor === 'Alta' ? 'un amargor pronunciado que aporta carácter' : (amargor === 'Media' ? 'un amargor presente pero moderado' : 'un amargor bajo que aporta suavidad');
+            // 1. Oración inicial: Perfil base (Sabor, acidez, dulzor, amargor)
+            let oracion1 = `Este ${variedad || 'café'} preparado en ${metodo || 'filtro'} presenta un perfil con sabor ${formatLvl(sabor, 'masc')}, acidez ${formatLvl(acidez, 'fem')}, dulzor ${formatLvl(dulzor, 'masc')} y amargor ${formatLvl(amargor, 'masc')}. `;
 
-            let oracion1 = `${intro}${balanceGral}, con ${saborTxt} acompañado de ${aciDulTxt} y ${amarTxt}. `;
-
-            // 3. Notas Sensoriales (Solo Altas y Medias)
+            // 2. Notas Sensoriales + Cuerpo y Balance
             let notas = [];
             if (frutal === 'Alta' || frutal === 'Media') notas.push('frutales');
             if (chocolate_cacao === 'Alta' || chocolate_cacao === 'Media') notas.push('de cacao');
@@ -489,33 +484,39 @@
             let oracion2 = "";
             if (notas.length > 0) {
                 let notasStr = notas.join(', ').replace(/, ([^,]*)$/, ' y $1');
-                oracion2 = `Se perciben notas ${notasStr} que enriquecen el perfil sin dominarlo, manteniendo una buena armonía general. `;
+                oracion2 = `Muestra notas ${notasStr} integradas al conjunto, con un cuerpo ${formatLvl(cuerpo, 'masc')} y balance ${formatLvl(balance, 'masc')}. `;
             } else {
-                oracion2 = `Presenta un perfil aromático sutil. `;
+                oracion2 = `Se percibe sin notas aromáticas predominantes, con un cuerpo ${formatLvl(cuerpo, 'masc')} y balance ${formatLvl(balance, 'masc')}. `;
             }
 
-            // 4. Cuerpo y Retrogusto
-            let cuerpoTxt = cuerpo === 'Alta' ? 'cuerpo denso' : (cuerpo === 'Media' ? 'cuerpo medio' : 'cuerpo ligero');
-            let retroTxt = retrogusto === 'Alta' ? 'retrogusto prolongado y persistente' : (retrogusto === 'Media' ? 'retrogusto agradable' : 'retrogusto corto');
-            
-            let oracion3 = `El ${cuerpoTxt} y la limpieza de taza hacen que sea interesante en boca, dejando un ${retroTxt}. `;
+            // 3. Retrogusto
+            let oracion3 = `El retrogusto es ${formatLvl(retrogusto, 'retro')} y define el cierre de la taza. `;
 
-            // 5. Cierre: Global y Observaciones
-            let evalGral = global ? global.toLowerCase() : 'sin calificación';
-            let obsTxt = observaciones ? `, ${observaciones.trim()}` : '';
-            
-            let oracion4 = `En conjunto, es un café evaluado como ${evalGral}${obsTxt}.`;
+            // 4. Conclusión (Global y observaciones)
+            let oracion4 = "";
+            if (global || observaciones) {
+                let evalGral = global ? global.toLowerCase() : '';
+                let obsTxt = observaciones ? observaciones.trim() : '';
+                
+                if (evalGral && obsTxt) {
+                    oracion4 = `En general, se valora de forma global como "${evalGral}", registrándose que: ${obsTxt}.`;
+                } else if (evalGral) {
+                    oracion4 = `En general, se valora de forma global como "${evalGral}".`;
+                } else if (obsTxt) {
+                    oracion4 = `En general, refleja las siguientes características registradas: ${obsTxt}.`;
+                }
+            }
 
             return oracion1 + oracion2 + oracion3 + oracion4;
         }
 
-        // --- DISPARADOR CON ENCABEZADO CORREGIDO ---
+        // --- DISPARADOR ---
         function dispararGeneracion() {
             const fd = new FormData(document.getElementById('cataForm'));
             
             const variedad = fd.get('variedad');
             const codigo = fd.get('codigo');
-            const diasReposo = fd.get('dias_tueste'); // Capturamos el cálculo de días
+            const diasReposo = fd.get('dias_tueste'); 
             const metodo = fd.get('metodo');
             const clics = fd.get('clics');
             const filtro = fd.get('filtro');
@@ -542,7 +543,6 @@
 
             const parrafoGenerado = generarParrafoInterpretativo(variedad, codigo, metodo, clics, filtro, gramos, agua_total, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, frutal, chocolate_cacao, floral, especiado, tostado, caramelo, global, observaciones);
             
-            // CONSTRUCCIÓN DEL ENCABEZADO CON CÓDIGO Y DÍAS
             let encabezado = `Código del tueste: ${codigo || 'Sin especificar'}`;
             if (diasReposo && !isNaN(diasReposo)) {
                 encabezado += ` (${diasReposo} días post-tueste)`;

@@ -12,13 +12,90 @@
             margin: 0;
             padding: 10px;
             padding-bottom: 40px;
+            position: relative;
         }
         h1 {
             text-align: center;
             font-size: 1.5rem;
             color: #4a3b32;
             margin-bottom: 20px;
+            margin-top: 15px;
         }
+        
+        /* Botón de Log */
+        #btnLog {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #8d6e63;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Estilos de la Ventana Modal del Log */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            font-weight: bold;
+        }
+        .log-title {
+            font-size: 1.1rem;
+            color: #4a3b32;
+            margin-bottom: 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .log-entry {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #eee;
+        }
+        .log-date {
+            font-size: 0.8rem;
+            color: #ff9800;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .log-text {
+            font-size: 0.85rem;
+            color: #444;
+            line-height: 1.4;
+        }
+
         .card {
             background-color: #ffffff;
             border-radius: 12px;
@@ -149,6 +226,17 @@
     </style>
 </head>
 <body>
+
+    <button id="btnLog" onclick="abrirLog()">📋 Log</button>
+
+    <div id="logModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarLog()">&times;</span>
+            <div class="log-title">📜 Registro de Cambios</div>
+            <div id="logContainer">
+                </div>
+        </div>
+    </div>
 
     <h1>☕ Registro de Cata de café</h1>
 
@@ -308,6 +396,34 @@
     </form>
 
     <script>
+        // --- GESTIÓN DEL LOG DE ACTUALIZACIONES ---
+        const logHistorial = [
+            {
+                fecha: "07-MAY-2026",
+                resumen: "UI y Datos: Se añadió el string 'Volver a tomar' al array paramSensoriales para su generación automática en el DOM y persistencia JSON. Lógica de Generación: Se modificó generarParrafoInterpretativo para recibir el argumento. Construcción: Se agregó una evaluación condicional que concatena una oración neutra antes de la conclusión global."
+            }
+            // Agregaremos nuevos cambios aquí arriba en el futuro
+        ];
+
+        function abrirLog() {
+            const contenedor = document.getElementById('logContainer');
+            contenedor.innerHTML = '';
+            logHistorial.forEach(item => {
+                contenedor.innerHTML += `
+                    <div class="log-entry">
+                        <div class="log-date">${item.fecha}</div>
+                        <div class="log-text">${item.resumen}</div>
+                    </div>
+                `;
+            });
+            document.getElementById('logModal').style.display = 'flex';
+        }
+
+        function cerrarLog() {
+            document.getElementById('logModal').style.display = 'none';
+        }
+
+        // --- CÓDIGO PRINCIPAL DE LA APP ---
         const paramSensoriales = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Uniformidad", "Volver a tomar"];
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
@@ -410,7 +526,6 @@
         generarGlobalHTML();
         window.onload = () => { document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); analizarCodigo(); };
 
-        // --- FUNCIÓN ACTUALIZADA CON "VOLVER A TOMAR" ---
         function generarParrafoInterpretativo(variedad, metodo, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, volverATomar, notasList, global, observaciones) {
             const fmt = (v, t) => { 
                 if(!v) return 'no definido'; 
@@ -424,7 +539,6 @@
             let orNotas = notasList.length > 0 ? `Muestra notas ${notasList.join(', ').replace(/, ([^,]*)$/, ' y $1')} integradas al conjunto, con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. ` : `Se percibe con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. `;
             let p3 = `El retrogusto es ${fmt(retrogusto,'retro')} y define el cierre de la taza. `;
             
-            // Nueva línea descriptiva y neutra
             let pVolver = volverATomar ? `La disposición registrada para volver a tomarlo es ${fmt(volverATomar, 'fem')}. ` : '';
             
             let p4 = `En general, se valora de forma global como "${global || 'sin calificar'}"${observaciones ? ', registrándose que: ' + observaciones.trim() : '.'}`;
@@ -443,19 +557,9 @@
             });
             
             const parrafo = generarParrafoInterpretativo(
-                fd.get('variedad'), 
-                fd.get('metodo'), 
-                getS('Sabor'), 
-                getS('Acidez'), 
-                getS('Dulzor'), 
-                getS('Amargor'), 
-                getS('Cuerpo'), 
-                getS('Balance'), 
-                getS('Retrogusto'), 
-                getS('Volver a tomar'), // Pasamos el nuevo parámetro
-                nL, 
-                fd.get('global_eval'), 
-                fd.get('observaciones')
+                fd.get('variedad'), fd.get('metodo'), getS('Sabor'), getS('Acidez'), 
+                getS('Dulzor'), getS('Amargor'), getS('Cuerpo'), getS('Balance'), 
+                getS('Retrogusto'), getS('Volver a tomar'), nL, fd.get('global_eval'), fd.get('observaciones')
             );
             
             let enc = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;

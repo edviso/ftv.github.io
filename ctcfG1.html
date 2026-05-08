@@ -400,9 +400,12 @@
         const logHistorial = [
             {
                 fecha: "07-MAY-2026",
+                resumen: "Evaluación Final: Se actualizó el encabezado generado para extraer e incluir automáticamente los gramos de café, los mililitros de agua y el cálculo matemático del ratio de extracción (ej. 15g / 250ml - Ratio 1:16.7) a continuación de los días de tueste."
+            },
+            {
+                fecha: "07-MAY-2026",
                 resumen: "UI y Datos: Se añadió el string 'Volver a tomar' al array paramSensoriales para su generación automática en el DOM y persistencia JSON. Lógica de Generación: Se modificó generarParrafoInterpretativo para recibir el argumento. Construcción: Se agregó una evaluación condicional que concatena una oración neutra antes de la conclusión global."
             }
-            // Agregaremos nuevos cambios aquí arriba en el futuro
         ];
 
         function abrirLog() {
@@ -562,8 +565,28 @@
                 getS('Retrogusto'), getS('Volver a tomar'), nL, fd.get('global_eval'), fd.get('observaciones')
             );
             
+            // Construcción del encabezado
             let enc = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;
-            if (fd.get('dias_tueste') && !isNaN(fd.get('dias_tueste'))) enc += ` (${fd.get('dias_tueste')} días post-tueste)`;
+            let diasReposo = fd.get('dias_tueste');
+            if (diasReposo && !isNaN(diasReposo)) {
+                enc += ` (${diasReposo} días post-tueste)`;
+            }
+
+            // Lógica para añadir gramos, ml y ratio
+            let gramos = parseFloat(fd.get('gramos_cafe'));
+            let ml = parseFloat(fd.get('agua_total'));
+            
+            if (!isNaN(gramos) && gramos > 0 && !isNaN(ml) && ml > 0) {
+                let ratioNum = (ml / gramos).toFixed(1);
+                // Si el ratio es número entero, le quitamos el ".0" final
+                ratioNum = ratioNum.endsWith('.0') ? ratioNum.slice(0, -2) : ratioNum;
+                enc += ` - ${gramos}g / ${ml}ml (Ratio 1:${ratioNum})`;
+            } else if (!isNaN(gramos) && gramos > 0) {
+                enc += ` - ${gramos}g`;
+            } else if (!isNaN(ml) && ml > 0) {
+                enc += ` - ${ml}ml`;
+            }
+
             document.getElementById('evaluacion_final').value = `${enc}\n\n${parrafo}`;
         }
 

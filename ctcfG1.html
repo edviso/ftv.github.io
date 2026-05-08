@@ -22,7 +22,7 @@
             margin-top: 15px;
         }
         
-        /* Botón de Log */
+        /* Botones Especiales */
         #btnLog {
             position: absolute;
             top: 10px;
@@ -38,7 +38,20 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* Estilos de la Ventana Modal del Log */
+        .auto-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .auto-btn:hover { background-color: #388e3c; }
+
+        /* Estilos de la Ventana Modal (Log e Info) optimizados para celular */
         .modal {
             display: none;
             position: fixed;
@@ -52,24 +65,27 @@
             justify-content: center;
         }
         .modal-content {
+            display: flex;
+            flex-direction: column;
             background-color: white;
             padding: 20px;
             border-radius: 12px;
             width: 90%;
             max-width: 400px;
             max-height: 80vh;
-            overflow-y: auto;
             position: relative;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
         }
         .close-btn {
             position: absolute;
-            top: 10px;
+            top: 15px;
             right: 15px;
             font-size: 1.5rem;
             cursor: pointer;
             color: #666;
             font-weight: bold;
+            z-index: 10;
         }
         .log-title {
             font-size: 1.1rem;
@@ -78,6 +94,14 @@
             font-weight: bold;
             border-bottom: 1px solid #eee;
             padding-bottom: 8px;
+            flex-shrink: 0;
+            padding-right: 20px;
+        }
+        #logContainer, #infoBody {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 5px;
+            flex: 1;
         }
         .log-entry {
             margin-bottom: 15px;
@@ -96,6 +120,27 @@
             line-height: 1.4;
         }
 
+        /* Botón de Ayuda (?) */
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background-color: #8d6e63;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 5px;
+            vertical-align: middle;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .help-icon:hover {
+            background-color: #6d4c41;
+        }
+
         .card {
             background-color: #ffffff;
             border-radius: 12px;
@@ -112,7 +157,7 @@
             padding-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: space-between;
         }
         .input-group {
             margin-bottom: 12px;
@@ -233,8 +278,15 @@
         <div class="modal-content">
             <span class="close-btn" onclick="cerrarLog()">&times;</span>
             <div class="log-title">📜 Registro de Cambios</div>
-            <div id="logContainer">
-                </div>
+            <div id="logContainer"></div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarInfo()">&times;</span>
+            <div id="infoTitle" class="log-title"></div>
+            <div id="infoBody" class="log-text" style="font-size: 0.95rem; line-height: 1.5; text-align: justify;"></div>
         </div>
     </div>
 
@@ -242,7 +294,7 @@
 
     <form id="cataForm">
         <div class="card">
-            <div class="card-title">📍 Datos del Café</div>
+            <div class="card-title"><div>📍 Datos del Café</div></div>
             <div class="row">
                 <div class="input-group">
                     <label>Variedad:</label>
@@ -266,7 +318,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">⚖️ Preparación y Extracción</div>
+            <div class="card-title"><div>⚖️ Preparación y Extracción</div></div>
             <div class="row">
                 <div class="input-group">
                     <label>Método:</label>
@@ -353,7 +405,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">☕ EVALUACIÓN SENSORIAL</div>
+            <div class="card-title"><div>☕ EVALUACIÓN SENSORIAL</div></div>
             <div class="grid-header">
                 <div style="text-align: left;">Parámetro</div>
                 <div>Alta</div><div>Media</div><div>Baja</div>
@@ -362,7 +414,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">🌸 NOTAS SENSORIALES</div>
+            <div class="card-title"><div>🌸 NOTAS SENSORIALES</div></div>
             <div class="grid-header">
                 <div style="text-align: left;">Nota</div>
                 <div>Alta</div><div>Media</div><div>Baja</div>
@@ -371,7 +423,10 @@
         </div>
 
         <div class="card">
-            <div class="card-title">✅ EVALUACIÓN GLOBAL</div>
+            <div class="card-title">
+                <div style="display:flex; align-items:center; gap:8px;">✅ EVALUACIÓN GLOBAL</div>
+                <button type="button" class="auto-btn" onclick="autoGenerarGlobal()">🪄 Auto-generar</button>
+            </div>
             <div id="evaluacionGlobal"></div>
             <div class="input-group" style="margin-top:15px">
                 <label>Observaciones:</label>
@@ -380,7 +435,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">🧠 EVALUACIÓN FINAL</div>
+            <div class="card-title"><div>🧠 EVALUACIÓN FINAL</div></div>
             <button type="button" class="main-btn btn-gen" onclick="dispararGeneracion()">✨ Generar Resumen Interpretativo</button>
             <div class="input-group">
                 <textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el resumen..."></textarea>
@@ -396,15 +451,35 @@
     </form>
 
     <script>
-        // --- GESTIÓN DEL LOG DE ACTUALIZACIONES ---
+        // --- LOG DE ACTUALIZACIONES ---
         const logHistorial = [
             {
-                fecha: "07-MAY-2026",
-                resumen: "Evaluación Final: Se actualizó el encabezado generado para extraer e incluir automáticamente los gramos de café, los mililitros de agua y el cálculo matemático del ratio de extracción (ej. 15g / 250ml - Ratio 1:16.7) a continuación de los días de tueste."
+                fecha: "08-MAY-2026",
+                resumen: "UI Móvil y Restauración de Datos: Se mejoró el contenedor de las ventanas modales añadiendo 'flexbox' y scroll interno dedicado ('overflow-y: auto'). Ahora el título y el botón 'X' quedan fijos arriba, facilitando la lectura en celulares. Además, se restauraron los registros históricos eliminados por error."
+            },
+            {
+                fecha: "08-MAY-2026",
+                resumen: "Corrección Matemática: Se ajustó la función analizarCodigo() para normalizar las horas a la medianoche. Esto evita errores de redondeo que causaban un salto de día incorrecto dependiendo de la hora a la que se registrara la cata."
+            },
+            {
+                fecha: "08-MAY-2026",
+                resumen: "Corrección de Bug: Se restauró la lógica completa de 'Generar Resumen Interpretativo' que había sido omitida accidentalmente. El resumen vuelve a incluir toda la narrativa detallada."
+            },
+            {
+                fecha: "08-MAY-2026",
+                resumen: "Lógica Experta: Se añadió el botón 'Auto-generar' en la Evaluación Global."
+            },
+            {
+                fecha: "08-MAY-2026",
+                resumen: "UI y Glosario Completo: Se añadieron botones de ayuda (?) en Evaluación Global, Notas y Parámetros Sensoriales."
             },
             {
                 fecha: "07-MAY-2026",
-                resumen: "UI y Datos: Se añadió el string 'Volver a tomar' al array paramSensoriales para su generación automática en el DOM y persistencia JSON. Lógica de Generación: Se modificó generarParrafoInterpretativo para recibir el argumento. Construcción: Se agregó una evaluación condicional que concatena una oración neutra antes de la conclusión global."
+                resumen: "Evaluación Final: Se actualizó el encabezado generado para extraer e incluir automáticamente los gramos de café, los mililitros de agua y el cálculo matemático del ratio de extracción (ej. 15g / 250ml - Ratio 1:16.7)."
+            },
+            {
+                fecha: "07-MAY-2026",
+                resumen: "UI y Datos: Se añadió el string 'Volver a tomar' al array paramSensoriales para su generación automática en el DOM y persistencia JSON. Lógica de Generación: Se modificó generarParrafoInterpretativo para recibir el argumento."
             }
         ];
 
@@ -426,7 +501,132 @@
             document.getElementById('logModal').style.display = 'none';
         }
 
-        // --- CÓDIGO PRINCIPAL DE LA APP ---
+        // --- DICCIONARIO DEL GLOSARIO ---
+        const conceptosGlosario = {
+            "Fragancia (en seco)": {
+                "General": "Es el olor de los granos de café recién molidos antes de entrar en contacto con el agua. Es el primer indicador de la frescura y el perfil del tueste.",
+                "Alta": "Muy intensa y compleja; se perciben claramente notas florales, frutales o dulces.",
+                "Media": "Intensidad moderada; aromas reconocibles pero comunes (chocolate, frutos secos).",
+                "Baja": "Aroma débil, rancio o plano; apenas se percibe el perfil del grano."
+            },
+            "Aroma (en húmedo)": {
+                "General": "Es el olor que desprende el café una vez que se añade el agua caliente. Aquí los compuestos volátiles se liberan con mayor fuerza.",
+                "Alta": "Explosiva y envolvente; las notas detectadas en seco se confirman o se vuelven más complejas.",
+                "Media": "Agradable y clara, pero con una intensidad que no destaca demasiado.",
+                "Baja": "Aroma tenue, acuoso o con notas desagradables que antes no estaban."
+            },
+            "Sabor": {
+                "General": "Es la combinación principal entre las sensaciones de la lengua y los aromas retronasales. Es la 'personalidad' del café.",
+                "Alta": "Multidimensional y rico; permite identificar notas específicas (ej. arándanos, caramelo, jazmín).",
+                "Media": "Sabor sólido y agradable, pero predecible y sin mucha complejidad.",
+                "Baja": "Sabor simple, aburrido o genérico; falta de carácter."
+            },
+            "Acidez": {
+                "General": "Se refiere al 'brillo' o vivacidad del café. No es amargor, sino una sensación de frescura similar a la de las frutas.",
+                "Alta": "Cítrica, brillante y limpia (como una naranja o manzana); aporta mucha vida a la taza.",
+                "Media": "Suave y balanceada; está presente pero no es la protagonista.",
+                "Baja": "Plana o nula; el café se siente 'apagado' o excesivamente pesado."
+            },
+            "Dulzor": {
+                "General": "Es la intensidad de los azúcares naturales presentes en el grano, que equilibran la acidez y el amargor.",
+                "Alta": "Sensación melosa o almibarada; dulzor evidente que recuerda a la miel o azúcar morena.",
+                "Media": "Dulzor moderado que ayuda a redondear la taza.",
+                "Baja": "Sensación seca, áspera o con predominancia de notas amargas."
+            },
+            "Amargor": {
+                "General": "Es la sensación punzante que se percibe generalmente en la parte posterior de la lengua. Es necesario para el balance, pero debe ser controlado.",
+                "Alta": "Muy intenso; puede ser positivo (chocolate oscuro) o negativo (quemado/medicinal).",
+                "Media": "Un amargor limpio que sirve de soporte a los demás sabores.",
+                "Baja": "Casi imperceptible; el café se siente muy suave o falto de estructura."
+            },
+            "Cuerpo": {
+                "General": "Es la sensación táctil y el peso del café en la boca (textura, viscosidad y densidad).",
+                "Alta": "Sensación pesada, cremosa o aceitosa; el café 'llena' la boca.",
+                "Media": "Textura sedosa y equilibrada; peso moderado en el paladar.",
+                "Baja": "Sensación acuosa, ligera o delgada; similar al té."
+            },
+            "Balance": {
+                "General": "Es la armonía entre todos los atributos anteriores. Evalúa si algún elemento domina negativamente sobre los demás.",
+                "Alta": "Todos los atributos conviven en perfecta armonía; ninguno opaca al otro.",
+                "Media": "Buen equilibrio general, aunque un atributo (como la acidez) destaca un poco más.",
+                "Baja": "Café descompensado; por ejemplo, demasiada acidez que lo vuelve desagradable."
+            },
+            "Retrogusto": {
+                "General": "Es la experiencia sensorial, compuesta por sabores y aromas, que permanece en el paladar y la cavidad nasal después de haber ingerido el café.",
+                "Alta": "Persistencia larga y placentera que suele superar el minuto de duración.",
+                "Media": "Persistencia moderada, los sabores se desvanecen entre los 15 y 30 segundos.",
+                "Baja": "Persistencia corta o fugaz, el sabor desaparece casi inmediatamente."
+            },
+            "Limpieza de taza": {
+                "General": "Se refiere a la ausencia de defectos o sabores extraños desde el primer sorbo hasta el último.",
+                "Alta": "Transparencia total del sabor; no hay interferencias de notas terrosas o fermentadas.",
+                "Media": "Sabor consistente, aunque con pequeñas variaciones menores durante el enfriamiento.",
+                "Baja": "Presencia de defectos claros (sabor a moho, químico o fermento excesivo)."
+            },
+            "Floral": {
+                "General": "Aromas y sabores delicados que recuerdan a flores frescas o secas (jazmín, rosas, lavanda).",
+                "Alta": "Nota dominante y evidente; el café se siente muy perfumado.",
+                "Media": "Matiz floral sutil que acompaña sin ser el protagonista.",
+                "Baja": "Casi imperceptible; difícil de detectar."
+            },
+            "Frutal": {
+                "General": "Notas de frutas cítricas, rojas, tropicales o de hueso.",
+                "Alta": "Sabor vibrante y jugoso que recuerda a una fruta específica.",
+                "Media": "Frutosidad general que aporta frescura pero no está definida.",
+                "Baja": "Perfil lineal con presencia frutal mínima."
+            },
+            "Chocolate/Cacao": {
+                "General": "Desde chocolate con leche dulce hasta el cacao amargo.",
+                "Alta": "Sensación intensa y profunda con retrogusto dulce.",
+                "Media": "Nota presente que redondea la taza y aporta balance.",
+                "Baja": "Recuerdo tenue, opacado por otros sabores."
+            },
+            "Caramelo/Dulce": {
+                "General": "Azúcar caramelizada, miel, panela o vainilla.",
+                "Alta": "Café meloso donde el caramelo es el eje central.",
+                "Media": "Dulzor agradable que recuerda al azúcar morena.",
+                "Baja": "Perfil más seco; dulzor presente pero sin carácter."
+            },
+            "Especiado": {
+                "General": "Notas que evocan canela, clavo de olor, pimienta o nuez moscada.",
+                "Alta": "Notas aromáticas marcadas que dan un carácter fuerte.",
+                "Media": "Sensación leve, generalmente en el retrogusto.",
+                "Baja": "Ausencia de notas de especias."
+            },
+            "Tostado": {
+                "General": "Influencia del fuego en el grano.",
+                "Alta": "Sabor muy fuerte, notas de ceniza o granos oscuros.",
+                "Media": "Equilibrio donde se siente el tueste sin perder la esencia.",
+                "Baja": "Tueste ligero que permite brillar la acidez original."
+            },
+            "Herbal/Vegetal": {
+                "General": "Notas que recuerdan a pasto, té o hierbas frescas.",
+                "Alta": "Sabor verde muy marcado, a veces punzante.",
+                "Media": "Matices herbales frescos que aportan complejidad.",
+                "Baja": "Sin rasgos de frescura vegetal."
+            },
+            "Evaluación Global": {
+                "Excelente": "Cafés excepcionales. Mayoría de parámetros en nivel Alto, notas complejas, balance perfecto y limpieza absoluta.",
+                "Muy bueno": "Especialidad de gran calidad. Estructura sólida, acidez brillante y cuerpo definido. Sin defectos.",
+                "Bueno": "Comercial premium o especialidad estándar. Parámetros en nivel Medio, notas reconocibles pero no explosivas.",
+                "Aceptable": "Bebible pero sin atributos destacados. Parámetros Medio-Bajo, sin defectos graves pero plano.",
+                "Regular": "Desequilibrios o falta de frescura. Parámetros Bajos, amargor dominante y limpieza comprometida.",
+                "Deficiente": "Defectos técnicos evidentes (moho, tierra, fermento). Taza desagradable y desbalanceada."
+            }
+        };
+
+        function mostrarInfo(parametro, nivel) {
+            let titulo = nivel === "General" ? `📖 ${parametro}` : `📖 ${parametro}: ${nivel}`;
+            document.getElementById('infoTitle').innerText = titulo;
+            document.getElementById('infoBody').innerText = conceptosGlosario[parametro][nivel];
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function cerrarInfo() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        // --- CÓDIGO PRINCIPAL ---
         const paramSensoriales = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Uniformidad", "Volver a tomar"];
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
@@ -446,10 +646,29 @@
             items.forEach((item, index) => {
                 const row = document.createElement('div');
                 row.className = 'grid-row';
-                row.innerHTML = `<div>${item}</div>
-                    <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Alta"></div>
-                    <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Media"></div>
-                    <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Baja"></div>`;
+                if (conceptosGlosario[item]) {
+                    row.innerHTML = `
+                        <div style="display:flex; align-items:center;">
+                            ${item} <span class="help-icon" onclick="mostrarInfo('${item}', 'General')">?</span>
+                        </div>
+                        <div style="text-align:center; display:flex; justify-content:center; align-items:center; gap:3px;">
+                            <input type="radio" name="${prefijo}_${index}" value="Alta">
+                            <span class="help-icon" onclick="mostrarInfo('${item}', 'Alta')">?</span>
+                        </div>
+                        <div style="text-align:center; display:flex; justify-content:center; align-items:center; gap:3px;">
+                            <input type="radio" name="${prefijo}_${index}" value="Media">
+                            <span class="help-icon" onclick="mostrarInfo('${item}', 'Media')">?</span>
+                        </div>
+                        <div style="text-align:center; display:flex; justify-content:center; align-items:center; gap:3px;">
+                            <input type="radio" name="${prefijo}_${index}" value="Baja">
+                            <span class="help-icon" onclick="mostrarInfo('${item}', 'Baja')">?</span>
+                        </div>`;
+                } else {
+                    row.innerHTML = `<div>${item}</div>
+                        <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Alta"></div>
+                        <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Media"></div>
+                        <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Baja"></div>`;
+                }
                 contenedor.appendChild(row);
             });
         }
@@ -457,10 +676,72 @@
         function generarGlobalHTML() {
             const contenedor = document.getElementById('evaluacionGlobal');
             paramGlobal.forEach((item, index) => {
-                contenedor.innerHTML += `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px">
-                    <input type="radio" name="global_eval" id="g_${index}" value="${item}">
-                    <label for="g_${index}" style="margin:0">${item}</label></div>`;
+                contenedor.innerHTML += `
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px">
+                        <input type="radio" name="global_eval" id="g_${index}" value="${item}">
+                        <label for="g_${index}" style="margin:0">${item}</label>
+                        <span class="help-icon" onclick="mostrarInfo('Evaluación Global', '${item}')">?</span>
+                    </div>`;
             });
+        }
+
+        // --- LÓGICA DE AUTO-GENERACIÓN GLOBAL ---
+        function autoGenerarGlobal() {
+            const fd = new FormData(document.getElementById('cataForm'));
+            let totalPuntos = 0;
+            let conteoValidos = 0;
+            
+            let limpieza = "Media";
+            
+            paramSensoriales.forEach((item, i) => {
+                if (i > 10) return; // Saltar Volver a tomar
+                let val = fd.get(`sens_${i}`);
+                if (!val) return;
+                
+                let p = (val === "Alta" ? 3 : (val === "Media" ? 2 : 1));
+                
+                // Ponderación especial
+                if (item === "Sabor" || item === "Balance") p *= 1.5;
+                if (item === "Limpieza de taza") {
+                    p *= 2;
+                    limpieza = val;
+                }
+                
+                totalPuntos += p;
+                conteoValidos++;
+            });
+
+            // Procesar Notas
+            paramNotas.forEach((item, i) => {
+                let val = fd.get(`nota_${i}`);
+                if (!val) return;
+                totalPuntos += (val === "Alta" ? 1.5 : (val === "Media" ? 1 : 0.5));
+                conteoValidos++;
+            });
+
+            if (conteoValidos === 0) {
+                alert("Por favor, marca algunos parámetros primero.");
+                return;
+            }
+
+            let resultado = "";
+            let ratio = totalPuntos / conteoValidos;
+
+            if (ratio >= 2.6) resultado = "Excelente";
+            else if (ratio >= 2.2) resultado = "Muy bueno";
+            else if (ratio >= 1.7) resultado = "Bueno";
+            else if (ratio >= 1.3) resultado = "Aceptable";
+            else if (ratio >= 0.9) resultado = "Regular";
+            else resultado = "Deficiente";
+
+            if (limpieza === "Baja" && (resultado === "Excelente" || resultado === "Muy bueno" || resultado === "Bueno" || resultado === "Aceptable")) {
+                resultado = "Regular";
+            } else if (limpieza === "Media" && resultado === "Excelente") {
+                resultado = "Muy bueno";
+            }
+
+            const r = document.querySelector(`input[name="global_eval"][value="${resultado}"]`);
+            if (r) r.checked = true;
         }
 
         function obtenerFechaHoraActualFormateada() {
@@ -504,24 +785,32 @@
             const dicVar = { 'GES': 'Geisha', 'BOR': 'Bourbon Rosado', 'SID': 'Sidra', 'CAT': 'Caturra', 'PAC': 'Pacamara', 'TYP': 'Typica', 'BOU': 'Bourbon', 'CAS': 'Castillo', 'MAR': 'Maragogype' };
             const prefijo = codigo.substring(0, 3);
             if (dicVar[prefijo] && !inputVariedad.value) inputVariedad.value = dicVar[prefijo];
+            
             const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
             const matchN = codigo.match(/(\d{2})([A-Z]{3})/);
             const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
+            
+            // Usamos la fecha de la caja de texto y la "enceramos" a la medianoche
             const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value);
             ref.setHours(0,0,0,0);
+            
             let ft = null;
             if (matchN && mesesStr[matchN[2]] !== undefined) {
                 ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10));
+                // Si el mes del tueste es mayor al actual, asumimos que fue el año pasado
                 if (ft > ref) ft.setFullYear(ref.getFullYear() - 1);
             } else if (matchA) {
                 let y = parseInt(matchA[3], 10);
                 ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10));
             }
+            
             if (ft) {
-                ft.setHours(0,0,0,0);
+                ft.setHours(0,0,0,0); // Enceramos la fecha de tueste a la medianoche también
                 const diff = Math.round((ref.getTime() - ft.getTime()) / (1000 * 60 * 60 * 24));
                 inputDias.value = diff >= 0 ? diff : "Fecha futura";
-            } else { inputDias.value = "Sin fecha detectada"; }
+            } else { 
+                inputDias.value = "Sin fecha detectada"; 
+            }
         }
 
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens');
@@ -529,6 +818,7 @@
         generarGlobalHTML();
         window.onload = () => { document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); analizarCodigo(); };
 
+        // --- GENERADOR DEL PÁRRAFO INTERPRETATIVO ---
         function generarParrafoInterpretativo(variedad, metodo, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, volverATomar, notasList, global, observaciones) {
             const fmt = (v, t) => { 
                 if(!v) return 'no definido'; 
@@ -555,7 +845,7 @@
             const getN = (p) => fd.get(`nota_${paramNotas.indexOf(p)}`);
             
             let nL = [];
-            ["Frutal", "Chocolate/Cacao", "Floral", "Especiado", "Tostado", "Caramelo/Dulce"].forEach(n => { 
+            paramNotas.forEach(n => { 
                 if(getN(n)==='Alta'||getN(n)==='Media') nL.push(n.toLowerCase()); 
             });
             
@@ -578,7 +868,6 @@
             
             if (!isNaN(gramos) && gramos > 0 && !isNaN(ml) && ml > 0) {
                 let ratioNum = (ml / gramos).toFixed(1);
-                // Si el ratio es número entero, le quitamos el ".0" final
                 ratioNum = ratioNum.endsWith('.0') ? ratioNum.slice(0, -2) : ratioNum;
                 enc += ` - ${gramos}g / ${ml}ml (Ratio 1:${ratioNum})`;
             } else if (!isNaN(gramos) && gramos > 0) {

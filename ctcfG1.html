@@ -185,6 +185,7 @@
             box-sizing: border-box;
             font-size: 1rem;
             font-family: inherit;
+            background-color: #fff;
         }
         input[readonly] {
             background-color: #f5f5f5;
@@ -322,7 +323,46 @@
             <div class="row">
                 <div class="input-group">
                     <label>Método:</label>
-                    <input type="text" id="metodo" name="metodo" value="Origami">
+                    <select id="metodo" name="metodo">
+                        <option value="Filtrado (Pour Over / Goteo)">Filtrado (Pour Over / Goteo)</option>
+                        <option value="Inmersión">Inmersión</option>
+                        <option value="Presión (Espresso)">Presión (Espresso)</option>
+                        <option value="Percolación">Percolación</option>
+                        <option value="Infusión en frío (Cold Brew)">Infusión en frío (Cold Brew)</option>
+                        <option value="Híbrido">Híbrido</option>
+                        <option value="Ebullición">Ebullición</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Dispositivo:</label>
+                    <select id="dispositivo" name="dispositivo">
+                        <option value="Origami Dripper" selected>Origami Dripper</option>
+                        <option value="Hario V60">Hario V60</option>
+                        <option value="Chemex">Chemex</option>
+                        <option value="Kalita Wave">Kalita Wave</option>
+                        <option value="French Press">French Press</option>
+                        <option value="Clever Dripper">Clever Dripper</option>
+                        <option value="Espresso Machine">Espresso Machine</option>
+                        <option value="Flair Espresso Maker">Flair Espresso Maker</option>
+                        <option value="Moka Pot">Moka Pot</option>
+                        <option value="Percoladora">Percoladora</option>
+                        <option value="Cold Brew Maker">Cold Brew Maker</option>
+                        <option value="AeroPress">AeroPress</option>
+                        <option value="Cezve">Cezve</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-group">
+                    <label>Filtro:</label>
+                    <select id="filtro" name="filtro">
+                        <option value="Filtro cónico/papel" selected>Filtro cónico/papel</option>
+                        <option value="Filtro fondo plano/papel">Filtro fondo plano/papel</option>
+                        <option value="Filtro de papel grueso">Filtro de papel grueso</option>
+                        <option value="Filtro metálico">Filtro metálico</option>
+                        <option value="Filtro de tela">Filtro de tela</option>
+                        <option value="Sin filtro">Sin filtro</option>
+                    </select>
                 </div>
                 <div class="input-group">
                     <label>Clics:</label>
@@ -331,12 +371,6 @@
                         <input type="number" id="clics" name="clics" value="40">
                         <button type="button" onclick="step('clics', 1)">+</button>
                     </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="input-group">
-                    <label>Tipo de Filtro:</label>
-                    <input type="text" id="filtro" name="filtro" placeholder="Ej. Kalita Wave">
                 </div>
             </div>
             <div class="row">
@@ -455,15 +489,23 @@
         const logHistorial = [
             {
                 fecha: "08-MAY-2026",
-                resumen: "UI Móvil y Restauración de Datos: Se mejoró el contenedor de las ventanas modales añadiendo 'flexbox' y scroll interno dedicado ('overflow-y: auto'). Ahora el título y el botón 'X' quedan fijos arriba, facilitando la lectura en celulares. Además, se restauraron los registros históricos eliminados por error."
+                resumen: "Corrección Estricta de Dropdowns: Se eliminó la función que agregaba automáticamente valores antiguos a las listas desplegables al cargar un JSON. Ahora el sistema exige que las catas antiguas se mapeen estrictamente a las nuevas categorías estandarizadas de Método, Dispositivo y Filtro."
             },
             {
                 fecha: "08-MAY-2026",
-                resumen: "Corrección Matemática: Se ajustó la función analizarCodigo() para normalizar las horas a la medianoche. Esto evita errores de redondeo que causaban un salto de día incorrecto dependiendo de la hora a la que se registrara la cata."
+                resumen: "Estandarización de Datos UI: Los campos de 'Método' y 'Tipo de Filtro' fueron reemplazados por menús desplegables estandarizados. Se incorporó además la categoría 'Dispositivo' con opciones predefinidas."
             },
             {
                 fecha: "08-MAY-2026",
-                resumen: "Corrección de Bug: Se restauró la lógica completa de 'Generar Resumen Interpretativo' que había sido omitida accidentalmente. El resumen vuelve a incluir toda la narrativa detallada."
+                resumen: "UI Móvil y Restauración de Datos: Se mejoró el contenedor de las ventanas modales añadiendo 'flexbox' y scroll interno dedicado ('overflow-y: auto'). Ahora el título y el botón 'X' quedan fijos arriba."
+            },
+            {
+                fecha: "08-MAY-2026",
+                resumen: "Corrección Matemática: Se ajustó la función analizarCodigo() para normalizar las horas a la medianoche. Evita errores de redondeo en los días de tueste."
+            },
+            {
+                fecha: "08-MAY-2026",
+                resumen: "Corrección de Bug: Se restauró la lógica completa de 'Generar Resumen Interpretativo' que había sido omitida."
             },
             {
                 fecha: "08-MAY-2026",
@@ -472,14 +514,6 @@
             {
                 fecha: "08-MAY-2026",
                 resumen: "UI y Glosario Completo: Se añadieron botones de ayuda (?) en Evaluación Global, Notas y Parámetros Sensoriales."
-            },
-            {
-                fecha: "07-MAY-2026",
-                resumen: "Evaluación Final: Se actualizó el encabezado generado para extraer e incluir automáticamente los gramos de café, los mililitros de agua y el cálculo matemático del ratio de extracción (ej. 15g / 250ml - Ratio 1:16.7)."
-            },
-            {
-                fecha: "07-MAY-2026",
-                resumen: "UI y Datos: Se añadió el string 'Volver a tomar' al array paramSensoriales para su generación automática en el DOM y persistencia JSON. Lógica de Generación: Se modificó generarParrafoInterpretativo para recibir el argumento."
             }
         ];
 
@@ -700,7 +734,6 @@
                 
                 let p = (val === "Alta" ? 3 : (val === "Media" ? 2 : 1));
                 
-                // Ponderación especial
                 if (item === "Sabor" || item === "Balance") p *= 1.5;
                 if (item === "Limpieza de taza") {
                     p *= 2;
@@ -711,7 +744,6 @@
                 conteoValidos++;
             });
 
-            // Procesar Notas
             paramNotas.forEach((item, i) => {
                 let val = fd.get(`nota_${i}`);
                 if (!val) return;
@@ -790,14 +822,12 @@
             const matchN = codigo.match(/(\d{2})([A-Z]{3})/);
             const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
             
-            // Usamos la fecha de la caja de texto y la "enceramos" a la medianoche
             const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value);
             ref.setHours(0,0,0,0);
             
             let ft = null;
             if (matchN && mesesStr[matchN[2]] !== undefined) {
                 ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10));
-                // Si el mes del tueste es mayor al actual, asumimos que fue el año pasado
                 if (ft > ref) ft.setFullYear(ref.getFullYear() - 1);
             } else if (matchA) {
                 let y = parseInt(matchA[3], 10);
@@ -805,7 +835,7 @@
             }
             
             if (ft) {
-                ft.setHours(0,0,0,0); // Enceramos la fecha de tueste a la medianoche también
+                ft.setHours(0,0,0,0);
                 const diff = Math.round((ref.getTime() - ft.getTime()) / (1000 * 60 * 60 * 24));
                 inputDias.value = diff >= 0 ? diff : "Fecha futura";
             } else { 
@@ -819,7 +849,7 @@
         window.onload = () => { document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); analizarCodigo(); };
 
         // --- GENERADOR DEL PÁRRAFO INTERPRETATIVO ---
-        function generarParrafoInterpretativo(variedad, metodo, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, volverATomar, notasList, global, observaciones) {
+        function generarParrafoInterpretativo(variedad, metodo, dispositivo, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, volverATomar, notasList, global, observaciones) {
             const fmt = (v, t) => { 
                 if(!v) return 'no definido'; 
                 const l = v.toLowerCase(); 
@@ -828,7 +858,7 @@
                 return l==='alta'?'prolongado':l==='media'?'medio':'corto'; 
             };
             
-            let p1 = `Este ${variedad || 'café'} preparado en ${metodo || 'filtro'} presenta un perfil con sabor ${fmt(sabor,'masc')}, acidez ${fmt(acidez,'fem')}, dulzor ${fmt(dulzor,'masc')} y amargor ${fmt(amargor,'masc')}. `;
+            let p1 = `Este ${variedad || 'café'} preparado en ${dispositivo || 'filtro'} (${metodo || 'método de extracción'}) presenta un perfil con sabor ${fmt(sabor,'masc')}, acidez ${fmt(acidez,'fem')}, dulzor ${fmt(dulzor,'masc')} y amargor ${fmt(amargor,'masc')}. `;
             let orNotas = notasList.length > 0 ? `Muestra notas ${notasList.join(', ').replace(/, ([^,]*)$/, ' y $1')} integradas al conjunto, con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. ` : `Se percibe con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. `;
             let p3 = `El retrogusto es ${fmt(retrogusto,'retro')} y define el cierre de la taza. `;
             
@@ -850,19 +880,17 @@
             });
             
             const parrafo = generarParrafoInterpretativo(
-                fd.get('variedad'), fd.get('metodo'), getS('Sabor'), getS('Acidez'), 
+                fd.get('variedad'), fd.get('metodo'), fd.get('dispositivo'), getS('Sabor'), getS('Acidez'), 
                 getS('Dulzor'), getS('Amargor'), getS('Cuerpo'), getS('Balance'), 
                 getS('Retrogusto'), getS('Volver a tomar'), nL, fd.get('global_eval'), fd.get('observaciones')
             );
             
-            // Construcción del encabezado
             let enc = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;
             let diasReposo = fd.get('dias_tueste');
             if (diasReposo && !isNaN(diasReposo)) {
                 enc += ` (${diasReposo} días post-tueste)`;
             }
 
-            // Lógica para añadir gramos, ml y ratio
             let gramos = parseFloat(fd.get('gramos_cafe'));
             let ml = parseFloat(fd.get('agua_total'));
             
@@ -895,13 +923,25 @@
             const data = { 
                 registro: document.getElementById('fecha_hora').value, 
                 datos_cafe: { variedad: fd.get('variedad'), codigo: fd.get('codigo'), fecha_hora: fd.get('fecha_hora'), dias_tueste: fd.get('dias_tueste') }, 
-                extraccion: { metodo: fd.get('metodo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3') }, 
+                extraccion: { metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3') }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final') 
             };
             paramSensoriales.forEach((it, i) => data.sensorial[it] = fd.get(`sens_${i}`));
             paramNotas.forEach((it, i) => data.notas[it] = fd.get(`nota_${i}`));
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Cata_${data.datos_cafe.codigo || 'sin_nombre'}.json`; a.click();
+        }
+
+        // Función auxiliar estricta (no agrega opciones nuevas)
+        function setSelectValue(id, value) {
+            const sel = document.getElementById(id);
+            if(!value) return;
+            let exists = Array.from(sel.options).some(opt => opt.value === value);
+            if(exists) {
+                sel.value = value;
+            } else {
+                console.warn(`Valor antiguo omitido en ${id}: ${value}`);
+            }
         }
 
         function cargarJSON(e) {
@@ -914,9 +954,13 @@
                     document.getElementById('variedad').value = d.datos_cafe?.variedad || "";
                     document.getElementById('codigo').value = d.datos_cafe?.codigo || "";
                     document.getElementById('fecha_hora').value = d.datos_cafe?.fecha_hora || d.registro || "";
-                    document.getElementById('metodo').value = d.extraccion?.metodo || "";
+                    
+                    // Asignación estricta de menús desplegables
+                    setSelectValue('metodo', d.extraccion?.metodo);
+                    setSelectValue('dispositivo', d.extraccion?.dispositivo);
+                    setSelectValue('filtro', d.extraccion?.filtro);
+                    
                     document.getElementById('clics').value = d.extraccion?.clics || 40;
-                    document.getElementById('filtro').value = d.extraccion?.filtro || "";
                     document.getElementById('gramos_cafe').value = d.extraccion?.gramos || "";
                     document.getElementById('agua_total').value = d.extraccion?.agua_total || "";
                     document.getElementById('usa_ducha').checked = !!d.extraccion?.ducha;
@@ -935,7 +979,7 @@
                     document.getElementById('observaciones').value = d.observaciones || "";
                     document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
                     toggleVertidos(); analizarCodigo();
-                    alert("Cata cargada");
+                    alert("Cata cargada exitosamente.");
                 } catch(err) { console.error(err); }
             };
             reader.readAsText(file);

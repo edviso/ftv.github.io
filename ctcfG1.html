@@ -323,7 +323,7 @@
             <div class="row">
                 <div class="input-group">
                     <label>Método:</label>
-                    <select id="metodo" name="metodo">
+                    <select id="metodo" name="metodo" onchange="actualizarDispositivos()">
                         <option value="Filtrado (Pour Over / Goteo)">Filtrado (Pour Over / Goteo)</option>
                         <option value="Inmersión">Inmersión</option>
                         <option value="Presión (Espresso)">Presión (Espresso)</option>
@@ -335,34 +335,15 @@
                 </div>
                 <div class="input-group">
                     <label>Dispositivo:</label>
-                    <select id="dispositivo" name="dispositivo">
-                        <option value="Origami Dripper" selected>Origami Dripper</option>
-                        <option value="Hario V60">Hario V60</option>
-                        <option value="Chemex">Chemex</option>
-                        <option value="Kalita Wave">Kalita Wave</option>
-                        <option value="French Press">French Press</option>
-                        <option value="Clever Dripper">Clever Dripper</option>
-                        <option value="Espresso Machine">Espresso Machine</option>
-                        <option value="Flair Espresso Maker">Flair Espresso Maker</option>
-                        <option value="Moka Pot">Moka Pot</option>
-                        <option value="Percoladora">Percoladora</option>
-                        <option value="Cold Brew Maker">Cold Brew Maker</option>
-                        <option value="AeroPress">AeroPress</option>
-                        <option value="Cezve">Cezve</option>
-                    </select>
+                    <select id="dispositivo" name="dispositivo" onchange="actualizarFiltros()">
+                        </select>
                 </div>
             </div>
             <div class="row">
                 <div class="input-group">
                     <label>Filtro:</label>
                     <select id="filtro" name="filtro">
-                        <option value="Filtro cónico/papel" selected>Filtro cónico/papel</option>
-                        <option value="Filtro fondo plano/papel">Filtro fondo plano/papel</option>
-                        <option value="Filtro de papel grueso">Filtro de papel grueso</option>
-                        <option value="Filtro metálico">Filtro metálico</option>
-                        <option value="Filtro de tela">Filtro de tela</option>
-                        <option value="Sin filtro">Sin filtro</option>
-                    </select>
+                        </select>
                 </div>
                 <div class="input-group">
                     <label>Clics:</label>
@@ -489,11 +470,11 @@
         const logHistorial = [
             {
                 fecha: "08-MAY-2026",
-                resumen: "Corrección Estricta de Dropdowns: Se eliminó la función que agregaba automáticamente valores antiguos a las listas desplegables al cargar un JSON. Ahora el sistema exige que las catas antiguas se mapeen estrictamente a las nuevas categorías estandarizadas de Método, Dispositivo y Filtro."
+                resumen: "Lógica de Cascada y Restricción: Se implementó un sistema de menús desplegables dependientes. Ahora el 'Dispositivo' se filtra automáticamente según el 'Método' seleccionado, y el 'Filtro' se ajusta estrictamente al 'Dispositivo' elegido, garantizando que ya no existan combinaciones inconsistentes en el registro."
             },
             {
                 fecha: "08-MAY-2026",
-                resumen: "Estandarización de Datos UI: Los campos de 'Método' y 'Tipo de Filtro' fueron reemplazados por menús desplegables estandarizados. Se incorporó además la categoría 'Dispositivo' con opciones predefinidas."
+                resumen: "Estandarización de Datos UI: Los campos de 'Método' y 'Tipo de Filtro' fueron reemplazados por menús desplegables estandarizados. Se incorporó la categoría 'Dispositivo'."
             },
             {
                 fecha: "08-MAY-2026",
@@ -505,15 +486,7 @@
             },
             {
                 fecha: "08-MAY-2026",
-                resumen: "Corrección de Bug: Se restauró la lógica completa de 'Generar Resumen Interpretativo' que había sido omitida."
-            },
-            {
-                fecha: "08-MAY-2026",
                 resumen: "Lógica Experta: Se añadió el botón 'Auto-generar' en la Evaluación Global."
-            },
-            {
-                fecha: "08-MAY-2026",
-                resumen: "UI y Glosario Completo: Se añadieron botones de ayuda (?) en Evaluación Global, Notas y Parámetros Sensoriales."
             }
         ];
 
@@ -534,6 +507,75 @@
         function cerrarLog() {
             document.getElementById('logModal').style.display = 'none';
         }
+
+        // --- MAPEO DE DISPOSITIVOS Y FILTROS ---
+        const mapDispositivos = {
+            "Filtrado (Pour Over / Goteo)": ["Hario V60", "Origami Dripper", "Chemex", "Kalita Wave"],
+            "Inmersión": ["French Press", "Clever Dripper"],
+            "Presión (Espresso)": ["Espresso Machine", "Flair Espresso Maker"],
+            "Percolación": ["Moka Pot", "Percoladora"],
+            "Infusión en frío (Cold Brew)": ["Cold Brew Maker"],
+            "Híbrido": ["AeroPress"],
+            "Ebullición": ["Cezve"]
+        };
+
+        const mapFiltros = {
+            "Hario V60": ["Filtro cónico/papel"],
+            "Origami Dripper": ["Filtro cónico/papel", "Filtro fondo plano/papel"],
+            "Chemex": ["Filtro de papel grueso"],
+            "Kalita Wave": ["Filtro fondo plano/papel"],
+            "French Press": ["Filtro metálico"],
+            "Clever Dripper": ["Filtro cónico/papel"],
+            "Espresso Machine": ["Filtro metálico"],
+            "Flair Espresso Maker": ["Filtro metálico"],
+            "Moka Pot": ["Filtro metálico"],
+            "Percoladora": ["Filtro metálico"],
+            "Cold Brew Maker": ["Filtro metálico", "Filtro de tela", "Filtro de papel grueso"],
+            "AeroPress": ["Filtro cónico/papel", "Filtro metálico", "Filtro de tela"],
+            "Cezve": ["Sin filtro"]
+        };
+
+        function actualizarDispositivos() {
+            const metodoSelect = document.getElementById('metodo');
+            const dispSelect = document.getElementById('dispositivo');
+            
+            // Limpiamos las opciones actuales
+            dispSelect.innerHTML = '';
+            
+            // Obtenemos los dispositivos correspondientes
+            const dispositivos = mapDispositivos[metodoSelect.value] || [];
+            
+            // Llenamos el select
+            dispositivos.forEach(disp => {
+                const opt = document.createElement('option');
+                opt.value = disp;
+                opt.text = disp;
+                dispSelect.add(opt);
+            });
+            
+            // Desencadenamos la actualización de los filtros
+            actualizarFiltros();
+        }
+
+        function actualizarFiltros() {
+            const dispSelect = document.getElementById('dispositivo');
+            const filtroSelect = document.getElementById('filtro');
+            
+            // Limpiamos las opciones actuales
+            filtroSelect.innerHTML = '';
+            
+            // Obtenemos los filtros correspondientes
+            const filtros = mapFiltros[dispSelect.value] || [];
+            
+            // Llenamos el select
+            filtros.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.text = f;
+                filtroSelect.add(opt);
+            });
+        }
+
 
         // --- DICCIONARIO DEL GLOSARIO ---
         const conceptosGlosario = {
@@ -846,7 +888,13 @@
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens');
         generarGridHTML(paramNotas, 'notasSensoriales', 'nota');
         generarGlobalHTML();
-        window.onload = () => { document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); analizarCodigo(); };
+        
+        // Inicialización de la página (Fecha, código y menús en cascada)
+        window.onload = () => { 
+            document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
+            analizarCodigo(); 
+            actualizarDispositivos(); // Dispara la cascada inicial
+        };
 
         // --- GENERADOR DEL PÁRRAFO INTERPRETATIVO ---
         function generarParrafoInterpretativo(variedad, metodo, dispositivo, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, volverATomar, notasList, global, observaciones) {
@@ -932,7 +980,7 @@
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Cata_${data.datos_cafe.codigo || 'sin_nombre'}.json`; a.click();
         }
 
-        // Función auxiliar estricta (no agrega opciones nuevas)
+        // Función auxiliar estricta: ignora opciones que no pertenecen al estándar
         function setSelectValue(id, value) {
             const sel = document.getElementById(id);
             if(!value) return;
@@ -940,7 +988,7 @@
             if(exists) {
                 sel.value = value;
             } else {
-                console.warn(`Valor antiguo omitido en ${id}: ${value}`);
+                console.warn(`Valor antiguo o inconsistente omitido en ${id}: ${value}`);
             }
         }
 
@@ -955,9 +1003,11 @@
                     document.getElementById('codigo').value = d.datos_cafe?.codigo || "";
                     document.getElementById('fecha_hora').value = d.datos_cafe?.fecha_hora || d.registro || "";
                     
-                    // Asignación estricta de menús desplegables
+                    // Asignación en cascada estricta
                     setSelectValue('metodo', d.extraccion?.metodo);
+                    actualizarDispositivos(); // Fuerza actualización según el método
                     setSelectValue('dispositivo', d.extraccion?.dispositivo);
+                    actualizarFiltros(); // Fuerza actualización según el dispositivo
                     setSelectValue('filtro', d.extraccion?.filtro);
                     
                     document.getElementById('clics').value = d.extraccion?.clics || 40;

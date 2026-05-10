@@ -102,7 +102,7 @@
             -webkit-overflow-scrolling: touch;
             padding-right: 5px;
             flex: 1;
-            min-height: 0; /* FIX: Permite que Flexbox active el scroll interno */
+            min-height: 0;
         }
         .log-entry {
             margin-bottom: 15px;
@@ -208,6 +208,7 @@
         button.main-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
         .btn-gen { background-color: #ff9800; color: white; margin-bottom: 15px; width: 100%; }
         .btn-copy { background-color: #2196F3; color: white; margin-top: 10px; width: 100%; }
+        .btn-dl-eval { background-color: #4db6ac; color: #121212; margin-top: 10px; width: 100%; } /* Nuevo botón descargar evaluación */
         .btn-chart { background-color: #333; color: #ff9800; margin-top: 10px; width: 100%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; gap: 8px;}
         .btn-chart:hover { background-color: #ff9800; color: #333; }
         .btn-save { background-color: #6d4c41; color: white; }
@@ -442,6 +443,7 @@
                 <textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el resumen..."></textarea>
             </div>
             <button type="button" class="main-btn btn-copy" id="btnCopiar" onclick="copiarTexto()">📋 Copiar Texto</button>
+            <button type="button" class="main-btn btn-dl-eval" onclick="descargarEvaluacionJPG()">📥 Descargar Evaluación</button>
             <button type="button" class="main-btn btn-chart" onclick="abrirGrafico()">📊 Ver Gráfico de Cata</button>
         </div>
 
@@ -455,6 +457,10 @@
     <script>
         // --- LOG DE ACTUALIZACIONES HISTÓRICAS RESTAURADAS ---
         const logHistorial = [
+            {
+                fecha: "10-MAY-2026",
+                resumen: "Exportación de Resumen: Se añadió el botón 'Descargar Evaluación' en la sección final. Este genera automáticamente una tarjeta vertical (9:16) en formato JPG con el texto del resumen interpretativo, lista para compartir en historias o guardarla en galería."
+            },
             {
                 fecha: "08-MAY-2026",
                 resumen: "Exportación a IG/Stories: Se programó un motor de renderizado nativo en HTML5 Canvas que genera y exporta todo el Gráfico de Cata en formato JPG (Resolución 720x1280px, Proporción 9:16). Se añadió el botón 'Descargar Imagen' que crea el gráfico al instante."
@@ -798,6 +804,109 @@
                 b.innerHTML = "✅ ¡Copiado!"; b.style.backgroundColor = "#4CAF50";
                 setTimeout(() => { b.innerHTML = "📋 Copiar Texto"; b.style.backgroundColor = "#2196F3"; }, 2000);
             });
+        }
+
+        // --- SISTEMA DE DESCARGA DE EVALUACIÓN (TEXTO A JPG) ---
+        function descargarEvaluacionJPG() {
+            const text = document.getElementById("evaluacion_final").value;
+            if (!text.trim()) {
+                alert("Por favor, genera primero el resumen interpretativo presionando el botón amarillo.");
+                return;
+            }
+
+            const fd = new FormData(document.getElementById('cataForm'));
+            const c = document.createElement('canvas');
+            c.width = 720; c.height = 1280; 
+            const ctx = c.getContext('2d');
+            
+            // Fondo general
+            ctx.fillStyle = '#121212'; 
+            ctx.fillRect(0, 0, 720, 1280);
+            
+            // Decoración de tarjeta central
+            ctx.fillStyle = '#1e1e1e';
+            roundRectSafe(ctx, 40, 140, 640, 1000, 20);
+            ctx.fill();
+            ctx.strokeStyle = '#2c2c2c';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Título
+            ctx.fillStyle = '#ffb74d'; 
+            ctx.font = 'bold 36px sans-serif'; 
+            ctx.textAlign = 'center'; 
+            ctx.textBaseline = 'top';
+            ctx.fillText('📝 RESUMEN DE CATA', 360, 50);
+
+            // Fecha
+            ctx.fillStyle = '#aaaaaa'; 
+            ctx.font = '20px sans-serif';
+            ctx.fillText(fd.get('fecha_hora') || '', 360, 95);
+
+            // Separador superior tarjeta
+            ctx.strokeStyle = '#333333';
+            ctx.beginPath(); ctx.moveTo(80, 210); ctx.lineTo(640, 210); ctx.stroke();
+
+            // Configuración del Texto
+            ctx.fillStyle = '#e0e0e0'; 
+            ctx.font = '24px sans-serif'; 
+            ctx.textAlign = 'left';
+            
+            const maxWidth = 560; // Ancho máximo del texto dentro de la tarjeta
+            const x = 80; // Margen izquierdo
+            let y = 250; // Margen superior dentro de la tarjeta
+            const lineHeight = 38; // Espaciado entre líneas
+
+            // Algoritmo de salto de línea
+            const paragraphs = text.split('\n');
+            
+            for (let i = 0; i < paragraphs.length; i++) {
+                const p = paragraphs[i];
+                if (p.trim() === '') {
+                    y += lineHeight; 
+                    continue;
+                }
+                
+                // Darle un color distinto a la cabecera del resumen (los datos técnicos iniciales)
+                if (i === 0 && p.includes('Ratio')) {
+                    ctx.fillStyle = '#81c784';
+                    ctx.font = 'bold 24px sans-serif';
+                } else {
+                    ctx.fillStyle = '#e0e0e0';
+                    ctx.font = '24px sans-serif';
+                }
+
+                const words = p.split(' ');
+                let line = '';
+                
+                for (let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n] + ' ';
+                    const metrics = ctx.measureText(testLine);
+                    const testWidth = metrics.width;
+                    
+                    if (testWidth > maxWidth && n > 0) {
+                        ctx.fillText(line, x, y);
+                        line = words[n] + ' ';
+                        y += lineHeight;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, x, y);
+                y += lineHeight + 15; // Espacio extra entre párrafos
+            }
+
+            // Firma / Footer
+            ctx.fillStyle = '#666666'; 
+            ctx.font = 'italic 18px sans-serif'; 
+            ctx.textAlign = 'center';
+            ctx.fillText('Generado desde Bitácora de Café', 360, 1180);
+
+            // Exportar
+            const link = document.createElement('a');
+            link.download = `Resumen_${fd.get('codigo') || 'Cafe'}_IG.jpg`;
+            link.href = c.toDataURL('image/jpeg', 0.95);
+            link.click();
         }
 
         function guardarJSON() {

@@ -12,6 +12,7 @@
       background-color: #f7f9fc;
       color: #333;
       height: 100vh;
+      height: 100dvh; /* Soporte para móviles modernos */
       width: 100vw;
       overflow: hidden;
       display: flex;
@@ -47,7 +48,6 @@
       display: flex;
       flex-direction: column;
     }
-    /* ETIQUETAS MÁS GRANDES */
     .input-wrapper label {
       font-size: 13px;
       font-weight: 700;
@@ -58,7 +58,6 @@
       text-overflow: ellipsis;
     }
     
-    /* CAMPOS MÁS GRANDES */
     input {
       width: 100%;
       padding: 5px 8px;
@@ -97,7 +96,7 @@
       color: #111827;
     }
 
-    /* Botones de acción EN UNA SOLA FILA para ahorrar espacio */
+    /* Botones de acción EN UNA SOLA FILA */
     .button-group {
       display: grid;
       grid-template-columns: 2fr 1fr 1fr;
@@ -158,21 +157,25 @@
       transition: width 0.6s;
     }
 
-    /* Receta Condensada para ganar espacio vertical */
+    /* Receta Condensada y Uniforme */
     #receta-card {
       width: 100%;
       max-width: 340px;
       margin: 4px auto 0 auto;
       background-color: #ffffff;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 6px 10px; /* Reducido levemente para compensar la letra grande */
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      font-size: 12px;
+      font-size: 13px; /* Igual a los labels de la cabecera */
       color: #4b5563;
       line-height: 1.4;
       display: none; 
+      text-align: left;
     }
-    #receta-card b { color: #1f2937; }
+    #receta-card b { 
+      color: #1f2937; 
+      font-size: 14px; /* Igual a los valores de la cabecera */
+    }
 
     /* Carrusel */
     #carousel-wrapper {
@@ -181,6 +184,7 @@
       flex-direction: column;
       justify-content: center;
       overflow: hidden;
+      padding-bottom: 10px;
     }
     #carousel {
       display: flex;
@@ -193,29 +197,26 @@
       scroll-behavior: smooth;
     }
     #carousel::-webkit-scrollbar { display: none; }
+    
+    /* TARJETAS */
     .card {
       scroll-snap-align: center;
       flex: 0 0 82vw;
       margin: 0 9vw;
-      height: 90%;
+      height: 76%; 
       border-radius: 18px;
-      padding: 15px;
+      padding: 12px 15px; 
       box-shadow: 0 6px 15px rgba(0,0,0,0.08);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
-    .card-header h2 { font-size: 18px; line-height: 1.2; margin-bottom: 4px;}
-    .temp-badge { font-size: 13px; font-weight: 600; color: #374151; background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 8px; display: inline-block;}
-    .day-text { font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 2px;}
+    .card-header h2 { font-size: 17px; line-height: 1.2; margin-bottom: 4px;}
+    .temp-badge { font-size: 12px; font-weight: 600; color: #374151; background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 8px; display: inline-block;}
+    .day-text { font-size: 24px; font-weight: 800; color: #111827; margin-bottom: 2px;}
     .duration-text { font-size: 13px; color: #4b5563; margin-bottom: 8px;}
     .progress-container { width: 100%; background: rgba(255,255,255,0.5); height: 10px; border-radius: 5px; overflow: hidden; }
     .progress-fill { height: 100%; background-color: #34d399; }
-
-    /* Navegación */
-    .controls { display: flex; justify-content: center; gap: 40px; padding-bottom: 12px; flex-shrink: 0; }
-    .nav-btn { background: #fff; border: none; border-radius: 50%; width: 44px; height: 44px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); font-size: 20px; color: #374151; cursor: pointer; display: flex; align-items: center; justify-content: center;}
-    .nav-btn:active { background-color: #f3f4f6; transform: scale(0.95); }
   </style>
 </head>
 <body>
@@ -283,16 +284,12 @@
       <div class="global-progress-bar"><div id="global-progress-fill" style="width: 0%;"></div></div>
     </div>
     <div id="receta-card">
-      🌾 <b>Receta:</b> 3600g Pilsner (92%) • 300g Caramel (8%) • 10g Simcoe (25m) • 13g Cascade (0m)
+      🌾 <b>Granos (4kg):</b> 2.8kg Pilsen (70%) • 900g Pale Ale (22.5%) • 300g Cara 20 (7.5%)<br>
+      🌿 <b>Lúpulos:</b> 15g Simcoe (60') • 10g Simcoe (20') • 35g Cascade (80°C)
     </div>
   </section>
 
   <div id="carousel-wrapper"><div id="carousel"></div></div>
-
-  <div class="controls">
-    <button class="nav-btn" onclick="moverCarrusel(-1)">&#8592;</button>
-    <button class="nav-btn" onclick="moverCarrusel(1)">&#8594;</button>
-  </div>
 
   <script>
     const etapasBase = [
@@ -358,7 +355,7 @@
       etapasCompletas = JSON.parse(JSON.stringify(etapasBase));
       etapasCompletas[4].dias = dCold;
       etapasCompletas.push({ nombre: "Maduración en botella", dias: dMad, temp: "11–12 °C", color: "#bfdbfe" });
-      etapasCompletas.push({ nombre: "Acond. en frío", dias: dAcond, temp: "0–2 °C", color: "#60a5fa" });
+      etapasCompletas.push({ nombre: "Acond. en frío", dias: dAcond, temp: "5–6 °C", color: "#60a5fa" });
 
       const totalDias = etapasCompletas.reduce((a, b) => a + b.dias, 0);
       const hoy = new Date(); hoy.setHours(0,0,0,0);
@@ -400,14 +397,9 @@
       
       setTimeout(() => {
         if(carousel.children[indexActivo]) {
-          carousel.children[indexActivo].scrollIntoView({ behavior: 'smooth', inline: 'center' });
+          carousel.children[indexActivo].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
       }, 200);
-    }
-
-    function moverCarrusel(d) {
-      const c = document.getElementById('carousel');
-      c.scrollBy({ left: d * window.innerWidth * 0.8, behavior: 'smooth' });
     }
 
     function exportarJSON() {

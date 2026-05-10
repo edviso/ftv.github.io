@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Control de Cerveza Artesanal</title>
+  <style>
+    /* Reseteo y configuración de pantalla completa sin scroll vertical */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Sección superior (Inputs y Título) */
+    header {
+      background-color: #ffffff;
+      padding: 6px 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    .app-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1f2937;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .full-width { grid-column: span 3; }
+    .span-2 { grid-column: span 2; }
+    
+    .input-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+    /* ETIQUETAS MÁS GRANDES */
+    .input-wrapper label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4b5563;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* CAMPOS MÁS GRANDES */
+    input {
+      width: 100%;
+      padding: 5px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 15px;
+      background-color: #f9fafb;
+      color: #111827;
+      height: 32px;
+    }
+    input:focus { outline: none; border-color: #60a5fa; background-color: #fff; }
+    
+    /* Controles +/- compactos pero legibles */
+    .counter-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #f9fafb;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      height: 32px;
+    }
+    .counter-btn {
+      background-color: #e2e8f0;
+      border: none;
+      width: 32px;
+      height: 100%;
+      font-size: 20px;
+      font-weight: bold;
+      color: #475569;
+      cursor: pointer;
+    }
+    .counter-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    /* Botones de acción EN UNA SOLA FILA para ahorrar espacio */
+    .button-group {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .btn-main {
+      padding: 8px;
+      background-color: #4ade80;
+      color: #14532d;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(74, 222, 128, 0.3);
+    }
+    .btn-sec {
+      background-color: #e2e8f0;
+      color: #334155;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 4px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Indicadores globales */
+    #status-section {
+      padding: 6px 12px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    #status-title { font-size: 16px; font-weight: 800; color: #1f2937; margin-bottom: 2px;}
+    #status-subtitle { font-size: 13px; color: #6b7280; }
+
+    /* Progreso global */
+    #global-progress-wrapper {
+      width: 100%;
+      max-width: 340px;
+      margin: 6px auto;
+      display: none;
+    }
+    .global-progress-bar {
+      width: 100%;
+      background: #e5e7eb;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    #global-progress-fill {
+      height: 100%;
+      background-color: #3b82f6;
+      transition: width 0.6s;
+    }
+
+    /* Receta Condensada para ganar espacio vertical */
+    #receta-card {
+      width: 100%;
+      max-width: 340px;
+      margin: 4px auto 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 8px 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      font-size: 12px;
+      color: #4b5563;
+      line-height: 1.4;
+      display: none; 
+    }
+    #receta-card b { color: #1f2937; }
+
+    /* Carrusel */
+    #carousel-wrapper {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+    #carousel {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      scrollbar-width: none;
+      scroll-behavior: smooth;
+    }
+    #carousel::-webkit-scrollbar { display: none; }
+    .card {
+      scroll-snap-align: center;
+      flex: 0 0 82vw;
+      margin: 0 9vw;
+      height: 90%;
+      border-radius: 18px;
+      padding: 15px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-header h2 { font-size: 18px; line-height: 1.2; margin-bottom: 4px;}
+    .temp-badge { font-size: 13px; font-weight: 600; color: #374151; background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 8px; display: inline-block;}
+    .day-text { font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 2px;}
+    .duration-text { font-size: 13px; color: #4b5563; margin-bottom: 8px;}
+    .progress-container { width: 100%; background: rgba(255,255,255,0.5); height: 10px; border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; background-color: #34d399; }
+
+    /* Navegación */
+    .controls { display: flex; justify-content: center; gap: 40px; padding-bottom: 12px; flex-shrink: 0; }
+    .nav-btn { background: #fff; border: none; border-radius: 50%; width: 44px; height: 44px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); font-size: 20px; color: #374151; cursor: pointer; display: flex; align-items: center; justify-content: center;}
+    .nav-btn:active { background-color: #f3f4f6; transform: scale(0.95); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 class="app-title">Control de Cerveza Artesanal</h1>
+    <div class="input-grid">
+      <div class="input-wrapper full-width">
+        <label>Nombre de la cerveza</label>
+        <input type="text" id="nombre" placeholder="Pilsen Ale" autocomplete="off">
+      </div>
+      <div class="input-wrapper">
+        <label>Lote</label>
+        <input type="text" id="lote" placeholder="55">
+      </div>
+      <div class="input-wrapper span-2">
+        <label>Fecha inicio</label>
+        <input type="date" id="fecha">
+      </div>
+      <div class="input-wrapper">
+        <label>Color EBC</label>
+        <input type="number" id="ebc" step="0.1" placeholder="8.9">
+      </div>
+      <div class="input-wrapper">
+        <label>Densidad</label>
+        <input type="number" id="fg" step="0.001" placeholder="1.010">
+      </div>
+      <div class="input-wrapper">
+        <label>C. Crash</label>
+        <div class="counter-container">
+          <button class="counter-btn" onclick="cambiarDias('cold', -1)">-</button>
+          <span class="counter-val" id="val-cold">4</span>
+          <button class="counter-btn" onclick="cambiarDias('cold', 1)">+</button>
+        </div>
+      </div>
+      <div class="input-wrapper">
+        <label>Maduración</label>
+        <div class="counter-container">
+          <button class="counter-btn" onclick="cambiarDias('maduracion', -1)">-</button>
+          <span class="counter-val" id="val-maduracion">14</span>
+          <button class="counter-btn" onclick="cambiarDias('maduracion', 1)">+</button>
+        </div>
+      </div>
+      <div class="input-wrapper span-2">
+        <label>Acond. Frío (días)</label>
+        <div class="counter-container">
+          <button class="counter-btn" onclick="cambiarDias('acond', -1)">-</button>
+          <span class="counter-val" id="val-acond">14</span>
+          <button class="counter-btn" onclick="cambiarDias('acond', 1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="button-group">
+      <button class="btn-main" onclick="guardarLote()">Guardar / Actualizar</button>
+      <button class="btn-sec" onclick="exportarJSON()">⬇️ Exportar</button>
+      <button class="btn-sec" onclick="document.getElementById('fileInput').click()">⬆️ Importar</button>
+      <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="importarJSON(event)">
+    </div>
+  </header>
+
+  <section id="status-section">
+    <div id="status-title">Esperando datos...</div>
+    <div id="status-subtitle">Día -- de --</div>
+    <div id="global-progress-wrapper">
+      <div class="global-progress-bar"><div id="global-progress-fill" style="width: 0%;"></div></div>
+    </div>
+    <div id="receta-card">
+      🌾 <b>Receta:</b> 3600g Pilsner (92%) • 300g Caramel (8%) • 10g Simcoe (25m) • 13g Cascade (0m)
+    </div>
+  </section>
+
+  <div id="carousel-wrapper"><div id="carousel"></div></div>
+
+  <div class="controls">
+    <button class="nav-btn" onclick="moverCarrusel(-1)">&#8592;</button>
+    <button class="nav-btn" onclick="moverCarrusel(1)">&#8594;</button>
+  </div>
+
+  <script>
+    const etapasBase = [
+      { nombre: "Arranque limpio", dias: 2, temp: "20–21 °C", color: "#fef9c3" }, 
+      { nombre: "Fermentación vigorosa", dias: 4, temp: "20–21 °C", color: "#fecdd3" }, 
+      { nombre: "Final primaria + descanso", dias: 3, temp: "21–22 °C", color: "#fed7aa" }, 
+      { nombre: "Maduración cálida", dias: 4, temp: "20–21 °C", color: "#f3f4f6" }, 
+      { nombre: "Cold crash", dias: 4, temp: "4–5 °C", color: "#bae6fd" }, 
+      { nombre: "Embotellado + priming", dias: 1, temp: "20–21 °C", color: "#e9d5ff" }, 
+      { nombre: "Carbonatación en botella", dias: 14, temp: "21–22 °C", color: "#bbf7d0" }
+    ];
+
+    let etapasCompletas = [];
+    let dCold = 4, dMad = 14, dAcond = 14;
+
+    window.onload = cargarDatos;
+
+    function cambiarDias(tipo, delta) {
+      if (tipo === 'cold') dCold = Math.max(0, dCold + delta);
+      else if (tipo === 'maduracion') dMad = Math.max(0, dMad + delta);
+      else dAcond = Math.max(0, dAcond + delta);
+      actualizarCounters();
+    }
+
+    function actualizarCounters() {
+      document.getElementById('val-cold').textContent = dCold;
+      document.getElementById('val-maduracion').textContent = dMad;
+      document.getElementById('val-acond').textContent = dAcond;
+    }
+
+    function guardarLote() {
+      const lote = {
+        nombre: document.getElementById('nombre').value,
+        numero: document.getElementById('lote').value,
+        fecha: document.getElementById('fecha').value,
+        ebc: document.getElementById('ebc').value,
+        fg: document.getElementById('fg').value,
+        cold: dCold, mad: dMad, acond: dAcond
+      };
+      if (!lote.nombre || !lote.fecha) return alert("Completa nombre y fecha");
+      localStorage.setItem('lote_activo', JSON.stringify(lote));
+      procesarLote(lote);
+    }
+
+    function cargarDatos() {
+      const data = localStorage.getItem('lote_activo');
+      if (data) {
+        const lote = JSON.parse(data);
+        document.getElementById('nombre').value = lote.nombre;
+        document.getElementById('lote').value = lote.numero;
+        document.getElementById('fecha').value = lote.fecha;
+        document.getElementById('ebc').value = lote.ebc;
+        document.getElementById('fg').value = lote.fg;
+        dCold = lote.cold !== undefined ? lote.cold : 4; 
+        dMad = lote.mad !== undefined ? lote.mad : 14; 
+        dAcond = lote.acond !== undefined ? lote.acond : 14;
+        actualizarCounters();
+        procesarLote(lote);
+      }
+    }
+
+    function procesarLote(lote) {
+      etapasCompletas = JSON.parse(JSON.stringify(etapasBase));
+      etapasCompletas[4].dias = dCold;
+      etapasCompletas.push({ nombre: "Maduración en botella", dias: dMad, temp: "11–12 °C", color: "#bfdbfe" });
+      etapasCompletas.push({ nombre: "Acond. en frío", dias: dAcond, temp: "0–2 °C", color: "#60a5fa" });
+
+      const totalDias = etapasCompletas.reduce((a, b) => a + b.dias, 0);
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const inicio = new Date(lote.fecha + 'T00:00:00'); inicio.setHours(0,0,0,0);
+      const diaActual = Math.floor((hoy - inicio) / 86400000) + 1;
+      
+      renderizar(diaActual > 0 ? diaActual : 1, totalDias, lote);
+    }
+
+    function renderizar(diaActual, total, lote) {
+      const carousel = document.getElementById('carousel');
+      carousel.innerHTML = '';
+      let acum = 0, indexActivo = 0;
+
+      etapasCompletas.forEach((e, i) => {
+        let inicio = acum + 1, fin = acum + e.dias;
+        let diaE = 0;
+        if (diaActual >= inicio && diaActual <= fin) { indexActivo = i; diaE = diaActual - inicio + 1; }
+        else if (diaActual > fin) diaE = e.dias;
+        acum += e.dias;
+
+        const perc = Math.round((diaE / e.dias) * 100);
+        carousel.innerHTML += `
+          <div class="card" style="background:${e.color}">
+            <div class="card-header"><h2>${i+1}. ${e.nombre}</h2><span class="temp-badge">🌡️ ${e.temp}</span></div>
+            <div class="card-body">
+              <div class="day-text">Día ${diaE} de ${e.dias}</div>
+              <div class="duration-text">Fase de ${e.dias} días</div>
+              <div class="progress-container"><div class="progress-fill" style="width:${perc}%"></div></div>
+            </div>
+          </div>`;
+      });
+
+      document.getElementById('status-title').textContent = `${lote.nombre} (Lote ${lote.numero})`;
+      document.getElementById('status-subtitle').textContent = `Día ${diaActual} de ${total} | ${etapasCompletas[indexActivo].nombre}`;
+      document.getElementById('global-progress-wrapper').style.display = 'block';
+      document.getElementById('receta-card').style.display = 'block';
+      document.getElementById('global-progress-fill').style.width = `${Math.min(100, Math.round((diaActual/total)*100))}%`;
+      
+      setTimeout(() => {
+        if(carousel.children[indexActivo]) {
+          carousel.children[indexActivo].scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }
+      }, 200);
+    }
+
+    function moverCarrusel(d) {
+      const c = document.getElementById('carousel');
+      c.scrollBy({ left: d * window.innerWidth * 0.8, behavior: 'smooth' });
+    }
+
+    function exportarJSON() {
+      const data = localStorage.getItem('lote_activo');
+      if (!data) return;
+      const blob = new Blob([data], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Lote_${JSON.parse(data).numero}_${JSON.parse(data).nombre.replace(/\s+/g, '_')}.json`;
+      a.click();
+    }
+
+    function importarJSON(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        try {
+          const lote = JSON.parse(ev.target.result);
+          if (lote.nombre) {
+            localStorage.setItem('lote_activo', JSON.stringify(lote));
+            cargarDatos();
+          }
+        } catch (err) { alert("Error al importar"); }
+        event.target.value = '';
+      };
+      r.readAsText(f);
+    }
+  </script>
+</body>
+</html>

@@ -176,9 +176,9 @@
         .val-3 { color: #81c784; } .val-2 { color: #ffb74d; } .val-1 { color: #e57373; } .val-0 { color: #666; font-size: 0.7rem; }
         
         .details-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; color: #aaa;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.8rem; color: #aaa;
         }
-        .details-grid div strong { color: #e0e0e0; font-weight: normal;}
+        .details-grid div strong { color: #e0e0e0; font-weight: normal; display:block;}
         .details-grid div span { color: #ffb74d; display: block; margin-top: 2px;}
         .obs-box { font-size: 0.85rem; color: #ccc; line-height: 1.4; }
 
@@ -502,6 +502,14 @@
         // --- LOG DE ACTUALIZACIONES HISTÓRICAS RESTAURADAS ---
         const logHistorial = [
             {
+                fecha: "11-MAY-2026",
+                resumen: "Reestructuración Visual: Se rediseñó la sección 'Detalles del Café' del Gráfico de Cata para alinearse perfectamente con la nueva referencia visual a dos columnas precisas. Se agregaron los corchetes [] solicitados, se incorporó la línea de Velocidades (Vel) y se ajustó el espacio nativo en Canvas para evitar sobreescritura."
+            },
+            {
+                fecha: "11-MAY-2026",
+                resumen: "Corrección Cargador JSON: Se reprogramó la función cargarJSON() para añadir retrocompatibilidad con versiones antiguas del archivo, asegurando que extraiga los datos así no tengan la estructura de Perfil de Tueste nueva. También se corrigió un bug nativo del navegador que impedía cargar el mismo archivo dos veces seguidas."
+            },
+            {
                 fecha: "10-MAY-2026",
                 resumen: "Perfil de Tueste: Se agregaron campos detallados en los Datos del Café para registrar el % de Merma, Temperatura, Tiempo Total y las Fases de Tueste (Secado, Maillard, Desarrollo) con sus respectivos tiempos y velocidades por defecto. Se incluyeron en la exportación/importación JSON."
             },
@@ -611,7 +619,6 @@
             });
         }
 
-
         // --- DICCIONARIO DEL GLOSARIO ---
         const conceptosGlosario = {
             "Fragancia (en seco)": { "General": "Olor de los granos de café recién molidos.", "Alta": "Muy intensa y compleja.", "Media": "Intensidad moderada.", "Baja": "Aroma débil o rancio." },
@@ -619,7 +626,7 @@
             "Sabor": { "General": "Combinación principal de lengua y nariz.", "Alta": "Multidimensional y rico.", "Media": "Sabor sólido y predecible.", "Baja": "Sabor simple." },
             "Acidez": { "General": "Vivacidad del café.", "Alta": "Cítrica, brillante.", "Media": "Suave y balanceada.", "Baja": "Plana." },
             "Dulzor": { "General": "Intensidad de azúcares.", "Alta": "Melosa o almibarada.", "Media": "Dulzor moderado.", "Baja": "Sensación seca." },
-            "Amargor": { "General": "Sensación punzante.", "Alta": "Muy intenso.", "Media": "Amargor limpio.", "Baja": "Casi imperceptible." },
+            "Amargor": { "General": "Sensación punzante.", "Alta": "Muy intense.", "Media": "Amargor limpio.", "Baja": "Casi imperceptible." },
             "Cuerpo": { "General": "Sensación táctil y peso.", "Alta": "Pesada, cremosa.", "Media": "Textura sedosa.", "Baja": "Acuosa, ligera." },
             "Balance": { "General": "Armonía entre atributos.", "Alta": "Perfecta armonía.", "Media": "Buen equilibrio.", "Baja": "Café descompensado." },
             "Retrogusto": { "General": "Experiencia que permanece.", "Alta": "Persistencia larga.", "Media": "Persistencia moderada.", "Baja": "Corta o fugaz." },
@@ -996,42 +1003,62 @@
             reader.onload = (evt) => {
                 try {
                     const d = JSON.parse(evt.target.result);
-                    document.getElementById('variedad').value = d.datos_cafe?.variedad || "";
-                    document.getElementById('codigo').value = d.datos_cafe?.codigo || "";
-                    document.getElementById('fecha_hora').value = d.datos_cafe?.fecha_hora || d.registro || "";
                     
-                    // Cargar nuevos campos de tueste
-                    document.getElementById('merma').value = d.datos_cafe?.merma || "13.60";
-                    document.getElementById('temp_tueste').value = d.datos_cafe?.temp_tueste || "224";
-                    document.getElementById('tiempo_tueste').value = d.datos_cafe?.tiempo_tueste || "11:00";
-                    document.getElementById('secado_tiempo').value = d.datos_cafe?.fases?.secado?.tiempo || "03:30";
-                    document.getElementById('secado_vel').value = d.datos_cafe?.fases?.secado?.vel || "V3";
-                    document.getElementById('maillard_tiempo').value = d.datos_cafe?.fases?.maillard?.tiempo || "03:45";
-                    document.getElementById('maillard_vel').value = d.datos_cafe?.fases?.maillard?.vel || "V2";
-                    document.getElementById('desarrollo_tiempo').value = d.datos_cafe?.fases?.desarrollo?.tiempo || "03:45";
-                    document.getElementById('desarrollo_vel').value = d.datos_cafe?.fases?.desarrollo?.vel || "V2";
+                    document.getElementById('cataForm').reset();
+                    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
 
-                    setSelectValue('metodo', d.extraccion?.metodo); actualizarDispositivos();
-                    setSelectValue('dispositivo', d.extraccion?.dispositivo); actualizarFiltros();
-                    setSelectValue('filtro', d.extraccion?.filtro);
-                    document.getElementById('clics').value = d.extraccion?.clics || 40;
-                    document.getElementById('gramos_cafe').value = d.extraccion?.gramos || "";
-                    document.getElementById('agua_total').value = d.extraccion?.agua_total || "";
-                    document.getElementById('usa_ducha').checked = !!d.extraccion?.ducha;
-                    document.getElementById('bola_fria').checked = !!d.extraccion?.bola_fria;
-                    document.getElementById('hielo_ml').value = d.extraccion?.hielo_jarra || 0;
-                    document.getElementById('un_solo_vertido').checked = !!d.extraccion?.un_solo_vertido;
-                    document.getElementById('blooming').value = d.extraccion?.blooming || 45;
-                    document.getElementById('v1').value = d.extraccion?.v1 || 120;
-                    document.getElementById('v2').value = d.extraccion?.v2 || 180;
-                    document.getElementById('v3').value = d.extraccion?.v3 || 240;
-                    paramSensoriales.forEach((it, i) => { const v = d.sensorial?.[it]; if(v) { const r = document.querySelector(`input[name="sens_${i}"][value="${v}"]`); if(r) r.checked = true; } });
-                    paramNotas.forEach((it, i) => { const v = d.notas?.[it]; if(v) { const r = document.querySelector(`input[name="nota_${i}"][value="${v}"]`); if(r) r.checked = true; } });
+                    const dc = d.datos_cafe || d;
+                    document.getElementById('variedad').value = dc.variedad || d.variedad || "";
+                    document.getElementById('codigo').value = dc.codigo || d.codigo || "";
+                    document.getElementById('fecha_hora').value = dc.fecha_hora || d.fecha_hora || d.registro || "";
+                    
+                    document.getElementById('merma').value = dc.merma || "13.60";
+                    document.getElementById('temp_tueste').value = dc.temp_tueste || "224";
+                    document.getElementById('tiempo_tueste').value = dc.tiempo_tueste || "11:00";
+                    document.getElementById('secado_tiempo').value = dc.fases?.secado?.tiempo || "03:30";
+                    document.getElementById('secado_vel').value = dc.fases?.secado?.vel || "V3";
+                    document.getElementById('maillard_tiempo').value = dc.fases?.maillard?.tiempo || "03:45";
+                    document.getElementById('maillard_vel').value = dc.fases?.maillard?.vel || "V2";
+                    document.getElementById('desarrollo_tiempo').value = dc.fases?.desarrollo?.tiempo || "03:45";
+                    document.getElementById('desarrollo_vel').value = dc.fases?.desarrollo?.vel || "V2";
+
+                    const ext = d.extraccion || d;
+                    setSelectValue('metodo', ext.metodo); actualizarDispositivos();
+                    setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
+                    setSelectValue('filtro', ext.filtro);
+                    
+                    document.getElementById('clics').value = ext.clics || 40;
+                    document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || "";
+                    document.getElementById('agua_total').value = ext.agua_total || ext.agua_ml || "";
+                    document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha;
+                    document.getElementById('bola_fria').checked = !!ext.bola_fria;
+                    document.getElementById('hielo_ml').value = ext.hielo_jarra || ext.hielo_ml || 0;
+                    document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
+                    document.getElementById('blooming').value = ext.blooming || 45;
+                    document.getElementById('v1').value = ext.v1 || 120;
+                    document.getElementById('v2').value = ext.v2 || 180;
+                    document.getElementById('v3').value = ext.v3 || 240;
+
+                    const sens = d.sensorial || d;
+                    paramSensoriales.forEach((it, i) => { const v = sens[it]; if(v) { const r = document.querySelector(`input[name="sens_${i}"][value="${v}"]`); if(r) r.checked = true; } });
+                    
+                    const nots = d.notas || d;
+                    paramNotas.forEach((it, i) => { const v = nots[it]; if(v) { const r = document.querySelector(`input[name="nota_${i}"][value="${v}"]`); if(r) r.checked = true; } });
+                    
                     if(d.global) { const r = document.querySelector(`input[name="global_eval"][value="${d.global}"]`); if(r) r.checked = true; }
+                    
                     document.getElementById('observaciones').value = d.observaciones || "";
                     document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
-                    toggleVertidos(); analizarCodigo(); alert("Cata cargada exitosamente.");
-                } catch(err) { console.error(err); }
+                    
+                    toggleVertidos(); 
+                    analizarCodigo(); 
+                    alert("Cata cargada exitosamente.");
+                } catch(err) { 
+                    console.error(err); 
+                    alert("Error al cargar JSON. Verifica que sea un archivo de cata válido.");
+                }
+                
+                e.target.value = ''; 
             };
             reader.readAsText(file);
         }
@@ -1078,18 +1105,37 @@
             let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total'));
             let ratioTxt = (!isNaN(g) && g > 0 && !isNaN(ml) && ml > 0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
             let v_unSolo = fd.get('un_solo_vertido') === 'on';
-            let extTxt = v_unSolo ? `1 vertido | Bloom ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Bloom ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` },
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` },
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+            ];
+            
+            let velSec = (fd.get('secado_vel')||'').toLowerCase();
+            let velMai = (fd.get('maillard_vel')||'').toLowerCase();
+            let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+
+            const colDer = [
+                { l: 'Extracción:', v: extTxt },
+                { l: 'Ratio:', v: `[${ratioTxt}]` },
+                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` },
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` },
+                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` },
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+            ];
+
+            let htmlIzq = colIzq.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('');
+            let htmlDer = colDer.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('');
 
             document.getElementById('chartDetails').innerHTML = `
-                <div><strong>Variedad</strong><span>${fd.get('variedad') || '-'}</span></div>
-                <div><strong>Ratio</strong><span>${ratioTxt}</span></div>
-                <div><strong>Código del tueste</strong><span>${fd.get('codigo') || '-'}</span></div>
-                <div><strong>Filtro</strong><span>${fd.get('filtro') || '-'}</span></div>
-                <div><strong>Días post-tueste</strong><span>${fd.get('dias_tueste') || '-'} días</span></div>
-                <div><strong>Extracción</strong><span>${extTxt}</span></div>
-                <div><strong>Dispositivo</strong><span>${fd.get('dispositivo') || '-'}</span></div>
-                <div><strong>Agua total</strong><span>${fd.get('agua_total') || '-'} ml</span></div>
+                <div style="display:flex; flex-direction:column;">${htmlIzq}</div>
+                <div style="display:flex; flex-direction:column;">${htmlDer}</div>
             `;
+            
             document.getElementById('chartObs').innerText = fd.get('observaciones') || 'Sin observaciones registradas.';
             document.getElementById('chartModal').style.display = 'flex';
         }
@@ -1200,28 +1246,55 @@
                 ctx.font = 'bold 18px sans-serif'; ctx.fillText(valNum === 0 ? "N/E" : valNum, 540, y);
             });
             
-            // Detalles
-            ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 920);
+            // Detalles - Reestructurado a dos columnas visuales
+            ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; 
+            ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); // Ajuste fino de Y
+            
             let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total'));
             let ratioTxt = (!isNaN(g) && g > 0 && !isNaN(ml) && ml > 0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
             let v_unSolo = fd.get('un_solo_vertido') === 'on';
-            let extTxt = v_unSolo ? `1 vertido | Bloom ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Bloom ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             
-            const details = [
-                { l: 'Variedad:', v: fd.get('variedad') || '-' }, { l: 'Ratio:', v: ratioTxt },
-                { l: 'Código:', v: fd.get('codigo') || '-' }, { l: 'Filtro:', v: fd.get('filtro') || '-' },
-                { l: 'Post-tueste:', v: (fd.get('dias_tueste') || '-') + ' días' }, { l: 'Extracción:', v: extTxt },
-                { l: 'Dispositivo:', v: fd.get('dispositivo') || '-' }, { l: 'Agua total:', v: (fd.get('agua_total') || '-') + ' ml' }
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` },
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` },
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+            ];
+            
+            let velSec = (fd.get('secado_vel')||'').toLowerCase();
+            let velMai = (fd.get('maillard_vel')||'').toLowerCase();
+            let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+
+            const colDer = [
+                { l: 'Extracción:', v: extTxt },
+                { l: 'Ratio:', v: `[${ratioTxt}]` },
+                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` },
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` },
+                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` },
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
             ];
 
             ctx.textAlign = 'left';
-            details.forEach((d, i) => {
-                let col = i % 2; let row = Math.floor(i / 2);
-                let x = 50 + (col * 330); let y = 960 + (row * 50);
-                ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, x, y);
+            let startY = 945; // Punto de inicio para las listas
+
+            // Dibujar Columna Izquierda
+            colIzq.forEach((d, i) => {
+                let y = startY + (i * 38);
+                ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y);
                 ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif';
-                let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...';
-                ctx.fillText(val, x, y + 22);
+                let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]';
+                ctx.fillText(val, 50, y + 18);
+            });
+
+            // Dibujar Columna Derecha
+            colDer.forEach((d, i) => {
+                let y = startY + (i * 38);
+                ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y);
+                ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif';
+                let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]';
+                ctx.fillText(val, 380, y + 18);
             });
 
             // Observaciones

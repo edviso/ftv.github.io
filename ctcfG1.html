@@ -208,7 +208,7 @@
         button.main-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
         .btn-gen { background-color: #ff9800; color: white; margin-bottom: 15px; width: 100%; }
         .btn-copy { background-color: #2196F3; color: white; margin-top: 10px; width: 100%; }
-        .btn-dl-eval { background-color: #4db6ac; color: #121212; margin-top: 10px; width: 100%; } /* Nuevo botón descargar evaluación */
+        .btn-dl-eval { background-color: #4db6ac; color: #121212; margin-top: 10px; width: 100%; } 
         .btn-chart { background-color: #333; color: #ff9800; margin-top: 10px; width: 100%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; gap: 8px;}
         .btn-chart:hover { background-color: #ff9800; color: #333; }
         .btn-save { background-color: #6d4c41; color: white; }
@@ -301,6 +301,50 @@
                 <div class="input-group">
                     <label>Días desde el tueste:</label>
                     <input type="text" id="dias_tueste" name="dias_tueste" readonly placeholder="Auto-calculado">
+                </div>
+            </div>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+            <div style="font-size: 0.95rem; font-weight: bold; color: #4a3b32; margin-bottom: 12px; display: flex; align-items: center; gap: 5px;">🔥 Perfil de Tueste</div>
+            
+            <div class="row">
+                <div class="input-group">
+                    <label>% Merma:</label>
+                    <input type="number" id="merma" name="merma" step="0.01" value="13.60">
+                </div>
+                <div class="input-group">
+                    <label>Temp (°C):</label>
+                    <input type="number" id="temp_tueste" name="temp_tueste" value="224">
+                </div>
+                <div class="input-group">
+                    <label>T. Total:</label>
+                    <input type="text" id="tiempo_tueste" name="tiempo_tueste" value="11:00">
+                </div>
+            </div>
+
+            <div style="background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0;">
+                <div style="display: flex; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 8px; text-align: center;">
+                    <div style="flex: 1.2; text-align: left;">Fase</div>
+                    <div style="flex: 1;">Tiempo</div>
+                    <div style="flex: 1;">Veloc.</div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Secado:</div>
+                    <div style="flex: 1;"><input type="text" id="secado_tiempo" name="secado_tiempo" value="03:30" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    <div style="flex: 1;"><input type="text" id="secado_vel" name="secado_vel" value="V3" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Maillard:</div>
+                    <div style="flex: 1;"><input type="text" id="maillard_tiempo" name="maillard_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    <div style="flex: 1;"><input type="text" id="maillard_vel" name="maillard_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Desarrollo:</div>
+                    <div style="flex: 1;"><input type="text" id="desarrollo_tiempo" name="desarrollo_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    <div style="flex: 1;"><input type="text" id="desarrollo_vel" name="desarrollo_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
                 </div>
             </div>
         </div>
@@ -457,6 +501,10 @@
     <script>
         // --- LOG DE ACTUALIZACIONES HISTÓRICAS RESTAURADAS ---
         const logHistorial = [
+            {
+                fecha: "10-MAY-2026",
+                resumen: "Perfil de Tueste: Se agregaron campos detallados en los Datos del Café para registrar el % de Merma, Temperatura, Tiempo Total y las Fases de Tueste (Secado, Maillard, Desarrollo) con sus respectivos tiempos y velocidades por defecto. Se incluyeron en la exportación/importación JSON."
+            },
             {
                 fecha: "10-MAY-2026",
                 resumen: "Exportación de Resumen: Se añadió el botón 'Descargar Evaluación' en la sección final. Este genera automáticamente una tarjeta vertical (9:16) en formato JPG con el texto del resumen interpretativo, lista para compartir en historias o guardarla en galería."
@@ -913,7 +961,20 @@
             const fd = new FormData(document.getElementById('cataForm'));
             const data = { 
                 registro: document.getElementById('fecha_hora').value, 
-                datos_cafe: { variedad: fd.get('variedad'), codigo: fd.get('codigo'), fecha_hora: fd.get('fecha_hora'), dias_tueste: fd.get('dias_tueste') }, 
+                datos_cafe: { 
+                    variedad: fd.get('variedad'), 
+                    codigo: fd.get('codigo'), 
+                    fecha_hora: fd.get('fecha_hora'), 
+                    dias_tueste: fd.get('dias_tueste'),
+                    merma: fd.get('merma'),
+                    temp_tueste: fd.get('temp_tueste'),
+                    tiempo_tueste: fd.get('tiempo_tueste'),
+                    fases: {
+                        secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') },
+                        maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') },
+                        desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') }
+                    }
+                }, 
                 extraccion: { metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3') }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final') 
             };
@@ -938,6 +999,18 @@
                     document.getElementById('variedad').value = d.datos_cafe?.variedad || "";
                     document.getElementById('codigo').value = d.datos_cafe?.codigo || "";
                     document.getElementById('fecha_hora').value = d.datos_cafe?.fecha_hora || d.registro || "";
+                    
+                    // Cargar nuevos campos de tueste
+                    document.getElementById('merma').value = d.datos_cafe?.merma || "13.60";
+                    document.getElementById('temp_tueste').value = d.datos_cafe?.temp_tueste || "224";
+                    document.getElementById('tiempo_tueste').value = d.datos_cafe?.tiempo_tueste || "11:00";
+                    document.getElementById('secado_tiempo').value = d.datos_cafe?.fases?.secado?.tiempo || "03:30";
+                    document.getElementById('secado_vel').value = d.datos_cafe?.fases?.secado?.vel || "V3";
+                    document.getElementById('maillard_tiempo').value = d.datos_cafe?.fases?.maillard?.tiempo || "03:45";
+                    document.getElementById('maillard_vel').value = d.datos_cafe?.fases?.maillard?.vel || "V2";
+                    document.getElementById('desarrollo_tiempo').value = d.datos_cafe?.fases?.desarrollo?.tiempo || "03:45";
+                    document.getElementById('desarrollo_vel').value = d.datos_cafe?.fases?.desarrollo?.vel || "V2";
+
                     setSelectValue('metodo', d.extraccion?.metodo); actualizarDispositivos();
                     setSelectValue('dispositivo', d.extraccion?.dispositivo); actualizarFiltros();
                     setSelectValue('filtro', d.extraccion?.filtro);

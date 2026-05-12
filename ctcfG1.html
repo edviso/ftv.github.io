@@ -355,7 +355,7 @@
                 <div class="input-group">
                     <label>Método:</label>
                     <select id="metodo" name="metodo" onchange="actualizarDispositivos()">
-                        <option value="Filtrado (Pour Over / Goteo)">Filtrado (Pour Over / Goteo)</option>
+                        <option value="Filtrado" selected>Filtrado</option>
                         <option value="Inmersión">Inmersión</option>
                         <option value="Presión (Espresso)">Presión (Espresso)</option>
                         <option value="Percolación">Percolación</option>
@@ -380,7 +380,7 @@
                     <label>Clics:</label>
                     <div class="stepper">
                         <button type="button" onclick="step('clics', -1)">-</button>
-                        <input type="number" id="clics" name="clics" value="40">
+                        <input type="number" id="clics" name="clics" value="35">
                         <button type="button" onclick="step('clics', 1)">+</button>
                     </div>
                 </div>
@@ -388,11 +388,11 @@
             <div class="row">
                 <div class="input-group">
                     <label>Café (g):</label>
-                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" placeholder="0.0">
+                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="12.5" placeholder="0.0">
                 </div>
                 <div class="input-group">
                     <label>Agua Total (ml):</label>
-                    <input type="number" id="agua_total" name="agua_total" placeholder="0">
+                    <input type="number" id="agua_total" name="agua_total" value="200" placeholder="0">
                 </div>
             </div>
             <div class="checkbox-group">
@@ -406,7 +406,7 @@
                 </div>
                 <div class="checkbox-item" style="width:100%">
                     <label>Hielo en jarra (ml):</label>
-                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" placeholder="0">
+                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20" placeholder="0">
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
@@ -502,6 +502,10 @@
         // --- LOG DE ACTUALIZACIONES HISTÓRICAS RESTAURADAS ---
         const logHistorial = [
             {
+                fecha: "12-MAY-2026",
+                resumen: "Personalización de Defaults: Se ajustaron los valores por defecto del formulario de extracción para mayor agilidad (Filtrado > Origami Dripper > Fondo plano/papel, 35 clics, 12.5g café, 200ml agua y 20ml hielo). Se añadió lógica de retrocompatibilidad en el cargador JSON para asimilar nombres antiguos como 'Filtrado (Pour Over / Goteo)'."
+            },
+            {
                 fecha: "11-MAY-2026",
                 resumen: "Reestructuración Visual: Se rediseñó la sección 'Detalles del Café' del Gráfico de Cata para alinearse perfectamente con la nueva referencia visual a dos columnas precisas. Se agregaron los corchetes [] solicitados, se incorporó la línea de Velocidades (Vel) y se ajustó el espacio nativo en Canvas para evitar sobreescritura."
             },
@@ -571,7 +575,7 @@
 
         // --- MAPEO DE DISPOSITIVOS Y FILTROS ---
         const mapDispositivos = {
-            "Filtrado (Pour Over / Goteo)": ["Hario V60", "Origami Dripper", "Chemex", "Kalita Wave"],
+            "Filtrado": ["Origami Dripper", "Hario V60", "Chemex", "Kalita Wave"],
             "Inmersión": ["French Press", "Clever Dripper"],
             "Presión (Espresso)": ["Espresso Machine", "Flair Espresso Maker"],
             "Percolación": ["Moka Pot", "Percoladora"],
@@ -581,18 +585,18 @@
         };
 
         const mapFiltros = {
-            "Hario V60": ["Filtro cónico/papel"],
-            "Origami Dripper": ["Filtro cónico/papel", "Filtro fondo plano/papel"],
+            "Origami Dripper": ["Fondo plano/papel", "Cónico/papel"],
+            "Hario V60": ["Cónico/papel"],
             "Chemex": ["Filtro de papel grueso"],
-            "Kalita Wave": ["Filtro fondo plano/papel"],
+            "Kalita Wave": ["Fondo plano/papel"],
             "French Press": ["Filtro metálico"],
-            "Clever Dripper": ["Filtro cónico/papel"],
+            "Clever Dripper": ["Cónico/papel"],
             "Espresso Machine": ["Filtro metálico"],
             "Flair Espresso Maker": ["Filtro metálico"],
             "Moka Pot": ["Filtro metálico"],
             "Percoladora": ["Filtro metálico"],
             "Cold Brew Maker": ["Filtro metálico", "Filtro de tela", "Filtro de papel grueso"],
-            "AeroPress": ["Filtro cónico/papel", "Filtro metálico", "Filtro de tela"],
+            "AeroPress": ["Cónico/papel", "Filtro metálico", "Filtro de tela"],
             "Cezve": ["Sin filtro"]
         };
 
@@ -1023,16 +1027,25 @@
                     document.getElementById('desarrollo_vel').value = dc.fases?.desarrollo?.vel || "V2";
 
                     const ext = d.extraccion || d;
-                    setSelectValue('metodo', ext.metodo); actualizarDispositivos();
-                    setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
-                    setSelectValue('filtro', ext.filtro);
                     
-                    document.getElementById('clics').value = ext.clics || 40;
-                    document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || "";
-                    document.getElementById('agua_total').value = ext.agua_total || ext.agua_ml || "";
+                    // Retrocompatibilidad de nombres antiguos
+                    let metodoGuardado = ext.metodo;
+                    if (metodoGuardado === "Filtrado (Pour Over / Goteo)") metodoGuardado = "Filtrado";
+                    
+                    setSelectValue('metodo', metodoGuardado); actualizarDispositivos();
+                    setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
+                    
+                    let filtroGuardado = ext.filtro;
+                    if (filtroGuardado === "Filtro fondo plano/papel") filtroGuardado = "Fondo plano/papel";
+                    if (filtroGuardado === "Filtro cónico/papel") filtroGuardado = "Cónico/papel";
+                    setSelectValue('filtro', filtroGuardado);
+                    
+                    document.getElementById('clics').value = ext.clics || 35;
+                    document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
+                    document.getElementById('agua_total').value = ext.agua_total || ext.agua_ml || 200;
                     document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha;
                     document.getElementById('bola_fria').checked = !!ext.bola_fria;
-                    document.getElementById('hielo_ml').value = ext.hielo_jarra || ext.hielo_ml || 0;
+                    document.getElementById('hielo_ml').value = ext.hielo_jarra || ext.hielo_ml || 20;
                     document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
                     document.getElementById('blooming').value = ext.blooming || 45;
                     document.getElementById('v1').value = ext.v1 || 120;
@@ -1248,7 +1261,7 @@
             
             // Detalles - Reestructurado a dos columnas visuales
             ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; 
-            ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); // Ajuste fino de Y
+            ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); 
             
             let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total'));
             let ratioTxt = (!isNaN(g) && g > 0 && !isNaN(ml) && ml > 0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
@@ -1277,7 +1290,7 @@
             ];
 
             ctx.textAlign = 'left';
-            let startY = 945; // Punto de inicio para las listas
+            let startY = 945; 
 
             // Dibujar Columna Izquierda
             colIzq.forEach((d, i) => {

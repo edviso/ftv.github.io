@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinza-Café | Analizador Técnico de Tueste</title>
+    <style>
+        :root {
+            --primary: #3e2723;
+            --accent: #bf360c;
+            --bg: #fdfdfb;
+            --card-bg: #ffffff;
+        }
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background-color: var(--bg); 
+            color: #2d2d2d; 
+            margin: 0; 
+            padding: 20px; 
+            line-height: 1.5;
+        }
+        .container { 
+            max-width: 650px; 
+            margin: auto; 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08); 
+        }
+        h1 { color: var(--primary); margin-bottom: 5px; text-align: center; }
+        .subtitle { color: #8d6e63; margin-bottom: 25px; font-size: 0.95em; text-align: center; font-weight: 500; }
+        
+        .upload-section {
+            border: 2px dashed #d7ccc8;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-section:hover { border-color: var(--accent); background: #fff; }
+        
+        #preview { 
+            max-width: 100%; 
+            border-radius: 12px; 
+            margin-top: 15px; 
+            display: none; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-card { 
+            margin-top: 25px; 
+            padding: 25px; 
+            border-radius: 15px; 
+            background: #fff;
+            border: 1px solid #efebe9;
+            display: none; 
+            animation: slideUp 0.4s ease-out;
+        }
+        .color-display {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .color-circle { 
+            width: 70px; height: 70px; 
+            border-radius: 50%; 
+            border: 3px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+        
+        .tech-badge {
+            background-color: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #4a4a4a;
+            margin-top: 10px;
+            display: inline-block;
+            border: 1px solid #e9ecef;
+        }
+
+        .agtron-container {
+            margin: 25px 0;
+            padding: 15px;
+            background: #fdfbf9;
+            border-radius: 12px;
+            border: 1px solid #efebe9;
+        }
+        .agtron-title {
+            text-align: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #8d6e63;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        .agtron-labels {
+            display: flex;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.75em;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .agtron-labels div { flex: 1; }
+        .agtron-bar {
+            display: flex;
+            height: 30px;
+            position: relative;
+        }
+        .agtron-bar .segment { flex: 1; }
+        
+        /* NUEVOS COLORES BASADOS EN EL DOCUMENTO PDF */
+        .seg-1 { background-color: #C59A6F; border-radius: 6px 0 0 6px; }
+        .seg-2 { background-color: #A87A4F; }
+        .seg-3 { background-color: #8F5E36; }
+        .seg-4 { background-color: #734322; }
+        .seg-5 { background-color: #593116; }
+        .seg-6 { background-color: #42220E; }
+        .seg-7 { background-color: #2E1508; }
+        .seg-8 { background-color: #1C0A03; }
+        .seg-9 { background-color: #0F0401; }
+        .seg-10 { background-color: #050100; border-radius: 0 6px 6px 0; }
+        
+        /* Modificado para usar dos flechas */
+        .agtron-marker {
+            position: absolute;
+            width: 0;
+            height: 0;
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+            /* horizontal positioning reference from existing JS */
+            z-index: 10;
+            transition: left 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: translateX(-50%);
+        }
+
+        /* Estilos comunes para las flechas */
+        .agtron-marker::before,
+        .agtron-marker::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-color: transparent;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Flecha de arriba (apuntando hacia abajo) */
+        .agtron-marker::before {
+            top: -10px; /* posición sobre la barra */
+            border-width: 8px 6px 0 6px; /* apuntar hacia abajo */
+            border-top-color: var(--accent); /* color del triángulo */
+        }
+
+        /* Flecha de abajo (apuntando hacia arriba) */
+        .agtron-marker::after {
+            top: 40px; /* posición debajo de la barra (alto: 30px + espacio) */
+            border-width: 0 6px 8px 6px; /* apuntar hacia arriba */
+            border-bottom-color: var(--accent); /* color del triángulo */
+        }
+        
+        .profile-section { margin-top: 15px; text-align: left; }
+        .profile-item { 
+            margin-bottom: 12px; 
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .profile-item:last-child { border-bottom: none; }
+        
+        .profile-label { 
+            font-weight: bold; 
+            color: var(--accent); 
+            display: block; 
+            font-size: 0.85em; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .profile-text { font-size: 0.95em; color: #4e342e; display: block;}
+        
+        .dynamic-nuance {
+            background-color: #fff3e0;
+            padding: 10px 15px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .history-section { margin-top: 40px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
+        th, td { padding: 12px; border-bottom: 1px solid #efebe9; text-align: left; }
+        th { background: #fbe9e7; color: var(--accent); border-radius: 5px 5px 0 0; }
+        
+        tbody tr.history-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        tbody tr.history-row:hover {
+            background-color: #fbe9e7;
+        }
+
+        .btn-save {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            font-size: 1em;
+            transition: 0.2s;
+            margin-top: 20px;
+        }
+        .btn-save:hover { background: #a62d00; transform: translateY(-1px); }
+
+        .json-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding-top: 15px;
+            border-top: 1px solid #efebe9;
+        }
+        .btn-small {
+            background: #f5f5f5;
+            color: #555;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        .btn-small:hover { background: #e0e0e0; color: #333; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Analizador de Tueste</h1>
+    <p class="subtitle">Bitácora Técnica Vinza-Café</p>
+    
+    <div class="upload-section" onclick="document.getElementById('upload').click()">
+        <input type="file" id="upload" accept="image/*" style="display:none">
+        <strong>Presiona para subir fotografía del lote</strong>
+        <p style="font-size: 0.8em; color: #888; margin-top: 8px;">Asegura luz constante para resultados comparables.</p>
+    </div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="preview">
+
+    <div id="results" class="result-card">
+        <div class="color-display">
+            <div id="swatch" class="color-circle"></div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <h2 id="roast-label" style="margin:0; color: var(--primary);"></h2>
+                <span id="roast-sublabel" style="color: var(--accent); font-weight: 600;"></span>
+                <div id="tech-values" class="tech-badge"></div>
+            </div>
+        </div>
+
+        <div class="agtron-container">
+            <div class="agtron-title">AGTRON DEL CAFÉ</div>
+            <div class="agtron-labels">
+                <div>95+</div><div>85</div><div>75</div><div>65</div><div>55</div><div>45</div><div>35</div><div>25</div><div>15</div><div>5</div>
+            </div>
+            <div class="agtron-bar">
+                <div class="segment seg-1"></div>
+                <div class="segment seg-2"></div>
+                <div class="segment seg-3"></div>
+                <div class="segment seg-4"></div>
+                <div class="segment seg-5"></div>
+                <div class="segment seg-6"></div>
+                <div class="segment seg-7"></div>
+                <div class="segment seg-8"></div>
+                <div class="segment seg-9"></div>
+                <div class="segment seg-10"></div>
+                <div class="agtron-marker" id="agtron-marker"></div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <div class="profile-item">
+                <span class="profile-label">Hito Técnico</span>
+                <span id="hito-text" class="profile-text"></span>
+            </div>
+            <div class="profile-item">
+                <span class="profile-label">Química (Estándar)</span>
+                <span id="quimica-text" class="profile-text"></span>
+            </div>
+            <div class="profile-item">
+                <span class="profile-label">Perfil Sensorial Analizado</span>
+                <span id="sensorial-text" class="profile-text dynamic-nuance"></span>
+            </div>
+        </div>
+        
+        <button class="btn-save" onclick="saveToHistory()">Registrar en Historial</button>
+    </div>
+
+    <div class="history-section">
+        <h3>Historial de Sesión</h3>
+        <p style="font-size: 0.8em; color: #888; margin-top: -10px;">Haz clic en cualquier lote para volver a visualizarlo.</p>
+        <table id="history-table">
+            <thead>
+                <tr>
+                    <th>Lote</th>
+                    <th>Categoría</th>
+                    <th>Lum.</th>
+                    <th>Color</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="json-controls">
+            <input type="file" id="import-json" accept=".json" style="display:none">
+            <button class="btn-small" onclick="exportToJSON()">⬇️ Guardar JSON</button>
+            <button class="btn-small" onclick="document.getElementById('import-json').click()">⬆️ Cargar JSON</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ROAST_PROFILES = {
+        cinnamon: {
+            label: "Cinnamon", sub: "Tueste Muy Claro",
+            hito: "Retirado justo al inicio del primer crack. Grano con expansión mínima.",
+            quimica: "Nivel máximo de ácidos clorogénicos. Degradación incompleta de clorofila y lípidos.",
+            sensorial: (lum) => {
+                if (lum >= 115) return "Blonde Extremo (Lum > 115): Subdesarrollado. Notas a pasto verde y maní. Cuerpo acuoso. Requiere inmersión prolongada con agua muy caliente para forzar extracción.";
+                return "Cinnamon Estándar (Lum < 115): Notas herbales y dulzor a miel silvestre. Acidez punzante. Extraer en V60 con molienda fina y pulsos constantes.";
+            }
+        },
+        newEngland: {
+            label: "New England", sub: "Tueste Claro",
+            hito: "Final del primer crack. Superficie mate y rugosa.",
+            quimica: "Máxima complejidad enzimática. Los compuestos volátiles del origen se mantienen intactos.",
+            sensorial: (lum) => {
+                if (lum >= 98) return "Límite Temprano (Lum > 98): Acidez cítrica penetrante, notas florales marcadas. Cuerpo tipo té. Extraer en Origami para agilizar el flujo.";
+                if (lum >= 90) return "Desarrollo Frutal (Lum 90-98): Notas a frutas con hueso. Acidez jugosa. Ideal para V60 aplicando choque térmico (esfera de acero congelada).";
+                return "Transición (Lum < 90): La acidez se suaviza. Aparecen destellos de panela. Excelente para extracciones de alta eficiencia en V60 o Chemex.";
+            }
+        },
+        city: {
+            label: "City", sub: "Tueste Medio-Claro",
+            hito: "Fase de desarrollo inicial post-crack. Grano comienza a alisarse pero permanece seco.",
+            quimica: "Reacción de Maillard avanzada (caramelización incipiente). Desarrollo de notas a pan tostado.",
+            sensorial: (lum) => {
+                if (lum >= 80) return "Perfil Ácido/Floral (Lum > 80): Acidez punzante protagonista. Notas a té negro. Cuerpo ligero. Resalta en Origami con filtros cónicos.";
+                if (lum >= 75) return "Perfil Frutal (Lum 75-80): Excelente claridad. Acidez jugosa balanceada con frutas rojas. Recomendado en V60 con vertidos segmentados.";
+                return "Perfil Transición (Lum < 75): Acidez estructurada. Dulzor a caña cruda. Extraer en Aeropress o V60 para equilibrar la estructura de la acidez.";
+            }
+        },
+        cityPlus: {
+            label: "City+", sub: "Tueste Medio",
+            hito: "Pleno desarrollo. Incremento de volumen notable y superficie lisa.",
+            quimica: "Inicio de caramelización de azúcares complejos. Balance óptimo de ácidos orgánicos.",
+            sensorial: (lum) => {
+                if (lum >= 68) return "Perfil Vibrante (Lum > 68): Acidez cítrica limpia. Cuerpo sedoso y dulzor a miel. Brilla con claridad extrema en V60.";
+                if (lum >= 62) return "Balance de Especialidad (Lum 62-67): Integración perfecta. Acidez redonda y chocolate de leche. Ideal para la geometría del Origami.";
+                return "Dulzor Desarrollado (Lum < 62): Acidez mitigada. Cuerpo denso. Dulzor profundo a melaza. Perfecto para Espresso moderno o Aeropress.";
+            }
+        },
+        fullCity: {
+            label: "Full City", sub: "Tueste Medio-Oscuro",
+            hito: "Segundos antes del segundo crack. Pueden aparecer puntos aislados de aceite.",
+            quimica: "Inicio de la pirólisis. Los carbohidratos se transforman en compuestos amargos deseables.",
+            sensorial: (lum) => {
+                if (lum >= 50) return "Entrada Oscura (Lum > 50): Dulzor denso, acidez baja. Notas a chocolate semi-amargo y praliné. Excelente para Espresso o Moka.";
+                if (lum >= 46) return "Centro Oscuro (Lum 46-50): Cacao predominante con toques de especias. Cuerpo muy pesado. Destaca en Espresso tradicional o Prensa Francesa.";
+                return "Límite Full City (Lum < 46): Chocolate amargo dominante. Textura casi cremosa. Ideal para bebidas con leche basadas en Espresso.";
+            }
+        },
+        fullCityPlus: {
+            label: "Full City+", sub: "Tueste Oscuro",
+            hito: "Segundo crack en curso. Capa de aceite ligera y uniforme en la superficie.",
+            quimica: "Carbonización de la fibra del grano. Compuestos de tueste comienzan a dominar sobre el origen.",
+            sensorial: (lum) => {
+                if (lum >= 36) return "Segundo Crack Inicial (Lum > 36): Sabor potente a cacao puro. Aparecen notas ahumadas dulces. Acidez nula. Para Espresso intenso.";
+                return "Segundo Crack Avanzado (Lum < 36): Humo evidente y amargor agradable. Ideal para bases intensas de Espresso en bebidas lácteas o Cold Brew tradicional.";
+            }
+        },
+        french: {
+            label: "French / Italian", sub: "Tueste Muy Oscuro",
+            hito: "Final del segundo crack. Grano brillante por aceite y color casi negro.",
+            quimica: "Degradación total de azúcares y ácidos. Sabor producto de la combustión controlada.",
+            sensorial: (lum) => {
+                if (lum >= 20) return "French Roast (Lum > 20): Notas intensas a carbón dulce y humo. Extraer a menor temperatura para no sobre-extraer amargor.";
+                if (lum >= 10) return "Italian Roast (Lum 10-20): Sabor amargo y ceniciento. Uso relegado a mezclas de Cold Brew muy diluidas o Espresso comercial.";
+                return "Torrefacto / Extremo (Lum < 10): Sabor a carbón puro y alquitrán. Estructura celular destruida. No recomendado para extracción de especialidad.";
+            }
+        }
+    };
+
+    const upload = document.getElementById('upload');
+    const preview = document.getElementById('preview');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    let currentData = null;
+    let sessionHistory = []; 
+
+    upload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            preview.src = ev.target.result;
+            preview.style.display = 'block';
+            preview.onload = analyze;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function analyze() {
+        canvas.width = preview.naturalWidth;
+        canvas.height = preview.naturalHeight;
+        ctx.drawImage(preview, 0, 0, canvas.width, canvas.height);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < imgData.length; i += 16) {
+            r += imgData[i]; g += imgData[i+1]; b += imgData[i+2]; count++;
+        }
+        r = Math.floor(r/count); g = Math.floor(g/count); b = Math.floor(b/count);
+        const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b);
+        updateUI(r, g, b, lum, preview.src);
+    }
+
+    function moveAgtronMarker(lum) {
+        let posPercentage = 100 - lum;
+        posPercentage = Math.max(0, Math.min(100, posPercentage));
+        document.getElementById('agtron-marker').style.left = posPercentage + '%';
+    }
+
+    // Actualizado con los valores RGB extraídos del nuevo PDF
+    function getAgtronDisplayColor(lumValue) {
+        const agtronScale = [
+            { l: 95, r: 197, g: 154, b: 111 }, // #C59A6F
+            { l: 85, r: 168, g: 122, b: 79 },  // #A87A4F
+            { l: 75, r: 143, g: 94, b: 54 },   // #8F5E36
+            { l: 65, r: 115, g: 67, b: 34 },   // #734322
+            { l: 55, r: 89, g: 49, b: 22 },    // #593116
+            { l: 45, r: 66, g: 34, b: 14 },    // #42220E
+            { l: 35, r: 46, g: 21, b: 8 },     // #2E1508
+            { l: 25, r: 28, g: 10, b: 3 },     // #1C0A03
+            { l: 15, r: 15, g: 4, b: 1 },      // #0F0401
+            { l: 5,  r: 5, g: 1, b: 0 }        // #050100
+        ];
+
+        if (lumValue >= 95) return `rgb(197, 154, 111)`;
+        if (lumValue <= 5) return `rgb(5, 1, 0)`;
+
+        for (let i = 0; i < agtronScale.length - 1; i++) {
+            let upper = agtronScale[i];
+            let lower = agtronScale[i+1];
+            if (lumValue <= upper.l && lumValue > lower.l) {
+                let factor = (lumValue - lower.l) / (upper.l - lower.l);
+                let r = Math.round(lower.r + factor * (upper.r - lower.r));
+                let g = Math.round(lower.g + factor * (upper.g - lower.g));
+                let b = Math.round(lower.b + factor * (upper.b - lower.b));
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+        return `rgb(5, 1, 0)`;
+    }
+
+    function updateUI(r, g, b, lum, imgSrc) {
+        let p;
+        if (lum > 105) p = ROAST_PROFILES.cinnamon;
+        else if (lum > 85) p = ROAST_PROFILES.newEngland;
+        else if (lum > 70) p = ROAST_PROFILES.city;
+        else if (lum > 55) p = ROAST_PROFILES.cityPlus;
+        else if (lum > 42) p = ROAST_PROFILES.fullCity;
+        else if (lum > 30) p = ROAST_PROFILES.fullCityPlus;
+        else p = ROAST_PROFILES.french;
+
+        const sensorialTextResult = p.sensorial(lum);
+        const visualColor = getAgtronDisplayColor(lum);
+
+        document.getElementById('roast-label').innerText = p.label;
+        document.getElementById('roast-sublabel').innerText = p.sub;
+        document.getElementById('hito-text').innerText = p.hito;
+        document.getElementById('quimica-text').innerText = p.quimica;
+        document.getElementById('sensorial-text').innerText = sensorialTextResult;
+        
+        document.getElementById('tech-values').innerText = `Luminancia: ${lum.toFixed(2)} | RGB Bruto: ${r},${g},${b}`;
+        
+        document.getElementById('swatch').style.backgroundColor = visualColor;
+        
+        document.getElementById('results').style.display = 'block';
+        
+        setTimeout(() => { moveAgtronMarker(lum); }, 50);
+        
+        currentData = { 
+            imgSrc: imgSrc,
+            label: p.label, 
+            sub: p.sub,
+            hito: p.hito,
+            quimica: p.quimica,
+            sensorialText: sensorialTextResult,
+            lum: lum.toFixed(2), 
+            color: visualColor, 
+            r: r,
+            g: g,
+            b: b
+        };
+    }
+
+    function saveToHistory() {
+        if (!currentData) return;
+        
+        const maxId = sessionHistory.reduce((max, item) => Math.max(max, item.id || 0), 0);
+        const newId = maxId + 1;
+        const historyItem = { ...currentData, id: newId };
+        
+        sessionHistory.unshift(historyItem);
+        renderHistoryTable();
+    }
+
+    function loadFromHistory(id) {
+        const item = sessionHistory.find(x => x.id === id);
+        if (!item) return;
+
+        preview.src = item.imgSrc;
+        preview.style.display = 'block';
+
+        document.getElementById('roast-label').innerText = item.label;
+        document.getElementById('roast-sublabel').innerText = item.sub;
+        document.getElementById('hito-text').innerText = item.hito;
+        document.getElementById('quimica-text').innerText = item.quimica;
+        document.getElementById('sensorial-text').innerText = item.sensorialText;
+        
+        document.getElementById('tech-values').innerText = `Luminancia: ${item.lum} | RGB Bruto: ${item.r},${item.g},${item.b}`;
+        document.getElementById('swatch').style.backgroundColor = item.color;
+        
+        document.getElementById('results').style.display = 'block';
+        
+        moveAgtronMarker(parseFloat(item.lum));
+        
+        currentData = { ...item };
+    }
+
+    function renderHistoryTable() {
+        const tbody = document.querySelector('#history-table tbody');
+        tbody.innerHTML = '';
+        
+        sessionHistory.forEach(item => {
+            const row = tbody.insertRow(-1);
+            row.className = 'history-row';
+            row.onclick = () => loadFromHistory(item.id);
+            
+            row.innerHTML = `
+                <td>#${item.id}</td>
+                <td><strong>${item.label}</strong></td>
+                <td>${item.lum}</td>
+                <td><div style="width:20px; height:20px; border-radius:50%; background:${item.color}; border:1px solid #ccc;"></div></td>
+            `;
+        });
+    }
+
+    function exportToJSON() {
+        if (sessionHistory.length === 0) {
+            alert("No hay lotes en el historial para guardar.");
+            return;
+        }
+        const dataStr = JSON.stringify(sessionHistory);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `vinza-cafe-bitacora-${date}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('import-json').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const importedData = JSON.parse(ev.target.result);
+                if (Array.isArray(importedData)) {
+                    sessionHistory = importedData;
+                    renderHistoryTable();
+                    alert("Sesión cargada exitosamente.");
+                } else {
+                    alert("El archivo no tiene el formato correcto de historial.");
+                }
+            } catch (err) {
+                alert("Error al leer el archivo JSON.");
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; 
+    });
+</script>
+
+</body>
+</html>

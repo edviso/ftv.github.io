@@ -14,18 +14,25 @@
             padding-bottom: 40px;
             position: relative;
         }
+        
+        /* Título Fijo (Sticky) */
         h1 {
             text-align: center;
             font-size: 1.5rem;
             color: #4a3b32;
-            margin-bottom: 20px;
-            margin-top: 15px;
+            margin: -10px -10px 20px -10px; /* Compensa el padding del body para ocupar todo el ancho */
+            padding: 15px 10px;
+            background-color: #f0f2f5; /* Mismo fondo de la app para ocultar el contenido debajo */
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -6px rgba(0,0,0,0.2); /* Sombra sutil al hacer scroll */
         }
         
         /* Botones Especiales */
         #btnLog {
-            position: absolute;
-            top: 10px;
+            position: fixed; /* Cambiado a fixed para que baje con el título */
+            top: 12px;
             right: 10px;
             background-color: #8d6e63;
             color: white;
@@ -36,6 +43,7 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 101; /* Asegura que esté por encima del h1 */
         }
 
         .auto-btn {
@@ -501,6 +509,10 @@
     <script>
         // --- LOG DE ACTUALIZACIONES HISTÓRICAS RESTAURADAS ---
         const logHistorial = [
+            {
+                fecha: "13-MAY-2026",
+                resumen: "Mejora UI: Se hizo el título principal de la aplicación 'Sticky' (fijo) junto con el botón de Log, creando una barra de navegación superior anclada que acompaña al usuario al hacer scroll."
+            },
             {
                 fecha: "12-MAY-2026",
                 resumen: "Personalización de Defaults: Se ajustaron los valores por defecto del formulario de extracción para mayor agilidad (Filtrado > Origami Dripper > Fondo plano/papel, 35 clics, 12.5g café, 200ml agua y 20ml hielo). Se añadió lógica de retrocompatibilidad en el cargador JSON para asimilar nombres antiguos como 'Filtrado (Pour Over / Goteo)'."

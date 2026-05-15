@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vinza-Café | Analizador Técnico de Tueste</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
     <style>
         :root {
             --primary: #3e2723;
@@ -30,17 +34,28 @@
         h1 { color: var(--primary); margin-bottom: 5px; text-align: center; }
         .subtitle { color: #8d6e63; margin-bottom: 25px; font-size: 0.95em; text-align: center; font-weight: 500; }
         
+        .upload-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
         .upload-section {
+            flex: 1;
             border: 2px dashed #d7ccc8;
-            padding: 30px;
+            padding: 20px 10px;
             border-radius: 15px;
-            margin-bottom: 25px;
             text-align: center;
             background: #fafafa;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        .upload-section:hover { border-color: var(--accent); background: #fff; }
+        .upload-section:hover { border-color: var(--accent); background: #fff; transform: translateY(-2px); }
+        .upload-icon { font-size: 1.8em; margin-bottom: 8px; }
+        .upload-hint { text-align: center; font-size: 0.8em; color: #888; margin-top: 5px; margin-bottom: 25px; }
         
         #preview { 
             max-width: 100%; 
@@ -116,7 +131,6 @@
         }
         .agtron-bar .segment { flex: 1; }
         
-        /* NUEVOS COLORES BASADOS EN EL DOCUMENTO PDF */
         .seg-1 { background-color: #C59A6F; border-radius: 6px 0 0 6px; }
         .seg-2 { background-color: #A87A4F; }
         .seg-3 { background-color: #8F5E36; }
@@ -128,7 +142,6 @@
         .seg-9 { background-color: #0F0401; }
         .seg-10 { background-color: #050100; border-radius: 0 6px 6px 0; }
         
-        /* Modificado para usar dos flechas */
         .agtron-marker {
             position: absolute;
             width: 0;
@@ -136,13 +149,10 @@
             background-color: transparent;
             border: none;
             box-shadow: none;
-            /* horizontal positioning reference from existing JS */
             z-index: 10;
             transition: left 0.6s cubic-bezier(0.25, 1, 0.5, 1);
             transform: translateX(-50%);
         }
-
-        /* Estilos comunes para las flechas */
         .agtron-marker::before,
         .agtron-marker::after {
             content: '';
@@ -154,19 +164,15 @@
             left: 50%;
             transform: translateX(-50%);
         }
-
-        /* Flecha de arriba (apuntando hacia abajo) */
         .agtron-marker::before {
-            top: -10px; /* posición sobre la barra */
-            border-width: 8px 6px 0 6px; /* apuntar hacia abajo */
-            border-top-color: var(--accent); /* color del triángulo */
+            top: -10px; 
+            border-width: 8px 6px 0 6px; 
+            border-top-color: var(--accent); 
         }
-
-        /* Flecha de abajo (apuntando hacia arriba) */
         .agtron-marker::after {
-            top: 40px; /* posición debajo de la barra (alto: 30px + espacio) */
-            border-width: 0 6px 8px 6px; /* apuntar hacia arriba */
-            border-bottom-color: var(--accent); /* color del triángulo */
+            top: 40px; 
+            border-width: 0 6px 8px 6px; 
+            border-bottom-color: var(--accent); 
         }
         
         .profile-section { margin-top: 15px; text-align: left; }
@@ -209,7 +215,7 @@
             background-color: #fbe9e7;
         }
 
-        .btn-save {
+        .btn-save, .btn-action {
             background: var(--accent);
             color: white;
             border: none;
@@ -222,7 +228,9 @@
             transition: 0.2s;
             margin-top: 20px;
         }
-        .btn-save:hover { background: #a62d00; transform: translateY(-1px); }
+        .btn-save:hover, .btn-action:hover { background: #a62d00; transform: translateY(-1px); }
+        .btn-cancel { background: #9e9e9e; margin-top: 0; }
+        .btn-cancel:hover { background: #757575; }
 
         .json-controls {
             margin-top: 20px;
@@ -245,6 +253,41 @@
         }
         .btn-small:hover { background: #e0e0e0; color: #333; }
 
+        /* Estilos del Modal de Recorte */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .img-container {
+            max-height: 60vh;
+            margin-bottom: 15px;
+            background: #eee;
+        }
+        .img-container img {
+            display: block;
+            max-width: 100%;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -254,11 +297,19 @@
     <h1>Analizador de Tueste</h1>
     <p class="subtitle">Bitácora Técnica Vinza-Café</p>
     
-    <div class="upload-section" onclick="document.getElementById('upload').click()">
-        <input type="file" id="upload" accept="image/*" style="display:none">
-        <strong>Presiona para subir fotografía del lote</strong>
-        <p style="font-size: 0.8em; color: #888; margin-top: 8px;">Asegura luz constante para resultados comparables.</p>
+    <div class="upload-buttons">
+        <div class="upload-section" onclick="document.getElementById('upload-camera').click()">
+            <input type="file" id="upload-camera" accept="image/*" capture="environment" style="display:none">
+            <span class="upload-icon">📸</span>
+            <strong>Tomar Foto</strong>
+        </div>
+        <div class="upload-section" onclick="document.getElementById('upload-file').click()">
+            <input type="file" id="upload-file" accept="image/*" style="display:none">
+            <span class="upload-icon">📁</span>
+            <strong>Subir Archivo</strong>
+        </div>
     </div>
+    <p class="upload-hint">Asegura luz constante para resultados comparables.</p>
 
     <canvas id="canvas" style="display:none;"></canvas>
     <img id="preview">
@@ -330,6 +381,20 @@
             <input type="file" id="import-json" accept=".json" style="display:none">
             <button class="btn-small" onclick="exportToJSON()">⬇️ Guardar JSON</button>
             <button class="btn-small" onclick="document.getElementById('import-json').click()">⬆️ Cargar JSON</button>
+        </div>
+    </div>
+</div>
+
+<div id="crop-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--primary);">Recorta la Imagen</h3>
+        <p style="font-size: 0.85em; color: #666; margin-top: -10px;">Aísla únicamente los granos de café.</p>
+        <div class="img-container">
+            <img id="image-to-crop">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-action" style="margin-top: 0;" onclick="confirmCrop()">Analizar Recorte</button>
+            <button class="btn-action btn-cancel" onclick="cancelCrop()">Cancelar</button>
         </div>
     </div>
 </div>
@@ -406,25 +471,76 @@
         }
     };
 
-    const upload = document.getElementById('upload');
     const preview = document.getElementById('preview');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     
     let currentData = null;
     let sessionHistory = []; 
+    let cropper = null; // Variable para la instancia de Cropper.js
 
-    upload.addEventListener('change', (e) => {
+    const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        
         const reader = new FileReader();
         reader.onload = (ev) => {
-            preview.src = ev.target.result;
-            preview.style.display = 'block';
-            preview.onload = analyze;
+            // Mostrar el modal de recorte en lugar de procesar directamente
+            const modal = document.getElementById('crop-modal');
+            const imageToCrop = document.getElementById('image-to-crop');
+            
+            imageToCrop.src = ev.target.result;
+            modal.style.display = 'flex';
+            
+            // Destruir instancia anterior si existe
+            if (cropper) { cropper.destroy(); }
+            
+            // Inicializar Cropper.js
+            cropper = new Cropper(imageToCrop, {
+                viewMode: 1, // Restringe el recorte al tamaño de la imagen
+                autoCropArea: 0.8,
+                background: false,
+                zoomable: true,
+                movable: true
+            });
         };
         reader.readAsDataURL(file);
-    });
+        
+        e.target.value = ''; 
+    };
+
+    document.getElementById('upload-camera').addEventListener('change', handleImageUpload);
+    document.getElementById('upload-file').addEventListener('change', handleImageUpload);
+
+    // Función llamada al pulsar "Analizar Recorte"
+    function confirmCrop() {
+        if (!cropper) return;
+        
+        // Obtener la imagen recortada en un nuevo canvas
+        const croppedCanvas = cropper.getCroppedCanvas();
+        // Convertir a DataURL (base64)
+        const croppedDataUrl = croppedCanvas.toDataURL('image/jpeg');
+        
+        // Ocultar modal y limpiar cropper
+        document.getElementById('crop-modal').style.display = 'none';
+        cropper.destroy();
+        cropper = null;
+        
+        // Pasamos la imagen recortada al flujo normal de la bitácora
+        preview.src = croppedDataUrl;
+        preview.style.display = 'block';
+        
+        // Al cargar la imagen (el recorte), se dispara el análisis
+        preview.onload = analyze;
+    }
+
+    function cancelCrop() {
+        document.getElementById('crop-modal').style.display = 'none';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    }
 
     function analyze() {
         canvas.width = preview.naturalWidth;
@@ -446,19 +562,18 @@
         document.getElementById('agtron-marker').style.left = posPercentage + '%';
     }
 
-    // Actualizado con los valores RGB extraídos del nuevo PDF
     function getAgtronDisplayColor(lumValue) {
         const agtronScale = [
-            { l: 95, r: 197, g: 154, b: 111 }, // #C59A6F
-            { l: 85, r: 168, g: 122, b: 79 },  // #A87A4F
-            { l: 75, r: 143, g: 94, b: 54 },   // #8F5E36
-            { l: 65, r: 115, g: 67, b: 34 },   // #734322
-            { l: 55, r: 89, g: 49, b: 22 },    // #593116
-            { l: 45, r: 66, g: 34, b: 14 },    // #42220E
-            { l: 35, r: 46, g: 21, b: 8 },     // #2E1508
-            { l: 25, r: 28, g: 10, b: 3 },     // #1C0A03
-            { l: 15, r: 15, g: 4, b: 1 },      // #0F0401
-            { l: 5,  r: 5, g: 1, b: 0 }        // #050100
+            { l: 95, r: 197, g: 154, b: 111 }, 
+            { l: 85, r: 168, g: 122, b: 79 },  
+            { l: 75, r: 143, g: 94, b: 54 },   
+            { l: 65, r: 115, g: 67, b: 34 },   
+            { l: 55, r: 89, g: 49, b: 22 },    
+            { l: 45, r: 66, g: 34, b: 14 },    
+            { l: 35, r: 46, g: 21, b: 8 },     
+            { l: 25, r: 28, g: 10, b: 3 },     
+            { l: 15, r: 15, g: 4, b: 1 },      
+            { l: 5,  r: 5, g: 1, b: 0 }        
         ];
 
         if (lumValue >= 95) return `rgb(197, 154, 111)`;

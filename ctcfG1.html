@@ -16,7 +16,7 @@
             color: #333;
             margin: 0;
             padding: 10px;
-            padding-bottom: 40px;
+            padding-bottom: 90px; /* Aumentado para dar espacio a la barra inferior flotante */
             position: relative;
         }
         
@@ -173,13 +173,32 @@
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .grid-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; text-align: center; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 10px; }
         .grid-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.9rem; }
-        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        
+        /* Botones Principales y Barra Flotante Inferior */
         button.main-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
         .btn-gen { background-color: #ff9800; color: white; margin-bottom: 15px; width: 100%; }
         .btn-copy { background-color: #2196F3; color: white; margin-top: 10px; width: 100%; }
         .btn-dl-eval { background-color: #4db6ac; color: #121212; margin-top: 10px; width: 100%; } 
         .btn-chart { background-color: #333; color: #ff9800; margin-top: 10px; width: 100%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; gap: 8px;}
         .btn-chart:hover { background-color: #ff9800; color: #333; }
+        
+        .button-group { 
+            display: flex; 
+            gap: 10px; 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            background-color: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(5px);
+            padding: 15px 15px max(15px, env(safe-area-inset-bottom)); /* Considera margen del iPhone */
+            box-sizing: border-box; 
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08); 
+            z-index: 100;
+            margin: 0; 
+            border-top: 1px solid #eee;
+        }
+        
         .btn-save { background-color: #6d4c41; color: white; }
         .btn-load { background-color: #e0e0e0; color: #333; }
         #fileInput { display: none; }
@@ -584,6 +603,7 @@
             <button type="button" class="main-btn btn-chart" onclick="abrirGrafico()">📊 Ver Gráfico de Cata</button>
         </div>
 
+        <!-- Botones Fijos Inferiores -->
         <div class="button-group">
             <button type="button" class="main-btn btn-save" onclick="guardarJSON()">💾 Grabar Cata</button>
             <button type="button" class="main-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Cata</button>
@@ -594,6 +614,7 @@
     <script>
         // --- LOG DE ACTUALIZACIONES HISTÓRICAS RESTAURADAS ---
         const logHistorial = [
+            { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior de la pantalla para tenerlos accesibles en todo momento sin necesidad de hacer scroll." },
             { fecha: "17-MAY-2026", resumen: "Mejora de Evaluación Final: Se incluyó el resumen del análisis de tueste (Nombre, Color y Método Recomendado) como un párrafo dedicado en la generación automática de la evaluación final." },
             { fecha: "17-MAY-2026", resumen: "Persistencia de Análisis de Imagen: Ahora el JSON guarda y restaura automáticamente la fotografía procesada y los datos colorimétricos del análisis de tueste." },
             { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen. Utiliza Cropper.js para aislar la muestra y algoritmos de luminancia para estimar el nivel en la escala Agtron, además de perfiles sensoriales y químicos dinámicos." },
@@ -916,7 +937,6 @@
             // --- CONSTRUCCIÓN DEL TEXTO FINAL ---
             let textoFinal = enc;
 
-            // Inyectar el párrafo del análisis de imagen si hay datos cargados
             if (currentRoastData && currentRoastData.lum !== null) {
                 let p = getRoastProfile(currentRoastData.lum);
                 textoFinal += `\n\n🔥 Tueste analizado: ${p.label} (${p.sub}). Método recomendado: ${p.metodos}.`;
@@ -975,6 +995,8 @@
                 
                 if (i === 0 && p.includes('Ratio')) {
                     ctx.fillStyle = '#81c784'; ctx.font = 'bold 24px sans-serif';
+                } else if (p.includes('🔥 Tueste analizado')) {
+                    ctx.fillStyle = '#ff9800'; ctx.font = 'italic 22px sans-serif';
                 } else {
                     ctx.fillStyle = '#e0e0e0'; ctx.font = '24px sans-serif';
                 }
@@ -1018,7 +1040,7 @@
                 }, 
                 extraccion: { metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3') }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
-                analisis_imagen: currentRoastData // <-- Datos de tueste guardados aquí
+                analisis_imagen: currentRoastData
             };
             paramSensoriales.forEach((it, i) => data.sensorial[it] = fd.get(`sens_${i}`));
             paramNotas.forEach((it, i) => data.notas[it] = fd.get(`nota_${i}`));
@@ -1093,7 +1115,6 @@
                     document.getElementById('observaciones').value = d.observaciones || "";
                     document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
                     
-                    // --- RESTAURAR DATOS DE ANÁLISIS DE IMAGEN ---
                     if (d.analisis_imagen && d.analisis_imagen.img) {
                         currentRoastData = d.analisis_imagen;
                         document.getElementById('preview-roast').src = currentRoastData.img;
@@ -1113,7 +1134,6 @@
             reader.readAsText(file);
         }
 
-        // --- SISTEMA DEL GRÁFICO ---
         const mapVal = (v) => v === 'Alta' ? 3 : (v === 'Media' ? 2 : (v === 'Baja' ? 1 : 0));
         function cerrarGrafico() { document.getElementById('chartModal').style.display = 'none'; }
 

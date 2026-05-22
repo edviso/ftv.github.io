@@ -5,132 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Cata de café</title>
     
-    <!-- Librerías para el Módulo de Análisis de Tueste -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
-            margin: 0;
-            padding: 10px;
-            padding-bottom: 90px; /* Aumentado para dar espacio a la barra inferior flotante */
-            position: relative;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 10px; padding-bottom: 90px; position: relative; }
         
-        /* Título Fijo (Sticky) */
-        h1 {
-            text-align: center;
-            font-size: 1.5rem;
-            color: #4a3b32;
-            margin: -10px -10px 20px -10px;
-            padding: 15px 10px;
-            background-color: #f0f2f5;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 4px 6px -6px rgba(0,0,0,0.2);
-        }
+        h1 { text-align: center; font-size: 1.5rem; color: #4a3b32; margin: -10px -10px 20px -10px; padding: 15px 10px; background-color: #f0f2f5; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px -6px rgba(0,0,0,0.2); }
         
-        /* Botones Especiales */
-        #btnLog {
-            position: fixed;
-            top: 12px;
-            right: 10px;
-            background-color: #8d6e63;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 101;
-        }
+        #btnLog { position: fixed; top: 12px; right: 10px; background-color: #8d6e63; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 101; }
 
-        .auto-btn {
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
+        .auto-btn { background-color: #4caf50; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
         .auto-btn:hover { background-color: #388e3c; }
 
-        /* Estilos de la Ventana Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            display: flex;
-            flex-direction: column;
-            background-color: white;
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            max-height: 80vh;
-            position: relative;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            box-sizing: border-box;
-        }
-        .close-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-            font-weight: bold;
-            z-index: 10;
-        }
-        .log-title {
-            font-size: 1.1rem;
-            color: #4a3b32;
-            margin-bottom: 15px;
-            font-weight: bold;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-            flex-shrink: 0;
-            padding-right: 20px;
-        }
-        #logContainer, #infoBody {
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding-right: 5px;
-            flex: 1;
-            min-height: 0;
-        }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { display: flex; flex-direction: column; background-color: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.2); box-sizing: border-box; }
+        .close-btn { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #666; font-weight: bold; z-index: 10; }
+        .log-title { font-size: 1.1rem; color: #4a3b32; margin-bottom: 15px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-shrink: 0; padding-right: 20px; }
+        #logContainer, #infoBody { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 5px; flex: 1; min-height: 0; }
         .log-entry { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
         .log-date { font-size: 0.8rem; color: #ff9800; font-weight: bold; margin-bottom: 5px; }
         .log-text { font-size: 0.85rem; color: #444; line-height: 1.4; }
 
-        /* --- ESTILOS DEL GRÁFICO DARK MODE --- */
-        #chartModal .modal-content {
-            background-color: #121212;
-            color: #e0e0e0;
-            max-width: 500px;
-            max-height: 90vh;
-            padding: 0;
-            overflow: hidden;
-            border: 1px solid #333;
-        }
+        #chartModal .modal-content { background-color: #121212; color: #e0e0e0; max-width: 500px; max-height: 90vh; padding: 0; overflow: hidden; border: 1px solid #333; }
         .chart-header { padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background-color: #1a1a1a; }
         .chart-header h2 { margin: 0; font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px;}
         .chart-header .date { font-size: 0.8rem; color: #aaa; font-weight: normal;}
@@ -138,7 +35,6 @@
         .chart-body { overflow-y: auto; padding: 15px; }
         .chart-section { background-color: #1e1e1e; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid #2c2c2c; }
         .chart-section-title { text-align: center; font-size: 0.9rem; font-weight: bold; color: #ffb74d; margin-bottom: 15px; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        
         .radar-container { width: 100%; display: flex; justify-content: center; align-items: center; position: relative; }
         canvas { max-width: 100%; height: auto; }
 
@@ -174,7 +70,6 @@
         .grid-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; text-align: center; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 10px; }
         .grid-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.9rem; }
         
-        /* Botones Principales y Barra Flotante Inferior */
         button.main-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
         .btn-gen { background-color: #ff9800; color: white; margin-bottom: 15px; width: 100%; }
         .btn-copy { background-color: #2196F3; color: white; margin-top: 10px; width: 100%; }
@@ -182,34 +77,18 @@
         .btn-chart { background-color: #333; color: #ff9800; margin-top: 10px; width: 100%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; gap: 8px;}
         .btn-chart:hover { background-color: #ff9800; color: #333; }
         
-        .button-group { 
-            display: flex; 
-            gap: 10px; 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            background-color: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(5px);
-            padding: 15px 15px max(15px, env(safe-area-inset-bottom)); /* Considera margen del iPhone */
-            box-sizing: border-box; 
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.08); 
-            z-index: 100;
-            margin: 0; 
-            border-top: 1px solid #eee;
-        }
-        
+        .button-group { display: flex; gap: 10px; position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); padding: 15px 15px max(15px, env(safe-area-inset-bottom)); box-sizing: border-box; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 100; margin: 0; border-top: 1px solid #eee; }
         .btn-save { background-color: #6d4c41; color: white; }
         .btn-load { background-color: #e0e0e0; color: #333; }
-        #fileInput { display: none; }
+        #fileInput { display: none; } /* ESTA LÍNEA ES LA QUE OCULTA EL TEXTO FEO */
         .hidden { display: none; }
 
         /* --- ESTILOS MÓDULO ANÁLISIS DE TUESTE --- */
-        .upload-buttons { display: flex; gap: 12px; margin-bottom: 5px; }
-        .upload-section { flex: 1; border: 2px dashed #d7ccc8; padding: 12px 10px; border-radius: 12px; background: #fafafa; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; }
+        .upload-group-title { font-size: 0.85rem; font-weight: bold; color: #4a3b32; margin: 15px 0 8px 0; display: flex; align-items: center; gap: 5px; }
+        .upload-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
+        .upload-section { flex: 1; border: 2px dashed #d7ccc8; padding: 10px; border-radius: 12px; background: #fafafa; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; }
         .upload-section:hover { border-color: #bf360c; background: #fff; transform: translateY(-2px); }
-        .upload-icon { font-size: 1.4em; margin: 0; }
-        .upload-hint { text-align: center; font-size: 0.75rem; color: #888; margin-top: 5px; margin-bottom: 15px; }
+        .upload-icon { font-size: 1.2em; margin: 0; }
         
         #results-wrapper { display: none; margin-top: 15px; animation: slideUp 0.4s ease-out; }
         .swipe-hint { text-align: center; font-size: 0.75rem; color: #bf360c; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
@@ -218,8 +97,7 @@
         .carousel-container::-webkit-scrollbar { display: none; }
         .carousel-card { min-width: 100%; scroll-snap-align: center; background: #fff; border: 1px solid #efebe9; border-radius: 15px; padding: 15px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; }
         
-        #preview-roast { width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); object-fit: cover; aspect-ratio: 1 / 1; }
-        
+        .preview-roast { width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); object-fit: cover; aspect-ratio: 1 / 1; }
         .color-display { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
         .color-circle { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.12); flex-shrink: 0; }
         .tech-badge { background-color: #f8f9fa; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8rem; color: #5d4037; margin-top: 5px; display: inline-block; border: 1px solid #e9ecef; }
@@ -245,6 +123,9 @@
         
         .img-container-crop { max-height: 50vh; margin-bottom: 15px; background: #000; display: flex; justify-content: center; }
         .img-container-crop img { display: block; max-width: 100%; }
+        
+        .card-header-internal { text-align: center; font-weight: bold; color: #8d6e63; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.1rem; display:flex; align-items:center; justify-content:center; gap: 8px;}
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -268,13 +149,10 @@
         </div>
     </div>
 
-    <!-- Modal para el Recorte de Granos -->
     <div id="crop-modal" class="modal">
         <div class="modal-content" style="max-width: 450px; padding: 15px;">
             <div class="log-title" style="text-align: center; border-bottom: none; margin-bottom: 10px;">✂️ Aislar Granos</div>
-            <div class="img-container-crop">
-                <img id="image-to-crop">
-            </div>
+            <div class="img-container-crop"><img id="image-to-crop"></div>
             <div style="display:flex; gap:10px; width: 100%;">
                 <button type="button" class="btn-action" onclick="confirmCrop()">Analizar</button>
                 <button type="button" class="btn-action btn-cancel" onclick="cancelCrop()" style="margin-top:0;">Cancelar</button>
@@ -286,40 +164,16 @@
         <div class="modal-content">
             <span class="close-btn" style="color:#aaa; top: 18px;" onclick="cerrarGrafico()">&times;</span>
             <div class="chart-header">
-                <div>
-                    <h2>☕ CATA DE CAFÉ</h2>
-                    <div class="date" id="chartDate">08-MAY-2026 12H:07m</div>
-                </div>
+                <div><h2>☕ CATA DE CAFÉ</h2><div class="date" id="chartDate"></div></div>
                 <div class="badge-global" id="chartGlobal">☆ MUY BUENO</div>
             </div>
-            
             <div class="chart-body">
-                <div class="chart-section">
-                    <div class="chart-section-title">⬡ PERFIL SENSORIAL</div>
-                    <div class="radar-container">
-                        <canvas id="radarCanvas" width="400" height="350"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-section">
-                    <div class="chart-section-title">🍃 NOTAS AROMÁTICAS</div>
-                    <div id="barsContainer"></div>
-                </div>
-
-                <div class="chart-section">
-                    <div class="chart-section-title">☕ DETALLES DEL CAFÉ</div>
-                    <div class="details-grid" id="chartDetails"></div>
-                </div>
-
-                <div class="chart-section" style="margin-bottom: 0;">
-                    <div class="chart-section-title" style="justify-content: flex-start;">💬 OBSERVACIONES</div>
-                    <div class="obs-box" id="chartObs"></div>
-                </div>
+                <div class="chart-section"><div class="chart-section-title">⬡ PERFIL SENSORIAL</div><div class="radar-container"><canvas id="radarCanvas" width="400" height="350"></canvas></div></div>
+                <div class="chart-section"><div class="chart-section-title">🍃 NOTAS AROMÁTICAS</div><div id="barsContainer"></div></div>
+                <div class="chart-section"><div class="chart-section-title">☕ DETALLES DEL CAFÉ</div><div class="details-grid" id="chartDetails"></div></div>
+                <div class="chart-section" style="margin-bottom: 0;"><div class="chart-section-title" style="justify-content: flex-start;">💬 OBSERVACIONES</div><div class="obs-box" id="chartObs"></div></div>
             </div>
-            
-            <div style="padding: 15px; border-top: 1px solid #333; background-color: #1a1a1a;">
-                <button type="button" class="main-btn" style="background-color: #ff9800; color: #121212; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarGraficoJPG()">📥 Descargar Imagen (9:16)</button>
-            </div>
+            <div style="padding: 15px; border-top: 1px solid #333; background-color: #1a1a1a;"><button type="button" class="main-btn" style="background-color: #ff9800; color: #121212; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarGraficoJPG()">📥 Descargar Imagen (9:16)</button></div>
         </div>
     </div>
 
@@ -335,7 +189,7 @@
                 </div>
                 <div class="input-group">
                     <label>Código:</label>
-                    <input type="text" id="codigo" name="codigo" required placeholder="Ej. GES-L01-18ABR-T01" oninput="analizarCodigo()">
+                    <input type="text" id="codigo" name="codigo" required placeholder="Ej. TIL-L01-20MAY-T01" oninput="analizarCodigo()">
                 </div>
             </div>
             <div class="row">
@@ -353,110 +207,127 @@
             <div style="font-size: 0.95rem; font-weight: bold; color: #4a3b32; margin-bottom: 12px; display: flex; align-items: center; gap: 5px;">🔥 Perfil de Tueste</div>
             
             <div class="row">
-                <div class="input-group">
-                    <label>% Merma:</label>
-                    <input type="number" id="merma" name="merma" step="0.01" value="13.60">
-                </div>
-                <div class="input-group">
-                    <label>Temp (°C):</label>
-                    <input type="number" id="temp_tueste" name="temp_tueste" value="224">
-                </div>
-                <div class="input-group">
-                    <label>T. Total:</label>
-                    <input type="text" id="tiempo_tueste" name="tiempo_tueste" value="11:00">
-                </div>
+                <div class="input-group"><label>% Merma:</label><input type="number" id="merma" name="merma" step="0.01" value="13.60"></div>
+                <div class="input-group"><label>Temp (°C):</label><input type="number" id="temp_tueste" name="temp_tueste" value="224"></div>
+                <div class="input-group"><label>T. Total:</label><input type="text" id="tiempo_tueste" name="tiempo_tueste" value="11:00"></div>
             </div>
 
             <div style="background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0;">
-                <div style="display: flex; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 8px; text-align: center;">
-                    <div style="flex: 1.2; text-align: left;">Fase</div>
-                    <div style="flex: 1;">Tiempo</div>
-                    <div style="flex: 1;">Veloc.</div>
-                </div>
-                
-                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Secado:</div>
-                    <div style="flex: 1;"><input type="text" id="secado_tiempo" name="secado_tiempo" value="03:30" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                    <div style="flex: 1;"><input type="text" id="secado_vel" name="secado_vel" value="V3" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                </div>
-                
-                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Maillard:</div>
-                    <div style="flex: 1;"><input type="text" id="maillard_tiempo" name="maillard_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                    <div style="flex: 1;"><input type="text" id="maillard_vel" name="maillard_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                </div>
-                
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Desarrollo:</div>
-                    <div style="flex: 1;"><input type="text" id="desarrollo_tiempo" name="desarrollo_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                    <div style="flex: 1;"><input type="text" id="desarrollo_vel" name="desarrollo_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                </div>
+                <div style="display: flex; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 8px; text-align: center;"><div style="flex: 1.2; text-align: left;">Fase</div><div style="flex: 1;">Tiempo</div><div style="flex: 1;">Veloc.</div></div>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;"><div style="flex: 1.2; font-size: 0.85rem; color: #555;">Secado:</div><div style="flex: 1;"><input type="text" id="secado_tiempo" name="secado_tiempo" value="03:30" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div><div style="flex: 1;"><input type="text" id="secado_vel" name="secado_vel" value="V3" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div></div>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;"><div style="flex: 1.2; font-size: 0.85rem; color: #555;">Maillard:</div><div style="flex: 1;"><input type="text" id="maillard_tiempo" name="maillard_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div><div style="flex: 1;"><input type="text" id="maillard_vel" name="maillard_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div></div>
+                <div style="display: flex; gap: 8px; align-items: center;"><div style="flex: 1.2; font-size: 0.85rem; color: #555;">Desarrollo:</div><div style="flex: 1;"><input type="text" id="desarrollo_tiempo" name="desarrollo_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div><div style="flex: 1;"><input type="text" id="desarrollo_vel" name="desarrollo_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div></div>
             </div>
         </div>
 
-        <!-- MÓDULO ANALIZAR TUESTE -->
         <div class="card">
-            <div class="card-title"><div>🔍 Análisis de Tueste por Imagen</div></div>
+            <div class="card-title"><div>🔍 Análisis de Desarrollo (Color)</div></div>
             
+            <div class="upload-group-title">🫘 Café en Grano (Exterior)</div>
             <div class="upload-buttons">
-                <div class="upload-section" onclick="document.getElementById('upload-camera').click()">
-                    <input type="file" id="upload-camera" accept="image/*" capture="environment" style="display:none">
-                    <span class="upload-icon">📸</span>
-                    <strong>Cámara</strong>
+                <div class="upload-section" onclick="document.getElementById('upload-camera-grano').click()">
+                    <input type="file" id="upload-camera-grano" accept="image/*" capture="environment" style="display:none" onchange="handleImageUpload(event, 'grano')">
+                    <span class="upload-icon">📸</span> <strong>Cámara</strong>
                 </div>
-                <div class="upload-section" onclick="document.getElementById('upload-file').click()">
-                    <input type="file" id="upload-file" accept="image/*" style="display:none">
-                    <span class="upload-icon">📁</span>
-                    <strong>Archivo</strong>
+                <div class="upload-section" onclick="document.getElementById('upload-file-grano').click()">
+                    <input type="file" id="upload-file-grano" accept="image/*" style="display:none" onchange="handleImageUpload(event, 'grano')">
+                    <span class="upload-icon">📁</span> <strong>Archivo</strong>
                 </div>
             </div>
-            <p class="upload-hint">Asegura luz constante para resultados comparables.</p>
+
+            <div class="upload-group-title">🤎 Café Molido (Interior)</div>
+            <div class="upload-buttons">
+                <div class="upload-section" onclick="document.getElementById('upload-camera-molido').click()">
+                    <input type="file" id="upload-camera-molido" accept="image/*" capture="environment" style="display:none" onchange="handleImageUpload(event, 'molido')">
+                    <span class="upload-icon">📸</span> <strong>Cámara</strong>
+                </div>
+                <div class="upload-section" onclick="document.getElementById('upload-file-molido').click()">
+                    <input type="file" id="upload-file-molido" accept="image/*" style="display:none" onchange="handleImageUpload(event, 'molido')">
+                    <span class="upload-icon">📁</span> <strong>Archivo</strong>
+                </div>
+            </div>
 
             <canvas id="canvas-roast" style="display:none;"></canvas>
             
             <div id="results-wrapper">
-                <p class="swipe-hint">Desliza para ver análisis ↔️</p>
-                
+                <p class="swipe-hint">Desliza para explorar análisis técnico ↔️</p>
                 <div class="carousel-container">
-                    <div class="carousel-card">
-                        <img id="preview-roast">
+                    
+                    <div class="carousel-card" id="card-grano" style="display: none;">
+                        <div class="card-header-internal">🫘 1. EXTERIOR (GRANO)</div>
+                        <img id="preview-roast-grano" class="preview-roast">
                         <div class="color-display">
-                            <div id="swatch" class="color-circle"></div>
+                            <div id="swatch-grano" class="color-circle"></div>
                             <div style="display: flex; flex-direction: column;">
-                                <h2 id="roast-label" style="margin:0; color: #4a3b32; font-size: 1.4em;"></h2>
-                                <span id="roast-sublabel" style="color: #bf360c; font-weight: 700; font-size: 0.9em;"></span>
-                                <div id="tech-values" class="tech-badge"></div>
+                                <h2 id="roast-label-grano" style="margin:0; color: #4a3b32; font-size: 1.2em;"></h2>
+                                <span id="roast-sublabel-grano" style="color: #bf360c; font-weight: 700; font-size: 0.9em;"></span>
+                                <div id="tech-values-grano" class="tech-badge"></div>
                             </div>
                         </div>
-
                         <div class="agtron-container">
-                            <div class="agtron-title">ESCALA DE MEDICIÓN</div>
-                            <div class="agtron-labels">
-                                <div>95+</div><div>85</div><div>75</div><div>65</div><div>55</div><div>45</div><div>35</div><div>25</div><div>15</div><div>5</div>
-                            </div>
+                            <div class="agtron-title">ESCALA AGTRON (APROX)</div>
+                            <div class="agtron-labels"><div>95+</div><div>85</div><div>75</div><div>65</div><div>55</div><div>45</div><div>35</div><div>25</div><div>15</div><div>5</div></div>
                             <div class="agtron-bar">
                                 <div class="segment seg-1"></div><div class="segment seg-2"></div><div class="segment seg-3"></div><div class="segment seg-4"></div><div class="segment seg-5"></div><div class="segment seg-6"></div><div class="segment seg-7"></div><div class="segment seg-8"></div><div class="segment seg-9"></div><div class="segment seg-10"></div>
-                                <div class="agtron-marker" id="agtron-marker"></div>
+                                <div class="agtron-marker" id="agtron-marker-grano"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="carousel-card">
+                    <div class="carousel-card" id="card-perfil-grano" style="display: none;">
+                        <div class="card-header-internal">📋 2. PERFIL EXTERIOR</div>
                         <div class="profile-section">
-                            <div class="profile-item">
-                                <span class="profile-label">Hito Técnico</span>
-                                <span id="hito-text" class="profile-text"></span>
+                            <div class="profile-item"><span class="profile-label">Hito Técnico Superficial</span><span id="hito-text-grano" class="profile-text"></span></div>
+                            <div class="profile-item"><span class="profile-label">Química del Cascarón</span><span id="quimica-text-grano" class="profile-text"></span></div>
+                            <div class="profile-item"><span class="profile-label">Método Recomendado</span><span id="metodo-text-grano" class="profile-text" style="font-weight: bold; color: #5d4037;"></span></div>
+                            <div class="profile-item"><span class="profile-label">Perfil Sensorial Detallado</span><span id="sensorial-text-grano" class="profile-text dynamic-nuance"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="carousel-card" id="card-molido" style="display: none;">
+                        <div class="card-header-internal">🤎 3. INTERIOR (MOLIDO)</div>
+                        <img id="preview-roast-molido" class="preview-roast">
+                        <div class="color-display">
+                            <div id="swatch-molido" class="color-circle"></div>
+                            <div style="display: flex; flex-direction: column;">
+                                <h2 id="roast-label-molido" style="margin:0; color: #4a3b32; font-size: 1.2em;"></h2>
+                                <span id="roast-sublabel-molido" style="color: #bf360c; font-weight: 700; font-size: 0.9em;"></span>
+                                <div id="tech-values-molido" class="tech-badge"></div>
                             </div>
-                            <div class="profile-item">
-                                <span class="profile-label">Química (Estándar)</span>
-                                <span id="quimica-text" class="profile-text"></span>
-                            </div>
-                            <div class="profile-item">
-                                <span class="profile-label">Perfil Sensorial Analizado</span>
-                                <span id="sensorial-text" class="profile-text dynamic-nuance"></span>
+                        </div>
+                        <div class="agtron-container">
+                            <div class="agtron-title">ESCALA AGTRON (APROX)</div>
+                            <div class="agtron-labels"><div>95+</div><div>85</div><div>75</div><div>65</div><div>55</div><div>45</div><div>35</div><div>25</div><div>15</div><div>5</div></div>
+                            <div class="agtron-bar">
+                                <div class="segment seg-1"></div><div class="segment seg-2"></div><div class="segment seg-3"></div><div class="segment seg-4"></div><div class="segment seg-5"></div><div class="segment seg-6"></div><div class="segment seg-7"></div><div class="segment seg-8"></div><div class="segment seg-9"></div><div class="segment seg-10"></div>
+                                <div class="agtron-marker" id="agtron-marker-molido"></div>
                             </div>
                         </div>
                     </div>
+
+                    <div class="carousel-card" id="card-perfil-molido" style="display: none;">
+                        <div class="card-header-internal">📋 4. PERFIL INTERIOR</div>
+                        <div class="profile-section">
+                            <div class="profile-item"><span class="profile-label">Hito Técnico del Núcleo</span><span id="hito-text-molido" class="profile-text"></span></div>
+                            <div class="profile-item"><span class="profile-label">Química Celular</span><span id="quimica-text-molido" class="profile-text"></span></div>
+                            <div class="profile-item"><span class="profile-label">Método Recomendado</span><span id="metodo-text-molido" class="profile-text" style="font-weight: bold; color: #5d4037;"></span></div>
+                            <div class="profile-item"><span class="profile-label">Perfil Sensorial Detallado</span><span id="sensorial-text-molido" class="profile-text dynamic-nuance"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="carousel-card" id="card-delta" style="display: none;">
+                        <div class="card-header-internal">⚖️ 5. ANÁLISIS DELTA</div>
+                        <div class="profile-section">
+                            <div class="profile-item" style="background-color: #f1f8e9; padding: 15px; border-left: 5px solid #7cb342; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <span class="profile-label" style="color:#558b2f; margin-bottom: 5px;">Δ Valor de Delta</span>
+                                <span id="delta-valor" class="profile-text" style="font-weight: bold; font-size:1.3rem; color:#33691e;"></span>
+                            </div>
+                            <div class="profile-item"><span class="profile-label">Diagnóstico</span><span id="delta-diferencia" class="profile-text" style="font-weight: bold;"></span></div>
+                            <div class="profile-item"><span class="profile-label">Causas Termodinámicas</span><span id="delta-causas" class="profile-text"></span></div>
+                            <div class="profile-item"><span class="profile-label">Consecuencias en Taza</span><span id="delta-consecuencias" class="profile-text"></span></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -464,420 +335,146 @@
         <div class="card">
             <div class="card-title"><div>⚖️ Preparación y Extracción</div></div>
             <div class="row">
-                <div class="input-group">
-                    <label>Método:</label>
-                    <select id="metodo" name="metodo" onchange="actualizarDispositivos()">
-                        <option value="Filtrado" selected>Filtrado</option>
-                        <option value="Inmersión">Inmersión</option>
-                        <option value="Presión (Espresso)">Presión (Espresso)</option>
-                        <option value="Percolación">Percolación</option>
-                        <option value="Infusión en frío (Cold Brew)">Infusión en frío (Cold Brew)</option>
-                        <option value="Híbrido">Híbrido</option>
-                        <option value="Ebullición">Ebullición</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Dispositivo:</label>
-                    <select id="dispositivo" name="dispositivo" onchange="actualizarFiltros()">
-                        </select>
-                </div>
+                <div class="input-group"><label>Método:</label><select id="metodo" name="metodo" onchange="actualizarDispositivos()"><option value="Filtrado" selected>Filtrado</option><option value="Inmersión">Inmersión</option><option value="Presión (Espresso)">Presión (Espresso)</option><option value="Percolación">Percolación</option><option value="Infusión en frío (Cold Brew)">Infusión en frío (Cold Brew)</option><option value="Híbrido">Híbrido</option><option value="Ebullición">Ebullición</option></select></div>
+                <div class="input-group"><label>Dispositivo:</label><select id="dispositivo" name="dispositivo" onchange="actualizarFiltros()"></select></div>
             </div>
             <div class="row">
-                <div class="input-group">
-                    <label>Filtro:</label>
-                    <select id="filtro" name="filtro">
-                        </select>
-                </div>
-                <div class="input-group">
-                    <label>Clics:</label>
-                    <div class="stepper">
-                        <button type="button" onclick="step('clics', -1)">-</button>
-                        <input type="number" id="clics" name="clics" value="35">
-                        <button type="button" onclick="step('clics', 1)">+</button>
-                    </div>
-                </div>
+                <div class="input-group"><label>Filtro:</label><select id="filtro" name="filtro"></select></div>
+                <div class="input-group"><label>Clics:</label><div class="stepper"><button type="button" onclick="step('clics', -1)">-</button><input type="number" id="clics" name="clics" value="35"><button type="button" onclick="step('clics', 1)">+</button></div></div>
             </div>
             <div class="row">
-                <div class="input-group">
-                    <label>Café (g):</label>
-                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="12.5" placeholder="0.0">
-                </div>
-                <div class="input-group">
-                    <label>Agua Total (ml):</label>
-                    <input type="number" id="agua_total" name="agua_total" value="200" placeholder="0">
-                </div>
+                <div class="input-group"><label>Café (g):</label><input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="12.5"></div>
+                <div class="input-group"><label>Agua Total (ml):</label><input type="number" id="agua_total" name="agua_total" value="200"></div>
             </div>
             <div class="checkbox-group">
-                <div class="checkbox-item">
-                    <input type="checkbox" id="usa_ducha" name="usa_ducha">
-                    <label for="usa_ducha">Ducha</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="bola_fria" name="bola_fria">
-                    <label for="bola_fria">Bola Fría</label>
-                </div>
-                <div class="checkbox-item" style="width:100%">
-                    <label>Hielo en jarra (ml):</label>
-                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20" placeholder="0">
-                </div>
+                <div class="checkbox-item"><input type="checkbox" id="usa_ducha" name="usa_ducha"><label for="usa_ducha">Ducha</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="bola_fria" name="bola_fria"><label for="bola_fria">Bola Fría</label></div>
+                <div class="checkbox-item" style="width:100%"><label>Hielo en jarra (ml):</label><input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20"></div>
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-            <div class="checkbox-item" style="margin-bottom:10px">
-                <input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos()">
-                <label for="un_solo_vertido"><b>Hacer un solo vertido</b></label>
-            </div>
-            <div class="input-group">
-                <label>Blooming (ml):</label>
-                <div class="stepper">
-                    <button type="button" onclick="step('blooming', -5)">-</button>
-                    <input type="number" id="blooming" name="blooming" value="45">
-                    <button type="button" onclick="step('blooming', 5)">+</button>
-                </div>
-            </div>
-            <div class="input-group">
-                <label>1er Vertido (ml):</label>
-                <div class="stepper">
-                    <button type="button" onclick="step('v1', -10)">-</button>
-                    <input type="number" id="v1" name="v1" value="120">
-                    <button type="button" onclick="step('v1', 10)">+</button>
-                </div>
-            </div>
+            <div class="checkbox-item" style="margin-bottom:10px"><input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos()"><label for="un_solo_vertido"><b>Hacer un solo vertido</b></label></div>
+            <div class="input-group"><label>Blooming (ml):</label><div class="stepper"><button type="button" onclick="step('blooming', -5)">-</button><input type="number" id="blooming" name="blooming" value="45"><button type="button" onclick="step('blooming', 5)">+</button></div></div>
+            <div class="input-group"><label>1er Vertido (ml):</label><div class="stepper"><button type="button" onclick="step('v1', -10)">-</button><input type="number" id="v1" name="v1" value="120"><button type="button" onclick="step('v1', 10)">+</button></div></div>
             <div id="vertidos_extras">
-                <div class="input-group">
-                    <label>2do Vertido (ml):</label>
-                    <div class="stepper">
-                        <button type="button" onclick="step('v2', -10)">-</button>
-                        <input type="number" id="v2" name="v2" value="180">
-                        <button type="button" onclick="step('v2', 10)">+</button>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>3er Vertido (ml):</label>
-                    <div class="stepper">
-                        <button type="button" onclick="step('v3', -10)">-</button>
-                        <input type="number" id="v3" name="v3" value="240">
-                        <button type="button" onclick="step('v3', 10)">+</button>
-                    </div>
-                </div>
+                <div class="input-group"><label>2do Vertido (ml):</label><div class="stepper"><button type="button" onclick="step('v2', -10)">-</button><input type="number" id="v2" name="v2" value="180"><button type="button" onclick="step('v2', 10)">+</button></div></div>
+                <div class="input-group"><label>3er Vertido (ml):</label><div class="stepper"><button type="button" onclick="step('v3', -10)">-</button><input type="number" id="v3" name="v3" value="240"><button type="button" onclick="step('v3', 10)">+</button></div></div>
             </div>
         </div>
 
         <div class="card">
             <div class="card-title"><div>☕ EVALUACIÓN SENSORIAL</div></div>
-            <div class="grid-header">
-                <div style="text-align: left;">Parámetro</div>
-                <div>Alta</div><div>Media</div><div>Baja</div>
-            </div>
+            <div class="grid-header"><div style="text-align: left;">Parámetro</div><div>Alta</div><div>Media</div><div>Baja</div></div>
             <div id="evaluacionSensorial"></div>
         </div>
 
         <div class="card">
             <div class="card-title"><div>🌸 NOTAS SENSORIALES</div></div>
-            <div class="grid-header">
-                <div style="text-align: left;">Nota</div>
-                <div>Alta</div><div>Media</div><div>Baja</div>
-            </div>
+            <div class="grid-header"><div style="text-align: left;">Nota</div><div>Alta</div><div>Media</div><div>Baja</div></div>
             <div id="notasSensoriales"></div>
         </div>
 
         <div class="card">
-            <div class="card-title">
-                <div style="display:flex; align-items:center; gap:8px;">✅ EVALUACIÓN GLOBAL</div>
-                <button type="button" class="auto-btn" onclick="autoGenerarGlobal()">🪄 Auto-generar</button>
-            </div>
+            <div class="card-title"><div style="display:flex; align-items:center; gap:8px;">✅ EVALUACIÓN GLOBAL</div><button type="button" class="auto-btn" onclick="autoGenerarGlobal()">🪄 Auto-generar</button></div>
             <div id="evaluacionGlobal"></div>
-            <div class="input-group" style="margin-top:15px">
-                <label>Observaciones:</label>
-                <textarea id="observaciones" name="observaciones" placeholder="Detalles finales..."></textarea>
-            </div>
+            <div class="input-group" style="margin-top:15px"><label>Observaciones:</label><textarea id="observaciones" name="observaciones" placeholder="Detalles finales..."></textarea></div>
         </div>
 
         <div class="card">
             <div class="card-title"><div>🧠 EVALUACIÓN FINAL</div></div>
             <button type="button" class="main-btn btn-gen" onclick="dispararGeneracion()">✨ Generar Resumen Interpretativo</button>
-            <div class="input-group">
-                <textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el resumen..."></textarea>
-            </div>
+            <div class="input-group"><textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el resumen..."></textarea></div>
             <button type="button" class="main-btn btn-copy" id="btnCopiar" onclick="copiarTexto()">📋 Copiar Texto</button>
             <button type="button" class="main-btn btn-dl-eval" onclick="descargarEvaluacionJPG()">📥 Descargar Evaluación</button>
             <button type="button" class="main-btn btn-chart" onclick="abrirGrafico()">📊 Ver Gráfico de Cata</button>
         </div>
 
-        <!-- Botones Fijos Inferiores -->
         <div class="button-group">
             <button type="button" class="main-btn btn-save" onclick="guardarJSON()">💾 Grabar Cata</button>
             <button type="button" class="main-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Cata</button>
-            <input type="file" id="fileInput" accept=".json" onchange="cargarJSON(event)">
+            <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="cargarJSON(event)">
         </div>
     </form>
 
     <script>
-        // --- LOG DE ACTUALIZACIONES HISTÓRICAS RESTAURADAS ---
         const logHistorial = [
-            { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior de la pantalla para tenerlos accesibles en todo momento sin necesidad de hacer scroll." },
-            { fecha: "17-MAY-2026", resumen: "Mejora de Evaluación Final: Se incluyó el resumen del análisis de tueste (Nombre, Color y Método Recomendado) como un párrafo dedicado en la generación automática de la evaluación final." },
-            { fecha: "17-MAY-2026", resumen: "Persistencia de Análisis de Imagen: Ahora el JSON guarda y restaura automáticamente la fotografía procesada y los datos colorimétricos del análisis de tueste." },
-            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen. Utiliza Cropper.js para aislar la muestra y algoritmos de luminancia para estimar el nivel en la escala Agtron, además de perfiles sensoriales y químicos dinámicos." },
-            { fecha: "13-MAY-2026", resumen: "Mejora UI: Se hizo el título principal de la aplicación 'Sticky' (fijo) junto con el botón de Log, creando una barra de navegación superior anclada que acompaña al usuario al hacer scroll." },
-            { fecha: "12-MAY-2026", resumen: "Personalización de Defaults: Se ajustaron los valores por defecto del formulario de extracción para mayor agilidad (Filtrado > Origami Dripper > Fondo plano/papel, 35 clics, 12.5g café, 200ml agua y 20ml hielo). Se añadió lógica de retrocompatibilidad en el cargador JSON para asimilar nombres antiguos como 'Filtrado (Pour Over / Goteo)'." },
-            { fecha: "11-MAY-2026", resumen: "Reestructuración Visual: Se rediseñó la sección 'Detalles del Café' del Gráfico de Cata para alinearse perfectamente con la nueva referencia visual a dos columnas precisas. Se agregaron los corchetes [] solicitados, se incorporó la línea de Velocidades (Vel) y se ajustó el espacio nativo en Canvas para evitar sobreescritura." },
-            { fecha: "11-MAY-2026", resumen: "Corrección Cargador JSON: Se reprogramó la función cargarJSON() para añadir retrocompatibilidad con versiones antiguas del archivo, asegurando que extraiga los datos así no tengan la estructura de Perfil de Tueste nueva. También se corrigió un bug nativo del navegador que impedía cargar el mismo archivo dos veces seguidas." },
-            { fecha: "10-MAY-2026", resumen: "Perfil de Tueste: Se agregaron campos detallados en los Datos del Café para registrar el % de Merma, Temperatura, Tiempo Total y las Fases de Tueste (Secado, Maillard, Desarrollo) con sus respectivos tiempos y velocidades por defecto. Se incluyeron en la exportación/importación JSON." },
-            { fecha: "10-MAY-2026", resumen: "Exportación de Resumen: Se añadió el botón 'Descargar Evaluación' en la sección final. Este genera automáticamente una tarjeta vertical (9:16) en formato JPG con el texto del resumen interpretativo, lista para compartir en historias o guardarla en galería." },
-            { fecha: "08-MAY-2026", resumen: "Exportación a IG/Stories: Se programó un motor de renderizado nativo en HTML5 Canvas que genera y exporta todo el Gráfico de Cata en formato JPG (Resolución 720x1280px, Proporción 9:16). Se añadió el botón 'Descargar Imagen' que crea el gráfico al instante." },
-            { fecha: "08-MAY-2026", resumen: "Visualización Avanzada Dark Mode: Se implementó un modal para visualizar los datos técnicos en formato infográfico (gráfico de radar y barras). Corrección de scroll en modales con CSS ('min-height: 0')." },
-            { fecha: "08-MAY-2026", resumen: "Lógica de Cascada Estricta: Se implementó un sistema de menús desplegables dependientes (Método -> Dispositivo -> Filtro) garantizando un registro 100% consistente y evitando combinaciones irreales." },
-            { fecha: "07-MAY-2026", resumen: "Estandarización de Datos UI: Los campos de 'Método' y 'Tipo de Filtro' fueron reemplazados por menús desplegables estandarizados. Se incorporó además la categoría 'Dispositivo' con opciones predefinidas." },
-            { fecha: "05-MAY-2026", resumen: "Corrección Matemática y de UI: Se ajustó la función analizarCodigo() para normalizar las horas a la medianoche, evitando errores de redondeo en los días de tueste. Se mejoró el contenedor de modales para pantallas pequeñas." },
-            { fecha: "03-MAY-2026", resumen: "Lógica Experta: Se añadió el botón 'Auto-generar' en la Evaluación Global que promedia y pondera los puntajes ingresados." },
-            { fecha: "02-MAY-2026", resumen: "Corrección de Bug: Se restauró la lógica completa de 'Generar Resumen Interpretativo' que redacta automáticamente un párrafo con las notas de cata." },
-            { fecha: "28-ABR-2026", resumen: "UI y Glosario Completo: Se añadieron botones de ayuda (?) en Evaluación Global, Notas y Parámetros Sensoriales con descripciones teóricas para estandarizar el criterio del catador." }
+            { fecha: "22-MAY-2026", resumen: "Corrección de UI: Se ocultó explícitamente el elemento nativo de carga de archivos que deformaba la barra fija inferior, restaurando el diseño original de dos botones limpios." },
+            { fecha: "22-MAY-2026", resumen: "Restauración de Perfiles: Se reincorporaron las descripciones sensoriales detalladas dinámicas (basadas en cortes finos de luminancia) y la recomendación del método de extracción para las tarjetas de perfil exterior e interior." },
+            { fecha: "22-MAY-2026", resumen: "Estructura de Análisis de 5 Tarjetas: Se separaron los perfiles de tueste del exterior (grano) y del interior (molido). Se creó una quinta tarjeta horizontal exclusiva para el análisis cualitativo del Delta, incluyendo diagnóstico, causas termodinámicas y consecuencias en taza." },
+            { fecha: "22-MAY-2026", resumen: "Análisis Dual (Grano y Molido): Se implementó la doble lectura fotográfica para evaluar el desarrollo del tueste. Se actualizó el diccionario de variedades agregando TIL (Típica Lavado)." }
         ];
 
-        // --- VARIABLE GLOBAL PARA ANÁLISIS DE TUESTE ---
-        let currentRoastData = { r: null, g: null, b: null, lum: null, img: null };
+        let currentRoastData = {
+            grano: { r: null, g: null, b: null, lum: null, img: null },
+            molido: { r: null, g: null, b: null, lum: null, img: null }
+        };
+        let currentCropType = null; 
 
         function abrirLog() {
             const contenedor = document.getElementById('logContainer');
             contenedor.innerHTML = '';
-            logHistorial.forEach(item => {
-                contenedor.innerHTML += `
-                    <div class="log-entry">
-                        <div class="log-date">${item.fecha}</div>
-                        <div class="log-text">${item.resumen}</div>
-                    </div>
-                `;
-            });
+            logHistorial.forEach(item => { contenedor.innerHTML += `<div class="log-entry"><div class="log-date">${item.fecha}</div><div class="log-text">${item.resumen}</div></div>`; });
             document.getElementById('logModal').style.display = 'flex';
         }
+        function cerrarLog() { document.getElementById('logModal').style.display = 'none'; }
 
-        function cerrarLog() {
-            document.getElementById('logModal').style.display = 'none';
-        }
+        const mapDispositivos = { "Filtrado": ["Origami Dripper", "Hario V60", "Chemex", "Kalita Wave"], "Inmersión": ["French Press", "Clever Dripper"], "Presión (Espresso)": ["Espresso Machine", "Flair Espresso Maker"], "Percolación": ["Moka Pot", "Percoladora"], "Infusión en frío (Cold Brew)": ["Cold Brew Maker"], "Híbrido": ["AeroPress"], "Ebullición": ["Cezve"] };
+        const mapFiltros = { "Origami Dripper": ["Fondo plano/papel", "Cónico/papel"], "Hario V60": ["Cónico/papel"], "Chemex": ["Filtro de papel grueso"], "Kalita Wave": ["Fondo plano/papel"], "French Press": ["Filtro metálico"], "Clever Dripper": ["Cónico/papel"], "Espresso Machine": ["Filtro metálico"], "Flair Espresso Maker": ["Filtro metálico"], "Moka Pot": ["Filtro metálico"], "Percoladora": ["Filtro metálico"], "Cold Brew Maker": ["Filtro metálico", "Filtro de tela", "Filtro de papel grueso"], "AeroPress": ["Cónico/papel", "Filtro metálico", "Filtro de tela"], "Cezve": ["Sin filtro"] };
 
-        // --- MAPEO DE DISPOSITIVOS Y FILTROS ---
-        const mapDispositivos = {
-            "Filtrado": ["Origami Dripper", "Hario V60", "Chemex", "Kalita Wave"],
-            "Inmersión": ["French Press", "Clever Dripper"],
-            "Presión (Espresso)": ["Espresso Machine", "Flair Espresso Maker"],
-            "Percolación": ["Moka Pot", "Percoladora"],
-            "Infusión en frío (Cold Brew)": ["Cold Brew Maker"],
-            "Híbrido": ["AeroPress"],
-            "Ebullición": ["Cezve"]
-        };
+        function actualizarDispositivos() { const ms = document.getElementById('metodo'); const ds = document.getElementById('dispositivo'); ds.innerHTML = ''; (mapDispositivos[ms.value] || []).forEach(d => ds.add(new Option(d, d))); actualizarFiltros(); }
+        function actualizarFiltros() { const ds = document.getElementById('dispositivo'); const fs = document.getElementById('filtro'); fs.innerHTML = ''; (mapFiltros[ds.value] || []).forEach(f => fs.add(new Option(f, f))); }
 
-        const mapFiltros = {
-            "Origami Dripper": ["Fondo plano/papel", "Cónico/papel"],
-            "Hario V60": ["Cónico/papel"],
-            "Chemex": ["Filtro de papel grueso"],
-            "Kalita Wave": ["Fondo plano/papel"],
-            "French Press": ["Filtro metálico"],
-            "Clever Dripper": ["Cónico/papel"],
-            "Espresso Machine": ["Filtro metálico"],
-            "Flair Espresso Maker": ["Filtro metálico"],
-            "Moka Pot": ["Filtro metálico"],
-            "Percoladora": ["Filtro metálico"],
-            "Cold Brew Maker": ["Filtro metálico", "Filtro de tela", "Filtro de papel grueso"],
-            "AeroPress": ["Cónico/papel", "Filtro metálico", "Filtro de tela"],
-            "Cezve": ["Sin filtro"]
-        };
-
-        function actualizarDispositivos() {
-            const metodoSelect = document.getElementById('metodo');
-            const dispSelect = document.getElementById('dispositivo');
-            dispSelect.innerHTML = '';
-            const dispositivos = mapDispositivos[metodoSelect.value] || [];
-            dispositivos.forEach(disp => {
-                const opt = document.createElement('option');
-                opt.value = disp; opt.text = disp; dispSelect.add(opt);
-            });
-            actualizarFiltros();
-        }
-
-        function actualizarFiltros() {
-            const dispSelect = document.getElementById('dispositivo');
-            const filtroSelect = document.getElementById('filtro');
-            filtroSelect.innerHTML = '';
-            const filtros = mapFiltros[dispSelect.value] || [];
-            filtros.forEach(f => {
-                const opt = document.createElement('option');
-                opt.value = f; opt.text = f; filtroSelect.add(opt);
-            });
-        }
-
-        // --- DICCIONARIO DEL GLOSARIO ---
         const conceptosGlosario = {
-            "Fragancia (en seco)": { "General": "Olor de los granos de café recién molidos.", "Alta": "Muy intensa y compleja.", "Media": "Intensidad moderada.", "Baja": "Aroma débil o rancio." },
-            "Aroma (en húmedo)": { "General": "Olor que desprende el café al añadir agua.", "Alta": "Explosiva y envolvente.", "Media": "Agradable y clara.", "Baja": "Aroma tenue." },
-            "Sabor": { "General": "Combinación principal de lengua y nariz.", "Alta": "Multidimensional y rico.", "Media": "Sabor sólido y predecible.", "Baja": "Sabor simple." },
-            "Acidez": { "General": "Vivacidad del café.", "Alta": "Cítrica, brillante.", "Media": "Suave y balanceada.", "Baja": "Plana." },
-            "Dulzor": { "General": "Intensidad de azúcares.", "Alta": "Melosa o almibarada.", "Media": "Dulzor moderado.", "Baja": "Sensación seca." },
-            "Amargor": { "General": "Sensación punzante.", "Alta": "Muy intense.", "Media": "Amargor limpio.", "Baja": "Casi imperceptible." },
-            "Cuerpo": { "General": "Sensación táctil y peso.", "Alta": "Pesada, cremosa.", "Media": "Textura sedosa.", "Baja": "Acuosa, ligera." },
-            "Balance": { "General": "Armonía entre atributos.", "Alta": "Perfecta armonía.", "Media": "Buen equilibrio.", "Baja": "Café descompensado." },
-            "Retrogusto": { "General": "Experiencia que permanece.", "Alta": "Persistencia larga.", "Media": "Persistencia moderada.", "Baja": "Corta o fugaz." },
-            "Limpieza de taza": { "General": "Ausencia de defectos.", "Alta": "Transparencia total.", "Media": "Sabor consistente.", "Baja": "Defectos claros." },
-            "Floral": { "General": "Recuerdan a flores.", "Alta": "Dominante.", "Media": "Sutil.", "Baja": "Imperceptible." },
-            "Frutal": { "General": "Notas de frutas.", "Alta": "Vibrante.", "Media": "Frescura.", "Baja": "Lineal." },
-            "Chocolate/Cacao": { "General": "Chocolate o cacao.", "Alta": "Intensa.", "Media": "Presente.", "Baja": "Tenue." },
-            "Caramelo/Dulce": { "General": "Azúcar, miel.", "Alta": "Meloso.", "Media": "Agradable.", "Baja": "Seco." },
-            "Especiado": { "General": "Canela, clavo.", "Alta": "Marcada.", "Media": "Leve.", "Baja": "Ausente." },
-            "Tostado": { "General": "Influencia del fuego.", "Alta": "Fuerte.", "Media": "Equilibrio.", "Baja": "Ligero." },
-            "Herbal/Vegetal": { "General": "Pasto, té.", "Alta": "Verde marcado.", "Media": "Matices.", "Baja": "Sin rasgos." },
+            "Fragancia (en seco)": { "General": "Olor granos molidos.", "Alta": "Muy intensa.", "Media": "Moderada.", "Baja": "Débil." },
             "Evaluación Global": { "Excelente": "Excepcional.", "Muy bueno": "Gran calidad.", "Bueno": "Estándar.", "Aceptable": "Bebible.", "Regular": "Desequilibrios.", "Deficiente": "Defectos." }
         };
 
-        function mostrarInfo(parametro, nivel) {
-            let titulo = nivel === "General" ? `📖 ${parametro}` : `📖 ${parametro}: ${nivel}`;
-            document.getElementById('infoTitle').innerText = titulo;
-            document.getElementById('infoBody').innerText = conceptosGlosario[parametro]?.[nivel] || "Información general";
-            document.getElementById('infoModal').style.display = 'flex';
-        }
-
+        function mostrarInfo(parametro, nivel) { document.getElementById('infoTitle').innerText = nivel === "General" ? `📖 ${parametro}` : `📖 ${parametro}: ${nivel}`; document.getElementById('infoBody').innerText = conceptosGlosario[parametro]?.[nivel] || "Info general"; document.getElementById('infoModal').style.display = 'flex'; }
         function cerrarInfo() { document.getElementById('infoModal').style.display = 'none'; }
 
-        // --- CÓDIGO PRINCIPAL ---
         const paramSensoriales = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Uniformidad", "Volver a tomar"];
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
-        function step(id, delta) {
-            const input = document.getElementById(id);
-            input.value = parseInt(input.value) + delta;
-        }
+        function step(id, delta) { document.getElementById(id).value = parseInt(document.getElementById(id).value) + delta; }
+        function toggleVertidos() { document.getElementById('vertidos_extras').classList.toggle('hidden', document.getElementById('un_solo_vertido').checked); }
 
-        function toggleVertidos() {
-            const extra = document.getElementById('vertidos_extras');
-            extra.classList.toggle('hidden', document.getElementById('un_solo_vertido').checked);
-        }
-
-        function generarGridHTML(items, contenedorId, prefijo) {
-            const contenedor = document.getElementById(contenedorId);
-            items.forEach((item, index) => {
-                const row = document.createElement('div'); row.className = 'grid-row';
-                if (conceptosGlosario[item]) {
-                    row.innerHTML = `
-                        <div style="display:flex; align-items:center;">
-                            ${item} <span class="help-icon" onclick="mostrarInfo('${item}', 'General')">?</span>
-                        </div>
-                        <div style="text-align:center; display:flex; justify-content:center; align-items:center; gap:3px;"><input type="radio" name="${prefijo}_${index}" value="Alta"><span class="help-icon" onclick="mostrarInfo('${item}', 'Alta')">?</span></div>
-                        <div style="text-align:center; display:flex; justify-content:center; align-items:center; gap:3px;"><input type="radio" name="${prefijo}_${index}" value="Media"><span class="help-icon" onclick="mostrarInfo('${item}', 'Media')">?</span></div>
-                        <div style="text-align:center; display:flex; justify-content:center; align-items:center; gap:3px;"><input type="radio" name="${prefijo}_${index}" value="Baja"><span class="help-icon" onclick="mostrarInfo('${item}', 'Baja')">?</span></div>`;
-                } else {
-                    row.innerHTML = `<div>${item}</div>
-                        <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Alta"></div>
-                        <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Media"></div>
-                        <div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Baja"></div>`;
-                }
-                contenedor.appendChild(row);
-            });
-        }
-
-        function generarGlobalHTML() {
-            const contenedor = document.getElementById('evaluacionGlobal');
-            paramGlobal.forEach((item, index) => {
-                contenedor.innerHTML += `
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px">
-                        <input type="radio" name="global_eval" id="g_${index}" value="${item}">
-                        <label for="g_${index}" style="margin:0">${item}</label>
-                        <span class="help-icon" onclick="mostrarInfo('Evaluación Global', '${item}')">?</span>
-                    </div>`;
-            });
-        }
+        function generarGridHTML(items, contenedorId, prefijo) { const c = document.getElementById(contenedorId); items.forEach((item, i) => { const r = document.createElement('div'); r.className = 'grid-row'; if (conceptosGlosario[item]) { r.innerHTML = `<div style="display:flex; align-items:center;">${item} <span class="help-icon" onclick="mostrarInfo('${item}', 'General')">?</span></div><div style="text-align:center;"><input type="radio" name="${prefijo}_${i}" value="Alta"></div><div style="text-align:center;"><input type="radio" name="${prefijo}_${i}" value="Media"></div><div style="text-align:center;"><input type="radio" name="${prefijo}_${i}" value="Baja"></div>`; } else { r.innerHTML = `<div>${item}</div><div style="text-align:center"><input type="radio" name="${prefijo}_${i}" value="Alta"></div><div style="text-align:center"><input type="radio" name="${prefijo}_${i}" value="Media"></div><div style="text-align:center"><input type="radio" name="${prefijo}_${i}" value="Baja"></div>`; } c.appendChild(r); }); }
+        function generarGlobalHTML() { const c = document.getElementById('evaluacionGlobal'); paramGlobal.forEach((item, i) => { c.innerHTML += `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px"><input type="radio" name="global_eval" id="g_${i}" value="${item}"><label for="g_${i}" style="margin:0">${item}</label></div>`; }); }
 
         function autoGenerarGlobal() {
-            const fd = new FormData(document.getElementById('cataForm'));
-            let totalPuntos = 0; let conteoValidos = 0; let limpieza = "Media";
-            
-            paramSensoriales.forEach((item, i) => {
-                if (i > 10) return; 
-                let val = fd.get(`sens_${i}`); if (!val) return;
-                let p = (val === "Alta" ? 3 : (val === "Media" ? 2 : 1));
-                if (item === "Sabor" || item === "Balance") p *= 1.5;
-                if (item === "Limpieza de taza") { p *= 2; limpieza = val; }
-                totalPuntos += p; conteoValidos++;
-            });
-
-            paramNotas.forEach((item, i) => {
-                let val = fd.get(`nota_${i}`); if (!val) return;
-                totalPuntos += (val === "Alta" ? 1.5 : (val === "Media" ? 1 : 0.5));
-                conteoValidos++;
-            });
-
-            if (conteoValidos === 0) { alert("Por favor, marca algunos parámetros primero."); return; }
-
-            let resultado = ""; let ratio = totalPuntos / conteoValidos;
-            if (ratio >= 2.6) resultado = "Excelente";
-            else if (ratio >= 2.2) resultado = "Muy bueno";
-            else if (ratio >= 1.7) resultado = "Bueno";
-            else if (ratio >= 1.3) resultado = "Aceptable";
-            else if (ratio >= 0.9) resultado = "Regular";
-            else resultado = "Deficiente";
-
-            if (limpieza === "Baja" && (resultado === "Excelente" || resultado === "Muy bueno" || resultado === "Bueno" || resultado === "Aceptable")) {
-                resultado = "Regular";
-            } else if (limpieza === "Media" && resultado === "Excelente") {
-                resultado = "Muy bueno";
-            }
-            const r = document.querySelector(`input[name="global_eval"][value="${resultado}"]`);
-            if (r) r.checked = true;
+            const fd = new FormData(document.getElementById('cataForm')); let total = 0; let validos = 0; let limp = "Media";
+            paramSensoriales.forEach((item, i) => { if (i > 10) return; let v = fd.get(`sens_${i}`); if (!v) return; let p = (v === "Alta" ? 3 : (v === "Media" ? 2 : 1)); if (item === "Sabor" || item === "Balance") p *= 1.5; if (item === "Limpieza de taza") { p *= 2; limp = v; } total += p; validos++; });
+            paramNotas.forEach((item, i) => { let v = fd.get(`nota_${i}`); if (!v) return; total += (v === "Alta" ? 1.5 : (v === "Media" ? 1 : 0.5)); validos++; });
+            if (validos === 0) { alert("Marca parámetros primero."); return; }
+            let res = ""; let ratio = total / validos;
+            if (ratio >= 2.6) res = "Excelente"; else if (ratio >= 2.2) res = "Muy bueno"; else if (ratio >= 1.7) res = "Bueno"; else if (ratio >= 1.3) res = "Aceptable"; else if (ratio >= 0.9) res = "Regular"; else res = "Deficiente";
+            if (limp === "Baja" && ["Excelente", "Muy bueno", "Bueno", "Aceptable"].includes(res)) res = "Regular"; else if (limp === "Media" && res === "Excelente") res = "Muy bueno";
+            const r = document.querySelector(`input[name="global_eval"][value="${res}"]`); if (r) r.checked = true;
         }
 
-        function obtenerFechaHoraActualFormateada() {
-            const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" }));
-            const dia = String(d.getDate()).padStart(2, '0');
-            const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
-            const mes = meses[d.getMonth()];
-            return `${dia}-${mes}-${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}H:${String(d.getMinutes()).padStart(2, '0')}m`;
-        }
-
-        function obtenerFechaActualEcuador() {
-            const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" }));
-            d.setHours(0, 0, 0, 0); return d;
-        }
-
-        function obtenerFechaDesdeInput(fechaStr) {
-            const hoyDefault = obtenerFechaActualEcuador();
-            if (!fechaStr) return hoyDefault;
-            try {
-                if (fechaStr.includes('/')) {
-                    const partes = fechaStr.split(',')[0].trim().split('/');
-                    return new Date(parseInt(partes[2], 10), parseInt(partes[1], 10) - 1, parseInt(partes[0], 10));
-                }
-                else if (fechaStr.includes('-')) {
-                    const partes = fechaStr.split(' ')[0].trim().split('-');
-                    const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
-                    return new Date(parseInt(partes[2], 10), mesesStr[partes[1].toUpperCase()], parseInt(partes[0], 10));
-                }
-            } catch(e) { console.error(e); }
-            return hoyDefault;
-        }
+        function obtenerFechaHoraActualFormateada() { const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" })); const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']; return `${String(d.getDate()).padStart(2, '0')}-${meses[d.getMonth()]}-${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}H:${String(d.getMinutes()).padStart(2, '0')}m`; }
+        function obtenerFechaDesdeInput(fechaStr) { const hoy = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" })); hoy.setHours(0,0,0,0); if (!fechaStr) return hoy; try { if (fechaStr.includes('-')) { const p = fechaStr.split(' ')[0].split('-'); const m = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 }; return new Date(parseInt(p[2],10), m[p[1].toUpperCase()], parseInt(p[0],10)); } } catch(e) {} return hoy; }
 
         function analizarCodigo() {
             const codigo = document.getElementById('codigo').value.toUpperCase();
             const inputDias = document.getElementById('dias_tueste');
             const inputVariedad = document.getElementById('variedad');
-            const dicVar = { 'GES': 'Geisha', 'BOR': 'Bourbon Rosado', 'SID': 'Sidra', 'CAT': 'Caturra', 'PAC': 'Pacamara', 'TYP': 'Typica', 'BOU': 'Bourbon', 'CAS': 'Castillo', 'MAR': 'Maragogype' };
+            const dicVar = { 'GES': 'Geisha', 'BOR': 'Bourbon Rosado', 'SID': 'Sidra', 'CAT': 'Caturra', 'PAC': 'Pacamara', 'TYP': 'Typica', 'TIL': 'Típica Lavado', 'BOU': 'Bourbon', 'CAS': 'Castillo', 'MAR': 'Maragogype' };
             const prefijo = codigo.substring(0, 3);
             if (dicVar[prefijo] && !inputVariedad.value) inputVariedad.value = dicVar[prefijo];
             
-            const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
             const matchN = codigo.match(/(\d{2})([A-Z]{3})/);
-            const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
-            const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value);
-            ref.setHours(0,0,0,0);
+            const mStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
+            const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value); ref.setHours(0,0,0,0);
             
             let ft = null;
-            if (matchN && mesesStr[matchN[2]] !== undefined) {
-                ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10));
+            if (matchN && mStr[matchN[2]] !== undefined) {
+                ft = new Date(ref.getFullYear(), mStr[matchN[2]], parseInt(matchN[1], 10));
                 if (ft > ref) ft.setFullYear(ref.getFullYear() - 1);
-            } else if (matchA) {
-                let y = parseInt(matchA[3], 10);
-                ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10));
             }
             if (ft) {
                 ft.setHours(0,0,0,0);
-                const diff = Math.round((ref.getTime() - ft.getTime()) / (1000 * 60 * 60 * 24));
+                const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000);
                 inputDias.value = diff >= 0 ? diff : "Fecha futura";
             } else { inputDias.value = "Sin fecha detectada"; }
         }
@@ -885,144 +482,59 @@
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens');
         generarGridHTML(paramNotas, 'notasSensoriales', 'nota');
         generarGlobalHTML();
-        
-        window.onload = () => { 
-            document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
-            analizarCodigo(); 
-            actualizarDispositivos();
-        };
+        window.onload = () => { document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); analizarCodigo(); actualizarDispositivos(); };
 
-        function generarParrafoInterpretativo(variedad, metodo, dispositivo, sabor, acidez, dulzor, amargor, cuerpo, balance, retrogusto, volverATomar, notasList, global, observaciones) {
-            const fmt = (v, t) => { 
-                if(!v) return 'no definido'; 
-                const l = v.toLowerCase(); 
-                if(t==='fem') return l; 
-                if(t==='masc') return l==='alta'?'alto':l==='media'?'medio':'bajo'; 
-                return l==='alta'?'prolongado':l==='media'?'medio':'corto'; 
-            };
-            
-            let p1 = `Este ${variedad || 'café'} preparado en ${dispositivo || 'filtro'} (${metodo || 'método de extracción'}) presenta un perfil con sabor ${fmt(sabor,'masc')}, acidez ${fmt(acidez,'fem')}, dulzor ${fmt(dulzor,'masc')} y amargor ${fmt(amargor,'masc')}. `;
-            let orNotas = notasList.length > 0 ? `Muestra notas ${notasList.join(', ').replace(/, ([^,]*)$/, ' y $1')} integradas al conjunto, con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. ` : `Se percibe con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. `;
-            let p3 = `El retrogusto es ${fmt(retrogusto,'retro')} y define el cierre de la taza. `;
-            let pVolver = volverATomar ? `La disposición registrada para volver a tomarlo es ${fmt(volverATomar, 'fem')}. ` : '';
-            let p4 = `En general, se valora de forma global como "${global || 'sin calificar'}"${observaciones ? ', registrándose que: ' + observaciones.trim() : '.'}`;
-            return p1 + orNotas + p3 + pVolver + p4;
+        function generarParrafoInterpretativo(v, m, d, s, a, du, am, c, b, r, vt, nL, g, o) {
+            const fmt = (x, t) => { if(!x) return 'no definido'; const l = x.toLowerCase(); if(t==='fem') return l; if(t==='masc') return l==='alta'?'alto':l==='media'?'medio':'bajo'; return l==='alta'?'prolongado':l==='media'?'medio':'corto'; };
+            let p1 = `Este ${v || 'café'} preparado en ${d || 'filtro'} (${m || 'método'}) presenta un perfil con sabor ${fmt(s,'masc')}, acidez ${fmt(a,'fem')}, dulzor ${fmt(du,'masc')} y amargor ${fmt(am,'masc')}. `;
+            let orN = nL.length > 0 ? `Muestra notas ${nL.join(', ').replace(/, ([^,]*)$/, ' y $1')} integradas, con cuerpo ${fmt(c,'masc')} y balance ${fmt(b,'masc')}. ` : `Cuerpo ${fmt(c,'masc')} y balance ${fmt(b,'masc')}. `;
+            let p3 = `Retrogusto ${fmt(r,'retro')}. ` + (vt ? `Disposición a volver a tomar: ${fmt(vt, 'fem')}. ` : '');
+            return p1 + orN + p3 + `Globalmente: "${g || 'Sin calificar'}"${o ? ', Obs: ' + o.trim() : '.'}`;
         }
 
         function dispararGeneracion() {
             const fd = new FormData(document.getElementById('cataForm'));
-            const getS = (p) => fd.get(`sens_${paramSensoriales.indexOf(p)}`);
-            const getN = (p) => fd.get(`nota_${paramNotas.indexOf(p)}`);
-            let nL = [];
-            paramNotas.forEach(n => { if(getN(n)==='Alta'||getN(n)==='Media') nL.push(n.toLowerCase()); });
+            let nL = []; paramNotas.forEach(n => { let v = fd.get(`nota_${paramNotas.indexOf(n)}`); if(v==='Alta'||v==='Media') nL.push(n.toLowerCase()); });
             
             const parrafo = generarParrafoInterpretativo(
-                fd.get('variedad'), fd.get('metodo'), fd.get('dispositivo'), getS('Sabor'), getS('Acidez'), 
-                getS('Dulzor'), getS('Amargor'), getS('Cuerpo'), getS('Balance'), 
-                getS('Retrogusto'), getS('Volver a tomar'), nL, fd.get('global_eval'), fd.get('observaciones')
+                fd.get('variedad'), fd.get('metodo'), fd.get('dispositivo'), fd.get(`sens_${paramSensoriales.indexOf('Sabor')}`), 
+                fd.get(`sens_${paramSensoriales.indexOf('Acidez')}`), fd.get(`sens_${paramSensoriales.indexOf('Dulzor')}`), 
+                fd.get(`sens_${paramSensoriales.indexOf('Amargor')}`), fd.get(`sens_${paramSensoriales.indexOf('Cuerpo')}`), 
+                fd.get(`sens_${paramSensoriales.indexOf('Balance')}`), fd.get(`sens_${paramSensoriales.indexOf('Retrogusto')}`), 
+                fd.get(`sens_${paramSensoriales.indexOf('Volver a tomar')}`), nL, fd.get('global_eval'), fd.get('observaciones')
             );
             
-            let enc = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;
-            let diasReposo = fd.get('dias_tueste');
-            if (diasReposo && !isNaN(diasReposo)) enc += ` (${diasReposo} días post-tueste)`;
-            let gramos = parseFloat(fd.get('gramos_cafe'));
-            let ml = parseFloat(fd.get('agua_total'));
-            if (!isNaN(gramos) && gramos > 0 && !isNaN(ml) && ml > 0) {
-                let ratioNum = (ml / gramos).toFixed(1);
-                ratioNum = ratioNum.endsWith('.0') ? ratioNum.slice(0, -2) : ratioNum;
-                enc += ` - ${gramos}g / ${ml}ml (Ratio 1:${ratioNum})`;
-            } else if (!isNaN(gramos) && gramos > 0) { enc += ` - ${gramos}g`;
-            } else if (!isNaN(ml) && ml > 0) { enc += ` - ${ml}ml`; }
+            let enc = `Código: ${fd.get('codigo') || 'S/N'}`;
+            let d = fd.get('dias_tueste'); if (d && !isNaN(d)) enc += ` (${d} días post-tueste)`;
+            let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total'));
+            if (!isNaN(g) && g>0 && !isNaN(ml) && ml>0) enc += ` - ${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})`;
             
-            // --- CONSTRUCCIÓN DEL TEXTO FINAL ---
             let textoFinal = enc;
 
-            if (currentRoastData && currentRoastData.lum !== null) {
-                let p = getRoastProfile(currentRoastData.lum);
-                textoFinal += `\n\n🔥 Tueste analizado: ${p.label} (${p.sub}). Método recomendado: ${p.metodos}.`;
+            let refLum = currentRoastData.molido.lum !== null ? currentRoastData.molido.lum : currentRoastData.grano.lum;
+            if (refLum !== null) {
+                let p = getRoastProfile(refLum);
+                textoFinal += `\n\n🔥 Tueste analizado (Perfil Interior): ${p.label} (${p.sub}). Método: ${p.metodos}.`;
+                
+                if (currentRoastData.grano.lum !== null && currentRoastData.molido.lum !== null) {
+                    let delta = Math.abs(currentRoastData.molido.lum - currentRoastData.grano.lum);
+                    let des = delta <= 3 ? "Excelente (Tueste parejo)" : (delta <= 8 ? "Aceptable (Variación estándar)" : "Crítico (Posible Arrebatamiento)");
+                    textoFinal += `\nDesarrollo Térmico (Δ ${delta.toFixed(1)}): ${des}.`;
+                }
             }
 
             textoFinal += `\n\n${parrafo}`;
-            
             document.getElementById('evaluacion_final').value = textoFinal;
         }
 
         function copiarTexto() {
-            const ta = document.getElementById("evaluacion_final");
-            if (!ta.value.trim()) return;
+            const ta = document.getElementById("evaluacion_final"); if (!ta.value.trim()) return;
             ta.select(); ta.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(ta.value).then(() => {
                 const b = document.getElementById("btnCopiar");
                 b.innerHTML = "✅ ¡Copiado!"; b.style.backgroundColor = "#4CAF50";
                 setTimeout(() => { b.innerHTML = "📋 Copiar Texto"; b.style.backgroundColor = "#2196F3"; }, 2000);
             });
-        }
-
-        // --- SISTEMA DE DESCARGA DE EVALUACIÓN (TEXTO A JPG) ---
-        function descargarEvaluacionJPG() {
-            const text = document.getElementById("evaluacion_final").value;
-            if (!text.trim()) {
-                alert("Por favor, genera primero el resumen interpretativo presionando el botón amarillo.");
-                return;
-            }
-
-            const fd = new FormData(document.getElementById('cataForm'));
-            const c = document.createElement('canvas');
-            c.width = 720; c.height = 1280; 
-            const ctx = c.getContext('2d');
-            
-            ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, 720, 1280);
-            ctx.fillStyle = '#1e1e1e'; roundRectSafe(ctx, 40, 140, 640, 1000, 20); ctx.fill();
-            ctx.strokeStyle = '#2c2c2c'; ctx.lineWidth = 2; ctx.stroke();
-
-            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 36px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-            ctx.fillText('📝 RESUMEN DE CATA', 360, 50);
-
-            ctx.fillStyle = '#aaaaaa'; ctx.font = '20px sans-serif';
-            ctx.fillText(fd.get('fecha_hora') || '', 360, 95);
-
-            ctx.strokeStyle = '#333333';
-            ctx.beginPath(); ctx.moveTo(80, 210); ctx.lineTo(640, 210); ctx.stroke();
-
-            ctx.fillStyle = '#e0e0e0'; ctx.font = '24px sans-serif'; ctx.textAlign = 'left';
-            
-            const maxWidth = 560; const x = 80; let y = 250; const lineHeight = 38; 
-            const paragraphs = text.split('\n');
-            
-            for (let i = 0; i < paragraphs.length; i++) {
-                const p = paragraphs[i];
-                if (p.trim() === '') { y += lineHeight; continue; }
-                
-                if (i === 0 && p.includes('Ratio')) {
-                    ctx.fillStyle = '#81c784'; ctx.font = 'bold 24px sans-serif';
-                } else if (p.includes('🔥 Tueste analizado')) {
-                    ctx.fillStyle = '#ff9800'; ctx.font = 'italic 22px sans-serif';
-                } else {
-                    ctx.fillStyle = '#e0e0e0'; ctx.font = '24px sans-serif';
-                }
-
-                const words = p.split(' '); let line = '';
-                
-                for (let n = 0; n < words.length; n++) {
-                    const testLine = line + words[n] + ' ';
-                    const metrics = ctx.measureText(testLine);
-                    const testWidth = metrics.width;
-                    
-                    if (testWidth > maxWidth && n > 0) {
-                        ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight;
-                    } else { line = testLine; }
-                }
-                ctx.fillText(line, x, y);
-                y += lineHeight + 15; 
-            }
-
-            ctx.fillStyle = '#666666'; ctx.font = 'italic 18px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('Generado desde Bitácora de Café', 360, 1180);
-
-            const link = document.createElement('a');
-            link.download = `Resumen_${fd.get('codigo') || 'Cafe'}_IG.jpg`;
-            link.href = c.toDataURL('image/jpeg', 0.95);
-            link.click();
         }
 
         function guardarJSON() {
@@ -1032,11 +544,7 @@
                 datos_cafe: { 
                     variedad: fd.get('variedad'), codigo: fd.get('codigo'), fecha_hora: fd.get('fecha_hora'), dias_tueste: fd.get('dias_tueste'),
                     merma: fd.get('merma'), temp_tueste: fd.get('temp_tueste'), tiempo_tueste: fd.get('tiempo_tueste'),
-                    fases: {
-                        secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') },
-                        maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') },
-                        desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') }
-                    }
+                    fases: { secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') }, maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') }, desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') } }
                 }, 
                 extraccion: { metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3') }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
@@ -1048,11 +556,7 @@
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Cata_${data.datos_cafe.codigo || 'sin_nombre'}.json`; a.click();
         }
 
-        function setSelectValue(id, value) {
-            const sel = document.getElementById(id); if(!value) return;
-            let exists = Array.from(sel.options).some(opt => opt.value === value);
-            if(exists) sel.value = value;
-        }
+        function setSelectValue(id, value) { const sel = document.getElementById(id); if(!value) return; if(Array.from(sel.options).some(o => o.value === value)) sel.value = value; }
 
         function cargarJSON(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -1060,7 +564,6 @@
             reader.onload = (evt) => {
                 try {
                     const d = JSON.parse(evt.target.result);
-                    
                     document.getElementById('cataForm').reset();
                     document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
 
@@ -1069,419 +572,223 @@
                     document.getElementById('codigo').value = dc.codigo || d.codigo || "";
                     document.getElementById('fecha_hora').value = dc.fecha_hora || d.fecha_hora || d.registro || "";
                     
-                    document.getElementById('merma').value = dc.merma || "13.60";
-                    document.getElementById('temp_tueste').value = dc.temp_tueste || "224";
-                    document.getElementById('tiempo_tueste').value = dc.tiempo_tueste || "11:00";
-                    document.getElementById('secado_tiempo').value = dc.fases?.secado?.tiempo || "03:30";
-                    document.getElementById('secado_vel').value = dc.fases?.secado?.vel || "V3";
-                    document.getElementById('maillard_tiempo').value = dc.fases?.maillard?.tiempo || "03:45";
-                    document.getElementById('maillard_vel').value = dc.fases?.maillard?.vel || "V2";
-                    document.getElementById('desarrollo_tiempo').value = dc.fases?.desarrollo?.tiempo || "03:45";
-                    document.getElementById('desarrollo_vel').value = dc.fases?.desarrollo?.vel || "V2";
+                    document.getElementById('merma').value = dc.merma || "13.60"; document.getElementById('temp_tueste').value = dc.temp_tueste || "224"; document.getElementById('tiempo_tueste').value = dc.tiempo_tueste || "11:00";
+                    document.getElementById('secado_tiempo').value = dc.fases?.secado?.tiempo || "03:30"; document.getElementById('secado_vel').value = dc.fases?.secado?.vel || "V3";
+                    document.getElementById('maillard_tiempo').value = dc.fases?.maillard?.tiempo || "03:45"; document.getElementById('maillard_vel').value = dc.fases?.maillard?.vel || "V2";
+                    document.getElementById('desarrollo_tiempo').value = dc.fases?.desarrollo?.tiempo || "03:45"; document.getElementById('desarrollo_vel').value = dc.fases?.desarrollo?.vel || "V2";
 
                     const ext = d.extraccion || d;
-                    
-                    let metodoGuardado = ext.metodo;
-                    if (metodoGuardado === "Filtrado (Pour Over / Goteo)") metodoGuardado = "Filtrado";
-                    
-                    setSelectValue('metodo', metodoGuardado); actualizarDispositivos();
+                    setSelectValue('metodo', ext.metodo === "Filtrado (Pour Over / Goteo)" ? "Filtrado" : ext.metodo); actualizarDispositivos();
                     setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
                     
-                    let filtroGuardado = ext.filtro;
-                    if (filtroGuardado === "Filtro fondo plano/papel") filtroGuardado = "Fondo plano/papel";
-                    if (filtroGuardado === "Filtro cónico/papel") filtroGuardado = "Cónico/papel";
-                    setSelectValue('filtro', filtroGuardado);
+                    let fg = ext.filtro; if (fg === "Filtro fondo plano/papel") fg = "Fondo plano/papel"; if (fg === "Filtro cónico/papel") fg = "Cónico/papel"; setSelectValue('filtro', fg);
                     
-                    document.getElementById('clics').value = ext.clics || 35;
-                    document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
-                    document.getElementById('agua_total').value = ext.agua_total || ext.agua_ml || 200;
-                    document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha;
-                    document.getElementById('bola_fria').checked = !!ext.bola_fria;
-                    document.getElementById('hielo_ml').value = ext.hielo_jarra || ext.hielo_ml || 20;
-                    document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
-                    document.getElementById('blooming').value = ext.blooming || 45;
-                    document.getElementById('v1').value = ext.v1 || 120;
-                    document.getElementById('v2').value = ext.v2 || 180;
-                    document.getElementById('v3').value = ext.v3 || 240;
+                    document.getElementById('clics').value = ext.clics || 35; document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5; document.getElementById('agua_total').value = ext.agua_total || ext.agua_ml || 200;
+                    document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha; document.getElementById('bola_fria').checked = !!ext.bola_fria; document.getElementById('hielo_ml').value = ext.hielo_jarra || ext.hielo_ml || 20;
+                    document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido; document.getElementById('blooming').value = ext.blooming || 45; document.getElementById('v1').value = ext.v1 || 120; document.getElementById('v2').value = ext.v2 || 180; document.getElementById('v3').value = ext.v3 || 240;
 
-                    const sens = d.sensorial || d;
-                    paramSensoriales.forEach((it, i) => { const v = sens[it]; if(v) { const r = document.querySelector(`input[name="sens_${i}"][value="${v}"]`); if(r) r.checked = true; } });
-                    
-                    const nots = d.notas || d;
-                    paramNotas.forEach((it, i) => { const v = nots[it]; if(v) { const r = document.querySelector(`input[name="nota_${i}"][value="${v}"]`); if(r) r.checked = true; } });
-                    
+                    const sens = d.sensorial || d; paramSensoriales.forEach((it, i) => { const v = sens[it]; if(v) { const r = document.querySelector(`input[name="sens_${i}"][value="${v}"]`); if(r) r.checked = true; } });
+                    const nots = d.notas || d; paramNotas.forEach((it, i) => { const v = nots[it]; if(v) { const r = document.querySelector(`input[name="nota_${i}"][value="${v}"]`); if(r) r.checked = true; } });
                     if(d.global) { const r = document.querySelector(`input[name="global_eval"][value="${d.global}"]`); if(r) r.checked = true; }
                     
-                    document.getElementById('observaciones').value = d.observaciones || "";
-                    document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
+                    document.getElementById('observaciones').value = d.observaciones || ""; document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
                     
-                    if (d.analisis_imagen && d.analisis_imagen.img) {
-                        currentRoastData = d.analisis_imagen;
-                        document.getElementById('preview-roast').src = currentRoastData.img;
-                        updateRoastUI(currentRoastData.r, currentRoastData.g, currentRoastData.b, currentRoastData.lum);
-                    } else {
-                        currentRoastData = { r: null, g: null, b: null, lum: null, img: null };
-                        document.getElementById('results-wrapper').style.display = 'none';
-                        document.getElementById('preview-roast').src = '';
+                    currentRoastData = { grano: { r: null, g: null, b: null, lum: null, img: null }, molido: { r: null, g: null, b: null, lum: null, img: null } };
+                    if (d.analisis_imagen) {
+                        if (d.analisis_imagen.grano || d.analisis_imagen.molido) {
+                            currentRoastData = d.analisis_imagen;
+                        } else if (d.analisis_imagen.img) {
+                            currentRoastData.grano = d.analisis_imagen;
+                        }
                     }
-
-                    toggleVertidos(); analizarCodigo(); 
-                    alert("Cata cargada exitosamente.");
-                } catch(err) { console.error(err); alert("Error al cargar JSON. Verifica que sea un archivo de cata válido."); }
-                
+                    updateRoastUI();
+                    
+                    toggleVertidos(); analizarCodigo(); alert("Cata cargada exitosamente.");
+                } catch(err) { console.error(err); alert("Error al cargar JSON."); }
                 e.target.value = ''; 
-            };
-            reader.readAsText(file);
+            }; reader.readAsText(file);
         }
 
-        const mapVal = (v) => v === 'Alta' ? 3 : (v === 'Media' ? 2 : (v === 'Baja' ? 1 : 0));
-        function cerrarGrafico() { document.getElementById('chartModal').style.display = 'none'; }
-
-        function abrirGrafico() {
-            const fd = new FormData(document.getElementById('cataForm'));
-            document.getElementById('chartDate').innerText = fd.get('fecha_hora') || '';
-            const gEval = fd.get('global_eval');
-            const badge = document.getElementById('chartGlobal');
-            badge.innerText = gEval ? `☆ ${gEval.toUpperCase()}` : "SIN EVALUAR";
-            badge.style.backgroundColor = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
-
-            const radarLabels = ["Fragancia\nen seco", "Aroma\nen húmedo", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza\nde taza", "Volver a\ntomar"];
-            const radarInternalNames = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Volver a tomar"];
-            const radarVals = radarInternalNames.map(name => mapVal(fd.get(`sens_${paramSensoriales.indexOf(name)}`)));
-
-            const canvas = document.getElementById('radarCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            dibujarRadarCore(ctx, canvas.width/2, canvas.height/2 + 10, 100, radarLabels, radarVals);
-
-            const coloresNotas = ['#f48fb1', '#ffb74d', '#d84315', '#81c784', '#ce93d8', '#8d6e63', '#aed581'];
-            const barsContainer = document.getElementById('barsContainer');
-            barsContainer.innerHTML = '';
-            const iconos = ['🌸', '🍊', '🍫', '🍬', '💥', '🪵', '🍃'];
-            
-            paramNotas.forEach((nota, idx) => {
-                let valNum = mapVal(fd.get(`nota_${idx}`));
-                let w = valNum === 3 ? 100 : (valNum === 2 ? 66 : (valNum === 1 ? 33 : 0));
-                barsContainer.innerHTML += `
-                    <div class="bar-row">
-                        <div class="bar-label">${iconos[idx]} ${nota.split('/')[0]}</div>
-                        <div class="bar-track"><div class="bar-fill" style="width: ${w}%; background-color: ${valNum > 0 ? coloresNotas[idx] : 'transparent'};"></div></div>
-                        <div class="bar-value val-${valNum}">${valNum === 0 ? "N/E" : valNum}</div>
-                    </div>
-                `;
-            });
-
-            let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total'));
-            let ratioTxt = (!isNaN(g) && g > 0 && !isNaN(ml) && ml > 0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
-            let v_unSolo = fd.get('un_solo_vertido') === 'on';
-            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
-
-            const colIzq = [
-                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` },
-                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
-                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` },
-                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
-            ];
-            
-            let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-
-            const colDer = [
-                { l: 'Extracción:', v: extTxt },
-                { l: 'Ratio:', v: `[${ratioTxt}]` },
-                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` },
-                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` },
-                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` },
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
-            ];
-
-            let htmlIzq = colIzq.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('');
-            let htmlDer = colDer.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('');
-
-            document.getElementById('chartDetails').innerHTML = `
-                <div style="display:flex; flex-direction:column;">${htmlIzq}</div>
-                <div style="display:flex; flex-direction:column;">${htmlDer}</div>
-            `;
-            
-            document.getElementById('chartObs').innerText = fd.get('observaciones') || 'Sin observaciones registradas.';
-            document.getElementById('chartModal').style.display = 'flex';
-        }
-
-        function dibujarRadarCore(ctx, cx, cy, radius, labels, values) {
-            const levels = 3;
-            ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
-            for (let j = 1; j <= levels; j++) {
-                ctx.beginPath();
-                for (let i = 0; i < labels.length; i++) {
-                    let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2;
-                    let x = cx + radius * (j / levels) * Math.cos(ang);
-                    let y = cy + radius * (j / levels) * Math.sin(ang);
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.closePath(); ctx.stroke();
-            }
-            for (let i = 0; i < labels.length; i++) {
-                let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2;
-                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + radius * Math.cos(ang), cy + radius * Math.sin(ang)); ctx.stroke();
-            }
-            ctx.beginPath(); let hasData = false;
-            for (let i = 0; i < labels.length; i++) {
-                let val = values[i] || 0; if (val > 0) hasData = true;
-                let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2;
-                let x = cx + radius * (val / levels) * Math.cos(ang);
-                let y = cy + radius * (val / levels) * Math.sin(ang);
-                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-            if (hasData) { ctx.fillStyle = 'rgba(255, 152, 0, 0.3)'; ctx.fill(); ctx.strokeStyle = '#ffb74d'; ctx.lineWidth = 2; ctx.stroke(); }
-            
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            for (let i = 0; i < labels.length; i++) {
-                let val = values[i] || 0; let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2;
-                let px = cx + radius * (val / levels) * Math.cos(ang);
-                let py = cy + radius * (val / levels) * Math.sin(ang);
-                if(val > 0) { ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fillStyle = '#ffb74d'; ctx.fill(); }
-                let tx = cx + (radius + 35) * Math.cos(ang); let ty = cy + (radius + 35) * Math.sin(ang);
-                let textLines = labels[i].split('\n');
-                ctx.fillStyle = '#ddd'; ctx.font = '11px sans-serif';
-                textLines.forEach((line, idx) => { ctx.fillText(line, tx, ty + (idx * 14) - 10); });
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillStyle = val === 3 ? '#81c784' : (val === 2 ? '#ffb74d' : (val === 1 ? '#e57373' : '#666'));
-                ctx.fillText(val === 0 ? '-' : val, tx, ty + (textLines.length * 14) - 10);
-            }
-        }
-
-        function roundRectSafe(ctx, x, y, width, height, radius) {
-            ctx.beginPath(); ctx.moveTo(x + radius, y); ctx.lineTo(x + width - radius, y);
-            ctx.quadraticCurveTo(x + width, y, x + width, y + radius); ctx.lineTo(x + width, y + height - radius);
-            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height); ctx.lineTo(x + radius, y + height);
-            ctx.quadraticCurveTo(x, y + height, x, y + height - radius); ctx.lineTo(x, y + radius);
-            ctx.quadraticCurveTo(x, y, x + radius, y); ctx.closePath();
-        }
-
-        function descargarGraficoJPG() {
-            const fd = new FormData(document.getElementById('cataForm'));
-            const c = document.createElement('canvas');
-            c.width = 720; c.height = 1280; const ctx = c.getContext('2d');
-            
-            ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, 720, 1280);
-            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-            ctx.fillText('☕ CATA DE CAFÉ', 40, 50);
-            ctx.fillStyle = '#aaaaaa'; ctx.font = '18px sans-serif';
-            ctx.fillText(fd.get('fecha_hora') || '', 40, 85);
-            
-            const gEval = fd.get('global_eval') || 'SIN EVALUAR';
-            const colorEval = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
-            ctx.fillStyle = colorEval;
-            roundRectSafe(ctx, 480, 45, 200, 40, 20); ctx.fill();
-            ctx.fillStyle = '#121212'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('☆ ' + gEval.toUpperCase(), 580, 65);
-            
-            ctx.strokeStyle = '#333333'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(40, 120); ctx.lineTo(680, 120); ctx.stroke();
-            
-            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('⬡ PERFIL SENSORIAL', 360, 160);
-            const radarLabels = ["Fragancia\nen seco", "Aroma\nen húmedo", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza\nde taza", "Volver a\ntomar"];
-            const radarInternalNames = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Volver a tomar"];
-            const radarVals = radarInternalNames.map(name => mapVal(fd.get(`sens_${paramSensoriales.indexOf(name)}`)));
-            
-            ctx.save(); ctx.translate(360, 360); ctx.scale(1.4, 1.4);
-            dibujarRadarCore(ctx, 0, 0, 100, radarLabels, radarVals); ctx.restore();
-            
-            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('🍃 NOTAS AROMÁTICAS', 360, 580);
-            ctx.textAlign = 'left';
-            const coloresNotas = ['#f48fb1', '#ffb74d', '#d84315', '#81c784', '#ce93d8', '#8d6e63', '#aed581'];
-            const iconos = ['🌸', '🍊', '🍫', '🍬', '💥', '🪵', '🍃'];
-            
-            paramNotas.forEach((nota, idx) => {
-                let valNum = mapVal(fd.get(`nota_${idx}`)); let y = 630 + (idx * 36);
-                let w = valNum === 3 ? 300 : (valNum === 2 ? 200 : (valNum === 1 ? 100 : 0));
-                
-                ctx.fillStyle = '#cccccc'; ctx.font = '18px sans-serif'; ctx.textBaseline = 'middle';
-                ctx.fillText(iconos[idx] + ' ' + nota.split('/')[0], 50, y);
-                
-                ctx.fillStyle = '#333333'; roundRectSafe(ctx, 220, y - 10, 300, 20, 10); ctx.fill();
-                if (valNum > 0) { ctx.fillStyle = coloresNotas[idx]; roundRectSafe(ctx, 220, y - 10, w, 20, 10); ctx.fill(); }
-                
-                ctx.fillStyle = valNum === 3 ? '#81c784' : (valNum === 2 ? '#ffb74d' : (valNum === 1 ? '#e57373' : '#666666'));
-                ctx.font = 'bold 18px sans-serif'; ctx.fillText(valNum === 0 ? "N/E" : valNum, 540, y);
-            });
-            
-            ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; 
-            ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); 
-            
-            let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total'));
-            let ratioTxt = (!isNaN(g) && g > 0 && !isNaN(ml) && ml > 0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
-            let v_unSolo = fd.get('un_solo_vertido') === 'on';
-            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
-            
-            const colIzq = [
-                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` },
-                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
-                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` },
-                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
-            ];
-            
-            let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-            const colDer = [
-                { l: 'Extracción:', v: extTxt },
-                { l: 'Ratio:', v: `[${ratioTxt}]` },
-                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` },
-                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` },
-                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` },
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
-            ];
-
-            ctx.textAlign = 'left'; let startY = 945; 
-            colIzq.forEach((d, i) => {
-                let y = startY + (i * 38);
-                ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y);
-                ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif';
-                let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]';
-                ctx.fillText(val, 50, y + 18);
-            });
-            colDer.forEach((d, i) => {
-                let y = startY + (i * 38);
-                ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y);
-                ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif';
-                let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]';
-                ctx.fillText(val, 380, y + 18);
-            });
-
-            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1175);
-            ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top';
-            const obs = fd.get('observaciones') || 'Sin observaciones registradas.';
-            
-            let words = obs.split(' '); let line = ''; let yText = 1205; let linesDrawn = 0;
-            for(let n = 0; n < words.length; n++) {
-                let testLine = line + words[n] + ' ';
-                if (ctx.measureText(testLine).width > 620 && n > 0) {
-                    ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++;
-                    if (linesDrawn >= 3) { line += '...'; break; }
-                } else { line = testLine; }
-            }
-            if (linesDrawn < 3) ctx.fillText(line, 50, yText);
-
-            const link = document.createElement('a');
-            link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`;
-            link.href = c.toDataURL('image/jpeg', 0.95);
-            link.click();
-        }
-
-        // --- SISTEMA DEL MÓDULO ANÁLISIS DE TUESTE ---
+        // --- SISTEMA DEL MÓDULO ANÁLISIS DE TUESTE (DUAL DETALLADO) ---
         const ROAST_PROFILES = { 
-            cinnamon: { label: "Cinnamon", sub: "Tueste Muy Claro", hito: "Retirado justo al inicio del primer crack. Grano con expansión mínima.", quimica: "Nivel máximo de ácidos clorogénicos. Degradación incompleta de clorofila y lípidos.", sensorial: (lum) => { if (lum >= 115) return "Blonde Extremo (Lum > 115): Un perfil extremadamente luminoso y subdesarrollado, donde predominan sensaciones vegetales, herbales y notas crudas que recuerdan a pasto fresco, cereal húmedo y maní natural. La taza presenta una estructura acuosa, acidez agresiva y una extracción difícil debido a la baja solubilidad interna del grano. Requiere métodos de inmersión prolongada y temperaturas elevadas para intentar desarrollar complejidad y compensar la limitada caramelización."; return "Cinnamon Estándar (Lum < 115): Un café de perfil delicadamente silvestre y vibrante, donde las notas herbales se integran con un dulzor tenue similar a miel de campo y flores frescas. La acidez es intensa y protagonista, aportando una sensación brillante y filosa en boca. La taza conserva una identidad cruda y transparente, especialmente expresiva en métodos V60 con molienda fina y vertidos controlados que favorezcan claridad y definición aromática."; }, metodos: "Inmersión prolongada o Filtrado fino (ej. V60)" }, 
-            newEngland: { label: "New England", sub: "Tueste Claro", hito: "Final del primer crack. Superficie mate y rugosa.", quimica: "Máxima complejidad enzimática. Los compuestos volátiles del origen se mantienen intactos.", sensorial: (lum) => { if (lum >= 98) return "Límite Temprano (Lum > 98): Un café de altísima expresión aromática, donde la acidez cítrica domina con intensidad brillante y elegante. Las notas florales aparecen definidas y delicadas, acompañadas por una textura ligera similar a un té infusionado fino. La taza ofrece transparencia extrema y gran definición del origen, resaltando especialmente en Origami por su capacidad de enfatizar claridad, limpieza y vivacidad."; if (lum >= 90) return "Desarrollo Frutal (Lum 90-98): Perfil dinámico y jugoso, donde aparecen frutas con hueso maduras acompañadas de una acidez amplia y envolvente. La taza mantiene gran luminosidad, pero comienza a desarrollar una sensación más redonda y dulce en boca. La claridad aromática y la estructura brillante permiten obtener una experiencia compleja y refinada, ideal para V60 con técnicas de choque térmico que intensifiquen la percepción frutal."; return "Transición (Lum < 90): Un perfil más equilibrado y amable, donde la acidez comienza a suavizarse permitiendo que emerjan notas cálidas a panela, miel oscura y azúcar de caña. La taza conserva claridad y elegancia, pero incorpora mayor sensación de dulzor y profundidad, logrando una experiencia armoniosa y muy expresiva en métodos de extracción limpia como V60 o Chemex."; }, metodos: "Filtrado cónico (Origami, V60) o Chemex" }, 
-            city: { label: "City", sub: "Tueste Medio-Claro", hito: "Fase de desarrollo inicial post-crack. Grano comienza a alisarse pero permanece seco.", quimica: "Reacción de Maillard avanzada (caramelización incipiente). Desarrollo de notas a pan tostado.", sensorial: (lum) => { if (lum >= 80) return "Perfil Ácido/Floral (Lum > 80): Un café de alta luminosidad sensorial, elegante y cristalino, donde la acidez floral domina con precisión refinada. La taza recuerda a un té negro delicado por su limpieza y ligereza, ofreciendo una experiencia etérea, aromática y de gran transparencia, especialmente expresiva en métodos de filtrado cónico como Origami."; if (lum >= 75) return "Perfil Frutal (Lum 75-80): Un perfil brillante y expresivo, donde las frutas rojas maduras se integran con una acidez jugosa y perfectamente balanceada. La taza conserva excelente claridad y una textura sedosa que aporta elegancia sin perder vivacidad. El resultado es una experiencia compleja pero accesible, ideal para métodos V60 con vertidos segmentados que potencien la separación de sabores y la definición aromática."; return "Perfil Transición (Lum < 75): Un café de estructura más profunda y madura, donde la acidez se vuelve más redonda y organizada alrededor de un dulzor natural que recuerda a caña cruda y caramelo ligero. La taza gana densidad y estabilidad sin perder limpieza, ofreciendo una experiencia equilibrada y versátil especialmente agradable en Aeropress o V60."; }, metodos: "Filtrado cónico (Origami, V60) o Aeropress" }, 
-            cityPlus: { label: "City+", sub: "Tueste Medio", hito: "Pleno desarrollo. Incremento de volumen notable y superficie lisa.", quimica: "Inicio de caramelización de azúcares complejos. Balance óptimo de ácidos orgánicos.", sensorial: (lum) => { if (lum >= 68) return "Perfil Vibrante (Lum > 68): Un café de gran equilibrio entre luminosidad y dulzor, donde la acidez cítrica aparece limpia y refinada sobre un cuerpo sedoso y envolvente. Las notas a miel y frutas dulces generan una taza brillante, moderna y muy transparente, especialmente destacada en métodos V60 por su claridad extrema y sensación jugosa."; if (lum >= 62) return "Balance de Especialidad (Lum 62-67): Un perfil armónico y completo, donde la acidez redonda se integra perfectamente con notas a chocolate de leche, caramelo suave y frutos secos dulces. La taza logra equilibrio entre dulzor, cuerpo y claridad, ofreciendo una experiencia elegante y versátil que se expresa magníficamente en la geometría del Origami."; return "Dulzor Desarrollado (Lum < 62): Un café más profundo y envolvente, donde la acidez se atenúa para dar protagonismo a un dulzor oscuro y persistente similar a melaza, azúcar morena y cacao suave. El cuerpo se vuelve más denso y cremoso, generando una experiencia cálida y reconfortante ideal para Espresso moderno o Aeropress concentrado."; }, metodos: "Filtrado (V60), Aeropress o Espresso moderno" }, 
-            fullCity: { label: "Full City", sub: "Tueste Medio-Oscuro", hito: "Segundos antes del segundo crack. Pueden aparecer puntos aislados de aceite.", quimica: "Inicio de la pirólisis. Los carbohidratos se transforman en compuestos amargos deseables.", sensorial: (lum) => { if (lum >= 50) return "Entrada Oscura (Lum > 50): Un perfil de gran densidad sensorial donde predominan notas a chocolate semi-amargo, praliné y azúcar caramelizada. La acidez es baja y estructural, permitiendo que el dulzor oscuro y el cuerpo pesado definan la experiencia. La taza resulta intensa pero aún equilibrada, especialmente expresiva en Espresso o Moka."; if (lum >= 46) return "Centro Oscuro (Lum 46-50): Un café robusto y profundo, dominado por cacao intenso, especias cálidas y una textura pesada y envolvente. La caramelización avanzada aporta sensación cremosa y persistente, creando una taza de gran presencia ideal para Espresso tradicional o Prensa Francesa."; return "Límite Full City (Lum < 46): Perfil oscuro y contundente, donde el chocolate amargo domina sobre una textura espesa y casi cremosa. El amargor elegante y controlado se combina con notas tostadas profundas, generando una experiencia especialmente adecuada para bebidas lácteas basadas en Espresso."; }, metodos: "Espresso tradicional, Moka o Prensa Francesa" }, 
-            fullCityPlus: { label: "Full City+", sub: "Tueste Oscuro", hito: "Segundo crack en curso. Capa de aceite ligera y uniforme en la superficie.", quimica: "Carbonización de la fibra del grano. Compuestos de tueste comienzan a dominar sobre el origen.", sensorial: (lum) => { if (lum >= 36) return "Segundo Crack Inicial (Lum > 36): Un perfil intenso y dominante, donde el cacao puro, las notas tostadas profundas y los matices ahumados dulces construyen una taza poderosa y de gran impacto. La acidez desaparece casi por completo, dejando protagonismo al cuerpo pesado y a la persistencia amarga elegante típica de Espresso intenso."; return "Segundo Crack Avanzado (Lum < 36): Un café oscuro y agresivo en expresión, donde el humo, el amargor agradable y las notas carbonizadas se integran en una estructura robusta y persistente. La taza privilegia fuerza e intensidad por encima de la complejidad del origen, funcionando especialmente bien como base potente para bebidas lácteas o Cold Brew tradicional."; }, metodos: "Espresso intenso, Cold Brew o base láctea" }, 
-            french: { label: "French / Italian", sub: "Tueste Muy Oscuro", hito: "Final del segundo crack. Grano brillante por aceite y color casi negro.", quimica: "Degradación total de azúcares y ácidos. Sabor producto de la combustión controlada.", sensorial: (lum) => { if (lum >= 20) return "French Roast (Lum > 20): Un perfil extremo dominado por notas intensas a carbón dulce, humo y madera tostada. La estructura original del origen prácticamente desaparece para dar paso a una taza de carácter agresivo, cuerpo pesado y amargor pronunciado. Extraído a menor temperatura puede conservar cierta sensación achocolatada dentro de su intensidad."; if (lum >= 10) return "Italian Roast (Lum 10-20): Un café profundamente tostado, de amargor dominante y perfil ceniciento, donde las notas carbonizadas y ahumadas definen toda la experiencia. La complejidad varietal desaparece casi por completo, quedando una taza enfocada únicamente en potencia y persistencia, utilizada principalmente en mezclas comerciales o Cold Brew diluido."; return "Torrefacto / Extremo (Lum < 10): Perfil completamente carbonizado, donde predominan sabores a alquitrán, ceniza y combustión extrema. La estructura celular del grano ha sido destruida casi totalmente, eliminando cualquier expresión de origen y dejando una taza severamente amarga y áspera, no recomendada para extracción de especialidad."; }, metodos: "Cold Brew diluido o mezclas lácteas (baja temperatura)" } 
+            cinnamon: { 
+                label: "Cinnamon", sub: "Tueste Muy Claro", hito: "Retirado justo al inicio del primer crack. Grano con expansión mínima.", quimica: "Nivel máximo de ácidos clorogénicos. Degradación incompleta de clorofila y lípidos.", 
+                sensorial: (lum) => { if (lum >= 115) return "Blonde Extremo (Lum > 115): Un perfil extremadamente luminoso y subdesarrollado, donde predominan sensaciones vegetales, herbales y notas crudas que recuerdan a pasto fresco, cereal húmedo y maní natural. La taza presenta una estructura acuosa, acidez agresiva y una extracción difícil debido a la baja solubilidad interna del grano. Requiere métodos de inmersión prolongada y temperaturas elevadas para intentar desarrollar complejidad y compensar la limitada caramelización."; return "Cinnamon Estándar (Lum < 115): Un café de perfil delicadamente silvestre y vibrante, donde las notas herbales se integran con un dulzor tenue similar a miel de campo y flores frescas. La acidez es intensa y protagonista, aportando una sensación brillante y filosa en boca. La taza conserva una identidad cruda y transparente, especialmente expresiva en métodos V60 con molienda fina y vertidos controlados que favorezcan claridad y definición aromática."; }, 
+                metodos: "Inmersión prolongada o Filtrado fino (ej. V60)" 
+            }, 
+            newEngland: { 
+                label: "New England", sub: "Tueste Claro", hito: "Final del primer crack. Superficie mate y rugosa.", quimica: "Máxima complejidad enzimática. Los compuestos volátiles del origen se mantienen intactos.", 
+                sensorial: (lum) => { if (lum >= 98) return "Límite Temprano (Lum > 98): Un café de altísima expresión aromática, donde la acidez cítrica domina con intensidad brillante y elegante. Las notas florales aparecen definidas y delicadas, acompañadas por una textura ligera similar a un té infusionado fino. La taza ofrece transparencia extrema y gran definición del origen, resaltando especialmente en Origami por su capacidad de enfatizar claridad, limpieza y vivacidad."; if (lum >= 90) return "Desarrollo Frutal (Lum 90-98): Perfil dinámico y jugoso, donde aparecen frutas con hueso maduras acompañadas de una acidez amplia y envolvente. La taza mantiene gran luminosidad, pero comienza a desarrollar una sensación más redonda y dulce en boca. La claridad aromática y la estructura brillante permiten obtener una experiencia compleja y refinada, ideal para V60 con técnicas de choque térmico que intensifiquen la percepción frutal."; return "Transición (Lum < 90): Un perfil más equilibrado y amable, donde la acidez comienza a suavizarse permitiendo que emerjan notas cálidas a panela, miel oscura y azúcar de caña. La taza conserva claridad y elegancia, pero incorpora mayor sensación de dulzor y profundidad, logrando una experiencia armoniosa y muy expresiva en métodos de extracción limpia como V60 o Chemex."; }, 
+                metodos: "Filtrado cónico (Origami, V60) o Chemex" 
+            }, 
+            city: { 
+                label: "City", sub: "Tueste Medio-Claro", hito: "Fase de desarrollo inicial post-crack. Grano comienza a alisarse pero permanece seco.", quimica: "Reacción de Maillard avanzada (caramelización incipiente). Desarrollo de notas a pan tostado.", 
+                sensorial: (lum) => { if (lum >= 80) return "Perfil Ácido/Floral (Lum > 80): Un café de alta luminosidad sensorial, elegante y cristalino, donde la acidez floral domina con precisión refinada. La taza recuerda a un té negro delicado por su limpieza y ligereza, ofreciendo una experiencia etérea, aromática y de gran transparencia, especialmente expresiva en métodos de filtrado cónico como Origami."; if (lum >= 75) return "Perfil Frutal (Lum 75-80): Un perfil brillante y expresivo, donde las frutas rojas maduras se integran con una acidez jugosa y perfectamente balanceada. La taza conserva excelente claridad y una textura sedosa que aporta elegancia sin perder vivacidad. El resultado es una experiencia compleja pero accesible, ideal para métodos V60 con vertidos segmentados que potencien la separación de sabores y la definición aromática."; return "Perfil Transición (Lum < 75): Un café de estructura más profunda y madura, donde la acidez se vuelve más redonda y organizada alrededor de un dulzor natural que recuerda a caña cruda y caramelo ligero. La taza gana densidad y estabilidad sin perder limpieza, ofreciendo una experiencia equilibrada y versátil especialmente agradable en Aeropress o V60."; }, 
+                metodos: "Filtrado cónico (Origami, V60) o Aeropress" 
+            }, 
+            cityPlus: { 
+                label: "City+", sub: "Tueste Medio", hito: "Pleno desarrollo. Incremento de volumen notable y superficie lisa.", quimica: "Inicio de caramelización de azúcares complejos. Balance óptimo de ácidos orgánicos.", 
+                sensorial: (lum) => { if (lum >= 68) return "Perfil Vibrante (Lum > 68): Un café de gran equilibrio entre luminosidad y dulzor, donde la acidez cítrica aparece limpia y refinada sobre un cuerpo sedoso y envolvente. Las notas a miel y frutas dulces generan una taza brillante, moderna y muy transparente, especialmente destacada en métodos V60 por su claridad extrema y sensación jugosa."; if (lum >= 62) return "Balance de Especialidad (Lum 62-67): Un perfil armónico y completo, donde la acidez redonda se integra perfectamente con notas a chocolate de leche, caramelo suave y frutos secos dulces. La taza logra equilibrio entre dulzor, cuerpo y claridad, ofreciendo una experiencia elegante y versátil que se expresa magníficamente en la geometría del Origami."; return "Dulzor Desarrollado (Lum < 62): Un café más profundo y envolvente, donde la acidez se atenúa para dar protagonismo a un dulzor oscuro y persistente similar a melaza, azúcar morena y cacao suave. El cuerpo se vuelve más denso y cremoso, generando una experiencia cálida y reconfortante ideal para Espresso moderno o Aeropress concentrado."; }, 
+                metodos: "Filtrado (V60), Aeropress o Espresso moderno" 
+            }, 
+            fullCity: { 
+                label: "Full City", sub: "Tueste Medio-Oscuro", hito: "Segundos antes del segundo crack. Pueden aparecer puntos aislados de aceite.", quimica: "Inicio de la pirólisis. Los carbohidratos se transforman en compuestos amargos deseables.", 
+                sensorial: (lum) => { if (lum >= 50) return "Entrada Oscura (Lum > 50): Un perfil de gran densidad sensorial donde predominan notas a chocolate semi-amargo, praliné y azúcar caramelizada. La acidez es baja y estructural, permitiendo que el dulzor oscuro y el cuerpo pesado definan la experiencia. La taza resulta intensa pero aún equilibrada, especialmente expresiva en Espresso o Moka."; if (lum >= 46) return "Centro Oscuro (Lum 46-50): Un café robusto y profundo, dominado por cacao intenso, especias cálidas y una textura pesada y envolvente. La caramelización avanzada aporta sensación cremosa y persistente, creando una taza de gran presencia ideal para Espresso tradicional o Prensa Francesa."; return "Límite Full City (Lum < 46): Perfil oscuro y contundente, donde el chocolate amargo domina sobre una textura espesa y casi cremosa. El amargor elegante y controlado se combina con notas tostadas profundas, generando una experiencia especialmente adecuada para bebidas lácteas basadas en Espresso."; }, 
+                metodos: "Espresso tradicional, Moka o Prensa Francesa" 
+            }, 
+            fullCityPlus: { 
+                label: "Full City+", sub: "Tueste Oscuro", hito: "Segundo crack en curso. Capa de aceite ligera y uniforme en la superficie.", quimica: "Carbonización de la fibra del grano. Compuestos de tueste comienzan a dominar sobre el origen.", 
+                sensorial: (lum) => { if (lum >= 36) return "Segundo Crack Inicial (Lum > 36): Un perfil intenso y dominante, donde el cacao puro, las notas tostadas profundas y los matices ahumados dulces construyen una taza poderosa y de gran impacto. La acidez desaparece casi por completo, dejando protagonismo al cuerpo pesado y a la persistencia amarga elegante típica de Espresso intenso."; return "Segundo Crack Avanzado (Lum < 36): Un café oscuro y agresivo en expresión, donde el humo, el amargor agradable y las notas carbonizadas se integran en una estructura robusta y persistente. La taza privilegia fuerza e intensidad por encima de la complejidad del origen, funcionando especialmente bien como base potente para bebidas lácteas o Cold Brew tradicional."; }, 
+                metodos: "Espresso intenso, Cold Brew o base láctea" 
+            }, 
+            french: { 
+                label: "French / Italian", sub: "Tueste Muy Oscuro", hito: "Final del segundo crack. Grano brillante por aceite y color casi negro.", quimica: "Degradación total de azúcares y ácidos. Sabor producto de la combustión controlada.", 
+                sensorial: (lum) => { if (lum >= 20) return "French Roast (Lum > 20): Un perfil extremo dominado por notas intensas a carbón dulce, humo y madera tostada. La estructura original del origen prácticamente desaparece para dar paso a una taza de carácter agresivo, cuerpo pesado y amargor pronunciado. Extraído a menor temperatura puede conservar cierta sensación achocolatada dentro de su intensidad."; if (lum >= 10) return "Italian Roast (Lum 10-20): Un café profundamente tostado, de amargor dominante y perfil ceniciento, donde las notas carbonizadas y ahumadas definen toda la experiencia. La complejidad varietal desaparece casi por completo, quedando una taza enfocada únicamente en potencia y persistencia, utilizada principalmente en mezclas comerciales o Cold Brew diluido."; return "Torrefacto / Extremo (Lum < 10): Perfil completamente carbonizado, donde predominan sabores a alquitrán, ceniza y combustión extrema. La estructura celular del grano ha sido destruida casi totalmente, eliminando cualquier expresión de origen y dejando una taza severamente amarga y áspera, no recomendada para extracción de especialidad."; }, 
+                metodos: "Cold Brew diluido o mezclas lácteas (baja temperatura)" 
+            } 
         };
 
-        function getRoastProfile(lum) {
-            if (lum > 105) return ROAST_PROFILES.cinnamon;
-            if (lum > 85) return ROAST_PROFILES.newEngland;
-            if (lum > 70) return ROAST_PROFILES.city;
-            if (lum > 55) return ROAST_PROFILES.cityPlus;
-            if (lum > 42) return ROAST_PROFILES.fullCity;
-            if (lum > 30) return ROAST_PROFILES.fullCityPlus;
-            return ROAST_PROFILES.french;
-        }
+        function getRoastProfile(lum) { if (lum > 105) return ROAST_PROFILES.cinnamon; if (lum > 85) return ROAST_PROFILES.newEngland; if (lum > 70) return ROAST_PROFILES.city; if (lum > 55) return ROAST_PROFILES.cityPlus; if (lum > 42) return ROAST_PROFILES.fullCity; if (lum > 30) return ROAST_PROFILES.fullCityPlus; return ROAST_PROFILES.french; }
 
-        const previewRoast = document.getElementById('preview-roast');
-        const canvasRoast = document.getElementById('canvas-roast');
-        const ctxRoast = canvasRoast.getContext('2d', { willReadFrequently: true });
         let roastCropper = null; 
 
-        const handleImageUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+        const handleImageUpload = (e, type) => {
+            const file = e.target.files[0]; if (!file) return;
+            currentCropType = type; 
             const reader = new FileReader();
             reader.onload = (ev) => {
-                const modal = document.getElementById('crop-modal');
-                const imageToCrop = document.getElementById('image-to-crop');
-                imageToCrop.src = ev.target.result;
-                modal.style.display = 'flex';
+                document.getElementById('image-to-crop').src = ev.target.result;
+                document.getElementById('crop-modal').style.display = 'flex';
                 if (roastCropper) roastCropper.destroy();
-                roastCropper = new Cropper(imageToCrop, { viewMode: 1, autoCropArea: 0.8, background: false });
+                roastCropper = new Cropper(document.getElementById('image-to-crop'), { viewMode: 1, autoCropArea: 0.8, background: false });
             };
-            reader.readAsDataURL(file);
-            e.target.value = ''; 
+            reader.readAsDataURL(file); e.target.value = ''; 
         };
 
-        document.getElementById('upload-camera').addEventListener('change', handleImageUpload);
-        document.getElementById('upload-file').addEventListener('change', handleImageUpload);
-
         function confirmCrop() {
-            if (!roastCropper) return;
-            const croppedCanvas = roastCropper.getCroppedCanvas();
-            previewRoast.src = croppedCanvas.toDataURL('image/jpeg');
+            if (!roastCropper || !currentCropType) return;
+            const canvas = roastCropper.getCroppedCanvas();
+            const dataUrl = canvas.toDataURL('image/jpeg');
             document.getElementById('crop-modal').style.display = 'none';
-            roastCropper.destroy();
-            roastCropper = null;
-            previewRoast.onload = analyzeRoast;
+            roastCropper.destroy(); roastCropper = null;
+            analyzeRoast(dataUrl, currentCropType);
         }
 
-        function cancelCrop() {
-            document.getElementById('crop-modal').style.display = 'none';
-            if (roastCropper) roastCropper.destroy();
-        }
+        function cancelCrop() { document.getElementById('crop-modal').style.display = 'none'; if (roastCropper) roastCropper.destroy(); currentCropType = null; }
 
-        function analyzeRoast() {
-            canvasRoast.width = previewRoast.naturalWidth;
-            canvasRoast.height = previewRoast.naturalHeight;
-            ctxRoast.drawImage(previewRoast, 0, 0, canvasRoast.width, canvasRoast.height);
-            const imgData = ctxRoast.getImageData(0, 0, canvasRoast.width, canvasRoast.height).data;
-            let r = 0, g = 0, b = 0, count = 0;
-            for (let i = 0; i < imgData.length; i += 16) {
-                r += imgData[i]; g += imgData[i+1]; b += imgData[i+2]; count++;
-            }
-            r = Math.floor(r/count); g = Math.floor(g/count); b = Math.floor(b/count);
-            const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b);
-            
-            // Guardar datos en variable global para exportar al JSON
-            currentRoastData = { r, g, b, lum, img: previewRoast.src };
-            updateRoastUI(r, g, b, lum);
+        function analyzeRoast(imgSrc, type) {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('canvas-roast'); const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                let r = 0, g = 0, b = 0, c = 0;
+                for (let i = 0; i < data.length; i += 16) { r += data[i]; g += data[i+1]; b += data[i+2]; c++; }
+                r = Math.floor(r/c); g = Math.floor(g/c); b = Math.floor(b/c);
+                const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b);
+                
+                currentRoastData[type] = { r, g, b, lum, img: imgSrc };
+                updateRoastUI();
+            };
+            img.src = imgSrc;
         }
 
         function getAgtronDisplayColor(lumValue) {
-            const scale = [
-                { l: 95, r: 197, g: 154, b: 111 }, { l: 85, r: 168, g: 122, b: 79 },  
-                { l: 75, r: 143, g: 94, b: 54 }, { l: 65, r: 115, g: 67, b: 34 },   
-                { l: 55, r: 89, g: 49, b: 22 }, { l: 45, r: 66, g: 34, b: 14 },    
-                { l: 35, r: 46, g: 21, b: 8 }, { l: 25, r: 28, g: 10, b: 3 },     
-                { l: 15, r: 15, g: 4, b: 1 }, { l: 5,  r: 5, g: 1, b: 0 }        
-            ];
-            if (lumValue >= 95) return `rgb(197, 154, 111)`;
-            if (lumValue <= 5) return `rgb(5, 1, 0)`;
+            const scale = [ { l: 95, r: 197, g: 154, b: 111 }, { l: 85, r: 168, g: 122, b: 79 }, { l: 75, r: 143, g: 94, b: 54 }, { l: 65, r: 115, g: 67, b: 34 }, { l: 55, r: 89, g: 49, b: 22 }, { l: 45, r: 66, g: 34, b: 14 }, { l: 35, r: 46, g: 21, b: 8 }, { l: 25, r: 28, g: 10, b: 3 }, { l: 15, r: 15, g: 4, b: 1 }, { l: 5,  r: 5, g: 1, b: 0 } ];
+            if (lumValue >= 95) return `rgb(197,154,111)`; if (lumValue <= 5) return `rgb(5,1,0)`;
             for (let i = 0; i < scale.length - 1; i++) {
-                let u = scale[i], l = scale[i+1];
-                if (lumValue <= u.l && lumValue > l.l) {
-                    let f = (lumValue - l.l) / (u.l - l.l);
-                    return `rgb(${Math.round(l.r+f*(u.r-l.r))},${Math.round(l.g+f*(u.g-l.g))},${Math.round(l.b+f*(u.b-l.b))})`;
+                if (lumValue <= scale[i].l && lumValue > scale[i+1].l) {
+                    let f = (lumValue - scale[i+1].l) / (scale[i].l - scale[i+1].l);
+                    return `rgb(${Math.round(scale[i+1].r+f*(scale[i].r-scale[i+1].r))},${Math.round(scale[i+1].g+f*(scale[i].g-scale[i+1].g))},${Math.round(scale[i+1].b+f*(scale[i].b-scale[i+1].b))})`;
                 }
-            }
-            return `rgb(0,0,0)`;
+            } return `rgb(0,0,0)`;
         }
 
-        function updateRoastUI(r, g, b, lum) {
-            let p = getRoastProfile(lum);
-
-            document.getElementById('roast-label').innerText = p.label;
-            document.getElementById('roast-sublabel').innerText = p.sub;
-            document.getElementById('hito-text').innerText = p.hito;
-            document.getElementById('quimica-text').innerText = p.quimica;
-            document.getElementById('sensorial-text').innerText = p.sensorial(lum);
-            document.getElementById('tech-values').innerText = `Luminancia: ${lum.toFixed(1)} | RGB: ${r},${g},${b}`;
-            document.getElementById('swatch').style.backgroundColor = getAgtronDisplayColor(lum);
-            document.getElementById('results-wrapper').style.display = 'block';
+        function updateRoastUI() {
+            let hasData = false;
             
-            setTimeout(() => {
-                let pos = Math.max(0, Math.min(100, 100 - lum));
-                document.getElementById('agtron-marker').style.left = pos + '%';
-            }, 100);
+            // Render Grano (Tarjetas 1 y 2)
+            if (currentRoastData.grano && currentRoastData.grano.lum !== null) {
+                hasData = true;
+                let d = currentRoastData.grano; let p = getRoastProfile(d.lum);
+                document.getElementById('card-grano').style.display = 'flex';
+                document.getElementById('card-perfil-grano').style.display = 'flex';
+                
+                document.getElementById('preview-roast-grano').src = d.img;
+                document.getElementById('roast-label-grano').innerText = p.label;
+                document.getElementById('roast-sublabel-grano').innerText = p.sub;
+                document.getElementById('tech-values-grano').innerText = `Lum: ${d.lum.toFixed(1)} | RGB: ${d.r},${d.g},${d.b}`;
+                document.getElementById('swatch-grano').style.backgroundColor = getAgtronDisplayColor(d.lum);
+                
+                document.getElementById('hito-text-grano').innerText = p.hito;
+                document.getElementById('quimica-text-grano').innerText = p.quimica;
+                document.getElementById('metodo-text-grano').innerText = p.metodos;
+                document.getElementById('sensorial-text-grano').innerText = p.sensorial(d.lum);
+                
+                setTimeout(() => { document.getElementById('agtron-marker-grano').style.left = Math.max(0, Math.min(100, 100 - d.lum)) + '%'; }, 100);
+            } else { 
+                document.getElementById('card-grano').style.display = 'none';
+                document.getElementById('card-perfil-grano').style.display = 'none';
+            }
+
+            // Render Molido (Tarjetas 3 y 4)
+            if (currentRoastData.molido && currentRoastData.molido.lum !== null) {
+                hasData = true;
+                let d = currentRoastData.molido; let p = getRoastProfile(d.lum);
+                document.getElementById('card-molido').style.display = 'flex';
+                document.getElementById('card-perfil-molido').style.display = 'flex';
+                
+                document.getElementById('preview-roast-molido').src = d.img;
+                document.getElementById('roast-label-molido').innerText = p.label;
+                document.getElementById('roast-sublabel-molido').innerText = p.sub;
+                document.getElementById('tech-values-molido').innerText = `Lum: ${d.lum.toFixed(1)} | RGB: ${d.r},${d.g},${d.b}`;
+                document.getElementById('swatch-molido').style.backgroundColor = getAgtronDisplayColor(d.lum);
+                
+                document.getElementById('hito-text-molido').innerText = p.hito;
+                document.getElementById('quimica-text-molido').innerText = p.quimica;
+                document.getElementById('metodo-text-molido').innerText = p.metodos;
+                document.getElementById('sensorial-text-molido').innerText = p.sensorial(d.lum);
+                
+                setTimeout(() => { document.getElementById('agtron-marker-molido').style.left = Math.max(0, Math.min(100, 100 - d.lum)) + '%'; }, 100);
+            } else { 
+                document.getElementById('card-molido').style.display = 'none'; 
+                document.getElementById('card-perfil-molido').style.display = 'none';
+            }
+
+            // Render Delta (Tarjeta 5)
+            if (hasData) {
+                document.getElementById('results-wrapper').style.display = 'block';
+
+                if (currentRoastData.grano.lum !== null && currentRoastData.molido.lum !== null) {
+                    let delta = Math.abs(currentRoastData.molido.lum - currentRoastData.grano.lum);
+                    let diferencia = ""; let causas = ""; let consecuencias = "";
+
+                    if (delta <= 3) {
+                        diferencia = "Excelente (Tueste muy parejo)";
+                        causas = "Desarrollo térmico ideal. Correcta aplicación de energía (RoR) y tiempo adecuado de desarrollo en el interior del grano.";
+                        consecuencias = "Extracción balanceada y predecible. Taza limpia, con dulzor maximizado y notas de origen fieles al perfil de color.";
+                    } else if (delta <= 8) {
+                        diferencia = "Aceptable (Variación estándar)";
+                        causas = "Tueste convencional. Es normal que el exterior esté ligeramente más expuesto a la conducción del tambor que el núcleo celular.";
+                        consecuencias = "Buen balance general. Acidez presente y cuerpo estándar. Puede requerir molienda ligeramente más fina para maximizar extracción.";
+                    } else {
+                        diferencia = "Crítica (Posible Arrebatamiento)";
+                        causas = "Temperatura de carga muy alta, energía excesiva (RoR alto) hacia el final, o falta de tiempo de desarrollo post-primer crack. El grano se 'selló' por fuera pero quedó crudo por dentro.";
+                        consecuencias = "Acidez metálica o agria, notas herbales/vegetales conviviendo con amargor exterior. Falta de dulzor y final astringente.";
+                    }
+
+                    document.getElementById('delta-valor').innerText = delta.toFixed(1);
+                    document.getElementById('delta-diferencia').innerText = diferencia;
+                    document.getElementById('delta-causas').innerText = causas;
+                    document.getElementById('delta-consecuencias').innerText = consecuencias;
+                    document.getElementById('card-delta').style.display = 'flex';
+                } else {
+                    document.getElementById('card-delta').style.display = 'none';
+                }
+            } else {
+                document.getElementById('results-wrapper').style.display = 'none';
+            }
         }
     </script>
 </body>

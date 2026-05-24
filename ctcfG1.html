@@ -766,15 +766,23 @@
             let gr = parseFloat(fd.get('gramos_cafe')), ml = parseFloat(fd.get('agua_total'));
             if (!isNaN(gr) && gr>0 && !isNaN(ml) && ml>0) textoFinal += ` - ${gr}g / ${ml}ml (Ratio 1:${(ml/gr).toFixed(1).replace('.0','')})`;
 
-            if (currentRoastData.grano.lum !== null) {
-                let p = getRoastProfile(currentRoastData.grano.lum);
-                textoFinal += `\n\n🫘 Grano (Ext): ${p.label} (${currentRoastData.grano.lum.toFixed(1)} Agtron)`;
+            let pGrano = currentRoastData.grano.lum !== null ? getRoastProfile(currentRoastData.grano.lum) : null;
+            let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
+
+            if (pGrano) {
+                textoFinal += `\n\n🫘 Grano (Ext): ${pGrano.label} (${currentRoastData.grano.lum.toFixed(1)} Agtron)`;
             }
-            if (currentRoastData.molido.lum !== null) {
-                let p = getRoastProfile(currentRoastData.molido.lum);
-                textoFinal += `\n🤎 Molido (Int): ${p.label} (${currentRoastData.molido.lum.toFixed(1)} Agtron)`;
+            if (pMolido) {
+                textoFinal += `\n🤎 Molido (Int): ${pMolido.label} (${currentRoastData.molido.lum.toFixed(1)} Agtron)`;
             }
-            if (currentRoastData.grano.lum !== null && currentRoastData.molido.lum !== null) {
+
+            // Saca la recomendación del molido si existe, si no, del grano entero
+            let pReferencia = pMolido || pGrano;
+            if (pReferencia) {
+                textoFinal += `\n💡 Método recomendado: ${pReferencia.metodos}`;
+            }
+
+            if (pGrano && pMolido) {
                 if (currentRoastData.grano.lum >= currentRoastData.molido.lum) {
                     textoFinal += `\n⚠️ Error analítico: Posible falla en captura. El interior se registró más oscuro que el exterior.`;
                 } else {
@@ -843,7 +851,7 @@
                             currentRoastData = d.analisis_imagen;
                         } else if (d.analisis_imagen.img) {
                             // Compatibilidad con versión anterior (asignar a grano)
-                            currentRoastData = { grano: d.analisis_imagen, molido: { r: null, g: null, b: null, lum: null, img: null } };
+                            currentRoastData = { grano: { ...d.analisis_imagen }, molido: { r: null, g: null, b: null, lum: null, img: null } };
                         }
                         renderCarouselCards();
                     } else {
@@ -858,13 +866,13 @@
 
         // --- MÓDULO DE TUESTE Y DESARROLLO (ACTUALIZADO) ---
         const ROAST_PROFILES = { 
-            cinnamon: { label: "Cinnamon", sub: "Tueste Muy Claro", hito: "Retirado justo al inicio del primer crack.", quimica: "Nivel máximo de ácidos clorogénicos. Degradación incompleta.", sensorial: (lum) => "Perfil delicadamente silvestre y vibrante, notas herbales y dulzor tenue. Acidez protagonista y brillante." }, 
-            newEngland: { label: "New England", sub: "Tueste Claro", hito: "Final del primer crack. Superficie mate y rugosa.", quimica: "Máxima complejidad enzimática. Volátiles intactos.", sensorial: (lum) => "Altísima expresión aromática, acidez cítrica elegante. Notas florales definidas y textura ligera." }, 
-            city: { label: "City", sub: "Tueste Medio-Claro", hito: "Desarrollo post-crack. Grano comienza a alisarse.", quimica: "Maillard avanzada. Caramelización incipiente.", sensorial: (lum) => "Perfil brillante, frutas rojas maduras con acidez jugosa. Excelente claridad y textura sedosa." }, 
-            cityPlus: { label: "City+", sub: "Tueste Medio", hito: "Pleno desarrollo. Superficie lisa.", quimica: "Caramelización de azúcares complejos. Balance óptimo.", sensorial: (lum) => "Armónico y completo, acidez redonda integrada con notas a chocolate de leche y caramelo." }, 
-            fullCity: { label: "Full City", sub: "Tueste Medio-Oscuro", hito: "Segundos antes del segundo crack.", quimica: "Inicio de la pirólisis. Desarrollo amargo deseable.", sensorial: (lum) => "Densidad sensorial, chocolate semi-amargo, azúcar caramelizada. Acidez estructural, cuerpo pesado." }, 
-            fullCityPlus: { label: "Full City+", sub: "Tueste Oscuro", hito: "Segundo crack en curso. Capa de aceite ligera.", quimica: "Carbonización de fibra. Tueste domina origen.", sensorial: (lum) => "Perfil intenso, cacao puro y matices ahumados dulces. Acidez desaparece casi por completo." }, 
-            french: { label: "French", sub: "Tueste Muy Oscuro", hito: "Final del segundo crack. Muy brillante/aceitoso.", quimica: "Degradación total. Sabor por combustión.", sensorial: (lum) => "Perfil extremo dominado por carbón dulce y madera tostada. Amargor pronunciado." } 
+            cinnamon: { label: "Cinnamon", sub: "Tueste Muy Claro", hito: "Retirado justo al inicio del primer crack.", quimica: "Nivel máximo de ácidos clorogénicos. Degradación incompleta.", sensorial: (lum) => "Perfil delicadamente silvestre y vibrante, notas herbales y dulzor tenue. Acidez protagonista y brillante.", metodos: "Inmersión prolongada o Filtrado fino (ej. V60)" }, 
+            newEngland: { label: "New England", sub: "Tueste Claro", hito: "Final del primer crack. Superficie mate y rugosa.", quimica: "Máxima complejidad enzimática. Volátiles intactos.", sensorial: (lum) => "Altísima expresión aromática, acidez cítrica elegante. Notas florales definidas y textura ligera.", metodos: "Filtrado cónico (Origami, V60) o Chemex" }, 
+            city: { label: "City", sub: "Tueste Medio-Claro", hito: "Desarrollo post-crack. Grano comienza a alisarse.", quimica: "Maillard avanzada. Caramelización incipiente.", sensorial: (lum) => "Perfil brillante, frutas rojas maduras con acidez jugosa. Excelente claridad y textura sedosa.", metodos: "Filtrado cónico (Origami, V60) o Aeropress" }, 
+            cityPlus: { label: "City+", sub: "Tueste Medio", hito: "Pleno desarrollo. Superficie lisa.", quimica: "Caramelización de azúcares complejos. Balance óptimo.", sensorial: (lum) => "Armónico y completo, acidez redonda integrada con notas a chocolate de leche y caramelo.", metodos: "Filtrado (V60), Aeropress o Espresso moderno" }, 
+            fullCity: { label: "Full City", sub: "Tueste Medio-Oscuro", hito: "Segundos antes del segundo crack.", quimica: "Inicio de la pirólisis. Desarrollo amargo deseable.", sensorial: (lum) => "Densidad sensorial, chocolate semi-amargo, azúcar caramelizada. Acidez estructural, cuerpo pesado.", metodos: "Espresso tradicional, Moka o Prensa Francesa" }, 
+            fullCityPlus: { label: "Full City+", sub: "Tueste Oscuro", hito: "Segundo crack en curso. Capa de aceite ligera.", quimica: "Carbonización de fibra. Tueste domina origen.", sensorial: (lum) => "Perfil intenso, cacao puro y matices ahumados dulces. Acidez desaparece casi por completo.", metodos: "Espresso intenso, Cold Brew o base láctea" }, 
+            french: { label: "French", sub: "Tueste Muy Oscuro", hito: "Final del segundo crack. Muy brillante/aceitoso.", quimica: "Degradación total. Sabor por combustión.", sensorial: (lum) => "Perfil extremo dominado por carbón dulce y madera tostada. Amargor pronunciado.", metodos: "Cold Brew diluido o mezclas lácteas (baja temperatura)" } 
         };
 
         function getRoastProfile(lum) {
@@ -967,6 +975,7 @@
                     <div class="profile-item"><span class="profile-label">Hito Técnico</span><span class="profile-text">${p.hito}</span></div>
                     <div class="profile-item"><span class="profile-label">Química (Estándar)</span><span class="profile-text">${p.quimica}</span></div>
                     <div class="profile-item"><span class="profile-label">Perfil Sensorial</span><span class="profile-text dynamic-nuance">${p.sensorial(data.lum)}</span></div>
+                    <div class="profile-item"><span class="profile-label">💡 Método Recomendado</span><span class="profile-text" style="font-weight: bold; color: #8d6e63;">${p.metodos}</span></div>
                 </div>
             </div>`;
         }
@@ -1100,7 +1109,7 @@
             const maxWidth = 560; const x = 80; let y = 250; const lineHeight = 38; const paragraphs = text.split('\n');
             for (let i = 0; i < paragraphs.length; i++) {
                 const p = paragraphs[i]; if (p.trim() === '') { y += lineHeight; continue; }
-                if (i === 0 && p.includes('Ratio')) { ctx.fillStyle = '#81c784'; ctx.font = 'bold 24px sans-serif'; } else if (p.includes('🫘') || p.includes('🤎') || p.includes('⚠️') || p.includes('⚖️')) { ctx.fillStyle = '#ff9800'; ctx.font = 'italic 22px sans-serif'; } else { ctx.fillStyle = '#e0e0e0'; ctx.font = '24px sans-serif'; }
+                if (i === 0 && p.includes('Ratio')) { ctx.fillStyle = '#81c784'; ctx.font = 'bold 24px sans-serif'; } else if (p.includes('🫘') || p.includes('🤎') || p.includes('⚠️') || p.includes('⚖️') || p.includes('💡')) { ctx.fillStyle = '#ff9800'; ctx.font = 'italic 22px sans-serif'; } else { ctx.fillStyle = '#e0e0e0'; ctx.font = '24px sans-serif'; }
                 const words = p.split(' '); let line = '';
                 for (let n = 0; n < words.length; n++) { const testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > maxWidth && n > 0) { ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; } else { line = testLine; } } ctx.fillText(line, x, y); y += lineHeight + 15; 
             }

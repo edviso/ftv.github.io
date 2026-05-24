@@ -235,11 +235,11 @@
         .img-container-crop { max-height: 50vh; margin-bottom: 15px; background: #000; display: flex; justify-content: center; }
         .img-container-crop img { display: block; max-width: 100%; }
         
-        .delta-box { text-align: center; padding: 20px 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .delta-value { font-size: 3rem; font-weight: bold; color: #bf360c; margin: 10px 0; font-family: monospace; }
-        .delta-status { font-size: 1.1rem; font-weight: bold; color: #4a3b32; margin-bottom: 10px; }
-        .delta-desc { font-size: 0.9rem; color: #666; line-height: 1.5; }
-        .delta-error { background-color: #ffebee; border-left: 4px solid #f44336; padding: 15px; text-align: left; border-radius: 4px; }
+        .delta-box { text-align: center; padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .delta-value { font-size: 3rem; font-weight: bold; margin: 10px 0; font-family: monospace; }
+        .delta-status { font-size: 1.1rem; font-weight: bold; color: #4a3b32; margin-bottom: 5px; }
+        .delta-desc { font-size: 0.9rem; color: #333; line-height: 1.5; }
+        .delta-error { font-size: 1.1rem; color: #c62828; line-height: 1.5; padding: 10px;}
         
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -573,6 +573,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
             { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
             { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior." },
             { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." },
@@ -776,17 +777,31 @@
                 textoFinal += `\n🤎 Molido (Int): ${pMolido.label} (${currentRoastData.molido.lum.toFixed(1)} Agtron)`;
             }
 
-            // Saca la recomendación del molido si existe, si no, del grano entero
             let pReferencia = pMolido || pGrano;
             if (pReferencia) {
                 textoFinal += `\n💡 Método recomendado: ${pReferencia.metodos}`;
             }
 
             if (pGrano && pMolido) {
-                if (currentRoastData.grano.lum >= currentRoastData.molido.lum) {
-                    textoFinal += `\n⚠️ Error analítico: Posible falla en captura. El interior se registró más oscuro que el exterior.`;
+                if (currentRoastData.grano.lum > currentRoastData.molido.lum) {
+                    textoFinal += `\n\n⚠️ Anomalía detectada (Delta): Falla en la captura fotográfica (ilusión óptica) o inversión térmica.`;
                 } else {
-                    textoFinal += `\n⚖️ Delta de Desarrollo: ${(currentRoastData.molido.lum - currentRoastData.grano.lum).toFixed(1)} pts.`;
+                    let delta = Math.abs(currentRoastData.molido.lum - currentRoastData.grano.lum);
+                    let nivelStr = "";
+                    let recStr = "";
+
+                    if (delta <= 4) { 
+                        nivelStr = "Desarrollo Óptimo / Homogéneo"; 
+                    } else if (delta <= 9) { 
+                        nivelStr = "Desarrollo Estándar / Ideal para Filtro"; 
+                    } else if (delta <= 13) { 
+                        nivelStr = "Alerta / Riesgo de Subdesarrollo"; 
+                        recStr = "\n   - Temp: Disminuir ligeramente al entrar a Maillard.\n   - Tiempo: Alargar Maillard 30 a 45 seg.\n   - Vent: Mantener V3 hasta el 45% o 50% del tueste.";
+                    } else { 
+                        nivelStr = "Crítico / Arrebatamiento"; 
+                        recStr = "\n   - Temp: Bajar significativamente temp. de carga o pico inicial.\n   - Tiempo: Incrementar tiempo total entre 1 y 2 min.\n   - Vent: V3 en secado y casi todo Maillard. Bajar a V2 solo antes del crack (volver a V3 si hay inercia térmica).";
+                    }
+                    textoFinal += `\n\n⚖️ Delta de Desarrollo: ${delta.toFixed(1)} pts (${nivelStr}).${recStr}`;
                 }
             }
 
@@ -989,31 +1004,60 @@
             if (m.lum !== null) { cards += generateCardColorHTML('🤎 Molido', m, 'interior', '🤎 INTERIOR (MOLIDO)'); cards += generateCardProfileHTML(m, '🤎 INTERIOR (MOLIDO)'); }
             
             if (g.lum !== null && m.lum !== null) {
-                // LÓGICA DEL MUNDO REAL: El grano molido debe ser más claro (luminancia mayor).
-                let delta = m.lum - g.lum;
                 let deltaHTML = '';
                 
-                if (delta <= 0) {
+                // CONDICIÓN 1: Anomalía. El grano entero es más claro que el molido.
+                if (g.lum > m.lum) {
                     deltaHTML = `
-                    <div class="carousel-card" style="border-color: #f44336;">
+                    <div class="carousel-card" style="border-color: #f44336; justify-content: center;">
                         <div class="card-type-badge" style="background-color: #ffebee; color: #f44336;">⚠️ ANÁLISIS DELTA</div>
                         <div class="delta-box">
-                            <div class="delta-error">
-                                <strong>Falla en la captura de colores.</strong><br><br>
-                                Lo normal es que el grano entero sea más oscuro que el grano molido. Tu lectura arroja que el interior es más oscuro o igual al exterior.<br><br>
-                                <em>Por favor, asegúrate de tener una iluminación uniforme y vuelve a tomar las fotografías.</em>
+                            <div class="delta-error" style="text-align: center;">
+                                <strong style="font-size: 1.2rem;">Anomalía detectada</strong><br><br>
+                                Falla en la captura fotográfica (ilusión óptica) o inversión térmica.
                             </div>
                         </div>
                     </div>`;
                 } else {
-                    let nivelDesarrollo = delta < 10 ? "Bajo Contraste / Horneado" : (delta <= 15 ? "Desarrollo Uniforme (Ideal)" : "Alto Contraste / Arrebatado");
-                    let descDesarrollo = delta < 10 ? "El interior no se desarrolló adecuadamente frente al exterior." : (delta <= 15 ? "Excelente penetración térmica y homogeneidad." : "El exterior se tostó muy rápido dejando el interior más crudo.");
+                    // CONDICIÓN 2: Lógica normal. Cálculo del Delta.
+                    let delta = Math.abs(m.lum - g.lum);
+                    let nivelDesarrollo = "";
+                    let descDesarrollo = "";
+                    
+                    if (delta >= 0 && delta <= 4) {
+                        nivelDesarrollo = "Desarrollo Óptimo / Homogéneo";
+                        descDesarrollo = "Excelente penetración térmica.";
+                    } else if (delta > 4 && delta <= 9) {
+                        nivelDesarrollo = "Desarrollo Estándar / Ideal para Filtro";
+                        descDesarrollo = "Desarrollo adecuado para métodos de filtrado.";
+                    } else if (delta > 9 && delta <= 13) {
+                        nivelDesarrollo = "Alerta / Riesgo de Subdesarrollo";
+                        descDesarrollo = `
+                        <ul style="text-align: left; padding-left: 20px; font-size: 0.85rem; color: #555; margin-top: 10px;">
+                            <li style="margin-bottom: 6px;"><strong>Temperatura:</strong> Disminuir ligeramente la temperatura al entrar en la fase de Maillard.</li>
+                            <li style="margin-bottom: 6px;"><strong>Tiempo:</strong> Alargar la duración de la fase de Maillard entre 30 y 45 segundos.</li>
+                            <li><strong>Ventilación:</strong> Mantener la velocidad del ventilador en V3 hasta el 45% o 50% del tiempo total del tueste (en lugar del 33%), antes de bajar a V2.</li>
+                        </ul>`;
+                    } else {
+                        nivelDesarrollo = "Crítico / Arrebatamiento";
+                        descDesarrollo = `
+                        <ul style="text-align: left; padding-left: 20px; font-size: 0.85rem; color: #555; margin-top: 10px;">
+                            <li style="margin-bottom: 6px;"><strong>Temperatura:</strong> Bajar significativamente la temperatura de carga inicial o el pico de calor de los primeros minutos para evitar sellar el grano.</li>
+                            <li style="margin-bottom: 6px;"><strong>Tiempo:</strong> Incrementar el tiempo total del tueste entre 1 y 2 minutos adicionales.</li>
+                            <li><strong>Ventilación:</strong> Mantener V3 durante todo el secado y casi todo Maillard. Bajar a V2 únicamente justo antes de escuchar el primer crack. Si hay mucha inercia térmica, subir nuevamente a V3 durante el primer crack para despejar calor.</li>
+                        </ul>`;
+                    }
+
+                    // Asignación de colores según la severidad del Delta
+                    let colorBadge = (delta <= 9) ? '#e8f5e9' : (delta <= 13 ? '#fff3e0' : '#ffebee');
+                    let colorText = (delta <= 9) ? '#2e7d32' : (delta <= 13 ? '#e65100' : '#c62828');
+
                     deltaHTML = `
                     <div class="carousel-card">
-                        <div class="card-type-badge" style="background-color: #e8f5e9; color: #2e7d32;">⚖️ ANÁLISIS DELTA</div>
-                        <div class="delta-box">
-                            <div class="delta-status">Diferencial de Desarrollo</div>
-                            <div class="delta-value">Δ ${delta.toFixed(1)}</div>
+                        <div class="card-type-badge" style="background-color: ${colorBadge}; color: ${colorText};">⚖️ ANÁLISIS DELTA</div>
+                        <div class="delta-box" style="padding: 10px 0;">
+                            <div class="delta-status">Diferencial Térmico</div>
+                            <div class="delta-value" style="color: ${colorText};">Δ ${delta.toFixed(1)}</div>
                             <div style="font-weight: bold; color: #4a3b32; margin-bottom: 5px;">${nivelDesarrollo}</div>
                             <div class="delta-desc">${descDesarrollo}</div>
                         </div>

@@ -461,11 +461,11 @@
             <div class="row">
                 <div class="input-group">
                     <label>Café (g):</label>
-                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="12.5" placeholder="0.0">
+                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="15" placeholder="0.0" oninput="calcularAguaTotal()">
                 </div>
                 <div class="input-group">
                     <label>Agua Total (ml):</label>
-                    <input type="number" id="agua_total" name="agua_total" value="200" placeholder="0">
+                    <input type="number" id="agua_total" name="agua_total" value="240" placeholder="0">
                 </div>
             </div>
             <div class="checkbox-group">
@@ -479,7 +479,7 @@
                 </div>
                 <div class="checkbox-item" style="width:100%">
                     <label>Hielo en jarra (ml):</label>
-                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20" placeholder="0">
+                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="0" placeholder="0" oninput="calcularAguaTotal()">
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
@@ -618,6 +618,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "25-MAY-2026", resumen: "Automatización de Ratio: El campo 'Agua Total' ahora se autocalcula usando un ratio estándar de 1:16 en base a los gramos de café ingresados, restando dinámicamente el volumen de 'Hielo en jarra' si aplica." },
             { fecha: "25-MAY-2026", resumen: "Reorganización de Detalles del Café: Agrupamiento lógico de datos de tueste (izquierda) y extracción (derecha), incorporando dinámicamente el Tiempo de Extracción total." },
             { fecha: "25-MAY-2026", resumen: "Mejora de UX: Implementación de botones incrementales (+/-) para ajustar los tiempos de vertido (formato MM:SS) y se equilibró visualmente el espacio con los selectores de volumen." },
             { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
@@ -717,7 +718,27 @@
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
-        function step(id, delta) { const input = document.getElementById(id); input.value = parseInt(input.value) + delta; }
+        function calcularAguaTotal() {
+            let gramos = parseFloat(document.getElementById('gramos_cafe').value) || 0;
+            let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
+            
+            if (gramos > 0) {
+                let aguaTotal = (gramos * 16) - hielo;
+                document.getElementById('agua_total').value = Math.max(0, aguaTotal);
+            } else {
+                document.getElementById('agua_total').value = "";
+            }
+        }
+
+        function step(id, delta) { 
+            const input = document.getElementById(id); 
+            input.value = parseInt(input.value) + delta; 
+            
+            // Si el botón ajusta los gramos o el hielo, recalcular agua total
+            if (id === 'gramos_cafe' || id === 'hielo_ml') {
+                calcularAguaTotal();
+            }
+        }
         
         function stepTime(id, deltaSeconds) {
             const input = document.getElementById(id);
@@ -826,7 +847,13 @@
         }
 
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens'); generarGridHTML(paramNotas, 'notasSensoriales', 'nota'); generarGlobalHTML();
-        window.onload = () => { document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); analizarCodigo(); actualizarDispositivos(); };
+        
+        window.onload = () => { 
+            document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
+            analizarCodigo(); 
+            actualizarDispositivos(); 
+            calcularAguaTotal(); // Calculo inicial por si hay valores precargados
+        };
 
         function dispararGeneracion() {
             const fd = new FormData(document.getElementById('cataForm'));
@@ -842,8 +869,13 @@
             
             let textoFinal = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;
             let dReposo = fd.get('dias_tueste'); if (dReposo && !isNaN(dReposo)) textoFinal += ` (${dReposo} días post-tueste)`;
-            let gr = parseFloat(fd.get('gramos_cafe')), ml = parseFloat(fd.get('agua_total'));
-            if (!isNaN(gr) && gr>0 && !isNaN(ml) && ml>0) textoFinal += ` - ${gr}g / ${ml}ml (Ratio 1:${(ml/gr).toFixed(1).replace('.0','')})`;
+            
+            let gr = parseFloat(fd.get('gramos_cafe')), ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            // Para mostrar el ratio en texto, sumamos el hielo al agua para reflejar la dilución total planeada
+            let ml_para_ratio = ml_total_real + hielo; 
+            
+            if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) textoFinal += ` - ${gr}g / ${ml_total_real}ml (Ratio 1:${(ml_para_ratio/gr).toFixed(1).replace('.0','')})`;
 
             let pGrano = currentRoastData.grano.lum !== null ? getRoastProfile(currentRoastData.grano.lum) : null;
             let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
@@ -957,7 +989,7 @@
                         document.getElementById('results-wrapper').style.display = 'none';
                     }
 
-                    toggleVertidos(); analizarCodigo(); alert("Cata cargada exitosamente.");
+                    toggleVertidos(); analizarCodigo(); calcularAguaTotal(); alert("Cata cargada exitosamente.");
                 } catch(err) { console.error(err); alert("Error al cargar JSON."); } e.target.value = ''; 
             }; reader.readAsText(file);
         }
@@ -1173,7 +1205,13 @@
                 barsContainer.innerHTML += `<div class="bar-row"><div class="bar-label">${iconos[idx]} ${nota.split('/')[0]}</div><div class="bar-track"><div class="bar-fill" style="width: ${w}%; background-color: ${valNum > 0 ? coloresNotas[idx] : 'transparent'};"></div></div><div class="bar-value val-${valNum}">${valNum === 0 ? "N/E" : valNum}</div></div>`;
             });
 
-            let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total')); let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml) && ml>0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
+            let g = parseFloat(fd.get('gramos_cafe')); 
+            let ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            let ml_para_ratio = ml_total_real + hielo;
+
+            let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
+            
             let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
 
@@ -1232,7 +1270,15 @@
             const coloresNotas = ['#f48fb1', '#ffb74d', '#d84315', '#81c784', '#ce93d8', '#8d6e63', '#aed581']; const iconos = ['🌸', '🍊', '🍫', '🍬', '💥', '🪵', '🍃'];
             paramNotas.forEach((nota, idx) => { let valNum = mapVal(fd.get(`nota_${idx}`)); let y = 630 + (idx * 36); let w = valNum === 3 ? 300 : (valNum === 2 ? 200 : (valNum === 1 ? 100 : 0)); ctx.fillStyle = '#cccccc'; ctx.font = '18px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(iconos[idx] + ' ' + nota.split('/')[0], 50, y); ctx.fillStyle = '#333333'; roundRectSafe(ctx, 220, y - 10, 300, 20, 10); ctx.fill(); if (valNum > 0) { ctx.fillStyle = coloresNotas[idx]; roundRectSafe(ctx, 220, y - 10, w, 20, 10); ctx.fill(); } ctx.fillStyle = valNum === 3 ? '#81c784' : (valNum === 2 ? '#ffb74d' : (valNum === 1 ? '#e57373' : '#666666')); ctx.font = 'bold 18px sans-serif'; ctx.fillText(valNum === 0 ? "N/E" : valNum, 540, y); });
             ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); 
-            let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total')); let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml) && ml>0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-'; let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            
+            let g = parseFloat(fd.get('gramos_cafe')); 
+            let ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            let ml_para_ratio = ml_total_real + hielo;
+
+            let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
+            
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
             
             let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();

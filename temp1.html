@@ -618,6 +618,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "25-MAY-2026", resumen: "Reorganización de Detalles del Café: Agrupamiento lógico de datos de tueste (izquierda) y extracción (derecha), incorporando dinámicamente el Tiempo de Extracción total." },
             { fecha: "25-MAY-2026", resumen: "Mejora de UX: Implementación de botones incrementales (+/-) para ajustar los tiempos de vertido (formato MM:SS) y se equilibró visualmente el espacio con los selectores de volumen." },
             { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
             { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
@@ -1174,10 +1175,27 @@
 
             let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total')); let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml) && ml>0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
             let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
 
-            const colIzq = [{ l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }];
             let velSec = (fd.get('secado_vel')||'').toLowerCase(), velMai = (fd.get('maillard_vel')||'').toLowerCase(), velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-            const colDer = [{ l: 'Extracción:', v: extTxt }, { l: 'Ratio:', v: `[${ratioTxt}]` }, { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }];
+            
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
+                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
+                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+            ];
+            
+            const colDer = [
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+            ];
 
             document.getElementById('chartDetails').innerHTML = `<div style="display:flex; flex-direction:column;">${colIzq.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div><div style="display:flex; flex-direction:column;">${colDer.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div>`;
             document.getElementById('chartObs').innerText = fd.get('observaciones') || 'Sin observaciones registradas.'; document.getElementById('chartModal').style.display = 'flex';
@@ -1215,9 +1233,32 @@
             paramNotas.forEach((nota, idx) => { let valNum = mapVal(fd.get(`nota_${idx}`)); let y = 630 + (idx * 36); let w = valNum === 3 ? 300 : (valNum === 2 ? 200 : (valNum === 1 ? 100 : 0)); ctx.fillStyle = '#cccccc'; ctx.font = '18px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(iconos[idx] + ' ' + nota.split('/')[0], 50, y); ctx.fillStyle = '#333333'; roundRectSafe(ctx, 220, y - 10, 300, 20, 10); ctx.fill(); if (valNum > 0) { ctx.fillStyle = coloresNotas[idx]; roundRectSafe(ctx, 220, y - 10, w, 20, 10); ctx.fill(); } ctx.fillStyle = valNum === 3 ? '#81c784' : (valNum === 2 ? '#ffb74d' : (valNum === 1 ? '#e57373' : '#666666')); ctx.font = 'bold 18px sans-serif'; ctx.fillText(valNum === 0 ? "N/E" : valNum, 540, y); });
             ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); 
             let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total')); let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml) && ml>0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-'; let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
-            const colIzq = [{ l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }]; let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-            const colDer = [{ l: 'Extracción:', v: extTxt }, { l: 'Ratio:', v: `[${ratioTxt}]` }, { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }];
-            ctx.textAlign = 'left'; let startY = 945; colIzq.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); colDer.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]'; ctx.fillText(val, 380, y + 18); });
+            let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
+            
+            let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+            
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
+                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
+                { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+            ]; 
+            
+            const colDer = [
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+            ];
+
+            ctx.textAlign = 'left'; let startY = 945; 
+            colIzq.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); 
+            colDer.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]'; ctx.fillText(val, 380, y + 18); });
+            
             ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1175); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1205; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
             const link = document.createElement('a'); link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();
         }

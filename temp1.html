@@ -490,7 +490,7 @@
             </div>
             
             <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                <div class="input-group" style="margin-bottom: 0; flex: 2;">
+                <div class="input-group" style="margin-bottom: 0; flex: 1;">
                     <label>Blooming (ml):</label>
                     <div class="stepper">
                         <button type="button" onclick="step('blooming', -5)">-</button>
@@ -500,12 +500,16 @@
                 </div>
                 <div class="input-group" style="margin-bottom: 0; flex: 1;">
                     <label>Tiempo:</label>
-                    <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="text-align: center;">
+                    <div class="stepper">
+                        <button type="button" onclick="stepTime('t_blooming', -5)">-</button>
+                        <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="width: 100%;">
+                        <button type="button" onclick="stepTime('t_blooming', 5)">+</button>
+                    </div>
                 </div>
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                <div class="input-group" style="margin-bottom: 0; flex: 2;">
+                <div class="input-group" style="margin-bottom: 0; flex: 1;">
                     <label>1er Vertido (ml):</label>
                     <div class="stepper">
                         <button type="button" onclick="step('v1', -10)">-</button>
@@ -515,13 +519,17 @@
                 </div>
                 <div class="input-group" style="margin-bottom: 0; flex: 1;">
                     <label>Tiempo:</label>
-                    <input type="text" id="t_v1" name="t_v1" value="01:15" style="text-align: center;">
+                    <div class="stepper">
+                        <button type="button" onclick="stepTime('t_v1', -5)">-</button>
+                        <input type="text" id="t_v1" name="t_v1" value="01:15" style="width: 100%;">
+                        <button type="button" onclick="stepTime('t_v1', 5)">+</button>
+                    </div>
                 </div>
             </div>
 
             <div id="vertidos_extras">
                 <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                    <div class="input-group" style="margin-bottom: 0; flex: 2;">
+                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
                         <label>2do Vertido (ml):</label>
                         <div class="stepper">
                             <button type="button" onclick="step('v2', -10)">-</button>
@@ -531,12 +539,16 @@
                     </div>
                     <div class="input-group" style="margin-bottom: 0; flex: 1;">
                         <label>Tiempo:</label>
-                        <input type="text" id="t_v2" name="t_v2" value="01:50" style="text-align: center;">
+                        <div class="stepper">
+                            <button type="button" onclick="stepTime('t_v2', -5)">-</button>
+                            <input type="text" id="t_v2" name="t_v2" value="01:50" style="width: 100%;">
+                            <button type="button" onclick="stepTime('t_v2', 5)">+</button>
+                        </div>
                     </div>
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
-                    <div class="input-group" style="margin-bottom: 0; flex: 2;">
+                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
                         <label>3er Vertido (ml):</label>
                         <div class="stepper">
                             <button type="button" onclick="step('v3', -10)">-</button>
@@ -546,7 +558,11 @@
                     </div>
                     <div class="input-group" style="margin-bottom: 0; flex: 1;">
                         <label>Tiempo:</label>
-                        <input type="text" id="t_v3" name="t_v3" value="02:30" style="text-align: center;">
+                        <div class="stepper">
+                            <button type="button" onclick="stepTime('t_v3', -5)">-</button>
+                            <input type="text" id="t_v3" name="t_v3" value="02:30" style="width: 100%;">
+                            <button type="button" onclick="stepTime('t_v3', 5)">+</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -602,6 +618,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "25-MAY-2026", resumen: "Mejora de UX: Implementación de botones incrementales (+/-) para ajustar los tiempos de vertido (formato MM:SS) y se equilibró visualmente el espacio con los selectores de volumen." },
             { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
             { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
             { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior." },
@@ -700,6 +717,25 @@
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
         function step(id, delta) { const input = document.getElementById(id); input.value = parseInt(input.value) + delta; }
+        
+        function stepTime(id, deltaSeconds) {
+            const input = document.getElementById(id);
+            if (!input.value) return;
+            
+            let parts = input.value.split(':');
+            if (parts.length !== 2) return;
+            
+            let minutes = parseInt(parts[0], 10);
+            let seconds = parseInt(parts[1], 10);
+            
+            let totalSeconds = (minutes * 60) + seconds + deltaSeconds;
+            if (totalSeconds < 0) totalSeconds = 0;
+            
+            let newMinutes = Math.floor(totalSeconds / 60);
+            let newSeconds = totalSeconds % 60;
+            
+            input.value = String(newMinutes).padStart(2, '0') + ':' + String(newSeconds).padStart(2, '0');
+        }
         
         function toggleVertidos() { 
             const isChecked = document.getElementById('un_solo_vertido').checked;
@@ -865,7 +901,13 @@
                     merma: fd.get('merma'), temp_tueste: fd.get('temp_tueste'), tiempo_tueste: fd.get('tiempo_tueste'),
                     fases: { secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') }, maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') }, desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') } }
                 }, 
-                extraccion: { metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3') }, 
+                extraccion: { 
+                    metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
+                    blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'),
+                    v1: fd.get('v1'), t_v1: fd.get('t_v1'),
+                    v2: fd.get('v2'), t_v2: fd.get('t_v2'),
+                    v3: fd.get('v3'), t_v3: fd.get('t_v3')
+                }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
                 analisis_imagen: currentRoastData
             };
@@ -893,7 +935,7 @@
                     setSelectValue('metodo', met); actualizarDispositivos(); setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
                     let fil = ext.filtro === "Filtro fondo plano/papel" ? "Fondo plano/papel" : (ext.filtro === "Filtro cónico/papel" ? "Cónico/papel" : ext.filtro); setSelectValue('filtro', fil);
                     
-                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 'v1', 'v2', 'v3'].forEach(k => { if(ext[k]) document.getElementById(k).value = ext[k]; });
+                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3'].forEach(k => { if(ext[k]) document.getElementById(k).value = ext[k]; });
                     document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
                     document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha; document.getElementById('bola_fria').checked = !!ext.bola_fria; document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
                     
@@ -906,7 +948,6 @@
                         if (d.analisis_imagen.grano) {
                             currentRoastData = d.analisis_imagen;
                         } else if (d.analisis_imagen.img) {
-                            // Compatibilidad con versión anterior (asignar a grano)
                             currentRoastData = { grano: { ...d.analisis_imagen }, molido: { r: null, g: null, b: null, lum: null, img: null } };
                         }
                         renderCarouselCards();
@@ -1047,7 +1088,6 @@
             if (g.lum !== null && m.lum !== null) {
                 let deltaHTML = '';
                 
-                // CONDICIÓN 1: Anomalía. El grano entero es más claro que el molido.
                 if (g.lum > m.lum) {
                     deltaHTML = `
                     <div class="carousel-card" style="border-color: #f44336; justify-content: center;">
@@ -1060,7 +1100,6 @@
                         </div>
                     </div>`;
                 } else {
-                    // CONDICIÓN 2: Lógica normal. Cálculo del Delta.
                     let delta = Math.abs(m.lum - g.lum);
                     let nivelDesarrollo = "";
                     let descDesarrollo = "";
@@ -1089,7 +1128,6 @@
                         </ul>`;
                     }
 
-                    // Asignación de colores según la severidad del Delta
                     let colorBadge = (delta <= 9) ? '#e8f5e9' : (delta <= 13 ? '#fff3e0' : '#ffebee');
                     let colorText = (delta <= 9) ? '#2e7d32' : (delta <= 13 ? '#e65100' : '#c62828');
 
@@ -1111,7 +1149,6 @@
             else { document.getElementById('results-wrapper').style.display = 'none'; }
         }
 
-        // --- SISTEMA DE GRÁFICOS Y EXPORTACIONES (IGUAL AL ORIGINAL) ---
         const mapVal = (v) => v === 'Alta' ? 3 : (v === 'Media' ? 2 : (v === 'Baja' ? 1 : 0));
         function cerrarGrafico() { document.getElementById('chartModal').style.display = 'none'; }
 

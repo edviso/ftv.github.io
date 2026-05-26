@@ -465,7 +465,7 @@
                 </div>
                 <div class="input-group">
                     <label>Agua Total (ml):</label>
-                    <input type="number" id="agua_total" name="agua_total" value="240" placeholder="0">
+                    <input type="number" id="agua_total" name="agua_total" value="240" placeholder="0" oninput="calcularVertidos()">
                 </div>
             </div>
             <div class="checkbox-group">
@@ -494,7 +494,7 @@
                     <label>Blooming (ml):</label>
                     <div class="stepper">
                         <button type="button" onclick="step('blooming', -5)">-</button>
-                        <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;">
+                        <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;" oninput="calcularVertidos()">
                         <button type="button" onclick="step('blooming', 5)">+</button>
                     </div>
                 </div>
@@ -513,7 +513,7 @@
                     <label>1er Vertido (ml):</label>
                     <div class="stepper">
                         <button type="button" onclick="step('v1', -10)">-</button>
-                        <input type="number" id="v1" name="v1" value="120" style="width: 100%;">
+                        <input type="number" id="v1" name="v1" value="110" style="width: 100%;">
                         <button type="button" onclick="step('v1', 10)">+</button>
                     </div>
                 </div>
@@ -533,7 +533,7 @@
                         <label>2do Vertido (ml):</label>
                         <div class="stepper">
                             <button type="button" onclick="step('v2', -10)">-</button>
-                            <input type="number" id="v2" name="v2" value="180" style="width: 100%;">
+                            <input type="number" id="v2" name="v2" value="175" style="width: 100%;">
                             <button type="button" onclick="step('v2', 10)">+</button>
                         </div>
                     </div>
@@ -618,6 +618,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "25-MAY-2026", resumen: "Distribución dinámica de vertidos: Cálculo automático y proporcional de los volúmenes de vertido (escala acumulada de balanza) en base al Agua Total calculada y el Blooming, ajustándose en tiempo real para recetas de uno o múltiples vertidos." },
             { fecha: "25-MAY-2026", resumen: "Automatización de Ratio: El campo 'Agua Total' ahora se autocalcula usando un ratio estándar de 1:16 en base a los gramos de café ingresados, restando dinámicamente el volumen de 'Hielo en jarra' si aplica." },
             { fecha: "25-MAY-2026", resumen: "Reorganización de Detalles del Café: Agrupamiento lógico de datos de tueste (izquierda) y extracción (derecha), incorporando dinámicamente el Tiempo de Extracción total." },
             { fecha: "25-MAY-2026", resumen: "Mejora de UX: Implementación de botones incrementales (+/-) para ajustar los tiempos de vertido (formato MM:SS) y se equilibró visualmente el espacio con los selectores de volumen." },
@@ -718,6 +719,30 @@
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
+        function calcularVertidos() {
+            let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
+            let blooming = parseFloat(document.getElementById('blooming').value) || 0;
+            let unSoloVertido = document.getElementById('un_solo_vertido').checked;
+
+            if (aguaTotal <= 0) return;
+
+            if (unSoloVertido) {
+                document.getElementById('v1').value = Math.round(aguaTotal);
+            } else {
+                let remanente = aguaTotal - blooming;
+                if (remanente > 0) {
+                    let step = remanente / 3;
+                    document.getElementById('v1').value = Math.round(blooming + step);
+                    document.getElementById('v2').value = Math.round(blooming + step * 2);
+                    document.getElementById('v3').value = Math.round(aguaTotal);
+                } else {
+                    document.getElementById('v1').value = Math.round(aguaTotal);
+                    document.getElementById('v2').value = Math.round(aguaTotal);
+                    document.getElementById('v3').value = Math.round(aguaTotal);
+                }
+            }
+        }
+
         function calcularAguaTotal() {
             let gramos = parseFloat(document.getElementById('gramos_cafe').value) || 0;
             let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
@@ -725,6 +750,7 @@
             if (gramos > 0) {
                 let aguaTotal = (gramos * 16) - hielo;
                 document.getElementById('agua_total').value = Math.max(0, aguaTotal);
+                calcularVertidos();
             } else {
                 document.getElementById('agua_total').value = "";
             }
@@ -734,9 +760,10 @@
             const input = document.getElementById(id); 
             input.value = parseInt(input.value) + delta; 
             
-            // Si el botón ajusta los gramos o el hielo, recalcular agua total
             if (id === 'gramos_cafe' || id === 'hielo_ml') {
                 calcularAguaTotal();
+            } else if (id === 'blooming' || id === 'agua_total') {
+                calcularVertidos();
             }
         }
         
@@ -770,6 +797,7 @@
                 document.getElementById('t_v2').value = "01:50";
                 document.getElementById('t_v3').value = "02:30";
             }
+            calcularVertidos();
         }
 
         function generarGridHTML(items, contenedorId, prefijo) {
@@ -852,7 +880,7 @@
             document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
             analizarCodigo(); 
             actualizarDispositivos(); 
-            calcularAguaTotal(); // Calculo inicial por si hay valores precargados
+            calcularAguaTotal(); 
         };
 
         function dispararGeneracion() {

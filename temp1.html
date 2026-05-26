@@ -694,6 +694,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se redistribuyó la información en la tarjeta de Detalles del Café, moviendo el tiempo de reposo (Post-tueste) a la columna izquierda y añadiendo un desglose térmico detallado y dinámico por cada vertido en la columna derecha." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Perfil Térmico: Carrusel integrado en sección de extracción para registrar independientemente la temperatura de cada vertido, con sincronización en tiempo real de volúmenes." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento: Se incorporó el campo autocalculado 'Bebida en taza (ml)', que calcula el volumen final descontando la retención de agua en la cama de café (peso * 2.2) y sumando el volumen de hielo. Además, se agregaron controles de ajuste rápido al campo de hielo." },
             { fecha: "25-MAY-2026", resumen: "Mejora de UX: Incorporación de botones incrementales (+/-) en el campo 'Café (g)' con variaciones de 0.5g para un ajuste rápido y preciso, adaptando la lógica base para soportar números decimales." },
@@ -705,9 +706,7 @@
             { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
             { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
             { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior." },
-            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." },
-            { fecha: "13-MAY-2026", resumen: "Mejora UI: Se hizo el título principal de la aplicación 'Sticky' (fijo)." },
-            { fecha: "08-MAY-2026", resumen: "Lógica de Cascada Estricta: Se implementó un sistema de menús desplegables dependientes." }
+            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." }
         ];
 
         // --- VARIABLE GLOBAL DUAL PARA ANÁLISIS DE DESARROLLO ---
@@ -1365,26 +1364,37 @@
 
             let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
             
-            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; 
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
 
             let velSec = (fd.get('secado_vel')||'').toLowerCase(), velMai = (fd.get('maillard_vel')||'').toLowerCase(), velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
             
+            // Lógica para Temperaturas
+            let t_B = fd.get('temp_blooming') || '90';
+            let t_1V = fd.get('temp_v1') || '90';
+            let tempStr = `[B(${t_B}), 1V(${t_1V})`;
+            if (!v_unSolo) {
+                let t_2V = fd.get('temp_v2') || '90';
+                let t_3V = fd.get('temp_v3') || '90';
+                tempStr += `, 2V(${t_2V}), 3V(${t_3V})`;
+            }
+            tempStr += `]`;
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
                 { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
                 { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
                 { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
             ];
-            
-            let tempAguaStr = `[${fd.get('temp_blooming')}°C]`;
             
             const colDer = [
                 { l: 'Extracción:', v: extTxt }, 
                 { l: 'Ratio:', v: `[${ratioTxt}]` }, 
-                { l: 'Temp. Inicial:', v: tempAguaStr },
+                { l: 'Temperaturas °C:', v: tempStr },
                 { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
                 { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
@@ -1433,26 +1443,37 @@
 
             let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
             
-            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; 
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
             
             let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
             
+            // Lógica para Temperaturas
+            let t_B = fd.get('temp_blooming') || '90';
+            let t_1V = fd.get('temp_v1') || '90';
+            let tempStr = `[B(${t_B}), 1V(${t_1V})`;
+            if (!v_unSolo) {
+                let t_2V = fd.get('temp_v2') || '90';
+                let t_3V = fd.get('temp_v3') || '90';
+                tempStr += `, 2V(${t_2V}), 3V(${t_3V})`;
+            }
+            tempStr += `]`;
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
                 { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
                 { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
                 { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
             ]; 
-            
-            let tempAguaStr = `[${fd.get('temp_blooming')}°C]`;
             
             const colDer = [
                 { l: 'Extracción:', v: extTxt }, 
                 { l: 'Ratio:', v: `[${ratioTxt}]` }, 
-                { l: 'Temp. Inicial:', v: tempAguaStr },
+                { l: 'Temperaturas °C:', v: tempStr },
                 { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
                 { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
@@ -1460,7 +1481,8 @@
 
             ctx.textAlign = 'left'; let startY = 945; 
             colIzq.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); 
-            colDer.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]'; ctx.fillText(val, 380, y + 18); });
+            // Incrementado límite de truncado para las temperaturas
+            colDer.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 35) val = val.substring(0, 33) + '...]'; ctx.fillText(val, 380, y + 18); });
             
             ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1175); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1205; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
             const link = document.createElement('a'); link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();

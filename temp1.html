@@ -188,7 +188,7 @@
         #fileInput { display: none; }
         .hidden { display: none; }
 
-        /* --- ESTILOS MÓDULO ANÁLISIS DE TUESTE --- */
+        /* --- ESTILOS MÓDULO ANÁLISIS DE TUESTE Y CAROUSELES --- */
         .module-section-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .module-section-title.exterior { color: #8d6e63; }
         .module-section-title.interior { color: #a1887f; margin-top: 15px; }
@@ -205,6 +205,7 @@
         .carousel-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 10px; scrollbar-width: none; -ms-overflow-style: none; align-items: stretch; }
         .carousel-container::-webkit-scrollbar { display: none; }
         .carousel-card { min-width: 100%; scroll-snap-align: center; background: #fff; border: 1px solid #efebe9; border-radius: 15px; padding: 15px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; }
+        .carousel-card.flat-card { border-radius: 8px; padding: 12px; border: 1px solid #f0f0f0; box-shadow: none; }
         
         .preview-img { width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); object-fit: cover; aspect-ratio: 1 / 1; display: none; }
         
@@ -240,6 +241,8 @@
         .delta-status { font-size: 1.1rem; font-weight: bold; color: #4a3b32; margin-bottom: 5px; }
         .delta-desc { font-size: 0.9rem; color: #333; line-height: 1.5; }
         .delta-error { font-size: 1.1rem; color: #c62828; line-height: 1.5; padding: 10px;}
+        
+        .ref-ml { color: #bf360c; font-weight: bold; }
         
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -503,82 +506,141 @@
                 <label for="un_solo_vertido"><b>Hacer un solo vertido</b></label>
             </div>
             
-            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>Blooming (ml):</label>
-                    <div class="stepper">
-                        <button type="button" onclick="step('blooming', -5)">-</button>
-                        <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;" oninput="calcularVertidos()">
-                        <button type="button" onclick="step('blooming', 5)">+</button>
+            <p class="swipe-hint" style="margin-top: 15px; margin-bottom: 5px; font-size: 0.7rem; color: #666;">Desliza para Perfil Térmico ↔️</p>
+            <div class="carousel-container" style="padding-bottom: 5px;">
+                
+                <div class="carousel-card flat-card">
+                    <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #5d4037;">💧 Volumen y Tiempo</div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Blooming (ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('blooming', -5)">-</button>
+                                <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;" oninput="calcularVertidos()">
+                                <button type="button" onclick="step('blooming', 5)">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Tiempo:</label>
+                            <div class="stepper">
+                                <button type="button" onclick="stepTime('t_blooming', -5)">-</button>
+                                <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="width: 100%;">
+                                <button type="button" onclick="stepTime('t_blooming', 5)">+</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>Tiempo:</label>
-                    <div class="stepper">
-                        <button type="button" onclick="stepTime('t_blooming', -5)">-</button>
-                        <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="width: 100%;">
-                        <button type="button" onclick="stepTime('t_blooming', 5)">+</button>
-                    </div>
-                </div>
-            </div>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>1er Vertido (ml):</label>
-                    <div class="stepper">
-                        <button type="button" onclick="step('v1', -10)">-</button>
-                        <input type="number" id="v1" name="v1" value="" style="width: 100%;">
-                        <button type="button" onclick="step('v1', 10)">+</button>
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>1er Vertido (ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('v1', -10)">-</button>
+                                <input type="number" id="v1" name="v1" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                <button type="button" onclick="step('v1', 10)">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Tiempo:</label>
+                            <div class="stepper">
+                                <button type="button" onclick="stepTime('t_v1', -5)">-</button>
+                                <input type="text" id="t_v1" name="t_v1" value="01:15" style="width: 100%;">
+                                <button type="button" onclick="stepTime('t_v1', 5)">+</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>Tiempo:</label>
-                    <div class="stepper">
-                        <button type="button" onclick="stepTime('t_v1', -5)">-</button>
-                        <input type="text" id="t_v1" name="t_v1" value="01:15" style="width: 100%;">
-                        <button type="button" onclick="stepTime('t_v1', 5)">+</button>
-                    </div>
-                </div>
-            </div>
 
-            <div id="vertidos_extras">
-                <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>2do Vertido (ml):</label>
-                        <div class="stepper">
-                            <button type="button" onclick="step('v2', -10)">-</button>
-                            <input type="number" id="v2" name="v2" value="" style="width: 100%;">
-                            <button type="button" onclick="step('v2', 10)">+</button>
+                    <div id="vertidos_extras">
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>2do Vertido (ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('v2', -10)">-</button>
+                                    <input type="number" id="v2" name="v2" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                    <button type="button" onclick="step('v2', 10)">+</button>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Tiempo:</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="stepTime('t_v2', -5)">-</button>
+                                    <input type="text" id="t_v2" name="t_v2" value="01:50" style="width: 100%;">
+                                    <button type="button" onclick="stepTime('t_v2', 5)">+</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>Tiempo:</label>
-                        <div class="stepper">
-                            <button type="button" onclick="stepTime('t_v2', -5)">-</button>
-                            <input type="text" id="t_v2" name="t_v2" value="01:50" style="width: 100%;">
-                            <button type="button" onclick="stepTime('t_v2', 5)">+</button>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>3er Vertido (ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('v3', -10)">-</button>
+                                    <input type="number" id="v3" name="v3" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                    <button type="button" onclick="step('v3', 10)">+</button>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Tiempo:</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="stepTime('t_v3', -5)">-</button>
+                                    <input type="text" id="t_v3" name="t_v3" value="02:30" style="width: 100%;">
+                                    <button type="button" onclick="stepTime('t_v3', 5)">+</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>3er Vertido (ml):</label>
-                        <div class="stepper">
-                            <button type="button" onclick="step('v3', -10)">-</button>
-                            <input type="number" id="v3" name="v3" value="" style="width: 100%;">
-                            <button type="button" onclick="step('v3', 10)">+</button>
+                <div class="carousel-card flat-card">
+                    <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #bf360c;">🌡️ Perfil Térmico (°C)</div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label style="font-size: 0.8rem; color: #555;">Blooming (<span id="ref_blooming_ml" class="ref-ml">45</span> ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('temp_blooming', -1)">-</button>
+                                <input type="number" id="temp_blooming" name="temp_blooming" value="90" style="width: 100%;">
+                                <button type="button" onclick="step('temp_blooming', 1)">+</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>Tiempo:</label>
-                        <div class="stepper">
-                            <button type="button" onclick="stepTime('t_v3', -5)">-</button>
-                            <input type="text" id="t_v3" name="t_v3" value="02:30" style="width: 100%;">
-                            <button type="button" onclick="stepTime('t_v3', 5)">+</button>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label style="font-size: 0.8rem; color: #555;">1er Vertido (<span id="ref_v1_ml" class="ref-ml">0</span> ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('temp_v1', -1)">-</button>
+                                <input type="number" id="temp_v1" name="temp_v1" value="90" style="width: 100%;">
+                                <button type="button" onclick="step('temp_v1', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="vertidos_extras_temp">
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label style="font-size: 0.8rem; color: #555;">2do Vertido (<span id="ref_v2_ml" class="ref-ml">0</span> ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('temp_v2', -1)">-</button>
+                                    <input type="number" id="temp_v2" name="temp_v2" value="90" style="width: 100%;">
+                                    <button type="button" onclick="step('temp_v2', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label style="font-size: 0.8rem; color: #555;">3er Vertido (<span id="ref_v3_ml" class="ref-ml">0</span> ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('temp_v3', -1)">-</button>
+                                    <input type="number" id="temp_v3" name="temp_v3" value="90" style="width: 100%;">
+                                    <button type="button" onclick="step('temp_v3', 1)">+</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -632,6 +694,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "26-MAY-2026", resumen: "Módulo de Perfil Térmico: Carrusel integrado en sección de extracción para registrar independientemente la temperatura de cada vertido, con sincronización en tiempo real de volúmenes." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento: Se incorporó el campo autocalculado 'Bebida en taza (ml)', que calcula el volumen final descontando la retención de agua en la cama de café (peso * 2.2) y sumando el volumen de hielo. Además, se agregaron controles de ajuste rápido al campo de hielo." },
             { fecha: "25-MAY-2026", resumen: "Mejora de UX: Incorporación de botones incrementales (+/-) en el campo 'Café (g)' con variaciones de 0.5g para un ajuste rápido y preciso, adaptando la lógica base para soportar números decimales." },
             { fecha: "25-MAY-2026", resumen: "Actualización de valor por defecto: El campo 'Hielo en jarra' ahora inicia con 20 ml predeterminados, recalculando automáticamente el Agua Total al abrir la aplicación." },
@@ -736,6 +799,13 @@
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
+        function actualizarReferenciasTermicas() {
+            document.getElementById('ref_blooming_ml').innerText = document.getElementById('blooming').value || "0";
+            document.getElementById('ref_v1_ml').innerText = document.getElementById('v1').value || "0";
+            document.getElementById('ref_v2_ml').innerText = document.getElementById('v2').value || "0";
+            document.getElementById('ref_v3_ml').innerText = document.getElementById('v3').value || "0";
+        }
+
         function calcularVertidos() {
             let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
             let blooming = parseFloat(document.getElementById('blooming').value) || 0;
@@ -743,6 +813,7 @@
 
             if (aguaTotal <= 0) {
                 document.getElementById('bebida_taza').value = "";
+                actualizarReferenciasTermicas();
                 return;
             }
 
@@ -763,6 +834,7 @@
             }
             
             calcularRendimiento();
+            actualizarReferenciasTermicas();
         }
 
         function calcularAguaTotal() {
@@ -785,9 +857,7 @@
             let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
             
             if (gramos > 0 && aguaTotal > 0) {
-                // Cálculo de retención: Café * 2.2
                 let retencion = gramos * 2.2;
-                // Bebida final: (Agua vertida - retención) + hielo
                 let bebida = (aguaTotal - retencion) + hielo;
                 document.getElementById('bebida_taza').value = Math.max(0, Math.round(bebida));
             } else {
@@ -800,7 +870,7 @@
             let val = parseFloat(input.value) || 0;
             let newValue = Math.round((val + delta) * 10) / 10;
             
-            if (newValue < 0) newValue = 0; // Evita valores negativos
+            if (newValue < 0) newValue = 0; 
             
             input.value = newValue; 
             
@@ -808,6 +878,8 @@
                 calcularAguaTotal();
             } else if (id === 'blooming' || id === 'agua_total') {
                 calcularVertidos();
+            } else if (['v1', 'v2', 'v3'].includes(id)) {
+                actualizarReferenciasTermicas();
             }
         }
         
@@ -833,6 +905,7 @@
         function toggleVertidos() { 
             const isChecked = document.getElementById('un_solo_vertido').checked;
             document.getElementById('vertidos_extras').classList.toggle('hidden', isChecked);
+            document.getElementById('vertidos_extras_temp').classList.toggle('hidden', isChecked);
             
             if (isChecked) {
                 document.getElementById('t_v1').value = "02:30";
@@ -925,6 +998,7 @@
             analizarCodigo(); 
             actualizarDispositivos(); 
             calcularAguaTotal(); 
+            actualizarReferenciasTermicas();
         };
 
         function dispararGeneracion() {
@@ -944,7 +1018,6 @@
             
             let gr = parseFloat(fd.get('gramos_cafe')), ml_total_real = parseFloat(fd.get('agua_total'));
             let hielo = parseFloat(fd.get('hielo_ml')) || 0;
-            // Para mostrar el ratio en texto, sumamos el hielo al agua para reflejar la dilución total planeada
             let ml_para_ratio = ml_total_real + hielo; 
             
             if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) {
@@ -1012,10 +1085,10 @@
                 }, 
                 extraccion: { 
                     metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), bebida_taza: document.getElementById('bebida_taza').value, un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
-                    blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'),
-                    v1: fd.get('v1'), t_v1: fd.get('t_v1'),
-                    v2: fd.get('v2'), t_v2: fd.get('t_v2'),
-                    v3: fd.get('v3'), t_v3: fd.get('t_v3')
+                    blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'), temp_blooming: fd.get('temp_blooming'),
+                    v1: fd.get('v1'), t_v1: fd.get('t_v1'), temp_v1: fd.get('temp_v1'),
+                    v2: fd.get('v2'), t_v2: fd.get('t_v2'), temp_v2: fd.get('temp_v2'),
+                    v3: fd.get('v3'), t_v3: fd.get('t_v3'), temp_v3: fd.get('temp_v3')
                 }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
                 analisis_imagen: currentRoastData
@@ -1044,7 +1117,11 @@
                     setSelectValue('metodo', met); actualizarDispositivos(); setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
                     let fil = ext.filtro === "Filtro fondo plano/papel" ? "Fondo plano/papel" : (ext.filtro === "Filtro cónico/papel" ? "Cónico/papel" : ext.filtro); setSelectValue('filtro', fil);
                     
-                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3'].forEach(k => { if(ext[k]) document.getElementById(k).value = ext[k]; });
+                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3', 'temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(ext[k]) { let el = document.getElementById(k); if(el) el.value = ext[k]; } });
+                    
+                    // Fallback para versiones JSON antiguas sin perfil térmico
+                    ['temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(!ext[k]) document.getElementById(k).value = 90; });
+
                     document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
                     document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha; document.getElementById('bola_fria').checked = !!ext.bola_fria; document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
                     
@@ -1302,11 +1379,13 @@
                 { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
             ];
             
+            let tempAguaStr = `[${fd.get('temp_blooming')}°C]`;
+            
             const colDer = [
                 { l: 'Extracción:', v: extTxt }, 
                 { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Temp. Inicial:', v: tempAguaStr },
                 { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
                 { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
             ];
@@ -1368,11 +1447,13 @@
                 { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
             ]; 
             
+            let tempAguaStr = `[${fd.get('temp_blooming')}°C]`;
+            
             const colDer = [
                 { l: 'Extracción:', v: extTxt }, 
                 { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Temp. Inicial:', v: tempAguaStr },
                 { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
                 { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
             ];

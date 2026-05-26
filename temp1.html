@@ -159,12 +159,12 @@
         .row > div { flex: 1; }
         label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 500; color: #555; }
         input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; font-family: inherit; background-color: #fff; }
-        input[readonly] { background-color: #f5f5f5; color: #555; }
+        input[readonly] { background-color: #f5f5f5; color: #555; outline: none; }
         #evaluacion_final { min-height: 450px; line-height: 1.5; font-size: 0.95rem; }
         .stepper { display: flex; align-items: center; gap: 5px; }
-        .stepper button { width: 35px; height: 35px; border-radius: 8px; border: 1px solid #ccc; background: #f8f9fa; font-size: 1.2rem; font-weight: bold; color: #4a3b32; flex: none; }
+        .stepper button { width: 35px; height: 35px; border-radius: 8px; border: 1px solid #ccc; background: #f8f9fa; font-size: 1.2rem; font-weight: bold; color: #4a3b32; flex: none; cursor: pointer;}
         .stepper input { text-align: center; padding: 5px; }
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; background: #fcfaf8; padding: 10px; border-radius: 8px; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .grid-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; text-align: center; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 10px; }
         .grid-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.9rem; }
@@ -473,7 +473,7 @@
                 </div>
             </div>
             <div class="checkbox-group">
-                <div class="checkbox-item">
+                <div class="checkbox-item" style="margin-right: 15px;">
                     <input type="checkbox" id="usa_ducha" name="usa_ducha">
                     <label for="usa_ducha">Ducha</label>
                 </div>
@@ -481,9 +481,19 @@
                     <input type="checkbox" id="bola_fria" name="bola_fria">
                     <label for="bola_fria">Bola Fría</label>
                 </div>
-                <div class="checkbox-item" style="width:100%">
-                    <label>Hielo en jarra (ml):</label>
-                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20" placeholder="0" oninput="calcularAguaTotal()">
+                <div style="width: 100%; display: flex; gap: 15px; margin-top: 5px; align-items: flex-end;">
+                    <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Hielo en jarra (ml):</label>
+                        <div class="stepper">
+                            <button type="button" onclick="step('hielo_ml', -5)">-</button>
+                            <input type="number" id="hielo_ml" name="hielo_ml" value="20" placeholder="0" oninput="calcularAguaTotal()" style="width: 100%;">
+                            <button type="button" onclick="step('hielo_ml', 5)">+</button>
+                        </div>
+                    </div>
+                    <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                        <label style="color: #6d4c41;">Bebida en taza (ml):</label>
+                        <input type="text" id="bebida_taza" name="bebida_taza" readonly placeholder="Auto" style="text-align: center; font-weight: bold; font-size: 1.1rem; color: #5d4037; background-color: #efebe9; border: 1px solid #d7ccc8; padding: 10px;">
+                    </div>
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
@@ -622,6 +632,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento: Se incorporó el campo autocalculado 'Bebida en taza (ml)', que calcula el volumen final descontando la retención de agua en la cama de café (peso * 2.2) y sumando el volumen de hielo. Además, se agregaron controles de ajuste rápido al campo de hielo." },
             { fecha: "25-MAY-2026", resumen: "Mejora de UX: Incorporación de botones incrementales (+/-) en el campo 'Café (g)' con variaciones de 0.5g para un ajuste rápido y preciso, adaptando la lógica base para soportar números decimales." },
             { fecha: "25-MAY-2026", resumen: "Actualización de valor por defecto: El campo 'Hielo en jarra' ahora inicia con 20 ml predeterminados, recalculando automáticamente el Agua Total al abrir la aplicación." },
             { fecha: "25-MAY-2026", resumen: "Distribución dinámica de vertidos: Cálculo automático y proporcional de los volúmenes de vertido (escala acumulada de balanza) en base al Agua Total calculada y el Blooming, ajustándose en tiempo real para recetas de uno o múltiples vertidos." },
@@ -730,7 +741,10 @@
             let blooming = parseFloat(document.getElementById('blooming').value) || 0;
             let unSoloVertido = document.getElementById('un_solo_vertido').checked;
 
-            if (aguaTotal <= 0) return;
+            if (aguaTotal <= 0) {
+                document.getElementById('bebida_taza').value = "";
+                return;
+            }
 
             if (unSoloVertido) {
                 document.getElementById('v1').value = Math.round(aguaTotal);
@@ -747,6 +761,8 @@
                     document.getElementById('v3').value = Math.round(aguaTotal);
                 }
             }
+            
+            calcularRendimiento();
         }
 
         function calcularAguaTotal() {
@@ -759,6 +775,23 @@
                 calcularVertidos();
             } else {
                 document.getElementById('agua_total').value = "";
+                document.getElementById('bebida_taza').value = "";
+            }
+        }
+        
+        function calcularRendimiento() {
+            let gramos = parseFloat(document.getElementById('gramos_cafe').value) || 0;
+            let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
+            let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
+            
+            if (gramos > 0 && aguaTotal > 0) {
+                // Cálculo de retención: Café * 2.2
+                let retencion = gramos * 2.2;
+                // Bebida final: (Agua vertida - retención) + hielo
+                let bebida = (aguaTotal - retencion) + hielo;
+                document.getElementById('bebida_taza').value = Math.max(0, Math.round(bebida));
+            } else {
+                document.getElementById('bebida_taza').value = "";
             }
         }
 
@@ -914,7 +947,11 @@
             // Para mostrar el ratio en texto, sumamos el hielo al agua para reflejar la dilución total planeada
             let ml_para_ratio = ml_total_real + hielo; 
             
-            if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) textoFinal += ` - ${gr}g / ${ml_total_real}ml (Ratio 1:${(ml_para_ratio/gr).toFixed(1).replace('.0','')})`;
+            if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) {
+                textoFinal += ` - ${gr}g / ${ml_total_real}ml (Ratio 1:${(ml_para_ratio/gr).toFixed(1).replace('.0','')})`;
+                let bebida = document.getElementById('bebida_taza').value;
+                if (bebida && bebida !== "") textoFinal += ` - Rendimiento: ~${bebida}ml`;
+            }
 
             let pGrano = currentRoastData.grano.lum !== null ? getRoastProfile(currentRoastData.grano.lum) : null;
             let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
@@ -974,7 +1011,7 @@
                     fases: { secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') }, maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') }, desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') } }
                 }, 
                 extraccion: { 
-                    metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
+                    metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), bebida_taza: document.getElementById('bebida_taza').value, un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
                     blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'),
                     v1: fd.get('v1'), t_v1: fd.get('t_v1'),
                     v2: fd.get('v2'), t_v2: fd.get('t_v2'),

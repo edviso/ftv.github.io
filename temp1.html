@@ -694,6 +694,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se reordenó la columna derecha para mostrar una secuencia más lógica: Dispositivo, Filtro, Ratio, Temperaturas, Extracción y Tiempo de Extracción." },
             { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se redistribuyó la información en la tarjeta de Detalles del Café, moviendo el tiempo de reposo (Post-tueste) a la columna izquierda y añadiendo un desglose térmico detallado y dinámico por cada vertido en la columna derecha." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Perfil Térmico: Carrusel integrado en sección de extracción para registrar independientemente la temperatura de cada vertido, con sincronización en tiempo real de volúmenes." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento: Se incorporó el campo autocalculado 'Bebida en taza (ml)', que calcula el volumen final descontando la retención de agua en la cama de café (peso * 2.2) y sumando el volumen de hielo. Además, se agregaron controles de ajuste rápido al campo de hielo." },
@@ -952,7 +953,8 @@
                 totalPuntos += (val === "Alta" ? 1.5 : (val === "Media" ? 1 : 0.5)); conteoValidos++;
             });
             if (conteoValidos === 0) { alert("Por favor, marca algunos parámetros primero."); return; }
-            let r = ""; let ratio = totalPuntos / conteoValidos;
+            let r = ""; let ratio = totalPuntos / অবলম্বValidos; // Typo fix
+            ratio = totalPuntos / conteoValidos;
             if (ratio >= 2.6) r = "Excelente"; else if (ratio >= 2.2) r = "Muy bueno"; else if (ratio >= 1.7) r = "Bueno"; else if (ratio >= 1.3) r = "Aceptable"; else if (ratio >= 0.9) r = "Regular"; else r = "Deficiente";
             if (limpieza === "Baja" && ["Excelente", "Muy bueno", "Bueno", "Aceptable"].includes(r)) r = "Regular";
             else if (limpieza === "Media" && r === "Excelente") r = "Muy bueno";
@@ -1391,13 +1393,14 @@
                 { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
             ];
             
+            // Nuevo orden de la columna derecha
             const colDer = [
-                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
                 { l: 'Ratio:', v: `[${ratioTxt}]` }, 
                 { l: 'Temperaturas °C:', v: tempStr },
-                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
-                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
-                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` }
             ];
 
             document.getElementById('chartDetails').innerHTML = `<div style="display:flex; flex-direction:column;">${colIzq.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div><div style="display:flex; flex-direction:column;">${colDer.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div>`;
@@ -1470,13 +1473,14 @@
                 { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
             ]; 
             
+            // Nuevo orden de la columna derecha
             const colDer = [
-                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
                 { l: 'Ratio:', v: `[${ratioTxt}]` }, 
                 { l: 'Temperaturas °C:', v: tempStr },
-                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
-                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
-                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` }
             ];
 
             ctx.textAlign = 'left'; let startY = 945; 

@@ -461,11 +461,15 @@
             <div class="row">
                 <div class="input-group">
                     <label>Café (g):</label>
-                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="15" placeholder="0.0" oninput="calcularAguaTotal()">
+                    <div class="stepper">
+                        <button type="button" onclick="step('gramos_cafe', -0.5)">-</button>
+                        <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.5" value="15.0" placeholder="0.0" oninput="calcularAguaTotal()" style="width: 100%;">
+                        <button type="button" onclick="step('gramos_cafe', 0.5)">+</button>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>Agua Total (ml):</label>
-                    <input type="number" id="agua_total" name="agua_total" value="240" placeholder="0" oninput="calcularVertidos()">
+                    <input type="number" id="agua_total" name="agua_total" value="" placeholder="0" oninput="calcularVertidos()">
                 </div>
             </div>
             <div class="checkbox-group">
@@ -479,7 +483,7 @@
                 </div>
                 <div class="checkbox-item" style="width:100%">
                     <label>Hielo en jarra (ml):</label>
-                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="0" placeholder="0" oninput="calcularAguaTotal()">
+                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20" placeholder="0" oninput="calcularAguaTotal()">
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
@@ -513,7 +517,7 @@
                     <label>1er Vertido (ml):</label>
                     <div class="stepper">
                         <button type="button" onclick="step('v1', -10)">-</button>
-                        <input type="number" id="v1" name="v1" value="110" style="width: 100%;">
+                        <input type="number" id="v1" name="v1" value="" style="width: 100%;">
                         <button type="button" onclick="step('v1', 10)">+</button>
                     </div>
                 </div>
@@ -533,7 +537,7 @@
                         <label>2do Vertido (ml):</label>
                         <div class="stepper">
                             <button type="button" onclick="step('v2', -10)">-</button>
-                            <input type="number" id="v2" name="v2" value="175" style="width: 100%;">
+                            <input type="number" id="v2" name="v2" value="" style="width: 100%;">
                             <button type="button" onclick="step('v2', 10)">+</button>
                         </div>
                     </div>
@@ -552,7 +556,7 @@
                         <label>3er Vertido (ml):</label>
                         <div class="stepper">
                             <button type="button" onclick="step('v3', -10)">-</button>
-                            <input type="number" id="v3" name="v3" value="240" style="width: 100%;">
+                            <input type="number" id="v3" name="v3" value="" style="width: 100%;">
                             <button type="button" onclick="step('v3', 10)">+</button>
                         </div>
                     </div>
@@ -618,6 +622,8 @@
 
     <script>
         const logHistorial = [
+            { fecha: "25-MAY-2026", resumen: "Mejora de UX: Incorporación de botones incrementales (+/-) en el campo 'Café (g)' con variaciones de 0.5g para un ajuste rápido y preciso, adaptando la lógica base para soportar números decimales." },
+            { fecha: "25-MAY-2026", resumen: "Actualización de valor por defecto: El campo 'Hielo en jarra' ahora inicia con 20 ml predeterminados, recalculando automáticamente el Agua Total al abrir la aplicación." },
             { fecha: "25-MAY-2026", resumen: "Distribución dinámica de vertidos: Cálculo automático y proporcional de los volúmenes de vertido (escala acumulada de balanza) en base al Agua Total calculada y el Blooming, ajustándose en tiempo real para recetas de uno o múltiples vertidos." },
             { fecha: "25-MAY-2026", resumen: "Automatización de Ratio: El campo 'Agua Total' ahora se autocalcula usando un ratio estándar de 1:16 en base a los gramos de café ingresados, restando dinámicamente el volumen de 'Hielo en jarra' si aplica." },
             { fecha: "25-MAY-2026", resumen: "Reorganización de Detalles del Café: Agrupamiento lógico de datos de tueste (izquierda) y extracción (derecha), incorporando dinámicamente el Tiempo de Extracción total." },
@@ -758,7 +764,12 @@
 
         function step(id, delta) { 
             const input = document.getElementById(id); 
-            input.value = parseInt(input.value) + delta; 
+            let val = parseFloat(input.value) || 0;
+            let newValue = Math.round((val + delta) * 10) / 10;
+            
+            if (newValue < 0) newValue = 0; // Evita valores negativos
+            
+            input.value = newValue; 
             
             if (id === 'gramos_cafe' || id === 'hielo_ml') {
                 calcularAguaTotal();

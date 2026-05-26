@@ -461,11 +461,11 @@
             <div class="row">
                 <div class="input-group">
                     <label>Café (g):</label>
-                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="12.5" placeholder="0.0">
+                    <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.1" value="15" placeholder="0.0" oninput="calcularAguaTotal()">
                 </div>
                 <div class="input-group">
                     <label>Agua Total (ml):</label>
-                    <input type="number" id="agua_total" name="agua_total" value="200" placeholder="0">
+                    <input type="number" id="agua_total" name="agua_total" value="240" placeholder="0" oninput="calcularVertidos()">
                 </div>
             </div>
             <div class="checkbox-group">
@@ -479,45 +479,90 @@
                 </div>
                 <div class="checkbox-item" style="width:100%">
                     <label>Hielo en jarra (ml):</label>
-                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20" placeholder="0">
+                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="0" placeholder="0" oninput="calcularAguaTotal()">
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+            
             <div class="checkbox-item" style="margin-bottom:10px">
                 <input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos()">
                 <label for="un_solo_vertido"><b>Hacer un solo vertido</b></label>
             </div>
-            <div class="input-group">
-                <label>Blooming (ml):</label>
-                <div class="stepper">
-                    <button type="button" onclick="step('blooming', -5)">-</button>
-                    <input type="number" id="blooming" name="blooming" value="45">
-                    <button type="button" onclick="step('blooming', 5)">+</button>
-                </div>
-            </div>
-            <div class="input-group">
-                <label>1er Vertido (ml):</label>
-                <div class="stepper">
-                    <button type="button" onclick="step('v1', -10)">-</button>
-                    <input type="number" id="v1" name="v1" value="120">
-                    <button type="button" onclick="step('v1', 10)">+</button>
-                </div>
-            </div>
-            <div id="vertidos_extras">
-                <div class="input-group">
-                    <label>2do Vertido (ml):</label>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                    <label>Blooming (ml):</label>
                     <div class="stepper">
-                        <button type="button" onclick="step('v2', -10)">-</button>
-                        <input type="number" id="v2" name="v2" value="180">
-                        <button type="button" onclick="step('v2', 10)">+</button>
+                        <button type="button" onclick="step('blooming', -5)">-</button>
+                        <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;" oninput="calcularVertidos()">
+                        <button type="button" onclick="step('blooming', 5)">+</button>
                     </div>
                 </div>
-                <div class="input-group">
-                    <label>3er Vertido (ml):</label>
+                <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                    <label>Tiempo:</label>
                     <div class="stepper">
-                        <button type="button" onclick="step('v3', -10)">-</button>
-                        <input type="number" id="v3" name="v3" value="240">
-                        <button type="button" onclick="step('v3', 10)">+</button>
+                        <button type="button" onclick="stepTime('t_blooming', -5)">-</button>
+                        <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="width: 100%;">
+                        <button type="button" onclick="stepTime('t_blooming', 5)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                    <label>1er Vertido (ml):</label>
+                    <div class="stepper">
+                        <button type="button" onclick="step('v1', -10)">-</button>
+                        <input type="number" id="v1" name="v1" value="110" style="width: 100%;">
+                        <button type="button" onclick="step('v1', 10)">+</button>
+                    </div>
+                </div>
+                <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                    <label>Tiempo:</label>
+                    <div class="stepper">
+                        <button type="button" onclick="stepTime('t_v1', -5)">-</button>
+                        <input type="text" id="t_v1" name="t_v1" value="01:15" style="width: 100%;">
+                        <button type="button" onclick="stepTime('t_v1', 5)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="vertidos_extras">
+                <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                        <label>2do Vertido (ml):</label>
+                        <div class="stepper">
+                            <button type="button" onclick="step('v2', -10)">-</button>
+                            <input type="number" id="v2" name="v2" value="175" style="width: 100%;">
+                            <button type="button" onclick="step('v2', 10)">+</button>
+                        </div>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                        <label>Tiempo:</label>
+                        <div class="stepper">
+                            <button type="button" onclick="stepTime('t_v2', -5)">-</button>
+                            <input type="text" id="t_v2" name="t_v2" value="01:50" style="width: 100%;">
+                            <button type="button" onclick="stepTime('t_v2', 5)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
+                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                        <label>3er Vertido (ml):</label>
+                        <div class="stepper">
+                            <button type="button" onclick="step('v3', -10)">-</button>
+                            <input type="number" id="v3" name="v3" value="240" style="width: 100%;">
+                            <button type="button" onclick="step('v3', 10)">+</button>
+                        </div>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                        <label>Tiempo:</label>
+                        <div class="stepper">
+                            <button type="button" onclick="stepTime('t_v3', -5)">-</button>
+                            <input type="text" id="t_v3" name="t_v3" value="02:30" style="width: 100%;">
+                            <button type="button" onclick="stepTime('t_v3', 5)">+</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -573,6 +618,10 @@
 
     <script>
         const logHistorial = [
+            { fecha: "25-MAY-2026", resumen: "Distribución dinámica de vertidos: Cálculo automático y proporcional de los volúmenes de vertido (escala acumulada de balanza) en base al Agua Total calculada y el Blooming, ajustándose en tiempo real para recetas de uno o múltiples vertidos." },
+            { fecha: "25-MAY-2026", resumen: "Automatización de Ratio: El campo 'Agua Total' ahora se autocalcula usando un ratio estándar de 1:16 en base a los gramos de café ingresados, restando dinámicamente el volumen de 'Hielo en jarra' si aplica." },
+            { fecha: "25-MAY-2026", resumen: "Reorganización de Detalles del Café: Agrupamiento lógico de datos de tueste (izquierda) y extracción (derecha), incorporando dinámicamente el Tiempo de Extracción total." },
+            { fecha: "25-MAY-2026", resumen: "Mejora de UX: Implementación de botones incrementales (+/-) para ajustar los tiempos de vertido (formato MM:SS) y se equilibró visualmente el espacio con los selectores de volumen." },
             { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
             { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
             { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior." },
@@ -670,8 +719,86 @@
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
-        function step(id, delta) { const input = document.getElementById(id); input.value = parseInt(input.value) + delta; }
-        function toggleVertidos() { document.getElementById('vertidos_extras').classList.toggle('hidden', document.getElementById('un_solo_vertido').checked); }
+        function calcularVertidos() {
+            let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
+            let blooming = parseFloat(document.getElementById('blooming').value) || 0;
+            let unSoloVertido = document.getElementById('un_solo_vertido').checked;
+
+            if (aguaTotal <= 0) return;
+
+            if (unSoloVertido) {
+                document.getElementById('v1').value = Math.round(aguaTotal);
+            } else {
+                let remanente = aguaTotal - blooming;
+                if (remanente > 0) {
+                    let step = remanente / 3;
+                    document.getElementById('v1').value = Math.round(blooming + step);
+                    document.getElementById('v2').value = Math.round(blooming + step * 2);
+                    document.getElementById('v3').value = Math.round(aguaTotal);
+                } else {
+                    document.getElementById('v1').value = Math.round(aguaTotal);
+                    document.getElementById('v2').value = Math.round(aguaTotal);
+                    document.getElementById('v3').value = Math.round(aguaTotal);
+                }
+            }
+        }
+
+        function calcularAguaTotal() {
+            let gramos = parseFloat(document.getElementById('gramos_cafe').value) || 0;
+            let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
+            
+            if (gramos > 0) {
+                let aguaTotal = (gramos * 16) - hielo;
+                document.getElementById('agua_total').value = Math.max(0, aguaTotal);
+                calcularVertidos();
+            } else {
+                document.getElementById('agua_total').value = "";
+            }
+        }
+
+        function step(id, delta) { 
+            const input = document.getElementById(id); 
+            input.value = parseInt(input.value) + delta; 
+            
+            if (id === 'gramos_cafe' || id === 'hielo_ml') {
+                calcularAguaTotal();
+            } else if (id === 'blooming' || id === 'agua_total') {
+                calcularVertidos();
+            }
+        }
+        
+        function stepTime(id, deltaSeconds) {
+            const input = document.getElementById(id);
+            if (!input.value) return;
+            
+            let parts = input.value.split(':');
+            if (parts.length !== 2) return;
+            
+            let minutes = parseInt(parts[0], 10);
+            let seconds = parseInt(parts[1], 10);
+            
+            let totalSeconds = (minutes * 60) + seconds + deltaSeconds;
+            if (totalSeconds < 0) totalSeconds = 0;
+            
+            let newMinutes = Math.floor(totalSeconds / 60);
+            let newSeconds = totalSeconds % 60;
+            
+            input.value = String(newMinutes).padStart(2, '0') + ':' + String(newSeconds).padStart(2, '0');
+        }
+        
+        function toggleVertidos() { 
+            const isChecked = document.getElementById('un_solo_vertido').checked;
+            document.getElementById('vertidos_extras').classList.toggle('hidden', isChecked);
+            
+            if (isChecked) {
+                document.getElementById('t_v1').value = "02:30";
+            } else {
+                document.getElementById('t_v1').value = "01:15";
+                document.getElementById('t_v2').value = "01:50";
+                document.getElementById('t_v3').value = "02:30";
+            }
+            calcularVertidos();
+        }
 
         function generarGridHTML(items, contenedorId, prefijo) {
             const contenedor = document.getElementById(contenedorId);
@@ -748,7 +875,13 @@
         }
 
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens'); generarGridHTML(paramNotas, 'notasSensoriales', 'nota'); generarGlobalHTML();
-        window.onload = () => { document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); analizarCodigo(); actualizarDispositivos(); };
+        
+        window.onload = () => { 
+            document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
+            analizarCodigo(); 
+            actualizarDispositivos(); 
+            calcularAguaTotal(); 
+        };
 
         function dispararGeneracion() {
             const fd = new FormData(document.getElementById('cataForm'));
@@ -764,8 +897,13 @@
             
             let textoFinal = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;
             let dReposo = fd.get('dias_tueste'); if (dReposo && !isNaN(dReposo)) textoFinal += ` (${dReposo} días post-tueste)`;
-            let gr = parseFloat(fd.get('gramos_cafe')), ml = parseFloat(fd.get('agua_total'));
-            if (!isNaN(gr) && gr>0 && !isNaN(ml) && ml>0) textoFinal += ` - ${gr}g / ${ml}ml (Ratio 1:${(ml/gr).toFixed(1).replace('.0','')})`;
+            
+            let gr = parseFloat(fd.get('gramos_cafe')), ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            // Para mostrar el ratio en texto, sumamos el hielo al agua para reflejar la dilución total planeada
+            let ml_para_ratio = ml_total_real + hielo; 
+            
+            if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) textoFinal += ` - ${gr}g / ${ml_total_real}ml (Ratio 1:${(ml_para_ratio/gr).toFixed(1).replace('.0','')})`;
 
             let pGrano = currentRoastData.grano.lum !== null ? getRoastProfile(currentRoastData.grano.lum) : null;
             let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
@@ -824,7 +962,13 @@
                     merma: fd.get('merma'), temp_tueste: fd.get('temp_tueste'), tiempo_tueste: fd.get('tiempo_tueste'),
                     fases: { secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') }, maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') }, desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') } }
                 }, 
-                extraccion: { metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', blooming: fd.get('blooming'), v1: fd.get('v1'), v2: fd.get('v2'), v3: fd.get('v3') }, 
+                extraccion: { 
+                    metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
+                    blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'),
+                    v1: fd.get('v1'), t_v1: fd.get('t_v1'),
+                    v2: fd.get('v2'), t_v2: fd.get('t_v2'),
+                    v3: fd.get('v3'), t_v3: fd.get('t_v3')
+                }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
                 analisis_imagen: currentRoastData
             };
@@ -852,7 +996,7 @@
                     setSelectValue('metodo', met); actualizarDispositivos(); setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
                     let fil = ext.filtro === "Filtro fondo plano/papel" ? "Fondo plano/papel" : (ext.filtro === "Filtro cónico/papel" ? "Cónico/papel" : ext.filtro); setSelectValue('filtro', fil);
                     
-                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 'v1', 'v2', 'v3'].forEach(k => { if(ext[k]) document.getElementById(k).value = ext[k]; });
+                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3'].forEach(k => { if(ext[k]) document.getElementById(k).value = ext[k]; });
                     document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
                     document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha; document.getElementById('bola_fria').checked = !!ext.bola_fria; document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
                     
@@ -865,7 +1009,6 @@
                         if (d.analisis_imagen.grano) {
                             currentRoastData = d.analisis_imagen;
                         } else if (d.analisis_imagen.img) {
-                            // Compatibilidad con versión anterior (asignar a grano)
                             currentRoastData = { grano: { ...d.analisis_imagen }, molido: { r: null, g: null, b: null, lum: null, img: null } };
                         }
                         renderCarouselCards();
@@ -874,7 +1017,7 @@
                         document.getElementById('results-wrapper').style.display = 'none';
                     }
 
-                    toggleVertidos(); analizarCodigo(); alert("Cata cargada exitosamente.");
+                    toggleVertidos(); analizarCodigo(); calcularAguaTotal(); alert("Cata cargada exitosamente.");
                 } catch(err) { console.error(err); alert("Error al cargar JSON."); } e.target.value = ''; 
             }; reader.readAsText(file);
         }
@@ -1006,7 +1149,6 @@
             if (g.lum !== null && m.lum !== null) {
                 let deltaHTML = '';
                 
-                // CONDICIÓN 1: Anomalía. El grano entero es más claro que el molido.
                 if (g.lum > m.lum) {
                     deltaHTML = `
                     <div class="carousel-card" style="border-color: #f44336; justify-content: center;">
@@ -1019,7 +1161,6 @@
                         </div>
                     </div>`;
                 } else {
-                    // CONDICIÓN 2: Lógica normal. Cálculo del Delta.
                     let delta = Math.abs(m.lum - g.lum);
                     let nivelDesarrollo = "";
                     let descDesarrollo = "";
@@ -1048,7 +1189,6 @@
                         </ul>`;
                     }
 
-                    // Asignación de colores según la severidad del Delta
                     let colorBadge = (delta <= 9) ? '#e8f5e9' : (delta <= 13 ? '#fff3e0' : '#ffebee');
                     let colorText = (delta <= 9) ? '#2e7d32' : (delta <= 13 ? '#e65100' : '#c62828');
 
@@ -1070,7 +1210,6 @@
             else { document.getElementById('results-wrapper').style.display = 'none'; }
         }
 
-        // --- SISTEMA DE GRÁFICOS Y EXPORTACIONES (IGUAL AL ORIGINAL) ---
         const mapVal = (v) => v === 'Alta' ? 3 : (v === 'Media' ? 2 : (v === 'Baja' ? 1 : 0));
         function cerrarGrafico() { document.getElementById('chartModal').style.display = 'none'; }
 
@@ -1094,12 +1233,35 @@
                 barsContainer.innerHTML += `<div class="bar-row"><div class="bar-label">${iconos[idx]} ${nota.split('/')[0]}</div><div class="bar-track"><div class="bar-fill" style="width: ${w}%; background-color: ${valNum > 0 ? coloresNotas[idx] : 'transparent'};"></div></div><div class="bar-value val-${valNum}">${valNum === 0 ? "N/E" : valNum}</div></div>`;
             });
 
-            let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total')); let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml) && ml>0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-';
-            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let g = parseFloat(fd.get('gramos_cafe')); 
+            let ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            let ml_para_ratio = ml_total_real + hielo;
 
-            const colIzq = [{ l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }];
+            let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
+            
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
+
             let velSec = (fd.get('secado_vel')||'').toLowerCase(), velMai = (fd.get('maillard_vel')||'').toLowerCase(), velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-            const colDer = [{ l: 'Extracción:', v: extTxt }, { l: 'Ratio:', v: `[${ratioTxt}]` }, { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }];
+            
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
+                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
+                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+            ];
+            
+            const colDer = [
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+            ];
 
             document.getElementById('chartDetails').innerHTML = `<div style="display:flex; flex-direction:column;">${colIzq.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div><div style="display:flex; flex-direction:column;">${colDer.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div>`;
             document.getElementById('chartObs').innerText = fd.get('observaciones') || 'Sin observaciones registradas.'; document.getElementById('chartModal').style.display = 'flex';
@@ -1136,10 +1298,41 @@
             const coloresNotas = ['#f48fb1', '#ffb74d', '#d84315', '#81c784', '#ce93d8', '#8d6e63', '#aed581']; const iconos = ['🌸', '🍊', '🍫', '🍬', '💥', '🪵', '🍃'];
             paramNotas.forEach((nota, idx) => { let valNum = mapVal(fd.get(`nota_${idx}`)); let y = 630 + (idx * 36); let w = valNum === 3 ? 300 : (valNum === 2 ? 200 : (valNum === 1 ? 100 : 0)); ctx.fillStyle = '#cccccc'; ctx.font = '18px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(iconos[idx] + ' ' + nota.split('/')[0], 50, y); ctx.fillStyle = '#333333'; roundRectSafe(ctx, 220, y - 10, 300, 20, 10); ctx.fill(); if (valNum > 0) { ctx.fillStyle = coloresNotas[idx]; roundRectSafe(ctx, 220, y - 10, w, 20, 10); ctx.fill(); } ctx.fillStyle = valNum === 3 ? '#81c784' : (valNum === 2 ? '#ffb74d' : (valNum === 1 ? '#e57373' : '#666666')); ctx.font = 'bold 18px sans-serif'; ctx.fillText(valNum === 0 ? "N/E" : valNum, 540, y); });
             ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); 
-            let g = parseFloat(fd.get('gramos_cafe')); let ml = parseFloat(fd.get('agua_total')); let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml) && ml>0) ? `${g}g / ${ml}ml (1:${(ml/g).toFixed(1).replace('.0','')})` : '-'; let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
-            const colIzq = [{ l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }]; let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-            const colDer = [{ l: 'Extracción:', v: extTxt }, { l: 'Ratio:', v: `[${ratioTxt}]` }, { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }];
-            ctx.textAlign = 'left'; let startY = 945; colIzq.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); colDer.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]'; ctx.fillText(val, 380, y + 18); });
+            
+            let g = parseFloat(fd.get('gramos_cafe')); 
+            let ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            let ml_para_ratio = ml_total_real + hielo;
+
+            let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
+            
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
+            
+            let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+            
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
+                { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
+                { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+            ]; 
+            
+            const colDer = [
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+            ];
+
+            ctx.textAlign = 'left'; let startY = 945; 
+            colIzq.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); 
+            colDer.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]'; ctx.fillText(val, 380, y + 18); });
+            
             ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1175); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1205; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
             const link = document.createElement('a'); link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();
         }

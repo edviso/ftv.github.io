@@ -698,6 +698,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento y Gráficos: Integración del campo 'Nivel de tueste' en la columna izquierda de los Detalles del Café, extrayendo dinámicamente el perfil del análisis de imagen del café molido (ej. City+ Tueste Medio)." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Descarga: Implementación de descarga de la Evaluación Final en dos variantes (tema Claro y Oscuro) para mayor flexibilidad visual y legibilidad en impresiones." },
             { fecha: "26-MAY-2026", resumen: "Corrección de Bug: Se modificó la lógica de 'toggleVertidos' para evitar que sobrescriba los tiempos de extracción registrados en el archivo JSON al momento de cargarlo." },
             { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Inclusión del campo autocalculado 'Bebida en taza (ml)' al final de la columna derecha de detalles de extracción." },
@@ -914,7 +915,6 @@
             document.getElementById('vertidos_extras').classList.toggle('hidden', isChecked);
             document.getElementById('vertidos_extras_temp').classList.toggle('hidden', isChecked);
             
-            // Solo reseteamos los tiempos si la acción vino del clic del usuario
             if (fromUser) {
                 if (isChecked) {
                     document.getElementById('t_v1').value = "02:30";
@@ -1152,7 +1152,6 @@
                         document.getElementById('results-wrapper').style.display = 'none';
                     }
 
-                    // IMPORTANTE: Le pasamos false para que NO sobrescriba el tiempo cargado del JSON.
                     toggleVertidos(false); 
                     analizarCodigo(); 
                     calcularAguaTotal(); 
@@ -1324,7 +1323,7 @@
                         <ul style="text-align: left; padding-left: 20px; font-size: 0.85rem; color: #555; margin-top: 10px;">
                             <li style="margin-bottom: 6px;"><strong>Temperatura:</strong> Bajar significativamente la temperatura de carga inicial o el pico de calor de los primeros minutos para evitar sellar el grano.</li>
                             <li style="margin-bottom: 6px;"><strong>Tiempo:</strong> Incrementar el tiempo total del tueste entre 1 y 2 minutos adicionales.</li>
-                            <li><strong>Ventilación:</strong> Mantener V3 durante todo el secado y casi todo Maillard. Bajar a V2 únicamente justo antes de escuchar el primer crack. Si hay mucha inercia térmica, subir nuevamente a V3 durante el primer crack para despejar calor.</li>
+                            <li><strong>Ventilación:</strong> Mantener V3 durante todo el secado and casi todo Maillard. Bajar a V2 únicamente justo antes de escuchar el primer crack. Si hay mucha inercia térmica, subir nuevamente a V3 durante el primer crack para despejar calor.</li>
                         </ul>`;
                     }
 
@@ -1399,6 +1398,9 @@
             let bebida = fd.get('bebida_taza') || document.getElementById('bebida_taza').value;
             let bebidaTxt = bebida ? `[~${bebida} ml]` : '[-]';
 
+            let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
+            let nivelTuesteTxt = pMolido ? `${pMolido.label} (${pMolido.sub})` : '[-]';
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
@@ -1406,10 +1408,10 @@
                 { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
                 { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
                 { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
+                { l: 'Nivel de tueste:', v: nivelTuesteTxt }
             ];
             
-            // Nuevo orden de la columna derecha incluyendo Bebida en taza
             const colDer = [
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
                 { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
@@ -1442,7 +1444,7 @@
 
         function roundRectSafe(ctx, x, y, width, height, radius) { ctx.beginPath(); ctx.moveTo(x + radius, y); ctx.lineTo(x + width - radius, y); ctx.quadraticCurveTo(x + width, y, x + width, y + radius); ctx.lineTo(x + width, y + height - radius); ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height); ctx.lineTo(x + radius, y + height); ctx.quadraticCurveTo(x, y + height, x, y + height - radius); ctx.lineTo(x, y + radius); ctx.quadraticCurveTo(x, y, x + radius, y); ctx.closePath(); }
 
-        function descargarGraficoJPG() {
+        function descargarGraficoJPG(tema = 'oscuro') {
             const fd = new FormData(document.getElementById('cataForm')); const c = document.createElement('canvas'); c.width = 720; c.height = 1280; const ctx = c.getContext('2d');
             ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, 720, 1280); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('☕ CATA DE CAFÉ', 40, 50); ctx.fillStyle = '#aaaaaa'; ctx.font = '18px sans-serif'; ctx.fillText(fd.get('fecha_hora') || '', 40, 85);
             const gEval = fd.get('global_eval') || 'SIN EVALUAR'; const colorEval = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
@@ -1483,6 +1485,9 @@
             let bebida = fd.get('bebida_taza') || document.getElementById('bebida_taza').value;
             let bebidaTxt = bebida ? `[~${bebida} ml]` : '[-]';
 
+            let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
+            let nivelTuesteTxt = pMolido ? `${pMolido.label} (${pMolido.sub})` : '[-]';
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
@@ -1490,10 +1495,10 @@
                 { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
                 { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
                 { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
+                { l: 'Nivel de tueste:', v: nivelTuesteTxt }
             ]; 
             
-            // Nuevo orden de la columna derecha
             const colDer = [
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
                 { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
@@ -1504,13 +1509,12 @@
                 { l: 'Bebida en taza:', v: bebidaTxt }
             ];
 
-            // Reubicación espacial en el Canvas para encajar el 7mo elemento (y evitar chocar con Observaciones)
-            ctx.textAlign = 'left'; let startY = 935; 
-            colIzq.forEach((d, i) => { let y = startY + (i * 35); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); 
-            colDer.forEach((d, i) => { let y = startY + (i * 35); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 35) val = val.substring(0, 33) + '...]'; ctx.fillText(val, 380, y + 18); });
+            // Reubicación de la rejilla para soportar la 8va línea de datos sin colisiones
+            ctx.textAlign = 'left'; let startY = 925; 
+            colIzq.forEach((d, i) => { let y = startY + (i * 32); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; ctx.fillText(d.v, 50, y + 16); }); 
+            colDer.forEach((d, i) => { let y = startY + (i * 32); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 35) val = val.substring(0, 33) + '...]'; ctx.fillText(val, 380, y + 16); });
             
-            // Observaciones desplazadas ligeramente hacia abajo (1180 px en lugar de 1175 px)
-            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1180); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1205; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
+            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1190); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1215; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
             const link = document.createElement('a'); link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();
         }
 
@@ -1525,7 +1529,6 @@
             
             const isClaro = tema === 'claro';
             
-            // Paleta dinámica
             const bgCanvas = isClaro ? '#f0f2f5' : '#121212';
             const bgCard = isClaro ? '#ffffff' : '#1e1e1e';
             const borderCard = isClaro ? '#d7ccc8' : '#2c2c2c';

@@ -172,7 +172,6 @@
         button.main-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
         .btn-gen { background-color: #ff9800; color: white; margin-bottom: 15px; width: 100%; }
         .btn-copy { background-color: #2196F3; color: white; margin-top: 10px; width: 100%; }
-        .btn-dl-eval { background-color: #4db6ac; color: #121212; margin-top: 10px; width: 100%; } 
         .btn-chart { background-color: #333; color: #ff9800; margin-top: 10px; width: 100%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; gap: 8px;}
         .btn-chart:hover { background-color: #ff9800; color: #333; }
         
@@ -681,7 +680,12 @@
                 <textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el resumen..."></textarea>
             </div>
             <button type="button" class="main-btn btn-copy" id="btnCopiar" onclick="copiarTexto()">📋 Copiar Texto</button>
-            <button type="button" class="main-btn btn-dl-eval" onclick="descargarEvaluacionJPG()">📥 Descargar Evaluación</button>
+            
+            <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
+                <button type="button" class="main-btn" style="background-color: #333; color: #4db6ac; margin: 0;" onclick="descargarEvaluacionJPG('oscuro')">📥 Descargar (Oscuro)</button>
+                <button type="button" class="main-btn" style="background-color: #f0f2f5; color: #4db6ac; border: 1px solid #4db6ac; margin: 0;" onclick="descargarEvaluacionJPG('claro')">📥 Descargar (Claro)</button>
+            </div>
+
             <button type="button" class="main-btn btn-chart" onclick="abrirGrafico()">📊 Ver Gráfico de Cata</button>
         </div>
 
@@ -694,6 +698,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "26-MAY-2026", resumen: "Módulo de Descarga: Implementación de descarga de la Evaluación Final en dos variantes (tema Claro y Oscuro) para mayor flexibilidad visual y legibilidad en impresiones." },
             { fecha: "26-MAY-2026", resumen: "Corrección de Bug: Se modificó la lógica de 'toggleVertidos' para evitar que sobrescriba los tiempos de extracción registrados en el archivo JSON al momento de cargarlo." },
             { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Inclusión del campo autocalculado 'Bebida en taza (ml)' al final de la columna derecha de detalles de extracción." },
             { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se reordenó la columna derecha para mostrar una secuencia más lógica: Dispositivo, Filtro, Ratio, Temperaturas, Extracción y Tiempo de Extracción." },
@@ -1509,21 +1514,71 @@
             const link = document.createElement('a'); link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();
         }
 
-        function descargarEvaluacionJPG() {
-            const text = document.getElementById("evaluacion_final").value; if (!text.trim()) { alert("Por favor, genera primero el resumen interpretativo."); return; }
-            const fd = new FormData(document.getElementById('cataForm')); const c = document.createElement('canvas'); c.width = 720; c.height = 1280; const ctx = c.getContext('2d');
-            ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, 720, 1280); ctx.fillStyle = '#1e1e1e'; roundRectSafe(ctx, 40, 140, 640, 1000, 20); ctx.fill(); ctx.strokeStyle = '#2c2c2c'; ctx.lineWidth = 2; ctx.stroke();
-            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 36px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('📝 RESUMEN DE CATA', 360, 50); ctx.fillStyle = '#aaaaaa'; ctx.font = '20px sans-serif'; ctx.fillText(fd.get('fecha_hora') || '', 360, 95);
-            ctx.strokeStyle = '#333333'; ctx.beginPath(); ctx.moveTo(80, 210); ctx.lineTo(640, 210); ctx.stroke(); ctx.fillStyle = '#e0e0e0'; ctx.font = '24px sans-serif'; ctx.textAlign = 'left';
+        function descargarEvaluacionJPG(tema = 'oscuro') {
+            const text = document.getElementById("evaluacion_final").value; 
+            if (!text.trim()) { alert("Por favor, genera primero el resumen interpretativo."); return; }
+            
+            const fd = new FormData(document.getElementById('cataForm')); 
+            const c = document.createElement('canvas'); 
+            c.width = 720; c.height = 1280; 
+            const ctx = c.getContext('2d');
+            
+            const isClaro = tema === 'claro';
+            
+            // Paleta dinámica
+            const bgCanvas = isClaro ? '#f0f2f5' : '#121212';
+            const bgCard = isClaro ? '#ffffff' : '#1e1e1e';
+            const borderCard = isClaro ? '#d7ccc8' : '#2c2c2c';
+            const titleColor = isClaro ? '#4a3b32' : '#ffb74d';
+            const dateColor = isClaro ? '#888888' : '#aaaaaa';
+            const lineColor = isClaro ? '#eeeeee' : '#333333';
+            const textColor = isClaro ? '#444444' : '#e0e0e0';
+            const ratioColor = isClaro ? '#388e3c' : '#81c784';
+            const accentColor = isClaro ? '#bf360c' : '#ff9800';
+            const footerColor = isClaro ? '#999999' : '#666666';
+
+            ctx.fillStyle = bgCanvas; ctx.fillRect(0, 0, 720, 1280); 
+            ctx.fillStyle = bgCard; roundRectSafe(ctx, 40, 140, 640, 1000, 20); ctx.fill(); 
+            ctx.strokeStyle = borderCard; ctx.lineWidth = 2; ctx.stroke();
+            
+            ctx.fillStyle = titleColor; ctx.font = 'bold 36px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('📝 RESUMEN DE CATA', 360, 50); 
+            ctx.fillStyle = dateColor; ctx.font = '20px sans-serif'; ctx.fillText(fd.get('fecha_hora') || '', 360, 95);
+            
+            ctx.strokeStyle = lineColor; ctx.beginPath(); ctx.moveTo(80, 210); ctx.lineTo(640, 210); ctx.stroke(); 
+            
+            ctx.textAlign = 'left';
             const maxWidth = 560; const x = 80; let y = 250; const lineHeight = 38; const paragraphs = text.split('\n');
+            
             for (let i = 0; i < paragraphs.length; i++) {
                 const p = paragraphs[i]; if (p.trim() === '') { y += lineHeight; continue; }
-                if (i === 0 && p.includes('Ratio')) { ctx.fillStyle = '#81c784'; ctx.font = 'bold 24px sans-serif'; } else if (p.includes('🫘') || p.includes('🤎') || p.includes('⚠️') || p.includes('⚖️') || p.includes('💡')) { ctx.fillStyle = '#ff9800'; ctx.font = 'italic 22px sans-serif'; } else { ctx.fillStyle = '#e0e0e0'; ctx.font = '24px sans-serif'; }
+                
+                if (i === 0 && p.includes('Ratio')) { 
+                    ctx.fillStyle = ratioColor; ctx.font = 'bold 24px sans-serif'; 
+                } else if (p.includes('🫘') || p.includes('🤎') || p.includes('⚠️') || p.includes('⚖️') || p.includes('💡')) { 
+                    ctx.fillStyle = accentColor; ctx.font = 'italic 22px sans-serif'; 
+                } else { 
+                    ctx.fillStyle = textColor; ctx.font = '24px sans-serif'; 
+                }
+                
                 const words = p.split(' '); let line = '';
-                for (let n = 0; n < words.length; n++) { const testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > maxWidth && n > 0) { ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; } else { line = testLine; } } ctx.fillText(line, x, y); y += lineHeight + 15; 
+                for (let n = 0; n < words.length; n++) { 
+                    const testLine = line + words[n] + ' '; 
+                    if (ctx.measureText(testLine).width > maxWidth && n > 0) { 
+                        ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; 
+                    } else { 
+                        line = testLine; 
+                    } 
+                } 
+                ctx.fillText(line, x, y); y += lineHeight + 15; 
             }
-            ctx.fillStyle = '#666666'; ctx.font = 'italic 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Generado desde Bitácora de Café', 360, 1180);
-            const link = document.createElement('a'); link.download = `Resumen_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();
+            
+            ctx.fillStyle = footerColor; ctx.font = 'italic 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Generado desde Bitácora de Café', 360, 1180);
+            
+            const suffix = isClaro ? '_Claro' : '_Oscuro';
+            const link = document.createElement('a'); 
+            link.download = `Resumen_${fd.get('codigo') || 'Cafe'}${suffix}.jpg`; 
+            link.href = c.toDataURL('image/jpeg', 0.95); 
+            link.click();
         }
     </script>
 </body>

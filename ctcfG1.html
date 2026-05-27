@@ -159,12 +159,12 @@
         .row > div { flex: 1; }
         label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 500; color: #555; }
         input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; font-family: inherit; background-color: #fff; }
-        input[readonly] { background-color: #f5f5f5; color: #555; }
+        input[readonly] { background-color: #f5f5f5; color: #555; outline: none; }
         #evaluacion_final { min-height: 450px; line-height: 1.5; font-size: 0.95rem; }
         .stepper { display: flex; align-items: center; gap: 5px; }
-        .stepper button { width: 35px; height: 35px; border-radius: 8px; border: 1px solid #ccc; background: #f8f9fa; font-size: 1.2rem; font-weight: bold; color: #4a3b32; flex: none; }
+        .stepper button { width: 35px; height: 35px; border-radius: 8px; border: 1px solid #ccc; background: #f8f9fa; font-size: 1.2rem; font-weight: bold; color: #4a3b32; flex: none; cursor: pointer;}
         .stepper input { text-align: center; padding: 5px; }
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; background: #fcfaf8; padding: 10px; border-radius: 8px; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .grid-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; text-align: center; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 10px; }
         .grid-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.9rem; }
@@ -188,7 +188,7 @@
         #fileInput { display: none; }
         .hidden { display: none; }
 
-        /* --- ESTILOS MÓDULO ANÁLISIS DE TUESTE --- */
+        /* --- ESTILOS MÓDULO ANÁLISIS DE TUESTE Y CAROUSELES --- */
         .module-section-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .module-section-title.exterior { color: #8d6e63; }
         .module-section-title.interior { color: #a1887f; margin-top: 15px; }
@@ -205,6 +205,7 @@
         .carousel-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 10px; scrollbar-width: none; -ms-overflow-style: none; align-items: stretch; }
         .carousel-container::-webkit-scrollbar { display: none; }
         .carousel-card { min-width: 100%; scroll-snap-align: center; background: #fff; border: 1px solid #efebe9; border-radius: 15px; padding: 15px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; }
+        .carousel-card.flat-card { border-radius: 8px; padding: 12px; border: 1px solid #f0f0f0; box-shadow: none; }
         
         .preview-img { width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); object-fit: cover; aspect-ratio: 1 / 1; display: none; }
         
@@ -240,6 +241,8 @@
         .delta-status { font-size: 1.1rem; font-weight: bold; color: #4a3b32; margin-bottom: 5px; }
         .delta-desc { font-size: 0.9rem; color: #333; line-height: 1.5; }
         .delta-error { font-size: 1.1rem; color: #c62828; line-height: 1.5; padding: 10px;}
+        
+        .ref-ml { color: #bf360c; font-weight: bold; }
         
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -473,7 +476,7 @@
                 </div>
             </div>
             <div class="checkbox-group">
-                <div class="checkbox-item">
+                <div class="checkbox-item" style="margin-right: 15px;">
                     <input type="checkbox" id="usa_ducha" name="usa_ducha">
                     <label for="usa_ducha">Ducha</label>
                 </div>
@@ -481,94 +484,163 @@
                     <input type="checkbox" id="bola_fria" name="bola_fria">
                     <label for="bola_fria">Bola Fría</label>
                 </div>
-                <div class="checkbox-item" style="width:100%">
-                    <label>Hielo en jarra (ml):</label>
-                    <input type="number" id="hielo_ml" name="hielo_ml" style="width:80px" value="20" placeholder="0" oninput="calcularAguaTotal()">
+                <div style="width: 100%; display: flex; gap: 15px; margin-top: 5px; align-items: flex-end;">
+                    <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Hielo en jarra (ml):</label>
+                        <div class="stepper">
+                            <button type="button" onclick="step('hielo_ml', -5)">-</button>
+                            <input type="number" id="hielo_ml" name="hielo_ml" value="20" placeholder="0" oninput="calcularAguaTotal()" style="width: 100%;">
+                            <button type="button" onclick="step('hielo_ml', 5)">+</button>
+                        </div>
+                    </div>
+                    <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                        <label style="color: #6d4c41;">Bebida en taza (ml):</label>
+                        <input type="text" id="bebida_taza" name="bebida_taza" readonly placeholder="Auto" style="text-align: center; font-weight: bold; font-size: 1.1rem; color: #5d4037; background-color: #efebe9; border: 1px solid #d7ccc8; padding: 10px;">
+                    </div>
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
             
             <div class="checkbox-item" style="margin-bottom:10px">
-                <input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos()">
+                <input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos(true)">
                 <label for="un_solo_vertido"><b>Hacer un solo vertido</b></label>
             </div>
             
-            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>Blooming (ml):</label>
-                    <div class="stepper">
-                        <button type="button" onclick="step('blooming', -5)">-</button>
-                        <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;" oninput="calcularVertidos()">
-                        <button type="button" onclick="step('blooming', 5)">+</button>
+            <p class="swipe-hint" style="margin-top: 15px; margin-bottom: 5px; font-size: 0.7rem; color: #666;">Desliza para Perfil Térmico ↔️</p>
+            <div class="carousel-container" style="padding-bottom: 5px;">
+                
+                <div class="carousel-card flat-card">
+                    <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #5d4037;">💧 Volumen y Tiempo</div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Blooming (ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('blooming', -5)">-</button>
+                                <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;" oninput="calcularVertidos()">
+                                <button type="button" onclick="step('blooming', 5)">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Tiempo:</label>
+                            <div class="stepper">
+                                <button type="button" onclick="stepTime('t_blooming', -5)">-</button>
+                                <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="width: 100%;">
+                                <button type="button" onclick="stepTime('t_blooming', 5)">+</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>Tiempo:</label>
-                    <div class="stepper">
-                        <button type="button" onclick="stepTime('t_blooming', -5)">-</button>
-                        <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="width: 100%;">
-                        <button type="button" onclick="stepTime('t_blooming', 5)">+</button>
-                    </div>
-                </div>
-            </div>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>1er Vertido (ml):</label>
-                    <div class="stepper">
-                        <button type="button" onclick="step('v1', -10)">-</button>
-                        <input type="number" id="v1" name="v1" value="" style="width: 100%;">
-                        <button type="button" onclick="step('v1', 10)">+</button>
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>1er Vertido (ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('v1', -10)">-</button>
+                                <input type="number" id="v1" name="v1" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                <button type="button" onclick="step('v1', 10)">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Tiempo:</label>
+                            <div class="stepper">
+                                <button type="button" onclick="stepTime('t_v1', -5)">-</button>
+                                <input type="text" id="t_v1" name="t_v1" value="01:15" style="width: 100%;">
+                                <button type="button" onclick="stepTime('t_v1', 5)">+</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                    <label>Tiempo:</label>
-                    <div class="stepper">
-                        <button type="button" onclick="stepTime('t_v1', -5)">-</button>
-                        <input type="text" id="t_v1" name="t_v1" value="01:15" style="width: 100%;">
-                        <button type="button" onclick="stepTime('t_v1', 5)">+</button>
-                    </div>
-                </div>
-            </div>
 
-            <div id="vertidos_extras">
-                <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>2do Vertido (ml):</label>
-                        <div class="stepper">
-                            <button type="button" onclick="step('v2', -10)">-</button>
-                            <input type="number" id="v2" name="v2" value="" style="width: 100%;">
-                            <button type="button" onclick="step('v2', 10)">+</button>
+                    <div id="vertidos_extras">
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>2do Vertido (ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('v2', -10)">-</button>
+                                    <input type="number" id="v2" name="v2" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                    <button type="button" onclick="step('v2', 10)">+</button>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Tiempo:</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="stepTime('t_v2', -5)">-</button>
+                                    <input type="text" id="t_v2" name="t_v2" value="01:50" style="width: 100%;">
+                                    <button type="button" onclick="stepTime('t_v2', 5)">+</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>Tiempo:</label>
-                        <div class="stepper">
-                            <button type="button" onclick="stepTime('t_v2', -5)">-</button>
-                            <input type="text" id="t_v2" name="t_v2" value="01:50" style="width: 100%;">
-                            <button type="button" onclick="stepTime('t_v2', 5)">+</button>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>3er Vertido (ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('v3', -10)">-</button>
+                                    <input type="number" id="v3" name="v3" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                    <button type="button" onclick="step('v3', 10)">+</button>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Tiempo:</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="stepTime('t_v3', -5)">-</button>
+                                    <input type="text" id="t_v3" name="t_v3" value="02:30" style="width: 100%;">
+                                    <button type="button" onclick="stepTime('t_v3', 5)">+</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>3er Vertido (ml):</label>
-                        <div class="stepper">
-                            <button type="button" onclick="step('v3', -10)">-</button>
-                            <input type="number" id="v3" name="v3" value="" style="width: 100%;">
-                            <button type="button" onclick="step('v3', 10)">+</button>
+                <div class="carousel-card flat-card">
+                    <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #bf360c;">🌡️ Perfil Térmico (°C)</div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label style="font-size: 0.8rem; color: #555;">Blooming (<span id="ref_blooming_ml" class="ref-ml">45</span> ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('temp_blooming', -1)">-</button>
+                                <input type="number" id="temp_blooming" name="temp_blooming" value="90" style="width: 100%;">
+                                <button type="button" onclick="step('temp_blooming', 1)">+</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="input-group" style="margin-bottom: 0; flex: 1;">
-                        <label>Tiempo:</label>
-                        <div class="stepper">
-                            <button type="button" onclick="stepTime('t_v3', -5)">-</button>
-                            <input type="text" id="t_v3" name="t_v3" value="02:30" style="width: 100%;">
-                            <button type="button" onclick="stepTime('t_v3', 5)">+</button>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label style="font-size: 0.8rem; color: #555;">1er Vertido (<span id="ref_v1_ml" class="ref-ml">0</span> ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('temp_v1', -1)">-</button>
+                                <input type="number" id="temp_v1" name="temp_v1" value="90" style="width: 100%;">
+                                <button type="button" onclick="step('temp_v1', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="vertidos_extras_temp">
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label style="font-size: 0.8rem; color: #555;">2do Vertido (<span id="ref_v2_ml" class="ref-ml">0</span> ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('temp_v2', -1)">-</button>
+                                    <input type="number" id="temp_v2" name="temp_v2" value="90" style="width: 100%;">
+                                    <button type="button" onclick="step('temp_v2', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label style="font-size: 0.8rem; color: #555;">3er Vertido (<span id="ref_v3_ml" class="ref-ml">0</span> ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('temp_v3', -1)">-</button>
+                                    <input type="number" id="temp_v3" name="temp_v3" value="90" style="width: 100%;">
+                                    <button type="button" onclick="step('temp_v3', 1)">+</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -622,6 +694,12 @@
 
     <script>
         const logHistorial = [
+            { fecha: "26-MAY-2026", resumen: "Corrección de Bug: Se modificó la lógica de 'toggleVertidos' para evitar que sobrescriba los tiempos de extracción registrados en el archivo JSON al momento de cargarlo." },
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Inclusión del campo autocalculado 'Bebida en taza (ml)' al final de la columna derecha de detalles de extracción." },
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se reordenó la columna derecha para mostrar una secuencia más lógica: Dispositivo, Filtro, Ratio, Temperaturas, Extracción y Tiempo de Extracción." },
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se redistribuyó la información en la tarjeta de Detalles del Café, moviendo el tiempo de reposo (Post-tueste) a la columna izquierda y añadiendo un desglose térmico detallado y dinámico por cada vertido en la columna derecha." },
+            { fecha: "26-MAY-2026", resumen: "Módulo de Perfil Térmico: Carrusel integrado en sección de extracción para registrar independientemente la temperatura de cada vertido, con sincronización en tiempo real de volúmenes." },
+            { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento: Se incorporó el campo autocalculado 'Bebida en taza (ml)', que calcula el volumen final descontando la retención de agua en la cama de café (peso * 2.2) y sumando el volumen de hielo. Además, se agregaron controles de ajuste rápido al campo de hielo." },
             { fecha: "25-MAY-2026", resumen: "Mejora de UX: Incorporación de botones incrementales (+/-) en el campo 'Café (g)' con variaciones de 0.5g para un ajuste rápido y preciso, adaptando la lógica base para soportar números decimales." },
             { fecha: "25-MAY-2026", resumen: "Actualización de valor por defecto: El campo 'Hielo en jarra' ahora inicia con 20 ml predeterminados, recalculando automáticamente el Agua Total al abrir la aplicación." },
             { fecha: "25-MAY-2026", resumen: "Distribución dinámica de vertidos: Cálculo automático y proporcional de los volúmenes de vertido (escala acumulada de balanza) en base al Agua Total calculada y el Blooming, ajustándose en tiempo real para recetas de uno o múltiples vertidos." },
@@ -631,9 +709,7 @@
             { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
             { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
             { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior." },
-            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." },
-            { fecha: "13-MAY-2026", resumen: "Mejora UI: Se hizo el título principal de la aplicación 'Sticky' (fijo)." },
-            { fecha: "08-MAY-2026", resumen: "Lógica de Cascada Estricta: Se implementó un sistema de menús desplegables dependientes." }
+            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." }
         ];
 
         // --- VARIABLE GLOBAL DUAL PARA ANÁLISIS DE DESARROLLO ---
@@ -725,12 +801,23 @@
         const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
         const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
 
+        function actualizarReferenciasTermicas() {
+            document.getElementById('ref_blooming_ml').innerText = document.getElementById('blooming').value || "0";
+            document.getElementById('ref_v1_ml').innerText = document.getElementById('v1').value || "0";
+            document.getElementById('ref_v2_ml').innerText = document.getElementById('v2').value || "0";
+            document.getElementById('ref_v3_ml').innerText = document.getElementById('v3').value || "0";
+        }
+
         function calcularVertidos() {
             let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
             let blooming = parseFloat(document.getElementById('blooming').value) || 0;
             let unSoloVertido = document.getElementById('un_solo_vertido').checked;
 
-            if (aguaTotal <= 0) return;
+            if (aguaTotal <= 0) {
+                document.getElementById('bebida_taza').value = "";
+                actualizarReferenciasTermicas();
+                return;
+            }
 
             if (unSoloVertido) {
                 document.getElementById('v1').value = Math.round(aguaTotal);
@@ -747,6 +834,9 @@
                     document.getElementById('v3').value = Math.round(aguaTotal);
                 }
             }
+            
+            calcularRendimiento();
+            actualizarReferenciasTermicas();
         }
 
         function calcularAguaTotal() {
@@ -759,6 +849,21 @@
                 calcularVertidos();
             } else {
                 document.getElementById('agua_total').value = "";
+                document.getElementById('bebida_taza').value = "";
+            }
+        }
+        
+        function calcularRendimiento() {
+            let gramos = parseFloat(document.getElementById('gramos_cafe').value) || 0;
+            let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
+            let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
+            
+            if (gramos > 0 && aguaTotal > 0) {
+                let retencion = gramos * 2.2;
+                let bebida = (aguaTotal - retencion) + hielo;
+                document.getElementById('bebida_taza').value = Math.max(0, Math.round(bebida));
+            } else {
+                document.getElementById('bebida_taza').value = "";
             }
         }
 
@@ -767,7 +872,7 @@
             let val = parseFloat(input.value) || 0;
             let newValue = Math.round((val + delta) * 10) / 10;
             
-            if (newValue < 0) newValue = 0; // Evita valores negativos
+            if (newValue < 0) newValue = 0; 
             
             input.value = newValue; 
             
@@ -775,6 +880,8 @@
                 calcularAguaTotal();
             } else if (id === 'blooming' || id === 'agua_total') {
                 calcularVertidos();
+            } else if (['v1', 'v2', 'v3'].includes(id)) {
+                actualizarReferenciasTermicas();
             }
         }
         
@@ -797,16 +904,20 @@
             input.value = String(newMinutes).padStart(2, '0') + ':' + String(newSeconds).padStart(2, '0');
         }
         
-        function toggleVertidos() { 
+        function toggleVertidos(fromUser = false) { 
             const isChecked = document.getElementById('un_solo_vertido').checked;
             document.getElementById('vertidos_extras').classList.toggle('hidden', isChecked);
+            document.getElementById('vertidos_extras_temp').classList.toggle('hidden', isChecked);
             
-            if (isChecked) {
-                document.getElementById('t_v1').value = "02:30";
-            } else {
-                document.getElementById('t_v1').value = "01:15";
-                document.getElementById('t_v2').value = "01:50";
-                document.getElementById('t_v3').value = "02:30";
+            // Solo reseteamos los tiempos si la acción vino del clic del usuario
+            if (fromUser) {
+                if (isChecked) {
+                    document.getElementById('t_v1').value = "02:30";
+                } else {
+                    document.getElementById('t_v1').value = "01:15";
+                    document.getElementById('t_v2').value = "01:50";
+                    document.getElementById('t_v3').value = "02:30";
+                }
             }
             calcularVertidos();
         }
@@ -892,6 +1003,7 @@
             analizarCodigo(); 
             actualizarDispositivos(); 
             calcularAguaTotal(); 
+            actualizarReferenciasTermicas();
         };
 
         function dispararGeneracion() {
@@ -911,10 +1023,13 @@
             
             let gr = parseFloat(fd.get('gramos_cafe')), ml_total_real = parseFloat(fd.get('agua_total'));
             let hielo = parseFloat(fd.get('hielo_ml')) || 0;
-            // Para mostrar el ratio en texto, sumamos el hielo al agua para reflejar la dilución total planeada
             let ml_para_ratio = ml_total_real + hielo; 
             
-            if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) textoFinal += ` - ${gr}g / ${ml_total_real}ml (Ratio 1:${(ml_para_ratio/gr).toFixed(1).replace('.0','')})`;
+            if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) {
+                textoFinal += ` - ${gr}g / ${ml_total_real}ml (Ratio 1:${(ml_para_ratio/gr).toFixed(1).replace('.0','')})`;
+                let bebida = document.getElementById('bebida_taza').value;
+                if (bebida && bebida !== "") textoFinal += ` - Rendimiento: ~${bebida}ml`;
+            }
 
             let pGrano = currentRoastData.grano.lum !== null ? getRoastProfile(currentRoastData.grano.lum) : null;
             let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
@@ -974,11 +1089,11 @@
                     fases: { secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') }, maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') }, desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') } }
                 }, 
                 extraccion: { 
-                    metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
-                    blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'),
-                    v1: fd.get('v1'), t_v1: fd.get('t_v1'),
-                    v2: fd.get('v2'), t_v2: fd.get('t_v2'),
-                    v3: fd.get('v3'), t_v3: fd.get('t_v3')
+                    metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), bebida_taza: document.getElementById('bebida_taza').value, un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
+                    blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'), temp_blooming: fd.get('temp_blooming'),
+                    v1: fd.get('v1'), t_v1: fd.get('t_v1'), temp_v1: fd.get('temp_v1'),
+                    v2: fd.get('v2'), t_v2: fd.get('t_v2'), temp_v2: fd.get('temp_v2'),
+                    v3: fd.get('v3'), t_v3: fd.get('t_v3'), temp_v3: fd.get('temp_v3')
                 }, 
                 sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
                 analisis_imagen: currentRoastData
@@ -1007,7 +1122,11 @@
                     setSelectValue('metodo', met); actualizarDispositivos(); setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
                     let fil = ext.filtro === "Filtro fondo plano/papel" ? "Fondo plano/papel" : (ext.filtro === "Filtro cónico/papel" ? "Cónico/papel" : ext.filtro); setSelectValue('filtro', fil);
                     
-                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3'].forEach(k => { if(ext[k]) document.getElementById(k).value = ext[k]; });
+                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3', 'temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(ext[k]) { let el = document.getElementById(k); if(el) el.value = ext[k]; } });
+                    
+                    // Fallback para versiones JSON antiguas sin perfil térmico
+                    ['temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(!ext[k]) document.getElementById(k).value = 90; });
+
                     document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
                     document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha; document.getElementById('bola_fria').checked = !!ext.bola_fria; document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
                     
@@ -1028,7 +1147,11 @@
                         document.getElementById('results-wrapper').style.display = 'none';
                     }
 
-                    toggleVertidos(); analizarCodigo(); calcularAguaTotal(); alert("Cata cargada exitosamente.");
+                    // IMPORTANTE: Le pasamos false para que NO sobrescriba el tiempo cargado del JSON.
+                    toggleVertidos(false); 
+                    analizarCodigo(); 
+                    calcularAguaTotal(); 
+                    alert("Cata cargada exitosamente.");
                 } catch(err) { console.error(err); alert("Error al cargar JSON."); } e.target.value = ''; 
             }; reader.readAsText(file);
         }
@@ -1251,27 +1374,45 @@
 
             let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
             
-            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; 
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
 
             let velSec = (fd.get('secado_vel')||'').toLowerCase(), velMai = (fd.get('maillard_vel')||'').toLowerCase(), velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
             
+            // Lógica para Temperaturas
+            let t_B = fd.get('temp_blooming') || '90';
+            let t_1V = fd.get('temp_v1') || '90';
+            let tempStr = `[B(${t_B}), 1V(${t_1V})`;
+            if (!v_unSolo) {
+                let t_2V = fd.get('temp_v2') || '90';
+                let t_3V = fd.get('temp_v3') || '90';
+                tempStr += `, 2V(${t_2V}), 3V(${t_3V})`;
+            }
+            tempStr += `]`;
+
+            let bebida = fd.get('bebida_taza') || document.getElementById('bebida_taza').value;
+            let bebidaTxt = bebida ? `[~${bebida} ml]` : '[-]';
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
                 { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
                 { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
                 { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
             ];
             
+            // Nuevo orden de la columna derecha incluyendo Bebida en taza
             const colDer = [
-                { l: 'Extracción:', v: extTxt }, 
-                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
-                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
-                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Temperaturas °C:', v: tempStr },
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Bebida en taza:', v: bebidaTxt }
             ];
 
             document.getElementById('chartDetails').innerHTML = `<div style="display:flex; flex-direction:column;">${colIzq.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div><div style="display:flex; flex-direction:column;">${colDer.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div>`;
@@ -1317,34 +1458,54 @@
 
             let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
             
-            let v_unSolo = fd.get('un_solo_vertido') === 'on'; let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; 
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
             
             let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
             
+            // Lógica para Temperaturas
+            let t_B = fd.get('temp_blooming') || '90';
+            let t_1V = fd.get('temp_v1') || '90';
+            let tempStr = `[B(${t_B}), 1V(${t_1V})`;
+            if (!v_unSolo) {
+                let t_2V = fd.get('temp_v2') || '90';
+                let t_3V = fd.get('temp_v3') || '90';
+                tempStr += `, 2V(${t_2V}), 3V(${t_3V})`;
+            }
+            tempStr += `]`;
+
+            let bebida = fd.get('bebida_taza') || document.getElementById('bebida_taza').value;
+            let bebidaTxt = bebida ? `[~${bebida} ml]` : '[-]';
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
                 { l: 'Perfil Tueste:', v: `${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
                 { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
                 { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` }
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }
             ]; 
             
+            // Nuevo orden de la columna derecha
             const colDer = [
-                { l: 'Extracción:', v: extTxt }, 
-                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
-                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
-                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` }, 
                 { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
-                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` }
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Temperaturas °C:', v: tempStr },
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Bebida en taza:', v: bebidaTxt }
             ];
 
-            ctx.textAlign = 'left'; let startY = 945; 
-            colIzq.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); 
-            colDer.forEach((d, i) => { let y = startY + (i * 38); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 30) val = val.substring(0, 28) + '...]'; ctx.fillText(val, 380, y + 18); });
+            // Reubicación espacial en el Canvas para encajar el 7mo elemento (y evitar chocar con Observaciones)
+            ctx.textAlign = 'left'; let startY = 935; 
+            colIzq.forEach((d, i) => { let y = startY + (i * 35); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 25) val = val.substring(0, 23) + '...]'; ctx.fillText(val, 50, y + 18); }); 
+            colDer.forEach((d, i) => { let y = startY + (i * 35); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 35) val = val.substring(0, 33) + '...]'; ctx.fillText(val, 380, y + 18); });
             
-            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1175); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1205; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
+            // Observaciones desplazadas ligeramente hacia abajo (1180 px en lugar de 1175 px)
+            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1180); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1205; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
             const link = document.createElement('a'); link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();
         }
 

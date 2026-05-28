@@ -287,7 +287,7 @@
                     <h2>☕ CATA DE CAFÉ</h2>
                     <div class="date" id="chartDate"></div>
                 </div>
-                <div class="badge-global" id="chartGlobal"></div>
+                <div class="badge-global" id="chartGlobal" style="font-size: 0.8rem; padding: 6px 12px;"></div>
             </div>
             
             <div class="chart-body">
@@ -667,6 +667,12 @@
                 <button type="button" class="auto-btn" onclick="autoGenerarGlobal()">🪄 Auto-generar</button>
             </div>
             <div id="evaluacionGlobal"></div>
+            
+            <div id="puntajeDisplay" style="text-align: center; font-size: 1.8rem; font-weight: bold; color: #4a3b32; margin: 15px 0; display: none;">
+                <span id="puntajeValor"></span> <span style="font-size: 1rem; color: #888;">pts</span>
+            </div>
+            <input type="hidden" id="puntaje_num" name="puntaje_num" value="">
+            
             <div class="input-group" style="margin-top:15px">
                 <label>Observaciones:</label>
                 <textarea id="observaciones" name="observaciones" placeholder="Detalles finales..."></textarea>
@@ -698,6 +704,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA (Specialty Coffee Association), con visualización en gráficos y resúmenes." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento y Gráficos: Integración del campo 'Nivel de tueste' en la columna izquierda de los Detalles del Café, extrayendo dinámicamente el perfil del análisis de imagen del café molido (ej. City+ Tueste Medio)." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Descarga: Implementación de descarga de la Evaluación Final en dos variantes (tema Claro y Oscuro) para mayor flexibilidad visual y legibilidad en impresiones." },
             { fecha: "26-MAY-2026", resumen: "Corrección de Bug: Se modificó la lógica de 'toggleVertidos' para evitar que sobrescriba los tiempos de extracción registrados en el archivo JSON al momento de cargarlo." },
@@ -793,7 +800,7 @@
             "Especiado": { "General": "Canela, clavo.", "Alta": "Marcada.", "Media": "Leve.", "Baja": "Ausente." },
             "Tostado": { "General": "Influencia del fuego.", "Alta": "Fuerte.", "Media": "Equilibrio.", "Baja": "Ligero." },
             "Herbal/Vegetal": { "General": "Pasto, té.", "Alta": "Verde marcado.", "Media": "Matices.", "Baja": "Sin rasgos." },
-            "Evaluación Global": { "Excelente": "Excepcional.", "Muy bueno": "Gran calidad.", "Bueno": "Estándar.", "Aceptable": "Bebible.", "Regular": "Desequilibrios.", "Deficiente": "Defectos." }
+            "Evaluación Global": { "Excelente": "86.0 - 100 pts. Café de especialidad sobresaliente.", "Muy bueno": "80.0 - 85.9 pts. Café de Especialidad estándar.", "Bueno": "75.0 - 79.9 pts. Café Premium / comercial alto.", "Aceptable": "70.0 - 74.9 pts. Café comercial promedio.", "Regular": "60.0 - 69.9 pts. Taza desbalanceada o con defectos menores.", "Deficiente": "< 60.0 pts. Taza con defectos graves." }
         };
 
         function mostrarInfo(parametro, nivel) {
@@ -951,6 +958,7 @@
         function autoGenerarGlobal() {
             const fd = new FormData(document.getElementById('cataForm'));
             let totalPuntos = 0; let conteoValidos = 0; let limpieza = "Media";
+            
             paramSensoriales.forEach((item, i) => {
                 if (i > 10) return; let val = fd.get(`sens_${i}`); if (!val) return;
                 let p = (val === "Alta" ? 3 : (val === "Media" ? 2 : 1));
@@ -958,16 +966,43 @@
                 if (item === "Limpieza de taza") { p *= 2; limpieza = val; }
                 totalPuntos += p; conteoValidos++;
             });
+            
             paramNotas.forEach((item, i) => {
                 let val = fd.get(`nota_${i}`); if (!val) return;
                 totalPuntos += (val === "Alta" ? 1.5 : (val === "Media" ? 1 : 0.5)); conteoValidos++;
             });
+            
             if (conteoValidos === 0) { alert("Por favor, marca algunos parámetros primero."); return; }
-            let r = ""; let ratio = totalPuntos / conteoValidos;
-            if (ratio >= 2.6) r = "Excelente"; else if (ratio >= 2.2) r = "Muy bueno"; else if (ratio >= 1.7) r = "Bueno"; else if (ratio >= 1.3) r = "Aceptable"; else if (ratio >= 0.9) r = "Regular"; else r = "Deficiente";
-            if (limpieza === "Baja" && ["Excelente", "Muy bueno", "Bueno", "Aceptable"].includes(r)) r = "Regular";
-            else if (limpieza === "Media" && r === "Excelente") r = "Muy bueno";
-            const radio = document.querySelector(`input[name="global_eval"][value="${r}"]`); if (radio) radio.checked = true;
+            
+            let ratio = totalPuntos / conteoValidos;
+            let score = 0;
+            
+            if (ratio >= 2.6) score = 86 + ((ratio - 2.6) / 0.15) * 14;
+            else if (ratio >= 2.2) score = 80 + ((ratio - 2.2) / 0.4) * 5.9;
+            else if (ratio >= 1.7) score = 75 + ((ratio - 1.7) / 0.5) * 4.9;
+            else if (ratio >= 1.3) score = 70 + ((ratio - 1.3) / 0.4) * 4.9;
+            else score = 60 + ((ratio - 0.9) / 0.4) * 9.9;
+            
+            if (limpieza === "Baja" && score > 69.9) score = 69.9;
+            else if (limpieza === "Media" && score >= 86) score = 85.9;
+            
+            score = Math.min(100, Math.max(0, score));
+            let scoreStr = score.toFixed(1);
+
+            let r = "";
+            if (score >= 86) r = "Excelente";
+            else if (score >= 80) r = "Muy bueno";
+            else if (score >= 75) r = "Bueno";
+            else if (score >= 70) r = "Aceptable";
+            else if (score >= 60) r = "Regular";
+            else r = "Deficiente";
+
+            const radioInput = document.querySelector(`input[name="global_eval"][value="${r}"]`); 
+            if (radioInput) radioInput.checked = true;
+            
+            document.getElementById('puntaje_num').value = scoreStr;
+            document.getElementById('puntajeValor').innerText = scoreStr;
+            document.getElementById('puntajeDisplay').style.display = 'block';
         }
 
         function obtenerFechaHoraActualFormateada() {
@@ -1021,7 +1056,12 @@
             
             let parrafo = `Este ${fd.get('variedad') || 'café'} preparado en ${fd.get('dispositivo') || 'filtro'} (${fd.get('metodo') || 'extracción'}) presenta un perfil con sabor ${fmt(sabor,'masc')}, acidez ${fmt(acidez,'fem')}, dulzor ${fmt(dulzor,'masc')} y amargor ${fmt(amargor,'masc')}. `;
             parrafo += nL.length > 0 ? `Muestra notas ${nL.join(', ').replace(/, ([^,]*)$/, ' y $1')} integradas, con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. ` : `Se percibe con cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. `;
-            parrafo += `El retrogusto es ${fmt(retro,'retro')}. ` + (vol ? `Disposición a volver a tomarlo: ${fmt(vol, 'fem')}. ` : '') + `Evaluación global: "${fd.get('global_eval') || 'sin calificar'}"${fd.get('observaciones') ? ', notas adicionales: ' + fd.get('observaciones').trim() : '.'}`;
+            
+            let score = fd.get('puntaje_num');
+            let globalText = fd.get('global_eval') || 'sin calificar';
+            let globalOutput = score ? `"${globalText}" (${score} pts)` : `"${globalText}"`;
+            
+            parrafo += `El retrogusto es ${fmt(retro,'retro')}. ` + (vol ? `Disposición a volver a tomarlo: ${fmt(vol, 'fem')}. ` : '') + `Evaluación global: ${globalOutput}${fd.get('observaciones') ? ', notas adicionales: ' + fd.get('observaciones').trim() : '.'}`;
             
             let textoFinal = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;
             let dReposo = fd.get('dias_tueste'); if (dReposo && !isNaN(dReposo)) textoFinal += ` (${dReposo} días post-tueste)`;
@@ -1100,7 +1140,7 @@
                     v2: fd.get('v2'), t_v2: fd.get('t_v2'), temp_v2: fd.get('temp_v2'),
                     v3: fd.get('v3'), t_v3: fd.get('t_v3'), temp_v3: fd.get('temp_v3')
                 }, 
-                sensorial: {}, notas: {}, global: fd.get('global_eval'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
+                sensorial: {}, notas: {}, global: fd.get('global_eval'), puntaje: fd.get('puntaje_num'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
                 analisis_imagen: currentRoastData
             };
             paramSensoriales.forEach((it, i) => data.sensorial[it] = fd.get(`sens_${i}`)); paramNotas.forEach((it, i) => data.notas[it] = fd.get(`nota_${i}`));
@@ -1129,7 +1169,6 @@
                     
                     ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3', 'temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(ext[k]) { let el = document.getElementById(k); if(el) el.value = ext[k]; } });
                     
-                    // Fallback para versiones JSON antiguas sin perfil térmico
                     ['temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(!ext[k]) document.getElementById(k).value = 90; });
 
                     document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
@@ -1137,7 +1176,18 @@
                     
                     paramSensoriales.forEach((it, i) => { if(sens[it]) { let r = document.querySelector(`input[name="sens_${i}"][value="${sens[it]}"]`); if(r) r.checked=true; }});
                     paramNotas.forEach((it, i) => { if(nots[it]) { let r = document.querySelector(`input[name="nota_${i}"][value="${nots[it]}"]`); if(r) r.checked=true; }});
+                    
                     if(d.global) { let r = document.querySelector(`input[name="global_eval"][value="${d.global}"]`); if(r) r.checked = true; }
+                    
+                    if(d.puntaje) {
+                        document.getElementById('puntaje_num').value = d.puntaje;
+                        document.getElementById('puntajeValor').innerText = d.puntaje;
+                        document.getElementById('puntajeDisplay').style.display = 'block';
+                    } else {
+                        document.getElementById('puntaje_num').value = '';
+                        document.getElementById('puntajeDisplay').style.display = 'none';
+                    }
+
                     document.getElementById('observaciones').value = d.observaciones || ""; document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
 
                     if (d.analisis_imagen) {
@@ -1160,7 +1210,6 @@
             }; reader.readAsText(file);
         }
 
-        // --- MÓDULO DE TUESTE Y DESARROLLO (ACTUALIZADO) ---
         const ROAST_PROFILES = { 
             cinnamon: { label: "Cinnamon", sub: "Tueste Muy Claro", hito: "Retirado justo al inicio del primer crack.", quimica: "Nivel máximo de ácidos clorogénicos. Degradación incompleta.", sensorial: (lum) => "Perfil delicadamente silvestre y vibrante, notas herbales y dulzor tenue. Acidez protagonista y brillante.", metodos: "Inmersión prolongada o Filtrado fino (ej. V60)" }, 
             newEngland: { label: "New England", sub: "Tueste Claro", hito: "Final del primer crack. Superficie mate y rugosa.", quimica: "Máxima complejidad enzimática. Volátiles intactos.", sensorial: (lum) => "Altísima expresión aromática, acidez cítrica elegante. Notas florales definidas y textura ligera.", metodos: "Filtrado cónico (Origami, V60) o Chemex" }, 
@@ -1353,8 +1402,12 @@
 
         function abrirGrafico() {
             const fd = new FormData(document.getElementById('cataForm')); document.getElementById('chartDate').innerText = fd.get('fecha_hora') || '';
-            const gEval = fd.get('global_eval'); const badge = document.getElementById('chartGlobal');
-            badge.innerText = gEval ? `☆ ${gEval.toUpperCase()}` : "SIN EVALUAR";
+            const gEval = fd.get('global_eval'); 
+            const gScore = fd.get('puntaje_num');
+            const badge = document.getElementById('chartGlobal');
+            
+            let evalText = gEval ? (gScore ? `☆ ${gEval.toUpperCase()} (${gScore})` : `☆ ${gEval.toUpperCase()}`) : "SIN EVALUAR";
+            badge.innerText = evalText;
             badge.style.backgroundColor = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
 
             const radarLabels = ["Fragancia\nen seco", "Aroma\nen húmedo", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza\nde taza", "Volver a\ntomar"];
@@ -1384,7 +1437,6 @@
 
             let velSec = (fd.get('secado_vel')||'').toLowerCase(), velMai = (fd.get('maillard_vel')||'').toLowerCase(), velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
             
-            // Lógica para Temperaturas
             let t_B = fd.get('temp_blooming') || '90';
             let t_1V = fd.get('temp_v1') || '90';
             let tempStr = `[B(${t_B}), 1V(${t_1V})`;
@@ -1447,15 +1499,26 @@
         function descargarGraficoJPG(tema = 'oscuro') {
             const fd = new FormData(document.getElementById('cataForm')); const c = document.createElement('canvas'); c.width = 720; c.height = 1280; const ctx = c.getContext('2d');
             ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, 720, 1280); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('☕ CATA DE CAFÉ', 40, 50); ctx.fillStyle = '#aaaaaa'; ctx.font = '18px sans-serif'; ctx.fillText(fd.get('fecha_hora') || '', 40, 85);
-            const gEval = fd.get('global_eval') || 'SIN EVALUAR'; const colorEval = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
-            ctx.fillStyle = colorEval; roundRectSafe(ctx, 480, 45, 200, 40, 20); ctx.fill(); ctx.fillStyle = '#121212'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('☆ ' + gEval.toUpperCase(), 580, 65);
+            
+            const gEval = fd.get('global_eval') || 'SIN EVALUAR'; 
+            const gScore = fd.get('puntaje_num');
+            const colorEval = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
+            
+            ctx.fillStyle = colorEval; roundRectSafe(ctx, 450, 45, 230, 40, 20); ctx.fill(); 
+            ctx.fillStyle = '#121212'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
+            let evalTextBadge = gScore ? `☆ ${gEval.toUpperCase()} (${gScore})` : `☆ ${gEval.toUpperCase()}`;
+            ctx.fillText(evalTextBadge, 565, 65);
+            
             ctx.strokeStyle = '#333333'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(40, 120); ctx.lineTo(680, 120); ctx.stroke();
             ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('⬡ PERFIL SENSORIAL', 360, 160);
+            
             const radarLabels = ["Fragancia\nen seco", "Aroma\nen húmedo", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza\nde taza", "Volver a\ntomar"]; const radarInternalNames = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Volver a tomar"]; const radarVals = radarInternalNames.map(name => mapVal(fd.get(`sens_${paramSensoriales.indexOf(name)}`)));
             ctx.save(); ctx.translate(360, 360); ctx.scale(1.4, 1.4); dibujarRadarCore(ctx, 0, 0, 100, radarLabels, radarVals); ctx.restore();
+            
             ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('🍃 NOTAS AROMÁTICAS', 360, 580); ctx.textAlign = 'left';
             const coloresNotas = ['#f48fb1', '#ffb74d', '#d84315', '#81c784', '#ce93d8', '#8d6e63', '#aed581']; const iconos = ['🌸', '🍊', '🍫', '🍬', '💥', '🪵', '🍃'];
             paramNotas.forEach((nota, idx) => { let valNum = mapVal(fd.get(`nota_${idx}`)); let y = 630 + (idx * 36); let w = valNum === 3 ? 300 : (valNum === 2 ? 200 : (valNum === 1 ? 100 : 0)); ctx.fillStyle = '#cccccc'; ctx.font = '18px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(iconos[idx] + ' ' + nota.split('/')[0], 50, y); ctx.fillStyle = '#333333'; roundRectSafe(ctx, 220, y - 10, 300, 20, 10); ctx.fill(); if (valNum > 0) { ctx.fillStyle = coloresNotas[idx]; roundRectSafe(ctx, 220, y - 10, w, 20, 10); ctx.fill(); } ctx.fillStyle = valNum === 3 ? '#81c784' : (valNum === 2 ? '#ffb74d' : (valNum === 1 ? '#e57373' : '#666666')); ctx.font = 'bold 18px sans-serif'; ctx.fillText(valNum === 0 ? "N/E" : valNum, 540, y); });
+            
             ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); 
             
             let g = parseFloat(fd.get('gramos_cafe')); 
@@ -1471,7 +1534,6 @@
             
             let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
             
-            // Lógica para Temperaturas
             let t_B = fd.get('temp_blooming') || '90';
             let t_1V = fd.get('temp_v1') || '90';
             let tempStr = `[B(${t_B}), 1V(${t_1V})`;
@@ -1509,7 +1571,6 @@
                 { l: 'Bebida en taza:', v: bebidaTxt }
             ];
 
-            // Reubicación de la rejilla para soportar la 8va línea de datos sin colisiones
             ctx.textAlign = 'left'; let startY = 925; 
             colIzq.forEach((d, i) => { let y = startY + (i * 32); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; ctx.fillText(d.v, 50, y + 16); }); 
             colDer.forEach((d, i) => { let y = startY + (i * 32); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 35) val = val.substring(0, 33) + '...]'; ctx.fillText(val, 380, y + 16); });

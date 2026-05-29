@@ -243,24 +243,23 @@
         
         .ref-ml { color: #bf360c; font-weight: bold; }
         
-        /* --- ESTILOS HISTORIAL --- */
-        .historial-item {
-            border-bottom: 1px solid #e0e0e0;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-            font-size: 0.9rem;
-            position: relative;
-        }
+        /* --- ESTILOS HISTORIAL Y BÚSQUEDA --- */
+        .historial-item { border-bottom: 1px solid #e0e0e0; padding-bottom: 12px; margin-bottom: 12px; font-size: 0.9rem; position: relative; }
         .historial-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .hist-label { font-weight: bold; color: #6d4c41; }
         .hist-val { color: #333; font-family: monospace; }
         .hist-punt { color: #bf360c; font-weight: bold; }
-        .btn-delete-hist {
-            position: absolute; right: 0; bottom: 10px; background: none; border: none; 
-            color: #d32f2f; cursor: pointer; font-size: 0.8rem; padding: 5px;
-        }
+        .btn-delete-hist { position: absolute; right: 0; bottom: 10px; background: none; border: none; color: #d32f2f; cursor: pointer; font-size: 0.8rem; padding: 5px; }
         
+        .filters-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 10px; padding-bottom: 5px; scrollbar-width: none; -ms-overflow-style: none; }
+        .filters-container::-webkit-scrollbar { display: none; }
+        .filter-chip { background: #efebe9; border: 1px solid #d7ccc8; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; color: #5d4037; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.2s ease; }
+        .filter-chip:active { transform: scale(0.95); }
+        .filter-chip.active { background: #bf360c; color: white; border-color: #bf360c; font-weight: bold; }
+        .filter-chip-clear { background: #f5f5f5; color: #d32f2f; border: 1px solid #e0e0e0; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; font-weight: bold; display: none; transition: all 0.2s ease; }
+        .filter-chip-clear:active { transform: scale(0.95); }
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -281,6 +280,15 @@
             <span class="close-btn" onclick="cerrarInfo()">&times;</span>
             <div id="infoTitle" class="log-title"></div>
             <div id="infoBody" class="log-text" style="font-size: 0.95rem; line-height: 1.5; text-align: justify;"></div>
+        </div>
+    </div>
+
+    <div id="filtroModal" class="modal">
+        <div class="modal-content" style="max-width: 320px;">
+            <span class="close-btn" onclick="cerrarFiltro()">&times;</span>
+            <div class="log-title" id="filtroTitulo">Filtrar</div>
+            <div id="filtroBody" style="margin-bottom: 10px;"></div>
+            <button type="button" class="btn-action" onclick="aplicarFiltro()">Aplicar Filtro</button>
         </div>
     </div>
 
@@ -716,6 +724,15 @@
         <div class="card">
             <div class="card-title"><div>📜 Registro de Puntuaciones</div></div>
             
+            <div class="filters-container" id="historialFilters">
+                <div class="filter-chip" id="chip-puntaje" onclick="abrirFiltro('puntaje')">🎯 Puntaje</div>
+                <div class="filter-chip" id="chip-calif" onclick="abrirFiltro('calif')">⭐ Calif.</div>
+                <div class="filter-chip" id="chip-variedad" onclick="abrirFiltro('variedad')">🌱 Variedad</div>
+                <div class="filter-chip" id="chip-tueste" onclick="abrirFiltro('tueste')">🔥 Nivel/Tueste</div>
+                <div class="filter-chip" id="chip-merma" onclick="abrirFiltro('merma')">📉 Merma</div>
+                <div class="filter-chip-clear" id="chip-clear" onclick="limpiarFiltros()">❌ Limpiar</div>
+            </div>
+
             <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
                 </div>
             
@@ -737,7 +754,7 @@
 
     <script>
         const logHistorial = [
-            { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de tabla local para rastreo evolutivo de tuestes (LocalStorage), con cálculo automático del número de cata y opciones de importación/exportación de respaldos." },
+            { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de tabla local para rastreo evolutivo de tuestes (LocalStorage), con sistema de filtrado múltiple integrado y captura de parámetros extendidos (Variedad, Merma, Nivel de Tueste)." },
             { fecha: "29-MAY-2026", resumen: "Actualización de Dispositivos: Se añadió la opción de 'Fondo plano/papel' al método Hario V60 para permitir experimentación con diferentes perfiles de extracción." },
             { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA (Specialty Coffee Association), con visualización en gráficos y resúmenes." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento y Gráficos: Integración del campo 'Nivel de tueste' en la columna izquierda de los Detalles del Café, extrayendo dinámicamente el perfil del análisis de imagen del café molido (ej. City+ Tueste Medio)." },
@@ -766,8 +783,80 @@
             molido: { r: null, g: null, b: null, lum: null, img: null }
         };
 
-        // --- MEMORIA LOCAL (HISTORIAL DE CATAS) ---
+        // --- MEMORIA LOCAL Y FILTROS (HISTORIAL DE CATAS) ---
         let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
+        let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
+        let currentFilterType = '';
+
+        function abrirFiltro(tipo) {
+            currentFilterType = tipo;
+            const titulos = { puntaje: '🎯 Filtrar por Puntaje (exacto o parcial)', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma' };
+            document.getElementById('filtroTitulo').innerText = titulos[tipo];
+            
+            let html = '';
+            let val = activeFilters[tipo] || '';
+            
+            if(tipo === 'calif') {
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
+                    <option value="">Todas</option>
+                    <option value="Excelente" ${val==='Excelente'?'selected':''}>Excelente</option>
+                    <option value="Muy bueno" ${val==='Muy bueno'?'selected':''}>Muy bueno</option>
+                    <option value="Bueno" ${val==='Bueno'?'selected':''}>Bueno</option>
+                    <option value="Aceptable" ${val==='Aceptable'?'selected':''}>Aceptable</option>
+                    <option value="Regular" ${val==='Regular'?'selected':''}>Regular</option>
+                    <option value="Deficiente" ${val==='Deficiente'?'selected':''}>Deficiente</option>
+                </select>`;
+            } else if(tipo === 'tueste') {
+                 html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
+                    <option value="">Todos</option>
+                    <option value="Cinnamon" ${val==='Cinnamon'?'selected':''}>Cinnamon</option>
+                    <option value="New England" ${val==='New England'?'selected':''}>New England</option>
+                    <option value="City" ${val==='City'?'selected':''}>City</option>
+                    <option value="City+" ${val==='City+'?'selected':''}>City+</option>
+                    <option value="Full City" ${val==='Full City'?'selected':''}>Full City</option>
+                    <option value="Full City+" ${val==='Full City+'?'selected':''}>Full City+</option>
+                    <option value="French" ${val==='French'?'selected':''}>French</option>
+                </select>`;
+            } else {
+                html = `<input type="text" id="filtroInput" value="${val}" placeholder="Escribe tu búsqueda..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:1rem; outline:none;">`;
+            }
+            
+            document.getElementById('filtroBody').innerHTML = html;
+            document.getElementById('filtroModal').style.display = 'flex';
+        }
+
+        function cerrarFiltro() { document.getElementById('filtroModal').style.display = 'none'; }
+
+        function aplicarFiltro() {
+            let val = document.getElementById('filtroInput').value.trim();
+            activeFilters[currentFilterType] = val;
+            
+            const chip = document.getElementById(`chip-${currentFilterType}`);
+            const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Tueste', merma: '📉 Merma' };
+            
+            if(val !== '') {
+                chip.classList.add('active');
+                let shortVal = val.length > 8 ? val.substring(0,8)+'..' : val;
+                chip.innerHTML = `${chipLabels[currentFilterType]}: ${shortVal}`;
+            } else {
+                chip.classList.remove('active');
+                chip.innerHTML = chipLabels[currentFilterType];
+            }
+            
+            cerrarFiltro();
+            renderHistorial();
+        }
+
+        function limpiarFiltros() {
+            activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
+            ['puntaje', 'calif', 'variedad', 'tueste', 'merma'].forEach(tipo => {
+                const chip = document.getElementById(`chip-${tipo}`);
+                chip.classList.remove('active');
+                const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Nivel/Tueste', merma: '📉 Merma' };
+                chip.innerHTML = chipLabels[tipo];
+            });
+            renderHistorial();
+        }
 
         function renderHistorial() {
             const container = document.getElementById('historialContainer');
@@ -775,28 +864,58 @@
             
             if (historialCatas.length === 0) {
                 container.innerHTML = '<div style="text-align:center; color:#888; font-size:0.85rem; padding:10px;">Aún no hay puntuaciones en el historial. Carga una cata y presiona "+" para empezar.</div>';
+                document.getElementById('chip-clear').style.display = 'none';
                 return;
             }
+
+            let filtrosActivos = Object.values(activeFilters).some(v => v !== '');
+            document.getElementById('chip-clear').style.display = filtrosActivos ? 'inline-flex' : 'none';
             
             let displayList = [];
             let catasPorCodigo = {};
             
-            // Calculamos el número de cata por código (01, 02...)
+            // Calculamos el número de cata original
             historialCatas.forEach(cata => {
                 if(!catasPorCodigo[cata.codigo]) catasPorCodigo[cata.codigo] = 0;
                 catasPorCodigo[cata.codigo]++;
                 displayList.push({ ...cata, numero: catasPorCodigo[cata.codigo] });
             });
             
-            // Renderizamos en orden inverso (las más nuevas arriba)
+            // Aplicar Filtros
+            if(filtrosActivos) {
+                displayList = displayList.filter(c => {
+                    let pasa = true;
+                    if(activeFilters.puntaje && (!c.puntaje || !c.puntaje.toString().includes(activeFilters.puntaje))) pasa = false;
+                    if(activeFilters.calif && c.calificacion !== activeFilters.calif) pasa = false;
+                    if(activeFilters.variedad && (!c.variedad || !c.variedad.toLowerCase().includes(activeFilters.variedad.toLowerCase()))) pasa = false;
+                    if(activeFilters.tueste && c.tueste !== activeFilters.tueste) pasa = false;
+                    if(activeFilters.merma && (!c.merma || !c.merma.toString().includes(activeFilters.merma))) pasa = false;
+                    return pasa;
+                });
+            }
+            
+            if (displayList.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#888; font-size:0.85rem; padding:10px;">No se encontraron resultados con estos filtros.</div>';
+                return;
+            }
+            
             let html = '';
             displayList.reverse().forEach(cata => {
                 let numStr = String(cata.numero).padStart(2, '0');
+                
+                // Mostrar datos extra si están disponibles
+                let extraInfo = [];
+                if(cata.variedad) extraInfo.push(cata.variedad);
+                if(cata.tueste) extraInfo.push(cata.tueste);
+                if(cata.merma) extraInfo.push(cata.merma + '%');
+                let extraStr = extraInfo.length > 0 ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${extraInfo.join(' • ')}</div>` : '';
+
                 html += `
                 <div class="historial-item">
                     <div class="hist-row"><span class="hist-label">TUESTE:</span> <span class="hist-val">${cata.codigo}</span></div>
                     <div class="hist-row"><span class="hist-label">CATA:</span> <span class="hist-val">${numStr} - ${cata.fechaCorta}</span></div>
                     <div class="hist-row"><span class="hist-label" style="color: #bf360c;">PUNT/CALIF.:</span> <span class="hist-punt">${cata.puntaje} / ${cata.calificacion}</span></div>
+                    ${extraStr}
                     <button type="button" class="btn-delete-hist" onclick="eliminarDelHistorial(${cata.id})">🗑️</button>
                 </div>`;
             });
@@ -809,28 +928,44 @@
             const puntaje = document.getElementById('puntaje_num').value;
             const calif = document.querySelector('input[name="global_eval"]:checked')?.value;
             
+            const variedad = document.getElementById('variedad').value || '';
+            const merma = document.getElementById('merma').value || '';
+            
+            let tueste = '';
+            if (currentRoastData.molido.lum !== null) {
+                tueste = getRoastProfile(currentRoastData.molido.lum).label;
+            } else if (currentRoastData.grano.lum !== null) {
+                tueste = getRoastProfile(currentRoastData.grano.lum).label;
+            }
+            
             if (!codigo) { alert("⚠️ Faltan datos: Por favor, asegúrate de ingresar el Código de Tueste."); return; }
             if (!puntaje || !calif) { alert("⚠️ Faltan datos: Asegúrate de haber presionado '🪄 Auto-generar' para calcular el puntaje."); return; }
             
-            // Extraer día y mes (ej. "25MAY") del string "25-MAY-2026 14:30m"
             let fechaCorta = "XX-XXX";
             try {
                 let partes = fechaStr.split('-');
                 if(partes.length >= 2) fechaCorta = partes[0] + partes[1].toUpperCase();
             } catch(e){}
             
-            // Evitar duplicados exactos (prevenir clics dobles accidentales)
             let existe = historialCatas.find(c => c.codigo === codigo && c.fechaExacta === fechaStr && c.puntaje === puntaje);
-            if(existe) {
-                alert("ℹ️ Esta cata ya está registrada en el historial.");
-                return;
-            }
+            if(existe) { alert("ℹ️ Esta cata ya está registrada en el historial."); return; }
             
-            const nuevaCata = { id: Date.now(), codigo: codigo, fechaCorta: fechaCorta, fechaExacta: fechaStr, puntaje: puntaje, calificacion: calif };
+            const nuevaCata = { 
+                id: Date.now(), 
+                codigo: codigo, 
+                fechaCorta: fechaCorta, 
+                fechaExacta: fechaStr, 
+                puntaje: puntaje, 
+                calificacion: calif,
+                variedad: variedad,
+                tueste: tueste,
+                merma: merma
+            };
             
             historialCatas.push(nuevaCata);
             localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
             renderHistorial();
+            alert("✅ Cata añadida al historial exitosamente.");
         }
 
         function eliminarDelHistorial(id) {
@@ -856,7 +991,7 @@
                     if(Array.isArray(data)) {
                         historialCatas = data;
                         localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
-                        renderHistorial();
+                        limpiarFiltros(); // Esto re-renderiza y limpia filtros
                         alert("Historial de puntuaciones importado correctamente.");
                     } else {
                         alert("Error: El archivo no es un historial válido.");

@@ -754,7 +754,7 @@
 
     <script>
         const logHistorial = [
-            { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de tabla local para rastreo evolutivo de tuestes (LocalStorage), con sistema de filtrado múltiple integrado y captura de parámetros extendidos (Variedad, Merma, Nivel de Tueste)." },
+            { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
             { fecha: "29-MAY-2026", resumen: "Actualización de Dispositivos: Se añadió la opción de 'Fondo plano/papel' al método Hario V60 para permitir experimentación con diferentes perfiles de extracción." },
             { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA (Specialty Coffee Association), con visualización en gráficos y resúmenes." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento y Gráficos: Integración del campo 'Nivel de tueste' en la columna izquierda de los Detalles del Café, extrayendo dinámicamente el perfil del análisis de imagen del café molido (ej. City+ Tueste Medio)." },
@@ -790,7 +790,7 @@
 
         function abrirFiltro(tipo) {
             currentFilterType = tipo;
-            const titulos = { puntaje: '🎯 Filtrar por Puntaje (exacto o parcial)', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma' };
+            const titulos = { puntaje: '🎯 Filtrar por Puntaje', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma' };
             document.getElementById('filtroTitulo').innerText = titulos[tipo];
             
             let html = '';
@@ -817,8 +817,39 @@
                     <option value="Full City+" ${val==='Full City+'?'selected':''}>Full City+</option>
                     <option value="French" ${val==='French'?'selected':''}>French</option>
                 </select>`;
-            } else {
-                html = `<input type="text" id="filtroInput" value="${val}" placeholder="Escribe tu búsqueda..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:1rem; outline:none;">`;
+            } else if(tipo === 'puntaje') {
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
+                    <option value="">Todos</option>
+                    <option value="<70" ${val==='<70'?'selected':''}>Menos de 70</option>
+                    <option value="70-72" ${val==='70-72'?'selected':''}>70 - 71.9</option>
+                    <option value="72-74" ${val==='72-74'?'selected':''}>72 - 73.9</option>
+                    <option value="74-76" ${val==='74-76'?'selected':''}>74 - 75.9</option>
+                    <option value="76-78" ${val==='76-78'?'selected':''}>76 - 77.9</option>
+                    <option value="78-80" ${val==='78-80'?'selected':''}>78 - 79.9</option>
+                    <option value="80-82" ${val==='80-82'?'selected':''}>80 - 81.9</option>
+                    <option value="82-84" ${val==='82-84'?'selected':''}>82 - 83.9</option>
+                    <option value="84-86" ${val==='84-86'?'selected':''}>84 - 85.9</option>
+                    <option value="86-88" ${val==='86-88'?'selected':''}>86 - 87.9</option>
+                    <option value="88-90" ${val==='88-90'?'selected':''}>88 - 89.9</option>
+                    <option value="90-100" ${val==='90-100'?'selected':''}>90 o más</option>
+                </select>`;
+            } else if (tipo === 'merma') {
+                let options = '<option value="">Todas</option>';
+                for(let i=6; i<=16; i++) {
+                    let range = `${i}-${i+1}`;
+                    options += `<option value="${range}" ${val===range?'selected':''}>${i} - ${i+1}%</option>`;
+                }
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
+            } else if (tipo === 'variedad') {
+                let defaultVars = ["Geisha", "Borbón Rosado", "Típica Lavado", "Sidra Honey", "Caturra", "Pacamara"];
+                let historyVars = historialCatas.map(c => c.variedad).filter(v => v);
+                let uniqueVars = [...new Set([...defaultVars, ...historyVars])].sort();
+
+                let options = '<option value="">Todas</option>';
+                uniqueVars.forEach(v => {
+                    options += `<option value="${v}" ${val===v?'selected':''}>${v}</option>`;
+                });
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
             }
             
             document.getElementById('filtroBody').innerHTML = html;
@@ -836,8 +867,10 @@
             
             if(val !== '') {
                 chip.classList.add('active');
-                let shortVal = val.length > 8 ? val.substring(0,8)+'..' : val;
-                chip.innerHTML = `${chipLabels[currentFilterType]}: ${shortVal}`;
+                let displayVal = val;
+                if(currentFilterType === 'variedad' && val.length > 8) displayVal = val.substring(0,8) + '..';
+                else if (currentFilterType === 'merma') displayVal = val + '%';
+                chip.innerHTML = `${chipLabels[currentFilterType]}: ${displayVal}`;
             } else {
                 chip.classList.remove('active');
                 chip.innerHTML = chipLabels[currentFilterType];
@@ -881,15 +914,40 @@
                 displayList.push({ ...cata, numero: catasPorCodigo[cata.codigo] });
             });
             
-            // Aplicar Filtros
+            // Aplicar Filtros Matemáticos e Inteligentes
             if(filtrosActivos) {
                 displayList = displayList.filter(c => {
                     let pasa = true;
-                    if(activeFilters.puntaje && (!c.puntaje || !c.puntaje.toString().includes(activeFilters.puntaje))) pasa = false;
+                    
+                    // Lógica Puntaje
+                    if(activeFilters.puntaje) {
+                        let p = parseFloat(c.puntaje);
+                        if (isNaN(p)) pasa = false;
+                        else if (activeFilters.puntaje === '<70' && p >= 70) pasa = false;
+                        else if (activeFilters.puntaje === '90-100' && p < 90) pasa = false;
+                        else if (activeFilters.puntaje.includes('-') && activeFilters.puntaje !== '90-100') {
+                            let [min, max] = activeFilters.puntaje.split('-').map(Number);
+                            if (p < min || p >= max) pasa = false;
+                        }
+                    }
+                    
+                    // Lógica Merma
+                    if(activeFilters.merma) {
+                        let m = parseFloat(c.merma);
+                        if (isNaN(m)) pasa = false;
+                        else {
+                            let [min, max] = activeFilters.merma.split('-').map(Number);
+                            if (m < min || m >= max) pasa = false;
+                        }
+                    }
+
+                    // Lógica Variedad (Búsqueda exacta con tolerancia a mayúsculas/minúsculas)
+                    if(activeFilters.variedad && (!c.variedad || c.variedad.toLowerCase() !== activeFilters.variedad.toLowerCase())) pasa = false;
+                    
+                    // Lógica Calif y Tueste (Exacta)
                     if(activeFilters.calif && c.calificacion !== activeFilters.calif) pasa = false;
-                    if(activeFilters.variedad && (!c.variedad || !c.variedad.toLowerCase().includes(activeFilters.variedad.toLowerCase()))) pasa = false;
                     if(activeFilters.tueste && c.tueste !== activeFilters.tueste) pasa = false;
-                    if(activeFilters.merma && (!c.merma || !c.merma.toString().includes(activeFilters.merma))) pasa = false;
+
                     return pasa;
                 });
             }
@@ -1294,7 +1352,7 @@
 
         function analizarCodigo() {
             const codigo = document.getElementById('codigo').value.toUpperCase(); const inputDias = document.getElementById('dias_tueste'); const inputVariedad = document.getElementById('variedad');
-            const dicVar = { 'GES': 'Geisha', 'BOR': 'Bourbon Rosado', 'SID': 'Sidra', 'CAT': 'Caturra', 'PAC': 'Pacamara', 'TYP': 'Typica', 'BOU': 'Bourbon', 'CAS': 'Castillo', 'MAR': 'Maragogype' };
+            const dicVar = { 'GES': 'Geisha', 'BOR': 'Borbón Rosado', 'SID': 'Sidra Honey', 'CAT': 'Caturra', 'PAC': 'Pacamara', 'TYP': 'Típica Lavado', 'BOU': 'Borbón', 'CAS': 'Castillo', 'MAR': 'Maragogype' };
             const prefijo = codigo.substring(0, 3); if (dicVar[prefijo] && !inputVariedad.value) inputVariedad.value = dicVar[prefijo];
             
             const matchN = codigo.match(/(\d{2})([A-Z]{3})/); const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);

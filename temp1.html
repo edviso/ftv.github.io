@@ -243,6 +243,24 @@
         
         .ref-ml { color: #bf360c; font-weight: bold; }
         
+        /* --- ESTILOS HISTORIAL --- */
+        .historial-item {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        .historial-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .hist-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .hist-label { font-weight: bold; color: #6d4c41; }
+        .hist-val { color: #333; font-family: monospace; }
+        .hist-punt { color: #bf360c; font-weight: bold; }
+        .btn-delete-hist {
+            position: absolute; right: 0; bottom: 10px; background: none; border: none; 
+            color: #d32f2f; cursor: pointer; font-size: 0.8rem; padding: 5px;
+        }
+        
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -695,6 +713,21 @@
             <button type="button" class="main-btn btn-chart" onclick="abrirGrafico()">📊 Ver Gráfico de Cata</button>
         </div>
 
+        <div class="card">
+            <div class="card-title"><div>📜 Registro de Puntuaciones</div></div>
+            
+            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+                </div>
+            
+            <button type="button" class="main-btn" style="background-color: #8d6e63; color: white; width: 100%; margin-bottom: 12px; padding: 12px; font-size: 0.95rem;" onclick="registrarCataActual()">➕ Añadir cata actual al historial</button>
+            
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button type="button" class="main-btn" style="background-color: #e0e0e0; color: #333; padding: 10px; font-size: 0.8rem; margin:0;" onclick="document.getElementById('importarHistorial').click()">📥 Importar JSON</button>
+                <button type="button" class="main-btn" style="background-color: #e0e0e0; color: #333; padding: 10px; font-size: 0.8rem; margin:0;" onclick="exportarHistorial()">💾 Exportar JSON</button>
+                <input type="file" id="importarHistorial" accept=".json" style="display:none" onchange="cargarHistorialRespaldo(event)">
+            </div>
+        </div>
+
         <div class="button-group">
             <button type="button" class="main-btn btn-save" onclick="guardarJSON()">💾 Grabar Cata</button>
             <button type="button" class="main-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Cata</button>
@@ -704,6 +737,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de tabla local para rastreo evolutivo de tuestes (LocalStorage), con cálculo automático del número de cata y opciones de importación/exportación de respaldos." },
             { fecha: "29-MAY-2026", resumen: "Actualización de Dispositivos: Se añadió la opción de 'Fondo plano/papel' al método Hario V60 para permitir experimentación con diferentes perfiles de extracción." },
             { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA (Specialty Coffee Association), con visualización en gráficos y resúmenes." },
             { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento y Gráficos: Integración del campo 'Nivel de tueste' en la columna izquierda de los Detalles del Café, extrayendo dinámicamente el perfil del análisis de imagen del café molido (ej. City+ Tueste Medio)." },
@@ -731,6 +765,107 @@
             grano: { r: null, g: null, b: null, lum: null, img: null },
             molido: { r: null, g: null, b: null, lum: null, img: null }
         };
+
+        // --- MEMORIA LOCAL (HISTORIAL DE CATAS) ---
+        let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
+
+        function renderHistorial() {
+            const container = document.getElementById('historialContainer');
+            container.innerHTML = '';
+            
+            if (historialCatas.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#888; font-size:0.85rem; padding:10px;">Aún no hay puntuaciones en el historial. Carga una cata y presiona "+" para empezar.</div>';
+                return;
+            }
+            
+            let displayList = [];
+            let catasPorCodigo = {};
+            
+            // Calculamos el número de cata por código (01, 02...)
+            historialCatas.forEach(cata => {
+                if(!catasPorCodigo[cata.codigo]) catasPorCodigo[cata.codigo] = 0;
+                catasPorCodigo[cata.codigo]++;
+                displayList.push({ ...cata, numero: catasPorCodigo[cata.codigo] });
+            });
+            
+            // Renderizamos en orden inverso (las más nuevas arriba)
+            let html = '';
+            displayList.reverse().forEach(cata => {
+                let numStr = String(cata.numero).padStart(2, '0');
+                html += `
+                <div class="historial-item">
+                    <div class="hist-row"><span class="hist-label">TUESTE:</span> <span class="hist-val">${cata.codigo}</span></div>
+                    <div class="hist-row"><span class="hist-label">CATA:</span> <span class="hist-val">${numStr} - ${cata.fechaCorta}</span></div>
+                    <div class="hist-row"><span class="hist-label" style="color: #bf360c;">PUNT/CALIF.:</span> <span class="hist-punt">${cata.puntaje} / ${cata.calificacion}</span></div>
+                    <button type="button" class="btn-delete-hist" onclick="eliminarDelHistorial(${cata.id})">🗑️</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function registrarCataActual() {
+            const codigo = document.getElementById('codigo').value;
+            const fechaStr = document.getElementById('fecha_hora').value; 
+            const puntaje = document.getElementById('puntaje_num').value;
+            const calif = document.querySelector('input[name="global_eval"]:checked')?.value;
+            
+            if (!codigo) { alert("⚠️ Faltan datos: Por favor, asegúrate de ingresar el Código de Tueste."); return; }
+            if (!puntaje || !calif) { alert("⚠️ Faltan datos: Asegúrate de haber presionado '🪄 Auto-generar' para calcular el puntaje."); return; }
+            
+            // Extraer día y mes (ej. "25MAY") del string "25-MAY-2026 14:30m"
+            let fechaCorta = "XX-XXX";
+            try {
+                let partes = fechaStr.split('-');
+                if(partes.length >= 2) fechaCorta = partes[0] + partes[1].toUpperCase();
+            } catch(e){}
+            
+            // Evitar duplicados exactos (prevenir clics dobles accidentales)
+            let existe = historialCatas.find(c => c.codigo === codigo && c.fechaExacta === fechaStr && c.puntaje === puntaje);
+            if(existe) {
+                alert("ℹ️ Esta cata ya está registrada en el historial.");
+                return;
+            }
+            
+            const nuevaCata = { id: Date.now(), codigo: codigo, fechaCorta: fechaCorta, fechaExacta: fechaStr, puntaje: puntaje, calificacion: calif };
+            
+            historialCatas.push(nuevaCata);
+            localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
+            renderHistorial();
+        }
+
+        function eliminarDelHistorial(id) {
+            if(confirm("¿Estás seguro de que deseas borrar este registro del historial?")) {
+                historialCatas = historialCatas.filter(c => c.id !== id);
+                localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
+                renderHistorial();
+            }
+        }
+
+        function exportarHistorial() {
+            if(historialCatas.length === 0) { alert("El historial está vacío."); return; }
+            const blob = new Blob([JSON.stringify(historialCatas, null, 2)], { type: "application/json" }); 
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+            a.download = `Respaldo_Puntuaciones_${new Date().getTime()}.json`; a.click();
+        }
+        
+        function cargarHistorialRespaldo(e) {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if(Array.isArray(data)) {
+                        historialCatas = data;
+                        localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
+                        renderHistorial();
+                        alert("Historial de puntuaciones importado correctamente.");
+                    } else {
+                        alert("Error: El archivo no es un historial válido.");
+                    }
+                } catch(err) { console.error(err); alert("Error al cargar JSON de historial."); } 
+                e.target.value = ''; 
+            }; 
+            reader.readAsText(file);
+        }
 
         function abrirLog() {
             const contenedor = document.getElementById('logContainer');
@@ -1045,6 +1180,7 @@
             actualizarDispositivos(); 
             calcularAguaTotal(); 
             actualizarReferenciasTermicas();
+            renderHistorial();
         };
 
         function dispararGeneracion() {
@@ -1206,7 +1342,7 @@
                     toggleVertidos(false); 
                     analizarCodigo(); 
                     calcularAguaTotal(); 
-                    alert("Cata cargada exitosamente.");
+                    alert("Cata cargada exitosamente. Para añadirla al registro global, ve al final y presiona 'Añadir cata actual al historial'.");
                 } catch(err) { console.error(err); alert("Error al cargar JSON."); } e.target.value = ''; 
             }; reader.readAsText(file);
         }

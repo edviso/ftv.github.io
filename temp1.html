@@ -354,7 +354,7 @@
             <div class="row">
                 <div class="input-group">
                     <label>Variedad:</label>
-                    <input type="text" id="variedad" name="variedad" required placeholder="Ej. Geisha">
+                    <input type="text" id="variedad" name="variedad" required readonly placeholder="Auto-calculado al ingresar código">
                 </div>
                 <div class="input-group">
                     <label>Código:</label>
@@ -754,6 +754,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
             { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
             { fecha: "29-MAY-2026", resumen: "Actualización de Dispositivos: Se añadió la opción de 'Fondo plano/papel' al método Hario V60 para permitir experimentación con diferentes perfiles de extracción." },
             { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA (Specialty Coffee Association), con visualización en gráficos y resúmenes." },
@@ -777,6 +778,17 @@
             { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." }
         ];
 
+        // --- DICCIONARIO GLOBAL DE VARIEDADES ---
+        const DICCIONARIO_VARIEDADES = {
+            'BOR': 'Borbón Rosado',
+            'SIH': 'Sidra Honey',
+            'TIL': 'Típica Lavado',
+            'GES': 'Geisha-Sidra',
+            'CAT': 'Caturra',
+            'TYM': 'Typica Mejorado',
+            'CTI': 'Catuaí'
+        };
+
         // --- VARIABLE GLOBAL DUAL PARA ANÁLISIS DE DESARROLLO ---
         let currentRoastData = {
             grano: { r: null, g: null, b: null, lum: null, img: null },
@@ -787,6 +799,22 @@
         let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
         let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
         let currentFilterType = '';
+
+        function sanearHistorial() {
+            let modificado = false;
+            historialCatas.forEach(cata => {
+                if (cata.codigo) {
+                    const prefijo = cata.codigo.substring(0, 3).toUpperCase();
+                    if (DICCIONARIO_VARIEDADES[prefijo] && cata.variedad !== DICCIONARIO_VARIEDADES[prefijo]) {
+                        cata.variedad = DICCIONARIO_VARIEDADES[prefijo];
+                        modificado = true;
+                    }
+                }
+            });
+            if (modificado) {
+                localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
+            }
+        }
 
         function abrirFiltro(tipo) {
             currentFilterType = tipo;
@@ -841,7 +869,7 @@
                 }
                 html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
             } else if (tipo === 'variedad') {
-                let defaultVars = ["Geisha", "Borbón Rosado", "Típica Lavado", "Sidra Honey", "Caturra", "Pacamara"];
+                let defaultVars = Object.values(DICCIONARIO_VARIEDADES);
                 let historyVars = historialCatas.map(c => c.variedad).filter(v => v);
                 let uniqueVars = [...new Set([...defaultVars, ...historyVars])].sort();
 
@@ -907,19 +935,16 @@
             let displayList = [];
             let catasPorCodigo = {};
             
-            // Calculamos el número de cata original
             historialCatas.forEach(cata => {
                 if(!catasPorCodigo[cata.codigo]) catasPorCodigo[cata.codigo] = 0;
                 catasPorCodigo[cata.codigo]++;
                 displayList.push({ ...cata, numero: catasPorCodigo[cata.codigo] });
             });
             
-            // Aplicar Filtros Matemáticos e Inteligentes
             if(filtrosActivos) {
                 displayList = displayList.filter(c => {
                     let pasa = true;
                     
-                    // Lógica Puntaje
                     if(activeFilters.puntaje) {
                         let p = parseFloat(c.puntaje);
                         if (isNaN(p)) pasa = false;
@@ -931,7 +956,6 @@
                         }
                     }
                     
-                    // Lógica Merma
                     if(activeFilters.merma) {
                         let m = parseFloat(c.merma);
                         if (isNaN(m)) pasa = false;
@@ -941,10 +965,8 @@
                         }
                     }
 
-                    // Lógica Variedad (Búsqueda exacta con tolerancia a mayúsculas/minúsculas)
                     if(activeFilters.variedad && (!c.variedad || c.variedad.toLowerCase() !== activeFilters.variedad.toLowerCase())) pasa = false;
                     
-                    // Lógica Calif y Tueste (Exacta)
                     if(activeFilters.calif && c.calificacion !== activeFilters.calif) pasa = false;
                     if(activeFilters.tueste && c.tueste !== activeFilters.tueste) pasa = false;
 
@@ -961,7 +983,6 @@
             displayList.reverse().forEach(cata => {
                 let numStr = String(cata.numero).padStart(2, '0');
                 
-                // Mostrar datos extra si están disponibles
                 let extraInfo = [];
                 if(cata.variedad) extraInfo.push(cata.variedad);
                 if(cata.tueste) extraInfo.push(cata.tueste);
@@ -1049,7 +1070,7 @@
                     if(Array.isArray(data)) {
                         historialCatas = data;
                         localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
-                        limpiarFiltros(); // Esto re-renderiza y limpia filtros
+                        limpiarFiltros(); 
                         alert("Historial de puntuaciones importado correctamente.");
                     } else {
                         alert("Error: El archivo no es un historial válido.");
@@ -1351,9 +1372,16 @@
         }
 
         function analizarCodigo() {
-            const codigo = document.getElementById('codigo').value.toUpperCase(); const inputDias = document.getElementById('dias_tueste'); const inputVariedad = document.getElementById('variedad');
-            const dicVar = { 'GES': 'Geisha', 'BOR': 'Borbón Rosado', 'SID': 'Sidra Honey', 'CAT': 'Caturra', 'PAC': 'Pacamara', 'TYP': 'Típica Lavado', 'BOU': 'Borbón', 'CAS': 'Castillo', 'MAR': 'Maragogype' };
-            const prefijo = codigo.substring(0, 3); if (dicVar[prefijo] && !inputVariedad.value) inputVariedad.value = dicVar[prefijo];
+            const codigo = document.getElementById('codigo').value.toUpperCase(); 
+            const inputDias = document.getElementById('dias_tueste'); 
+            const inputVariedad = document.getElementById('variedad');
+            
+            const prefijo = codigo.substring(0, 3); 
+            if (DICCIONARIO_VARIEDADES[prefijo]) {
+                inputVariedad.value = DICCIONARIO_VARIEDADES[prefijo];
+            } else {
+                inputVariedad.value = "";
+            }
             
             const matchN = codigo.match(/(\d{2})([A-Z]{3})/); const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
             const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value); ref.setHours(0,0,0,0);
@@ -1369,6 +1397,7 @@
         
         window.onload = () => { 
             document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
+            sanearHistorial();
             analizarCodigo(); 
             actualizarDispositivos(); 
             calcularAguaTotal(); 

@@ -257,6 +257,11 @@
         .filter-chip { background: #efebe9; border: 1px solid #d7ccc8; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; color: #5d4037; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.2s ease; }
         .filter-chip:active { transform: scale(0.95); }
         .filter-chip.active { background: #bf360c; color: white; border-color: #bf360c; font-weight: bold; }
+        
+        /* Estilo específico para el botón Top Catas */
+        .filter-chip-sort { background: #fff8e1; border: 1px solid #ffc107; color: #ff8f00; }
+        .filter-chip-sort.active { background: #ffb300; border-color: #ffb300; color: white; }
+
         .filter-chip-clear { background: #f5f5f5; color: #d32f2f; border: 1px solid #e0e0e0; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; font-weight: bold; display: none; transition: all 0.2s ease; }
         .filter-chip-clear:active { transform: scale(0.95); }
 
@@ -725,6 +730,7 @@
             <div class="card-title"><div>📜 Registro de Puntuaciones</div></div>
             
             <div class="filters-container" id="historialFilters">
+                <div class="filter-chip filter-chip-sort" id="chip-sort-puntaje" onclick="toggleSortPuntaje()">🏆 Top Catas</div>
                 <div class="filter-chip" id="chip-puntaje" onclick="abrirFiltro('puntaje')">🎯 Puntaje</div>
                 <div class="filter-chip" id="chip-calif" onclick="abrirFiltro('calif')">⭐ Calif.</div>
                 <div class="filter-chip" id="chip-variedad" onclick="abrirFiltro('variedad')">🌱 Variedad</div>
@@ -754,6 +760,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },
             { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
             { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
             { fecha: "29-MAY-2026", resumen: "Actualización de Dispositivos: Se añadió la opción de 'Fondo plano/papel' al método Hario V60 para permitir experimentación con diferentes perfiles de extracción." },
@@ -799,6 +806,7 @@
         let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
         let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
         let currentFilterType = '';
+        let sortByScoreDesc = false; // Variable global para el botón de ordenar
 
         function sanearHistorial() {
             let modificado = false;
@@ -814,6 +822,19 @@
             if (modificado) {
                 localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
             }
+        }
+
+        function toggleSortPuntaje() {
+            sortByScoreDesc = !sortByScoreDesc;
+            const btn = document.getElementById('chip-sort-puntaje');
+            if (sortByScoreDesc) {
+                btn.classList.add('active');
+                btn.innerHTML = '🏆 Orden: Mayor Puntuación';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '🏆 Top Catas';
+            }
+            renderHistorial();
         }
 
         function abrirFiltro(tipo) {
@@ -910,12 +931,21 @@
 
         function limpiarFiltros() {
             activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
+            
+            // Limpiar los chips normales
             ['puntaje', 'calif', 'variedad', 'tueste', 'merma'].forEach(tipo => {
                 const chip = document.getElementById(`chip-${tipo}`);
                 chip.classList.remove('active');
                 const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Nivel/Tueste', merma: '📉 Merma' };
                 chip.innerHTML = chipLabels[tipo];
             });
+
+            // Apagar también el botón de Top Catas
+            sortByScoreDesc = false;
+            const sortChip = document.getElementById('chip-sort-puntaje');
+            sortChip.classList.remove('active');
+            sortChip.innerHTML = '🏆 Top Catas';
+
             renderHistorial();
         }
 
@@ -929,7 +959,7 @@
                 return;
             }
 
-            let filtrosActivos = Object.values(activeFilters).some(v => v !== '');
+            let filtrosActivos = Object.values(activeFilters).some(v => v !== '') || sortByScoreDesc;
             document.getElementById('chip-clear').style.display = filtrosActivos ? 'inline-flex' : 'none';
             
             let displayList = [];
@@ -941,7 +971,8 @@
                 displayList.push({ ...cata, numero: catasPorCodigo[cata.codigo] });
             });
             
-            if(filtrosActivos) {
+            // Aplicar Filtros primero
+            if(Object.values(activeFilters).some(v => v !== '')) {
                 displayList = displayList.filter(c => {
                     let pasa = true;
                     
@@ -973,6 +1004,18 @@
                     return pasa;
                 });
             }
+
+            // Aplicar Ordenamiento (Top Catas o Cronológico)
+            if (sortByScoreDesc) {
+                displayList.sort((a, b) => {
+                    let pA = parseFloat(a.puntaje) || 0;
+                    let pB = parseFloat(b.puntaje) || 0;
+                    if (pB !== pA) return pB - pA;
+                    return b.id - a.id; // En caso de empate, el más nuevo arriba
+                });
+            } else {
+                displayList.reverse(); // Orden por defecto: los más recientes primero
+            }
             
             if (displayList.length === 0) {
                 container.innerHTML = '<div style="text-align:center; color:#888; font-size:0.85rem; padding:10px;">No se encontraron resultados con estos filtros.</div>';
@@ -980,7 +1023,7 @@
             }
             
             let html = '';
-            displayList.reverse().forEach(cata => {
+            displayList.forEach((cata, index) => {
                 let numStr = String(cata.numero).padStart(2, '0');
                 
                 let extraInfo = [];
@@ -989,11 +1032,19 @@
                 if(cata.merma) extraInfo.push(cata.merma + '%');
                 let extraStr = extraInfo.length > 0 ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${extraInfo.join(' • ')}</div>` : '';
 
+                // Si estamos en modo ranking, añadimos una pequeña medalla a los 3 primeros
+                let medalla = '';
+                if (sortByScoreDesc) {
+                    if (index === 0) medalla = ' 🥇';
+                    else if (index === 1) medalla = ' 🥈';
+                    else if (index === 2) medalla = ' 🥉';
+                }
+
                 html += `
                 <div class="historial-item">
                     <div class="hist-row"><span class="hist-label">TUESTE:</span> <span class="hist-val">${cata.codigo}</span></div>
                     <div class="hist-row"><span class="hist-label">CATA:</span> <span class="hist-val">${numStr} - ${cata.fechaCorta}</span></div>
-                    <div class="hist-row"><span class="hist-label" style="color: #bf360c;">PUNT/CALIF.:</span> <span class="hist-punt">${cata.puntaje} / ${cata.calificacion}</span></div>
+                    <div class="hist-row"><span class="hist-label" style="color: #bf360c;">PUNT/CALIF.:</span> <span class="hist-punt">${cata.puntaje}${medalla} / ${cata.calificacion}</span></div>
                     ${extraStr}
                     <button type="button" class="btn-delete-hist" onclick="eliminarDelHistorial(${cata.id})">🗑️</button>
                 </div>`;

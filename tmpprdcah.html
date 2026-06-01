@@ -123,7 +123,7 @@
     <div class="card out" id="panelOut" hidden>
       <div class="kpi">
         <div>
-          <div class="hint">Amperios previstos (12×60 W, 6 baterías)</div>
+          <div class="hint">Amperios previstos (14×60 W, 7 baterías)</div>
           <div class="value" id="ahValue">—</div>
           <div class="range" id="ahRange">—</div>
         </div>
@@ -597,7 +597,7 @@
     const {times,cloud}=series; if(!times?.length||!cloud?.length){ return {error:'Serie horaria incompleta.'}; }
     const sunrise=series.sunrise?new Date(series.sunrise):new Date(p.fecha+'T06:00'); const sunset=series.sunset?new Date(series.sunset):new Date(p.fecha+'T18:00');
     const hIni=toHM(p.hIni); const hFin=toHM(p.hFin);
-    const P_nom=12*60; const P_eff=P_nom*(p.effBase/100)*(p.pElec/100)*(p.pDirt/100)*(p.pMppt/100)*(p.pAng/100);
+    const P_nom=14*60; const P_eff=P_nom*(p.effBase/100)*(p.pElec/100)*(p.pDirt/100)*(p.pMppt/100)*(p.pAng/100);
     let HSE=0; const cloudsDay=[];
     for(let i=0;i<times.length;i++){
       const t=new Date(times[i]); if(!(t>=sunrise&&t<sunset)) continue; const h=t.getHours(); const inside=(h>=hIni.h && h<hFin.h);
@@ -619,7 +619,7 @@
     $('#ahValue').textContent=`${fmt(out.Ah)} Ah`;
     $('#ahRange').textContent=`Rango: ${fmt(out.AhLow)} – ${fmt(out.AhHigh)} Ah (± ${(out.bandPct*100).toFixed(1)}%)`;
     const uso=usoRecomendado(out.Ah); const badge=$('#badgeUso'); badge.textContent=uso.text; badge.className='badge '+uso.cl;
-    $('#resume').textContent=`P_nom = 12×60 W = ${out.P_nom} W\nP_eff = ${f2(out.P_eff)} W\nHSE = ${f2(out.HSE)} h\nEnergía = ${fmt(out.Wh)} Wh\nVoltaje banco = ${out.p.vbank.toFixed(1)} V\nAmperios = ${fmt(out.Ah)} Ah`;
+    $('#resume').textContent=`P_nom = 14×60 W = ${out.P_nom} W\nP_eff = ${f2(out.P_eff)} W\nHSE = ${f2(out.HSE)} h\nEnergía = ${fmt(out.Wh)} Wh\nVoltaje banco = ${out.p.vbank.toFixed(1)} V\nAmperios = ${fmt(out.Ah)} Ah`;
     const sr=fmtHM(out.sunrise), ss=fmtHM(out.sunset);
     $('#sunInfo').textContent=`Amanecer: ${sr}  ·  Atardecer: ${ss}\nVentana directo: ${out.p.hIni}–${out.p.hFin}\nCielo visible: ${out.p.cieloVis}  ·  Difuso ext: ${out.p.kDif}  ·  Difuso int: ${out.p.kDifIn}\nσ(nubosidad día) = ${out.sigma.toFixed(1)} pts`;
   }

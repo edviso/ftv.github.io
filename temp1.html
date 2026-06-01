@@ -539,6 +539,7 @@
             <p class="swipe-hint" style="margin-top: 15px; margin-bottom: 5px; font-size: 0.7rem; color: #666;">Desliza para Perfil Térmico ↔️</p>
             <div class="carousel-container" style="padding-bottom: 5px;">
                 
+                <!-- TARJETA 1: VOLÚMENES Y TIEMPOS -->
                 <div class="carousel-card flat-card">
                     <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #5d4037;">💧 Volumen y Tiempo</div>
                     
@@ -621,6 +622,7 @@
                     </div>
                 </div>
 
+                <!-- TARJETA 2: TEMPERATURAS (PERFIL TÉRMICO) -->
                 <div class="carousel-card flat-card">
                     <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #bf360c;">🌡️ Perfil Térmico (°C)</div>
                     
@@ -729,6 +731,7 @@
         <div class="card">
             <div class="card-title"><div>📜 Registro de Puntuaciones</div></div>
             
+            <!-- FILTROS (CHIPS) -->
             <div class="filters-container" id="historialFilters">
                 <div class="filter-chip filter-chip-sort" id="chip-sort-puntaje" onclick="toggleSortPuntaje()">🏆 Top Catas</div>
                 <div class="filter-chip" id="chip-puntaje" onclick="abrirFiltro('puntaje')">🎯 Puntaje</div>
@@ -740,7 +743,8 @@
             </div>
 
             <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
-                </div>
+                <!-- El historial se renderizará aquí -->
+            </div>
             
             <button type="button" class="main-btn" style="background-color: #8d6e63; color: white; width: 100%; margin-bottom: 12px; padding: 12px; font-size: 0.95rem;" onclick="registrarCataActual()">➕ Añadir cata actual al historial</button>
             
@@ -760,6 +764,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "01-JUN-2026", resumen: "Formato Historial de Puntuaciones: Se actualizó la visualización de los detalles de la cata eliminando las viñetas por espacios simples y anexando la antigüedad del tueste calculada en 'Días/T'. Se añadió cálculo retroactivo para catas guardadas previamente." },
             { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },
             { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
             { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
@@ -806,7 +811,7 @@
         let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
         let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
         let currentFilterType = '';
-        let sortByScoreDesc = false; // Variable global para el botón de ordenar
+        let sortByScoreDesc = false;
 
         function sanearHistorial() {
             let modificado = false;
@@ -1030,9 +1035,32 @@
                 if(cata.variedad) extraInfo.push(cata.variedad);
                 if(cata.tueste) extraInfo.push(cata.tueste);
                 if(cata.merma) extraInfo.push(cata.merma + '%');
-                let extraStr = extraInfo.length > 0 ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${extraInfo.join(' • ')}</div>` : '';
+                
+                let baseExtra = extraInfo.join(' ');
+                
+                // Cálculo de Días/T para catas antiguas y nuevas
+                let diasVal = parseInt(cata.dias_tueste);
+                if (isNaN(diasVal) && cata.codigo && cata.fechaExacta) {
+                    const matchN = cata.codigo.toUpperCase().match(/(\d{2})([A-Z]{3})/);
+                    if (matchN) {
+                        const ref = obtenerFechaDesdeInput(cata.fechaExacta); 
+                        ref.setHours(0,0,0,0);
+                        const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
+                        if (mesesStr[matchN[2]] !== undefined) {
+                            let ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10));
+                            if (ft > ref) ft.setFullYear(ref.getFullYear() - 1);
+                            ft.setHours(0,0,0,0);
+                            const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000);
+                            if (diff >= 0) diasVal = diff;
+                        }
+                    }
+                }
+                
+                let diasStr = !isNaN(diasVal) ? ` - ${diasVal} Dias/T` : '';
+                let finalExtraText = (baseExtra + diasStr).trim();
+                
+                let extraStr = finalExtraText !== '' ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${finalExtraText}</div>` : '';
 
-                // Si estamos en modo ranking, añadimos una pequeña medalla a los 3 primeros
                 let medalla = '';
                 if (sortByScoreDesc) {
                     if (index === 0) medalla = ' 🥇';
@@ -1060,6 +1088,7 @@
             
             const variedad = document.getElementById('variedad').value || '';
             const merma = document.getElementById('merma').value || '';
+            const dias_tueste = document.getElementById('dias_tueste').value || '';
             
             let tueste = '';
             if (currentRoastData.molido.lum !== null) {
@@ -1089,7 +1118,8 @@
                 calificacion: calif,
                 variedad: variedad,
                 tueste: tueste,
-                merma: merma
+                merma: merma,
+                dias_tueste: dias_tueste
             };
             
             historialCatas.push(nuevaCata);

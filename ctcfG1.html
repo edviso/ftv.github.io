@@ -731,6 +731,7 @@
             
             <div class="filters-container" id="historialFilters">
                 <div class="filter-chip filter-chip-sort" id="chip-sort-puntaje" onclick="toggleSortPuntaje()">🏆 Top Catas</div>
+                <div class="filter-chip" id="chip-codigo" onclick="abrirFiltro('codigo')">🏷️ Código</div>
                 <div class="filter-chip" id="chip-puntaje" onclick="abrirFiltro('puntaje')">🎯 Puntaje</div>
                 <div class="filter-chip" id="chip-calif" onclick="abrirFiltro('calif')">⭐ Calif.</div>
                 <div class="filter-chip" id="chip-variedad" onclick="abrirFiltro('variedad')">🌱 Variedad</div>
@@ -739,7 +740,7 @@
                 <div class="filter-chip-clear" id="chip-clear" onclick="limpiarFiltros()">❌ Limpiar</div>
             </div>
 
-            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
                 </div>
             
             <button type="button" class="main-btn" style="background-color: #8d6e63; color: white; width: 100%; margin-bottom: 12px; padding: 12px; font-size: 0.95rem;" onclick="registrarCataActual()">➕ Añadir cata actual al historial</button>
@@ -760,6 +761,9 @@
 
     <script>
         const logHistorial = [
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
             { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },
             { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
             { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
@@ -804,9 +808,33 @@
 
         // --- MEMORIA LOCAL Y FILTROS (HISTORIAL DE CATAS) ---
         let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
-        let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
+        let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
         let currentFilterType = '';
         let sortByScoreDesc = false; // Variable global para el botón de ordenar
+
+        function calcularDiasDesdeCodigoYFecha(codigo, fechaStr) {
+            if (!codigo || !fechaStr) return null;
+            const ref = obtenerFechaDesdeInput(fechaStr); ref.setHours(0,0,0,0);
+            const matchN = codigo.match(/(\d{2})([A-Z]{3})/); 
+            const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
+            const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
+            
+            let ft = null; 
+            if (matchN && mesesStr[matchN[2]] !== undefined) { 
+                ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10)); 
+                if (ft > ref) ft.setFullYear(ref.getFullYear() - 1); 
+            } else if (matchA) { 
+                let y = parseInt(matchA[3], 10); 
+                ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10)); 
+            }
+            
+            if (ft) { 
+                ft.setHours(0,0,0,0); 
+                const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000); 
+                return diff >= 0 ? diff : null; 
+            } 
+            return null;
+        }
 
         function sanearHistorial() {
             let modificado = false;
@@ -816,6 +844,13 @@
                     if (DICCIONARIO_VARIEDADES[prefijo] && cata.variedad !== DICCIONARIO_VARIEDADES[prefijo]) {
                         cata.variedad = DICCIONARIO_VARIEDADES[prefijo];
                         modificado = true;
+                    }
+                    if (cata.dias_tueste === undefined && cata.fechaExacta) {
+                        const diff = calcularDiasDesdeCodigoYFecha(cata.codigo, cata.fechaExacta);
+                        if (diff !== null) {
+                            cata.dias_tueste = diff;
+                            modificado = true;
+                        }
                     }
                 }
             });
@@ -839,7 +874,7 @@
 
         function abrirFiltro(tipo) {
             currentFilterType = tipo;
-            const titulos = { puntaje: '🎯 Filtrar por Puntaje', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma' };
+            const titulos = { puntaje: '🎯 Filtrar por Puntaje', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma', codigo: '🏷️ Filtrar por Código' };
             document.getElementById('filtroTitulo').innerText = titulos[tipo];
             
             let html = '';
@@ -899,6 +934,19 @@
                     options += `<option value="${v}" ${val===v?'selected':''}>${v}</option>`;
                 });
                 html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
+            } else if (tipo === 'codigo') {
+                let historyCodes = historialCatas;
+                // Filtrar los códigos mostrados si ya hay una variedad seleccionada
+                if (activeFilters.variedad) {
+                    historyCodes = historyCodes.filter(c => c.variedad && c.variedad.toLowerCase() === activeFilters.variedad.toLowerCase());
+                }
+                let uniqueCodes = [...new Set(historyCodes.map(c => c.codigo).filter(v => v))].sort();
+
+                let options = '<option value="">Todos</option>';
+                uniqueCodes.forEach(c => {
+                    options += `<option value="${c}" ${val===c?'selected':''}>${c}</option>`;
+                });
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
             }
             
             document.getElementById('filtroBody').innerHTML = html;
@@ -912,12 +960,13 @@
             activeFilters[currentFilterType] = val;
             
             const chip = document.getElementById(`chip-${currentFilterType}`);
-            const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Tueste', merma: '📉 Merma' };
+            const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Tueste', merma: '📉 Merma', codigo: '🏷️ Código' };
             
             if(val !== '') {
                 chip.classList.add('active');
                 let displayVal = val;
                 if(currentFilterType === 'variedad' && val.length > 8) displayVal = val.substring(0,8) + '..';
+                else if(currentFilterType === 'codigo' && val.length > 8) displayVal = val.substring(0,8) + '..';
                 else if (currentFilterType === 'merma') displayVal = val + '%';
                 chip.innerHTML = `${chipLabels[currentFilterType]}: ${displayVal}`;
             } else {
@@ -930,13 +979,13 @@
         }
 
         function limpiarFiltros() {
-            activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
+            activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
             
             // Limpiar los chips normales
-            ['puntaje', 'calif', 'variedad', 'tueste', 'merma'].forEach(tipo => {
+            ['puntaje', 'calif', 'variedad', 'tueste', 'merma', 'codigo'].forEach(tipo => {
                 const chip = document.getElementById(`chip-${tipo}`);
                 chip.classList.remove('active');
-                const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Nivel/Tueste', merma: '📉 Merma' };
+                const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Nivel/Tueste', merma: '📉 Merma', codigo: '🏷️ Código' };
                 chip.innerHTML = chipLabels[tipo];
             });
 
@@ -997,7 +1046,7 @@
                     }
 
                     if(activeFilters.variedad && (!c.variedad || c.variedad.toLowerCase() !== activeFilters.variedad.toLowerCase())) pasa = false;
-                    
+                    if(activeFilters.codigo && (!c.codigo || c.codigo.toLowerCase() !== activeFilters.codigo.toLowerCase())) pasa = false;
                     if(activeFilters.calif && c.calificacion !== activeFilters.calif) pasa = false;
                     if(activeFilters.tueste && c.tueste !== activeFilters.tueste) pasa = false;
 
@@ -1030,7 +1079,13 @@
                 if(cata.variedad) extraInfo.push(cata.variedad);
                 if(cata.tueste) extraInfo.push(cata.tueste);
                 if(cata.merma) extraInfo.push(cata.merma + '%');
-                let extraStr = extraInfo.length > 0 ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${extraInfo.join(' • ')}</div>` : '';
+                
+                let baseExtra = extraInfo.join(' • ');
+                if (cata.dias_tueste !== undefined && cata.dias_tueste !== '' && !isNaN(parseInt(cata.dias_tueste))) {
+                    baseExtra += ` - ${parseInt(cata.dias_tueste)} días`;
+                }
+                
+                let extraStr = baseExtra ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${baseExtra}</div>` : '';
 
                 // Si estamos en modo ranking, añadimos una pequeña medalla a los 3 primeros
                 let medalla = '';
@@ -1060,6 +1115,7 @@
             
             const variedad = document.getElementById('variedad').value || '';
             const merma = document.getElementById('merma').value || '';
+            const diasTueste = document.getElementById('dias_tueste').value || '';
             
             let tueste = '';
             if (currentRoastData.molido.lum !== null) {
@@ -1089,7 +1145,8 @@
                 calificacion: calif,
                 variedad: variedad,
                 tueste: tueste,
-                merma: merma
+                merma: merma,
+                dias_tueste: diasTueste
             };
             
             historialCatas.push(nuevaCata);
@@ -1434,14 +1491,13 @@
                 inputVariedad.value = "";
             }
             
-            const matchN = codigo.match(/(\d{2})([A-Z]{3})/); const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
-            const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value); ref.setHours(0,0,0,0);
-            let ft = null; const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
-            
-            if (matchN && mesesStr[matchN[2]] !== undefined) { ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10)); if (ft > ref) ft.setFullYear(ref.getFullYear() - 1); } 
-            else if (matchA) { let y = parseInt(matchA[3], 10); ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10)); }
-            
-            if (ft) { ft.setHours(0,0,0,0); const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000); inputDias.value = diff >= 0 ? diff : "Fecha futura"; } else { inputDias.value = "Sin fecha detectada"; }
+            const fechaStr = document.getElementById('fecha_hora').value;
+            const diff = calcularDiasDesdeCodigoYFecha(codigo, fechaStr);
+            if (diff !== null) {
+                inputDias.value = diff;
+            } else {
+                inputDias.value = "Sin fecha detectada";
+            }
         }
 
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens'); generarGridHTML(paramNotas, 'notasSensoriales', 'nota'); generarGlobalHTML();

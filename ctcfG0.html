@@ -740,7 +740,7 @@
                 <div class="filter-chip-clear" id="chip-clear" onclick="limpiarFiltros()">❌ Limpiar</div>
             </div>
 
-            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
                 </div>
             
             <button type="button" class="main-btn" style="background-color: #8d6e63; color: white; width: 100%; margin-bottom: 12px; padding: 12px; font-size: 0.95rem;" onclick="registrarCataActual()">➕ Añadir cata actual al historial</button>
@@ -761,6 +761,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
             { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },

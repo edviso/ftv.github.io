@@ -761,6 +761,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
             { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },
             { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
@@ -810,6 +811,30 @@
         let currentFilterType = '';
         let sortByScoreDesc = false; // Variable global para el botón de ordenar
 
+        function calcularDiasDesdeCodigoYFecha(codigo, fechaStr) {
+            if (!codigo || !fechaStr) return null;
+            const ref = obtenerFechaDesdeInput(fechaStr); ref.setHours(0,0,0,0);
+            const matchN = codigo.match(/(\d{2})([A-Z]{3})/); 
+            const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
+            const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
+            
+            let ft = null; 
+            if (matchN && mesesStr[matchN[2]] !== undefined) { 
+                ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10)); 
+                if (ft > ref) ft.setFullYear(ref.getFullYear() - 1); 
+            } else if (matchA) { 
+                let y = parseInt(matchA[3], 10); 
+                ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10)); 
+            }
+            
+            if (ft) { 
+                ft.setHours(0,0,0,0); 
+                const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000); 
+                return diff >= 0 ? diff : null; 
+            } 
+            return null;
+        }
+
         function sanearHistorial() {
             let modificado = false;
             historialCatas.forEach(cata => {
@@ -818,6 +843,13 @@
                     if (DICCIONARIO_VARIEDADES[prefijo] && cata.variedad !== DICCIONARIO_VARIEDADES[prefijo]) {
                         cata.variedad = DICCIONARIO_VARIEDADES[prefijo];
                         modificado = true;
+                    }
+                    if (cata.dias_tueste === undefined && cata.fechaExacta) {
+                        const diff = calcularDiasDesdeCodigoYFecha(cata.codigo, cata.fechaExacta);
+                        if (diff !== null) {
+                            cata.dias_tueste = diff;
+                            modificado = true;
+                        }
                     }
                 }
             });
@@ -1046,7 +1078,13 @@
                 if(cata.variedad) extraInfo.push(cata.variedad);
                 if(cata.tueste) extraInfo.push(cata.tueste);
                 if(cata.merma) extraInfo.push(cata.merma + '%');
-                let extraStr = extraInfo.length > 0 ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${extraInfo.join(' • ')}</div>` : '';
+                
+                let baseExtra = extraInfo.join(' • ');
+                if (cata.dias_tueste !== undefined && cata.dias_tueste !== '' && !isNaN(parseInt(cata.dias_tueste))) {
+                    baseExtra += ` - ${parseInt(cata.dias_tueste)} días`;
+                }
+                
+                let extraStr = baseExtra ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${baseExtra}</div>` : '';
 
                 // Si estamos en modo ranking, añadimos una pequeña medalla a los 3 primeros
                 let medalla = '';
@@ -1076,6 +1114,7 @@
             
             const variedad = document.getElementById('variedad').value || '';
             const merma = document.getElementById('merma').value || '';
+            const diasTueste = document.getElementById('dias_tueste').value || '';
             
             let tueste = '';
             if (currentRoastData.molido.lum !== null) {
@@ -1105,7 +1144,8 @@
                 calificacion: calif,
                 variedad: variedad,
                 tueste: tueste,
-                merma: merma
+                merma: merma,
+                dias_tueste: diasTueste
             };
             
             historialCatas.push(nuevaCata);
@@ -1450,14 +1490,13 @@
                 inputVariedad.value = "";
             }
             
-            const matchN = codigo.match(/(\d{2})([A-Z]{3})/); const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
-            const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value); ref.setHours(0,0,0,0);
-            let ft = null; const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
-            
-            if (matchN && mesesStr[matchN[2]] !== undefined) { ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10)); if (ft > ref) ft.setFullYear(ref.getFullYear() - 1); } 
-            else if (matchA) { let y = parseInt(matchA[3], 10); ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10)); }
-            
-            if (ft) { ft.setHours(0,0,0,0); const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000); inputDias.value = diff >= 0 ? diff : "Fecha futura"; } else { inputDias.value = "Sin fecha detectada"; }
+            const fechaStr = document.getElementById('fecha_hora').value;
+            const diff = calcularDiasDesdeCodigoYFecha(codigo, fechaStr);
+            if (diff !== null) {
+                inputDias.value = diff;
+            } else {
+                inputDias.value = "Sin fecha detectada";
+            }
         }
 
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens'); generarGridHTML(paramNotas, 'notasSensoriales', 'nota'); generarGlobalHTML();

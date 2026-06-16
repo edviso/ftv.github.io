@@ -14,45 +14,45 @@
         body { 
             background-color: #f4f6f9; 
             color: #333; 
-            padding: 10px; /* Reducido para pantallas pequeñas */
+            padding: 6px; /* Aún más reducido */
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            height: 100vh;
-            overflow: hidden; /* Evita el scroll vertical */
+            height: 100dvh; /* dvh se ajusta mejor a navegadores móviles */
+            overflow: hidden; 
         }
         .container { 
             width: 100%; 
             max-width: 400px; 
             background: #ffffff; 
-            padding: 15px; /* Reducido */
+            padding: 10px; /* Reducido */
             border-radius: 12px; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
             display: flex;
             flex-direction: column;
             height: 100%;
+            justify-content: space-between; /* Empuja los elementos a los extremos, manteniendo el centro compacto */
         }
         h1 { 
-            font-size: 18px; /* Más compacto */
+            font-size: 16px; /* Más pequeño */
             text-align: center; 
-            margin-bottom: 12px; 
+            margin-bottom: 4px; 
             color: #1a365d; 
             font-weight: 700; 
         }
         .controls-wrapper {
-            flex: 1; /* Permite que tome el espacio disponible */
             display: flex;
             flex-direction: column;
-            justify-content: space-around; /* Distribuye el espacio para no usar scroll */
+            gap: 6px; /* Controla la separación exacta entre campos, sin estirarlos */
         }
         .control-group { 
-            margin-bottom: 8px; /* Reducido */
+            /* Se maneja con el gap del wrapper */
         }
         .control-label { 
-            font-size: 13px; 
+            font-size: 12px; /* Más pequeño */
             font-weight: 600; 
             color: #4a5568; 
-            margin-bottom: 4px; 
+            margin-bottom: 2px; 
             display: block; 
         }
         .counter-box { 
@@ -61,18 +61,18 @@
             justify-content: space-between; 
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
-            border-radius: 10px; 
+            border-radius: 8px; 
             padding: 2px; 
         }
         .btn-ctrl { 
-            width: 44px; 
-            height: 38px; /* Más bajo para ahorrar espacio */
+            width: 40px; 
+            height: 34px; /* Altura muy reducida */
             border: none; 
             background: #ffffff; 
             color: #2b6cb0; 
-            font-size: 22px; 
+            font-size: 20px; 
             font-weight: 600; 
-            border-radius: 8px; 
+            border-radius: 6px; 
             cursor: pointer; 
             display: flex; 
             align-items: center; 
@@ -82,45 +82,45 @@
         }
         .btn-ctrl:active { background: #e2e8f0; }
         .val-display { 
-            font-size: 16px; 
+            font-size: 15px; 
             font-weight: 700; 
             color: #2d3748; 
-            width: 70px; 
+            width: 60px; 
             text-align: center; 
         }
         .text-display {
             width: auto;
             flex: 1;
-            font-size: 14px;
+            font-size: 13px;
         }
         .results-panel { 
             background: #ebf8ff; 
             border: 1px solid #bee3f8; 
-            border-radius: 10px; 
-            padding: 12px; 
-            margin-top: 10px; 
-            margin-bottom: 10px; 
+            border-radius: 8px; 
+            padding: 8px; 
+            margin-top: 6px; 
+            margin-bottom: 6px; 
         }
         .result-row { 
             display: flex; 
             justify-content: space-between; 
-            margin-bottom: 6px; 
-            font-size: 13px; 
+            margin-bottom: 4px; 
+            font-size: 12px; 
         }
         .result-row:last-child { margin-bottom: 0; }
         .result-label { color: #2c5282; font-weight: 500; }
         .result-val { font-weight: 700; color: #2b6cb0; }
-        .result-val.highlight { font-size: 16px; }
+        .result-val.highlight { font-size: 14px; }
         .json-actions { 
             display: flex; 
-            gap: 10px; 
+            gap: 8px; 
         }
         .btn-json { 
             flex: 1; 
-            height: 40px; /* Más bajo */
+            height: 38px; /* Altura compacta para los botones finales */
             border: none; 
             border-radius: 8px; 
-            font-size: 13px; 
+            font-size: 12px; 
             font-weight: 600; 
             cursor: pointer; 
             display: flex; 
@@ -139,9 +139,9 @@
             bottom: 20px; 
             background: rgba(0, 0, 0, 0.85); 
             color: white; 
-            padding: 10px 20px; 
-            border-radius: 20px; 
-            font-size: 12px; 
+            padding: 8px 16px; 
+            border-radius: 16px; 
+            font-size: 11px; 
             display: none; 
             z-index: 1000; 
             text-align: center; 
@@ -229,7 +229,6 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // Lista de ejercicios (preparada para agregar más a futuro)
         const ejercicios = ["Press de banca", "Sentadilla", "Peso muerto"];
         let currentExIndex = 0;
 
@@ -273,7 +272,6 @@
             calculateMetrics();
         }
 
-        // Lógica para rotar los ejercicios
         function changeEx(step) {
             currentExIndex += step;
             if (currentExIndex < 0) currentExIndex = ejercicios.length - 1;
@@ -281,7 +279,6 @@
             
             data.ejercicio = ejercicios[currentExIndex];
             document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
-            // Aquí a futuro agregaremos la lógica para cambiar las tablas según el ejercicio
         }
 
         function getInterpolatedStandards(age) {
@@ -339,7 +336,6 @@
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 4));
             let downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            // Nombre del archivo ahora incluye el ejercicio formateado (sin espacios)
             let exName = data.ejercicio.replace(/\s+/g, '_').toLowerCase();
             downloadAnchor.setAttribute("download", `progreso_${exName}.json`);
             document.body.appendChild(downloadAnchor);
@@ -364,13 +360,11 @@
                     if (importedData.edad && importedData.pesoCorp && importedData.pesoLev && importedData.reps) {
                         data = importedData;
                         
-                        // Sincronizar UI
                         document.getElementById('lbl-edad').innerText = data.edad;
                         document.getElementById('lbl-pesoCorp').innerText = data.pesoCorp;
                         document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
                         document.getElementById('lbl-reps').innerText = data.reps;
                         
-                        // Sincronizar Ejercicio
                         if (data.ejercicio) {
                             document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
                             currentExIndex = ejercicios.indexOf(data.ejercicio);
@@ -390,7 +384,7 @@
                 }
             };
             reader.readAsText(file);
-            event.target.value = ""; // Permite recargar el mismo archivo si se desea
+            event.target.value = ""; 
         }
 
         window.onload = function() {

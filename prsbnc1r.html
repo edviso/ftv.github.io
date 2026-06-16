@@ -14,45 +14,42 @@
         body { 
             background-color: #f4f6f9; 
             color: #333; 
-            padding: 6px; /* Aún más reducido */
+            padding: 10px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            height: 100dvh; /* dvh se ajusta mejor a navegadores móviles */
+            justify-content: center; /* Centra verticalmente todo el bloque */
+            height: 100dvh; 
             overflow: hidden; 
         }
         .container { 
             width: 100%; 
             max-width: 400px; 
             background: #ffffff; 
-            padding: 10px; /* Reducido */
-            border-radius: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            padding: 20px 15px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
             display: flex;
             flex-direction: column;
-            height: 100%;
-            justify-content: space-between; /* Empuja los elementos a los extremos, manteniendo el centro compacto */
+            gap: 16px; /* Distribución uniforme sin vacíos gigantes */
         }
         h1 { 
-            font-size: 16px; /* Más pequeño */
+            font-size: 24px; /* Título más grande */
             text-align: center; 
-            margin-bottom: 4px; 
             color: #1a365d; 
             font-weight: 700; 
+            margin-bottom: 4px;
         }
         .controls-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 6px; /* Controla la separación exacta entre campos, sin estirarlos */
-        }
-        .control-group { 
-            /* Se maneja con el gap del wrapper */
+            gap: 12px; /* Separación cómoda entre controles */
         }
         .control-label { 
-            font-size: 12px; /* Más pequeño */
+            font-size: 14px; /* Letra más grande */
             font-weight: 600; 
             color: #4a5568; 
-            margin-bottom: 2px; 
+            margin-bottom: 4px; 
             display: block; 
         }
         .counter-box { 
@@ -61,18 +58,18 @@
             justify-content: space-between; 
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
-            border-radius: 8px; 
-            padding: 2px; 
+            border-radius: 10px; 
+            padding: 4px; 
         }
         .btn-ctrl { 
-            width: 40px; 
-            height: 34px; /* Altura muy reducida */
+            width: 45px; 
+            height: 40px; /* Botones más altos */
             border: none; 
             background: #ffffff; 
             color: #2b6cb0; 
-            font-size: 20px; 
+            font-size: 22px; 
             font-weight: 600; 
-            border-radius: 6px; 
+            border-radius: 8px; 
             cursor: pointer; 
             display: flex; 
             align-items: center; 
@@ -82,7 +79,7 @@
         }
         .btn-ctrl:active { background: #e2e8f0; }
         .val-display { 
-            font-size: 15px; 
+            font-size: 16px; /* Números más visibles */
             font-weight: 700; 
             color: #2d3748; 
             width: 60px; 
@@ -91,42 +88,42 @@
         .text-display {
             width: auto;
             flex: 1;
-            font-size: 13px;
+            font-size: 15px;
         }
         .results-panel { 
             background: #ebf8ff; 
             border: 1px solid #bee3f8; 
-            border-radius: 8px; 
-            padding: 8px; 
-            margin-top: 6px; 
-            margin-bottom: 6px; 
+            border-radius: 12px; 
+            padding: 18px 15px; /* Más altura interna */
         }
         .result-row { 
             display: flex; 
             justify-content: space-between; 
-            margin-bottom: 4px; 
-            font-size: 12px; 
+            align-items: center;
+            margin-bottom: 10px; /* Más espacio entre líneas */
+            font-size: 15px; /* Textos de resultados más grandes */
         }
         .result-row:last-child { margin-bottom: 0; }
         .result-label { color: #2c5282; font-weight: 500; }
-        .result-val { font-weight: 700; color: #2b6cb0; }
-        .result-val.highlight { font-size: 14px; }
+        .result-val { font-weight: 700; color: #2b6cb0; text-align: right;}
+        .result-val.highlight { font-size: 20px; /* 1RM mucho más destacado */ }
         .json-actions { 
             display: flex; 
-            gap: 8px; 
+            gap: 10px; 
+            margin-top: 4px;
         }
         .btn-json { 
             flex: 1; 
-            height: 38px; /* Altura compacta para los botones finales */
+            height: 48px; /* Botones finales más grandes y cómodos */
             border: none; 
-            border-radius: 8px; 
-            font-size: 12px; 
+            border-radius: 10px; 
+            font-size: 15px; 
             font-weight: 600; 
             cursor: pointer; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            gap: 4px; 
+            gap: 6px; 
             -webkit-tap-highlight-color: transparent;
         }
         .btn-save { background: #2b6cb0; color: #ffffff; }
@@ -136,12 +133,12 @@
         #file-input { display: none; }
         .toast { 
             position: fixed; 
-            bottom: 20px; 
+            bottom: 25px; 
             background: rgba(0, 0, 0, 0.85); 
             color: white; 
-            padding: 8px 16px; 
-            border-radius: 16px; 
-            font-size: 11px; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            font-size: 13px; 
             display: none; 
             z-index: 1000; 
             text-align: center; 

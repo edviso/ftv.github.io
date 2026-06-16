@@ -18,7 +18,7 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: center; /* Centra verticalmente todo el bloque */
+            justify-content: center; 
             height: 100dvh; 
             overflow: hidden; 
         }
@@ -31,10 +31,10 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
             display: flex;
             flex-direction: column;
-            gap: 16px; /* Distribución uniforme sin vacíos gigantes */
+            gap: 16px; 
         }
         h1 { 
-            font-size: 24px; /* Título más grande */
+            font-size: 24px; 
             text-align: center; 
             color: #1a365d; 
             font-weight: 700; 
@@ -43,10 +43,10 @@
         .controls-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 12px; /* Separación cómoda entre controles */
+            gap: 12px; 
         }
         .control-label { 
-            font-size: 14px; /* Letra más grande */
+            font-size: 14px; 
             font-weight: 600; 
             color: #4a5568; 
             margin-bottom: 4px; 
@@ -63,7 +63,7 @@
         }
         .btn-ctrl { 
             width: 45px; 
-            height: 40px; /* Botones más altos */
+            height: 40px; 
             border: none; 
             background: #ffffff; 
             color: #2b6cb0; 
@@ -79,7 +79,7 @@
         }
         .btn-ctrl:active { background: #e2e8f0; }
         .val-display { 
-            font-size: 16px; /* Números más visibles */
+            font-size: 16px; 
             font-weight: 700; 
             color: #2d3748; 
             width: 60px; 
@@ -94,19 +94,19 @@
             background: #ebf8ff; 
             border: 1px solid #bee3f8; 
             border-radius: 12px; 
-            padding: 18px 15px; /* Más altura interna */
+            padding: 18px 15px; 
         }
         .result-row { 
             display: flex; 
             justify-content: space-between; 
             align-items: center;
-            margin-bottom: 10px; /* Más espacio entre líneas */
-            font-size: 15px; /* Textos de resultados más grandes */
+            margin-bottom: 10px; 
+            font-size: 15px; 
         }
         .result-row:last-child { margin-bottom: 0; }
         .result-label { color: #2c5282; font-weight: 500; }
         .result-val { font-weight: 700; color: #2b6cb0; text-align: right;}
-        .result-val.highlight { font-size: 20px; /* 1RM mucho más destacado */ }
+        .result-val.highlight { font-size: 20px; }
         .json-actions { 
             display: flex; 
             gap: 10px; 
@@ -114,7 +114,7 @@
         }
         .btn-json { 
             flex: 1; 
-            height: 48px; /* Botones finales más grandes y cómodos */
+            height: 48px; 
             border: none; 
             border-radius: 10px; 
             font-size: 15px; 
@@ -214,6 +214,10 @@
                 <span class="result-label">Nivel por Edad:</span>
                 <span class="result-val" id="res-lvlEdad">Novato</span>
             </div>
+            <div class="result-row">
+                <span class="result-label">Semanas próximo nivel:</span>
+                <span class="result-val" id="res-semanas">...</span>
+            </div>
         </div>
 
         <div class="json-actions">
@@ -307,8 +311,19 @@
             return "Élite";
         }
 
+        function getNextTarget1RM(oneRM, standards) {
+            if (oneRM < standards.ppte) return standards.ppte;
+            if (oneRM < standards.nov) return standards.nov;
+            if (oneRM < standards.int) return standards.int;
+            if (oneRM < standards.ava) return standards.ava;
+            if (oneRM < standards.elite) return standards.elite;
+            return null; // Ya está en Élite
+        }
+
         function calculateMetrics() {
-            let oneRM = data.pesoLev * (1 + (data.reps / 30));
+            // Factor Epley: (1 + Reps/30)
+            let factorEpley = 1 + (data.reps / 30);
+            let oneRM = data.pesoLev * factorEpley;
             let index = oneRM / data.pesoCorp;
 
             document.getElementById('res-1rm').innerText = oneRM.toFixed(1) + " lb";
@@ -320,6 +335,23 @@
             let currentAgeStandards = getInterpolatedStandards(data.edad);
             let lvlEdad = getLevelName(oneRM, currentAgeStandards);
             document.getElementById('res-lvlEdad').innerText = lvlEdad;
+
+            // Calcular semanas para el próximo nivel
+            let target1RM = getNextTarget1RM(oneRM, currentAgeStandards);
+            if (target1RM !== null) {
+                // Despejamos el peso físico necesario en la barra
+                let pesoEnBarraRequerido = target1RM / factorEpley;
+                let librasFaltantes = pesoEnBarraRequerido - data.pesoLev;
+                
+                if (librasFaltantes > 0) {
+                    let semanas = librasFaltantes / 2; // Sube 2 libras por semana
+                    document.getElementById('res-semanas').innerText = semanas.toFixed(1);
+                } else {
+                    document.getElementById('res-semanas').innerText = "0.0";
+                }
+            } else {
+                document.getElementById('res-semanas').innerText = "N/A (Máximo)";
+            }
         }
 
         function showToast(msg) {

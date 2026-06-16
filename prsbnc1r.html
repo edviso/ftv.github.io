@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fuerza Tracker - Press de Banca</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bitácora de Fuerza</title>
     <style>
         * { 
             box-sizing: border-box; 
@@ -14,35 +14,45 @@
         body { 
             background-color: #f4f6f9; 
             color: #333; 
-            padding: 15px; 
+            padding: 10px; /* Reducido para pantallas pequeñas */
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            min-height: 100vh; 
+            height: 100vh;
+            overflow: hidden; /* Evita el scroll vertical */
         }
         .container { 
             width: 100%; 
             max-width: 400px; 
             background: #ffffff; 
-            padding: 20px; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            padding: 15px; /* Reducido */
+            border-radius: 12px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         h1 { 
-            font-size: 20px; 
+            font-size: 18px; /* Más compacto */
             text-align: center; 
-            margin-bottom: 20px; 
+            margin-bottom: 12px; 
             color: #1a365d; 
             font-weight: 700; 
         }
+        .controls-wrapper {
+            flex: 1; /* Permite que tome el espacio disponible */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around; /* Distribuye el espacio para no usar scroll */
+        }
         .control-group { 
-            margin-bottom: 16px; 
+            margin-bottom: 8px; /* Reducido */
         }
         .control-label { 
-            font-size: 14px; 
+            font-size: 13px; 
             font-weight: 600; 
             color: #4a5568; 
-            margin-bottom: 6px; 
+            margin-bottom: 4px; 
             display: block; 
         }
         .counter-box { 
@@ -51,112 +61,90 @@
             justify-content: space-between; 
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
-            border-radius: 12px; 
-            padding: 4px; 
+            border-radius: 10px; 
+            padding: 2px; 
         }
         .btn-ctrl { 
-            width: 52px; 
-            height: 48px; 
+            width: 44px; 
+            height: 38px; /* Más bajo para ahorrar espacio */
             border: none; 
             background: #ffffff; 
             color: #2b6cb0; 
-            font-size: 24px; 
+            font-size: 22px; 
             font-weight: 600; 
-            border-radius: 10px; 
+            border-radius: 8px; 
             cursor: pointer; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
             -webkit-tap-highlight-color: transparent; 
         }
-        .btn-ctrl:active { 
-            background: #e2e8f0; 
-        }
+        .btn-ctrl:active { background: #e2e8f0; }
         .val-display { 
-            font-size: 18px; 
+            font-size: 16px; 
             font-weight: 700; 
             color: #2d3748; 
-            width: 80px; 
+            width: 70px; 
             text-align: center; 
+        }
+        .text-display {
+            width: auto;
+            flex: 1;
+            font-size: 14px;
         }
         .results-panel { 
             background: #ebf8ff; 
             border: 1px solid #bee3f8; 
-            border-radius: 14px; 
-            padding: 16px; 
-            margin-top: 20px; 
-            margin-bottom: 20px; 
+            border-radius: 10px; 
+            padding: 12px; 
+            margin-top: 10px; 
+            margin-bottom: 10px; 
         }
         .result-row { 
             display: flex; 
             justify-content: space-between; 
-            margin-bottom: 10px; 
-            font-size: 15px; 
+            margin-bottom: 6px; 
+            font-size: 13px; 
         }
-        .result-row:last-child { 
-            margin-bottom: 0; 
-        }
-        .result-label { 
-            color: #2c5282; 
-            font-weight: 500; 
-        }
-        .result-val { 
-            font-weight: 700; 
-            color: #2b6cb0; 
-        }
-        .result-val.highlight { 
-            font-size: 20px; 
-            color: #2b6cb0; 
-        }
+        .result-row:last-child { margin-bottom: 0; }
+        .result-label { color: #2c5282; font-weight: 500; }
+        .result-val { font-weight: 700; color: #2b6cb0; }
+        .result-val.highlight { font-size: 16px; }
         .json-actions { 
             display: flex; 
-            gap: 12px; 
-            margin-top: 10px; 
+            gap: 10px; 
         }
         .btn-json { 
             flex: 1; 
-            height: 48px; 
+            height: 40px; /* Más bajo */
             border: none; 
-            border-radius: 10px; 
-            font-size: 14px; 
+            border-radius: 8px; 
+            font-size: 13px; 
             font-weight: 600; 
             cursor: pointer; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            gap: 6px; 
+            gap: 4px; 
             -webkit-tap-highlight-color: transparent;
         }
-        .btn-save { 
-            background: #2b6cb0; 
-            color: #ffffff; 
-        }
-        .btn-save:active { 
-            background: #2c5282; 
-        }
-        .btn-load { 
-            background: #e2e8f0; 
-            color: #4a5568; 
-        }
-        .btn-load:active { 
-            background: #cbd5e0; 
-        }
-        #file-input { 
-            display: none; 
-        }
+        .btn-save { background: #2b6cb0; color: #ffffff; }
+        .btn-save:active { background: #2c5282; }
+        .btn-load { background: #e2e8f0; color: #4a5568; }
+        .btn-load:active { background: #cbd5e0; }
+        #file-input { display: none; }
         .toast { 
             position: fixed; 
-            bottom: 30px; 
+            bottom: 20px; 
             background: rgba(0, 0, 0, 0.85); 
             color: white; 
-            padding: 12px 24px; 
-            border-radius: 24px; 
-            font-size: 13px; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            font-size: 12px; 
             display: none; 
             z-index: 1000; 
             text-align: center; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
     </style>
 </head>
@@ -165,39 +153,50 @@
     <div class="container">
         <h1>Bitácora de Fuerza</h1>
         
-        <div class="control-group">
-            <span class="control-label">Edad (años)</span>
-            <div class="counter-box">
-                <button class="btn-ctrl" onclick="changeVal('edad', -1)">-</button>
-                <div class="val-display" id="lbl-edad">68</div>
-                <button class="btn-ctrl" onclick="changeVal('edad', 1)">+</button>
+        <div class="controls-wrapper">
+            <div class="control-group">
+                <span class="control-label">Edad (años)</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('edad', -1)">-</button>
+                    <div class="val-display" id="lbl-edad">68</div>
+                    <button class="btn-ctrl" onclick="changeVal('edad', 1)">+</button>
+                </div>
             </div>
-        </div>
 
-        <div class="control-group">
-            <span class="control-label">Peso Corporal (lb)</span>
-            <div class="counter-box">
-                <button class="btn-ctrl" onclick="changeVal('pesoCorp', -1)">-</button>
-                <div class="val-display" id="lbl-pesoCorp">152</div>
-                <button class="btn-ctrl" onclick="changeVal('pesoCorp', 1)">+</button>
+            <div class="control-group">
+                <span class="control-label">Peso Corporal (lb)</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('pesoCorp', -1)">-</button>
+                    <div class="val-display" id="lbl-pesoCorp">152</div>
+                    <button class="btn-ctrl" onclick="changeVal('pesoCorp', 1)">+</button>
+                </div>
             </div>
-        </div>
 
-        <div class="control-group">
-            <span class="control-label">Peso Levantado (lb)</span>
-            <div class="counter-box">
-                <button class="btn-ctrl" onclick="changeVal('pesoLev', -1)">-</button>
-                <div class="val-display" id="lbl-pesoLev">87</div>
-                <button class="btn-ctrl" onclick="changeVal('pesoLev', 1)">+</button>
+            <div class="control-group">
+                <span class="control-label">Ejercicio</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeEx(-1)">-</button>
+                    <div class="val-display text-display" id="lbl-ejercicio">Press de banca</div>
+                    <button class="btn-ctrl" onclick="changeEx(1)">+</button>
+                </div>
             </div>
-        </div>
 
-        <div class="control-group">
-            <span class="control-label">Repeticiones</span>
-            <div class="counter-box">
-                <button class="btn-ctrl" onclick="changeVal('reps', -1)">-</button>
-                <div class="val-display" id="lbl-reps">14</div>
-                <button class="btn-ctrl" onclick="changeVal('reps', 1)">+</button>
+            <div class="control-group">
+                <span class="control-label">Peso Levantado (lb)</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('pesoLev', -1)">-</button>
+                    <div class="val-display" id="lbl-pesoLev">87</div>
+                    <button class="btn-ctrl" onclick="changeVal('pesoLev', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Repeticiones</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('reps', -1)">-</button>
+                    <div class="val-display" id="lbl-reps">14</div>
+                    <button class="btn-ctrl" onclick="changeVal('reps', 1)">+</button>
+                </div>
             </div>
         </div>
 
@@ -216,17 +215,13 @@
             </div>
             <div class="result-row">
                 <span class="result-label">Nivel por Edad:</span>
-                <span class="result-val" id="res-lvlEdad">Novato (Frontera Alta)</span>
+                <span class="result-val" id="res-lvlEdad">Novato</span>
             </div>
         </div>
 
         <div class="json-actions">
-            <button class="btn-json btn-save" onclick="exportJSON()">
-                💾 Grabar JSON
-            </button>
-            <button class="btn-json btn-load" onclick="triggerLoad()">
-                📂 Cargar JSON
-            </button>
+            <button class="btn-json btn-save" onclick="exportJSON()">💾 Grabar</button>
+            <button class="btn-json btn-load" onclick="triggerLoad()">📂 Cargar</button>
             <input type="file" id="file-input" accept=".json" onchange="importJSON(event)">
         </div>
     </div>
@@ -234,15 +229,18 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // Valores por defecto solicitados
+        // Lista de ejercicios (preparada para agregar más a futuro)
+        const ejercicios = ["Press de banca", "Sentadilla", "Peso muerto"];
+        let currentExIndex = 0;
+
         let data = {
             edad: 68,
             pesoCorp: 152,
+            ejercicio: ejercicios[0],
             pesoLev: 87,
             reps: 14
         };
 
-        // Estándares de Fuerza Ajustados por Edad (Imagen 1)
         const ageTable = [
             { age: 15, ppte: 88, nov: 131, int: 185, ava: 248, elite: 317 },
             { age: 20, ppte: 101, nov: 150, int: 211, ava: 284, elite: 362 },
@@ -262,7 +260,6 @@
             { age: 90, ppte: 41, nov: 60, int: 85, ava: 114, elite: 146 }
         ];
 
-        // Límites Fijos por Peso Corporal de 152 lb (Imagen 2)
         const weightStandard152 = { ppte: 60, nov: 86, int: 117, ava: 154, elite: 194 };
 
         function changeVal(key, step) {
@@ -276,10 +273,20 @@
             calculateMetrics();
         }
 
+        // Lógica para rotar los ejercicios
+        function changeEx(step) {
+            currentExIndex += step;
+            if (currentExIndex < 0) currentExIndex = ejercicios.length - 1;
+            if (currentExIndex >= ejercicios.length) currentExIndex = 0;
+            
+            data.ejercicio = ejercicios[currentExIndex];
+            document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+            // Aquí a futuro agregaremos la lógica para cambiar las tablas según el ejercicio
+        }
+
         function getInterpolatedStandards(age) {
             if (age <= ageTable[0].age) return ageTable[0];
             if (age >= ageTable[ageTable.length - 1].age) return ageTable[ageTable.length - 1];
-            
             for (let i = 0; i < ageTable.length - 1; i++) {
                 let current = ageTable[i];
                 let next = ageTable[i+1];
@@ -307,18 +314,15 @@
         }
 
         function calculateMetrics() {
-            // Fórmula de Epley (idéntica al algoritmo de tus capturas)
             let oneRM = data.pesoLev * (1 + (data.reps / 30));
             let index = oneRM / data.pesoCorp;
 
             document.getElementById('res-1rm').innerText = oneRM.toFixed(1) + " lb";
             document.getElementById('res-indice').innerText = index.toFixed(2) + "x";
 
-            // Clasificación por peso absoluto (Base 152 lb de la tabla)
             let lvlPeso = getLevelName(oneRM, weightStandard152);
             document.getElementById('res-lvlPeso').innerText = lvlPeso;
 
-            // Clasificación corregida por edad (Interpolación exacta)
             let currentAgeStandards = getInterpolatedStandards(data.edad);
             let lvlEdad = getLevelName(oneRM, currentAgeStandards);
             document.getElementById('res-lvlEdad').innerText = lvlEdad;
@@ -335,14 +339,15 @@
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 4));
             let downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `progreso_fuerza_${data.edad}anos.json`);
+            // Nombre del archivo ahora incluye el ejercicio formateado (sin espacios)
+            let exName = data.ejercicio.replace(/\s+/g, '_').toLowerCase();
+            downloadAnchor.setAttribute("download", `progreso_${exName}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
             
-            // Copia local en LocalStorage automática para redundancia en navegadores móviles
             localStorage.setItem('bitacora_fuerza_backup', JSON.stringify(data));
-            showToast("JSON descargado y guardado en memoria local");
+            showToast("JSON descargado y guardado");
         }
 
         function triggerLoad() {
@@ -352,7 +357,6 @@
         function importJSON(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -366,19 +370,29 @@
                         document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
                         document.getElementById('lbl-reps').innerText = data.reps;
                         
+                        // Sincronizar Ejercicio
+                        if (data.ejercicio) {
+                            document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+                            currentExIndex = ejercicios.indexOf(data.ejercicio);
+                            if (currentExIndex === -1) {
+                                ejercicios.push(data.ejercicio);
+                                currentExIndex = ejercicios.length - 1;
+                            }
+                        }
+                        
                         calculateMetrics();
-                        showToast("Datos JSON cargados exitosamente");
+                        showToast("Datos cargados exitosamente");
                     } else {
-                        showToast("El archivo no tiene el formato esperado");
+                        showToast("Formato incorrecto");
                     }
                 } catch (err) {
-                    showToast("Error al procesar el archivo JSON");
+                    showToast("Error al procesar JSON");
                 }
             };
             reader.readAsText(file);
+            event.target.value = ""; // Permite recargar el mismo archivo si se desea
         }
 
-        // Recuperar persistencia local al iniciar
         window.onload = function() {
             const saved = localStorage.getItem('bitacora_fuerza_backup');
             if (saved) {
@@ -388,6 +402,12 @@
                     document.getElementById('lbl-pesoCorp').innerText = data.pesoCorp;
                     document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
                     document.getElementById('lbl-reps').innerText = data.reps;
+                    
+                    if (data.ejercicio) {
+                        document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+                        currentExIndex = ejercicios.indexOf(data.ejercicio);
+                        if (currentExIndex === -1) currentExIndex = 0;
+                    }
                 } catch(e) {}
             }
             calculateMetrics();

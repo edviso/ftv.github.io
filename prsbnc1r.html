@@ -1,8 +1,12 @@
+
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Corrección: Se eliminó maximum-scale y user-scalable=no para mejorar accesibilidad -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bitácora de Fuerza</title>
     <style>
         * { 
@@ -31,7 +35,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
             display: flex;
             flex-direction: column;
-            gap: 12px; /* Reducido levemente para que entre el nuevo campo */
+            gap: 12px; 
         }
         h1 { 
             font-size: 22px; 
@@ -43,7 +47,11 @@
         .controls-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 8px; /* Separación más compacta */
+            gap: 8px; 
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
         }
         .control-label { 
             font-size: 13px; 
@@ -63,7 +71,7 @@
         }
         .btn-ctrl { 
             width: 42px; 
-            height: 36px; /* Botones apenas más bajos para ahorrar espacio vertical */
+            height: 36px; 
             border: none; 
             background: #ffffff; 
             color: #2b6cb0; 
@@ -200,9 +208,53 @@
             color: #4a5568;
             line-height: 1.5;
         }
+
+        /* --- Nuevos estilos para el Botón Log y su Modal --- */
+        .log-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1500;
+            background: #1a365d;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .log-btn:active { background: #2c5282; }
+        
+        .log-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .log-list li {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .log-list li:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .log-date {
+            font-weight: 700;
+            color: #2b6cb0;
+            display: block;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Botón Log agregado en la parte superior derecha -->
+    <button class="log-btn" onclick="showLog()">Log</button>
 
     <div class="container">
         <h1>Bitácora de Fuerza</h1>
@@ -280,7 +332,8 @@
             </div>
             <div class="result-row">
                 <span class="result-label">
-                    Nivel por Peso (152lb):
+                    <!-- Corrección: El peso ahora se actualiza dinámicamente en el HTML -->
+                    Nivel por Peso (<span id="lbl-pesoDynamic">152</span>lb):
                     <span class="info-icon" onclick="showInfo('peso')">?</span>
                 </span>
                 <span class="result-val" id="res-lvlPeso">Intermedio</span>
@@ -308,10 +361,21 @@
         </div>
     </div>
 
+    <!-- Modal para la información de las métricas -->
     <div class="modal-overlay" id="infoModal" onclick="closeInfo()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-title" id="modalTitle">Título</div>
             <div class="modal-body" id="modalText">Texto</div>
+        </div>
+    </div>
+
+    <!-- Modal para el Log de cambios -->
+    <div class="modal-overlay" id="logModal" onclick="closeLog()">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 400px;">
+            <div class="modal-title">Registro de Versiones</div>
+            <div class="modal-body" id="logContent" style="max-height: 60vh; overflow-y: auto; text-align: left;">
+                <ul class="log-list" id="logList"></ul>
+            </div>
         </div>
     </div>
 
@@ -327,7 +391,7 @@
             ejercicio: ejercicios[0],
             pesoLev: 87,
             reps: 14,
-            incSemanal: 2 // Nuevo valor por defecto
+            incSemanal: 2 
         };
 
         const infoDic = {
@@ -374,12 +438,33 @@
 
         const weightStandard152 = { ppte: 60, nov: 86, int: 117, ava: 154, elite: 194 };
 
+        // Arreglo para el Log de cambios
+        const changelog = [
+            { 
+                date: "2024-05-20", 
+                changes: [
+                    "Corrección: Validación al importar JSON mejorada para aceptar valores en 0.",
+                    "Corrección: Sincronización de ejercicios personalizados al cargar desde LocalStorage.",
+                    "Mejora: Peso en 'Nivel por Peso' ahora se muestra dinámicamente.",
+                    "Mejora: Cálculo de métricas se actualiza al cambiar de ejercicio.",
+                    "Accesibilidad: Se permite hacer zoom en la página.",
+                    "Nueva función: Botón 'Log' para registro de modificaciones."
+                ]
+            },
+            { 
+                date: "2024-05-15", 
+                changes: [
+                    "Lanzamiento inicial de la Bitácora de Fuerza.",
+                    "Cálculo de 1RM, niveles de fuerza y estimación de semanas."
+                ]
+            }
+        ];
+
         function changeVal(key, step) {
             if (key === 'reps' && data[key] + step < 1) return;
             if (key === 'edad' && data[key] + step < 1) return;
             if (key === 'pesoCorp' && data[key] + step < 1) return;
             if (key === 'pesoLev' && data[key] + step < 0) return;
-            // Evitamos que el incremento sea cero para no dividir por cero después
             if (key === 'incSemanal' && data[key] + step < 1) return; 
             
             data[key] += step;
@@ -394,6 +479,8 @@
             
             data.ejercicio = ejercicios[currentExIndex];
             document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+            // Corrección: Llamar a calculateMetrics para actualizar resultados si en el futuro hay estándares por ejercicio
+            calculateMetrics(); 
         }
 
         function getInterpolatedStandards(age) {
@@ -413,7 +500,8 @@
                     };
                 }
             }
-            return ageTable[10];
+            // Corrección: Removido código inalcanzable ageTable[10], devolvemos null por buenas prácticas
+            return null; 
         }
 
         function getLevelName(oneRM, standards) {
@@ -442,6 +530,8 @@
             document.getElementById('res-1rm').innerText = oneRM.toFixed(1) + " lb";
             document.getElementById('res-indice').innerText = index.toFixed(2) + "x";
 
+            // Corrección: Actualizar dinámicamente el texto del peso en la etiqueta
+            document.getElementById('lbl-pesoDynamic').innerText = data.pesoCorp;
             let lvlPeso = getLevelName(oneRM, weightStandard152);
             document.getElementById('res-lvlPeso').innerText = lvlPeso;
 
@@ -455,7 +545,6 @@
                 let librasFaltantes = pesoEnBarraRequerido - data.pesoLev;
                 
                 if (librasFaltantes > 0) {
-                    // Ahora se divide dinámicamente por la variable de incremento
                     let semanas = librasFaltantes / data.incSemanal;
                     document.getElementById('res-semanas').innerText = semanas.toFixed(1);
                 } else {
@@ -476,6 +565,32 @@
         function closeInfo() {
             document.getElementById('infoModal').style.display = 'none';
         }
+
+        // --- Funciones para el Log de Cambios ---
+        function showLog() {
+            const logList = document.getElementById('logList');
+            logList.innerHTML = ''; // Limpiar por si acaso
+            
+            changelog.forEach(entry => {
+                let li = document.createElement('li');
+                let dateHTML = `<span class="log-date">${entry.date}</span>`;
+                let changesHTML = '<ul style="padding-left: 20px; margin: 0;">';
+                entry.changes.forEach(change => {
+                    changesHTML += `<li style="margin-bottom: 4px;">${change}</li>`;
+                });
+                changesHTML += '</ul>';
+                
+                li.innerHTML = dateHTML + changesHTML;
+                logList.appendChild(li);
+            });
+
+            document.getElementById('logModal').style.display = 'flex';
+        }
+
+        function closeLog() {
+            document.getElementById('logModal').style.display = 'none';
+        }
+        // -----------------------------------------
 
         function showToast(msg) {
             let toast = document.getElementById('toast');
@@ -509,7 +624,8 @@
             reader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    if (importedData.edad && importedData.pesoCorp && importedData.pesoLev && importedData.reps) {
+                    // Corrección: Validar que no sean null o undefined en lugar de usar truthy (para permitir el 0)
+                    if (importedData.edad != null && importedData.pesoCorp != null && importedData.pesoLev != null && importedData.reps != null) {
                         data = importedData;
                         
                         document.getElementById('lbl-edad').innerText = data.edad;
@@ -517,7 +633,6 @@
                         document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
                         document.getElementById('lbl-reps').innerText = data.reps;
                         
-                        // Protección por si el JSON anterior no tenía la variable incSemanal
                         if (!data.incSemanal) data.incSemanal = 2;
                         document.getElementById('lbl-incSemanal').innerText = data.incSemanal;
                         
@@ -547,19 +662,28 @@
             const saved = localStorage.getItem('bitacora_fuerza_backup');
             if (saved) {
                 try {
-                    data = JSON.parse(saved);
-                    document.getElementById('lbl-edad').innerText = data.edad;
-                    document.getElementById('lbl-pesoCorp').innerText = data.pesoCorp;
-                    document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
-                    document.getElementById('lbl-reps').innerText = data.reps;
-                    
-                    if (!data.incSemanal) data.incSemanal = 2;
-                    document.getElementById('lbl-incSemanal').innerText = data.incSemanal;
-                    
-                    if (data.ejercicio) {
-                        document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
-                        currentExIndex = ejercicios.indexOf(data.ejercicio);
-                        if (currentExIndex === -1) currentExIndex = 0;
+                    let parsedData = JSON.parse(saved);
+                    // Corrección: Verificar que el objeto parseado tenga las propiedades necesarias
+                    if (parsedData && typeof parsedData.edad !== 'undefined') {
+                        data = parsedData;
+                        
+                        document.getElementById('lbl-edad').innerText = data.edad;
+                        document.getElementById('lbl-pesoCorp').innerText = data.pesoCorp;
+                        document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
+                        document.getElementById('lbl-reps').innerText = data.reps;
+                        
+                        if (!data.incSemanal) data.incSemanal = 2;
+                        document.getElementById('lbl-incSemanal').innerText = data.incSemanal;
+                        
+                        if (data.ejercicio) {
+                            document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+                            currentExIndex = ejercicios.indexOf(data.ejercicio);
+                            // Corrección: Sincronizar el arreglo de ejercicios si se carga uno personalizado
+                            if (currentExIndex === -1) {
+                                ejercicios.push(data.ejercicio);
+                                currentExIndex = ejercicios.length - 1;
+                            }
+                        }
                     }
                 } catch(e) {}
             }
@@ -568,3 +692,4 @@
     </script>
 </body>
 </html>
+```

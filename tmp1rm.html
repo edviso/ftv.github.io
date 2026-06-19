@@ -32,6 +32,8 @@
             display: flex;
             flex-direction: column;
             gap: 12px; 
+            max-height: 95vh;
+            overflow-y: auto;
         }
         h1 { 
             font-size: 22px; 
@@ -159,7 +161,34 @@
         .btn-load { background: #e2e8f0; color: #4a5568; }
         .btn-load:active { background: #cbd5e0; }
         #file-input { display: none; }
-        
+
+        /* --- Estilos para el nuevo módulo de Resumen --- */
+        .summary-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 2px;
+        }
+        .btn-gensum { background: #38a169; color: #ffffff; }
+        .btn-gensum:active { background: #2f855a; }
+        .btn-copysum { background: #e2e8f0; color: #4a5568; }
+        .btn-copysum:active { background: #cbd5e0; }
+
+        .summary-panel {
+            display: none;
+            background: #f0fff4;
+            border: 1px solid #c6f6d5;
+            border-radius: 12px;
+            padding: 14px 15px;
+        }
+        .summary-text {
+            font-size: 14px;
+            color: #276749;
+            line-height: 1.5;
+            text-align: justify;
+            white-space: pre-wrap;
+        }
+        /* ------------------------------------------------ */
+
         .toast { 
             position: fixed; 
             bottom: 25px; 
@@ -245,15 +274,14 @@
             margin-bottom: 4px;
         }
 
-        /* --- Estilo para el crédito en la parte superior izquierda --- */
         .dev-credit {
             position: fixed;
             top: 15px;
             left: 15px;
             z-index: 1500;
             font-size: 10px;
-            color: #a0aec0; /* Color gris claro */
-            font-weight: 400; /* Letra endeble / fina */
+            color: #a0aec0; 
+            font-weight: 400; 
             line-height: 1.3;
             pointer-events: none;
         }
@@ -261,12 +289,10 @@
 </head>
 <body>
 
-    <!-- Crédito de desarrollo -->
     <div class="dev-credit">
         Desarrollado con<br>Z.ai GLM-5.2
     </div>
 
-    <!-- Botón Log -->
     <button class="log-btn" onclick="showLog()">Log</button>
 
     <div class="container">
@@ -371,9 +397,19 @@
             <button class="btn-json btn-load" onclick="triggerLoad()">📂 Cargar</button>
             <input type="file" id="file-input" accept=".json" onchange="importJSON(event)">
         </div>
+
+        <!-- Nuevos botones para el resumen -->
+        <div class="summary-actions">
+            <button class="btn-json btn-gensum" onclick="generarResumen()">📝 Generar resumen</button>
+            <button class="btn-json btn-copysum" onclick="copiarResumen()">📋 Copiar resumen</button>
+        </div>
+
+        <!-- Panel donde se mostrará el texto del resumen -->
+        <div class="summary-panel" id="summary-panel">
+            <div class="summary-text" id="summary-text"></div>
+        </div>
     </div>
 
-    <!-- Modal para la información de las métricas -->
     <div class="modal-overlay" id="infoModal" onclick="closeInfo()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-title" id="modalTitle">Título</div>
@@ -381,7 +417,6 @@
         </div>
     </div>
 
-    <!-- Modal para el Log de cambios -->
     <div class="modal-overlay" id="logModal" onclick="closeLog()">
         <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 400px;">
             <div class="modal-title">Registro de Versiones</div>
@@ -450,8 +485,15 @@
 
         const weightStandard152 = { ppte: 60, nov: 86, int: 117, ava: 154, elite: 194 };
 
-        // Arreglo para el Log de cambios
         const changelog = [
+            { 
+                date: "2024-05-21", 
+                changes: [
+                    "Nueva función: Botón 'Generar resumen' para crear un reporte técnico automático en texto.",
+                    "Nueva función: Botón 'Copiar resumen' para enviar el texto al portapapeles.",
+                    "Mejora: El resumen se actualiza automáticamente en tiempo real si se modifica cualquier valor."
+                ]
+            },
             { 
                 date: "2024-05-20", 
                 changes: [
@@ -562,7 +604,52 @@
             } else {
                 document.getElementById('res-semanas').innerText = "N/A (Máximo)";
             }
+
+            // Actualizar el resumen automáticamente si está visible
+            if (document.getElementById('summary-panel').style.display === 'block') {
+                document.getElementById('summary-text').innerText = buildSummaryText();
+            }
         }
+
+        // --- Lógica del Resumen ---
+        function buildSummaryText() {
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            const fechaStr = `${dd}/${mm}/${yyyy}`;
+
+            const oneRM = (data.pesoLev * (1 + (data.reps / 30))).toFixed(1);
+            const index = (oneRM / data.pesoCorp).toFixed(1);
+            const lvlPeso = document.getElementById('res-lvlPeso').innerText;
+            const lvlEdad = document.getElementById('res-lvlEdad').innerText;
+            
+            let semanasRaw = document.getElementById('res-semanas').innerText;
+            // Si es un número, formatearlo a 1 decimal, si no, dejarlo tal cual (ej. "N/A")
+            let semanas = isNaN(parseFloat(semanasRaw)) ? semanasRaw : parseFloat(semanasRaw).toFixed(1);
+
+            return `Con un peso corporal de ${data.pesoCorp} lb, realizaste ${data.reps} repeticiones con ${data.pesoLev} lb en ${data.ejercicio}, lo que estima una repetición máxima (1RM) de ${oneRM} lb. Tu fuerza relativa es de ${index} veces tu peso corporal, ubicándote en un nivel ${lvlPeso} para tu peso. Según tu edad, actualmente te encuentras en el nivel ${lvlEdad}. Manteniendo el ritmo de progresión actual, se estima que alcanzarás el siguiente nivel en aproximadamente ${semanas} semanas.\n\nFecha: ${fechaStr}`;
+        }
+
+        function generarResumen() {
+            document.getElementById('summary-text').innerText = buildSummaryText();
+            document.getElementById('summary-panel').style.display = 'block';
+            showToast("Resumen generado");
+        }
+
+        function copiarResumen() {
+            const text = document.getElementById('summary-text').innerText;
+            if (!text) {
+                showToast("Genera el resumen primero");
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("Resumen copiado al portapapeles");
+            }).catch(err => {
+                showToast("Error al copiar el resumen");
+            });
+        }
+        // -------------------------
 
         function showInfo(key) {
             const info = infoDic[key];

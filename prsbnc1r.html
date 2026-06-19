@@ -1,11 +1,7 @@
-
-
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Corrección: Se eliminó maximum-scale y user-scalable=no para mejorar accesibilidad -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bitácora de Fuerza</title>
     <style>
@@ -209,7 +205,6 @@
             line-height: 1.5;
         }
 
-        /* --- Nuevos estilos para el Botón Log y su Modal --- */
         .log-btn {
             position: fixed;
             top: 15px;
@@ -249,11 +244,29 @@
             display: block;
             margin-bottom: 4px;
         }
+
+        /* --- Estilo para el crédito en la parte superior izquierda --- */
+        .dev-credit {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1500;
+            font-size: 10px;
+            color: #a0aec0; /* Color gris claro */
+            font-weight: 400; /* Letra endeble / fina */
+            line-height: 1.3;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Botón Log agregado en la parte superior derecha -->
+    <!-- Crédito de desarrollo -->
+    <div class="dev-credit">
+        Desarrollado con<br>Z.ai GLM-5.2
+    </div>
+
+    <!-- Botón Log -->
     <button class="log-btn" onclick="showLog()">Log</button>
 
     <div class="container">
@@ -332,7 +345,6 @@
             </div>
             <div class="result-row">
                 <span class="result-label">
-                    <!-- Corrección: El peso ahora se actualiza dinámicamente en el HTML -->
                     Nivel por Peso (<span id="lbl-pesoDynamic">152</span>lb):
                     <span class="info-icon" onclick="showInfo('peso')">?</span>
                 </span>
@@ -479,7 +491,6 @@
             
             data.ejercicio = ejercicios[currentExIndex];
             document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
-            // Corrección: Llamar a calculateMetrics para actualizar resultados si en el futuro hay estándares por ejercicio
             calculateMetrics(); 
         }
 
@@ -500,7 +511,6 @@
                     };
                 }
             }
-            // Corrección: Removido código inalcanzable ageTable[10], devolvemos null por buenas prácticas
             return null; 
         }
 
@@ -530,7 +540,6 @@
             document.getElementById('res-1rm').innerText = oneRM.toFixed(1) + " lb";
             document.getElementById('res-indice').innerText = index.toFixed(2) + "x";
 
-            // Corrección: Actualizar dinámicamente el texto del peso en la etiqueta
             document.getElementById('lbl-pesoDynamic').innerText = data.pesoCorp;
             let lvlPeso = getLevelName(oneRM, weightStandard152);
             document.getElementById('res-lvlPeso').innerText = lvlPeso;
@@ -566,10 +575,9 @@
             document.getElementById('infoModal').style.display = 'none';
         }
 
-        // --- Funciones para el Log de Cambios ---
         function showLog() {
             const logList = document.getElementById('logList');
-            logList.innerHTML = ''; // Limpiar por si acaso
+            logList.innerHTML = ''; 
             
             changelog.forEach(entry => {
                 let li = document.createElement('li');
@@ -590,7 +598,6 @@
         function closeLog() {
             document.getElementById('logModal').style.display = 'none';
         }
-        // -----------------------------------------
 
         function showToast(msg) {
             let toast = document.getElementById('toast');
@@ -624,7 +631,6 @@
             reader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    // Corrección: Validar que no sean null o undefined en lugar de usar truthy (para permitir el 0)
                     if (importedData.edad != null && importedData.pesoCorp != null && importedData.pesoLev != null && importedData.reps != null) {
                         data = importedData;
                         
@@ -663,7 +669,6 @@
             if (saved) {
                 try {
                     let parsedData = JSON.parse(saved);
-                    // Corrección: Verificar que el objeto parseado tenga las propiedades necesarias
                     if (parsedData && typeof parsedData.edad !== 'undefined') {
                         data = parsedData;
                         
@@ -678,7 +683,6 @@
                         if (data.ejercicio) {
                             document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
                             currentExIndex = ejercicios.indexOf(data.ejercicio);
-                            // Corrección: Sincronizar el arreglo de ejercicios si se carga uno personalizado
                             if (currentExIndex === -1) {
                                 ejercicios.push(data.ejercicio);
                                 currentExIndex = ejercicios.length - 1;
@@ -692,4 +696,3 @@
     </script>
 </body>
 </html>
-```

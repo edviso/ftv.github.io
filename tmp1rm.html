@@ -1,0 +1,695 @@
+
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <!-- Corrección: Se eliminó maximum-scale y user-scalable=no para mejorar accesibilidad -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora de Fuerza</title>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        }
+        body { 
+            background-color: #f4f6f9; 
+            color: #333; 
+            padding: 8px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100dvh; 
+            overflow: hidden; 
+        }
+        .container { 
+            width: 100%; 
+            max-width: 400px; 
+            background: #ffffff; 
+            padding: 16px 15px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            display: flex;
+            flex-direction: column;
+            gap: 12px; 
+        }
+        h1 { 
+            font-size: 22px; 
+            text-align: center; 
+            color: #1a365d; 
+            font-weight: 700; 
+            margin-bottom: 2px;
+        }
+        .controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px; 
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .control-label { 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #4a5568; 
+            margin-bottom: 3px; 
+            display: block; 
+        }
+        .counter-box { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 10px; 
+            padding: 4px; 
+        }
+        .btn-ctrl { 
+            width: 42px; 
+            height: 36px; 
+            border: none; 
+            background: #ffffff; 
+            color: #2b6cb0; 
+            font-size: 22px; 
+            font-weight: 600; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        .btn-ctrl:active { background: #e2e8f0; }
+        .val-display { 
+            font-size: 16px; 
+            font-weight: 700; 
+            color: #2d3748; 
+            width: 60px; 
+            text-align: center; 
+        }
+        .text-display {
+            width: auto;
+            flex: 1;
+            font-size: 15px;
+        }
+        .results-panel { 
+            background: #ebf8ff; 
+            border: 1px solid #bee3f8; 
+            border-radius: 12px; 
+            padding: 14px 15px; 
+        }
+        .result-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 8px; 
+            font-size: 14px; 
+        }
+        .result-row:last-child { margin-bottom: 0; }
+        
+        .result-label { 
+            color: #2c5282; 
+            font-weight: 500; 
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: #cbd5e0;
+            color: #2c5282;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .info-icon:active { background: #a0aec0; }
+
+        .result-val { font-weight: 700; color: #2b6cb0; text-align: right;}
+        .result-val.highlight { font-size: 18px; }
+        
+        .json-actions { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 2px;
+        }
+        .btn-json { 
+            flex: 1; 
+            height: 44px; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-save { background: #2b6cb0; color: #ffffff; }
+        .btn-save:active { background: #2c5282; }
+        .btn-load { background: #e2e8f0; color: #4a5568; }
+        .btn-load:active { background: #cbd5e0; }
+        #file-input { display: none; }
+        
+        .toast { 
+            position: fixed; 
+            bottom: 25px; 
+            background: rgba(0, 0, 0, 0.85); 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            font-size: 13px; 
+            display: none; 
+            z-index: 1000; 
+            text-align: center; 
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: justify;
+        }
+        .modal-title {
+            font-size: 18px;
+            color: #1a365d;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .modal-body {
+            font-size: 14px;
+            color: #4a5568;
+            line-height: 1.5;
+        }
+
+        /* --- Nuevos estilos para el Botón Log y su Modal --- */
+        .log-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1500;
+            background: #1a365d;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .log-btn:active { background: #2c5282; }
+        
+        .log-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .log-list li {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .log-list li:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .log-date {
+            font-weight: 700;
+            color: #2b6cb0;
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Botón Log agregado en la parte superior derecha -->
+    <button class="log-btn" onclick="showLog()">Log</button>
+
+    <div class="container">
+        <h1>Bitácora de Fuerza</h1>
+        
+        <div class="controls-wrapper">
+            <div class="control-group">
+                <span class="control-label">Edad (años)</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('edad', -1)">-</button>
+                    <div class="val-display" id="lbl-edad">68</div>
+                    <button class="btn-ctrl" onclick="changeVal('edad', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Peso Corporal (lb)</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('pesoCorp', -1)">-</button>
+                    <div class="val-display" id="lbl-pesoCorp">152</div>
+                    <button class="btn-ctrl" onclick="changeVal('pesoCorp', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Ejercicio</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeEx(-1)">-</button>
+                    <div class="val-display text-display" id="lbl-ejercicio">Press de banca</div>
+                    <button class="btn-ctrl" onclick="changeEx(1)">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Peso Levantado (lb)</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('pesoLev', -1)">-</button>
+                    <div class="val-display" id="lbl-pesoLev">87</div>
+                    <button class="btn-ctrl" onclick="changeVal('pesoLev', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Repeticiones</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('reps', -1)">-</button>
+                    <div class="val-display" id="lbl-reps">14</div>
+                    <button class="btn-ctrl" onclick="changeVal('reps', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Incremento semanal (lb)</span>
+                <div class="counter-box">
+                    <button class="btn-ctrl" onclick="changeVal('incSemanal', -1)">-</button>
+                    <div class="val-display" id="lbl-incSemanal">2</div>
+                    <button class="btn-ctrl" onclick="changeVal('incSemanal', 1)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-panel">
+            <div class="result-row">
+                <span class="result-label">
+                    1RM Estimado: 
+                    <span class="info-icon" onclick="showInfo('1rm')">?</span>
+                </span>
+                <span class="result-val highlight" id="res-1rm">127.6 lb</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">
+                    Índice Carga/Corp:
+                    <span class="info-icon" onclick="showInfo('indice')">?</span>
+                </span>
+                <span class="result-val" id="res-indice">0.57x</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">
+                    <!-- Corrección: El peso ahora se actualiza dinámicamente en el HTML -->
+                    Nivel por Peso (<span id="lbl-pesoDynamic">152</span>lb):
+                    <span class="info-icon" onclick="showInfo('peso')">?</span>
+                </span>
+                <span class="result-val" id="res-lvlPeso">Intermedio</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">
+                    Nivel por Edad:
+                    <span class="info-icon" onclick="showInfo('edad')">?</span>
+                </span>
+                <span class="result-val" id="res-lvlEdad">Novato</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">
+                    Semanas próx. nivel:
+                    <span class="info-icon" onclick="showInfo('semanas')">?</span>
+                </span>
+                <span class="result-val" id="res-semanas">...</span>
+            </div>
+        </div>
+
+        <div class="json-actions">
+            <button class="btn-json btn-save" onclick="exportJSON()">💾 Grabar</button>
+            <button class="btn-json btn-load" onclick="triggerLoad()">📂 Cargar</button>
+            <input type="file" id="file-input" accept=".json" onchange="importJSON(event)">
+        </div>
+    </div>
+
+    <!-- Modal para la información de las métricas -->
+    <div class="modal-overlay" id="infoModal" onclick="closeInfo()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-title" id="modalTitle">Título</div>
+            <div class="modal-body" id="modalText">Texto</div>
+        </div>
+    </div>
+
+    <!-- Modal para el Log de cambios -->
+    <div class="modal-overlay" id="logModal" onclick="closeLog()">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 400px;">
+            <div class="modal-title">Registro de Versiones</div>
+            <div class="modal-body" id="logContent" style="max-height: 60vh; overflow-y: auto; text-align: left;">
+                <ul class="log-list" id="logList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const ejercicios = ["Press de banca", "Sentadilla", "Peso muerto"];
+        let currentExIndex = 0;
+
+        let data = {
+            edad: 68,
+            pesoCorp: 152,
+            ejercicio: ejercicios[0],
+            pesoLev: 87,
+            reps: 14,
+            incSemanal: 2 
+        };
+
+        const infoDic = {
+            '1rm': {
+                title: "1RM Estimado",
+                text: "El 1RM estimado (Repetición Máxima) representa el peso máximo que una persona podría levantar una sola vez con una técnica correcta. Se calcula mediante fórmulas basadas en el peso levantado y el número de repeticiones realizadas, evitando la necesidad de intentar un levantamiento máximo real. Es el indicador principal para evaluar y planificar el progreso de la fuerza."
+            },
+            'indice': {
+                title: "Índice Carga/Corporal",
+                text: "El Índice Carga/Corporal expresa la relación entre el 1RM estimado y el peso corporal. Este valor, también denominado fuerza relativa, permite comparar objetivamente el rendimiento entre personas de diferente tamaño físico. Un índice de 1.0 significa que el atleta puede levantar el equivalente a su propio peso corporal."
+            },
+            'peso': {
+                title: "Nivel por Peso",
+                text: "El Nivel por Peso clasifica la fuerza relativa del atleta según el valor de su índice carga/corporal. Esta clasificación refleja las diferentes etapas de adaptación fisiológica y técnica, desde principiante hasta élite, permitiendo medir el progreso de forma objetiva e independiente del peso corporal."
+            },
+            'edad': {
+                title: "Nivel por Edad",
+                text: "El Nivel por Edad compara el rendimiento del atleta con valores de referencia correspondientes a su grupo etario. Este indicador tiene en cuenta los cambios fisiológicos propios del envejecimiento, permitiendo determinar si el nivel de fuerza es novato, intermedio, avanzado o élite dentro de personas de la misma edad, en lugar de compararlo con adultos jóvenes."
+            },
+            'semanas': {
+                title: "Semanas próximo nivel",
+                text: "Las Semanas al próximo nivel son una estimación del tiempo necesario para alcanzar la siguiente categoría de fuerza, considerando el ritmo de progresión esperado del atleta. Este cálculo se basa en la diferencia entre el rendimiento actual y el umbral del siguiente nivel, proporcionando una referencia práctica para establecer metas de entrenamiento a corto plazo."
+            }
+        };
+
+        const ageTable = [
+            { age: 15, ppte: 88, nov: 131, int: 185, ava: 248, elite: 317 },
+            { age: 20, ppte: 101, nov: 150, int: 211, ava: 284, elite: 362 },
+            { age: 25, ppte: 103, nov: 154, int: 217, ava: 291, elite: 372 },
+            { age: 30, ppte: 103, nov: 154, int: 217, ava: 291, elite: 372 },
+            { age: 35, ppte: 103, nov: 154, int: 217, ava: 291, elite: 372 },
+            { age: 40, ppte: 103, nov: 154, int: 217, ava: 291, elite: 372 },
+            { age: 45, ppte: 98, nov: 146, int: 205, ava: 276, elite: 352 },
+            { age: 50, ppte: 92, nov: 136, int: 192, ava: 258, elite: 329 },
+            { age: 55, ppte: 84, nov: 126, int: 177, ava: 238, elite: 304 },
+            { age: 60, ppte: 77, nov: 115, int: 162, ava: 217, elite: 278 },
+            { age: 65, ppte: 70, nov: 104, int: 147, ava: 197, elite: 251 },
+            { age: 70, ppte: 63, nov: 93, int: 132, ava: 177, elite: 226 },
+            { age: 75, ppte: 56, nov: 84, int: 118, ava: 159, elite: 203 },
+            { age: 80, ppte: 50, nov: 75, int: 106, ava: 142, elite: 182 },
+            { age: 85, ppte: 45, nov: 67, int: 95, ava: 127, elite: 163 },
+            { age: 90, ppte: 41, nov: 60, int: 85, ava: 114, elite: 146 }
+        ];
+
+        const weightStandard152 = { ppte: 60, nov: 86, int: 117, ava: 154, elite: 194 };
+
+        // Arreglo para el Log de cambios
+        const changelog = [
+            { 
+                date: "2024-05-20", 
+                changes: [
+                    "Corrección: Validación al importar JSON mejorada para aceptar valores en 0.",
+                    "Corrección: Sincronización de ejercicios personalizados al cargar desde LocalStorage.",
+                    "Mejora: Peso en 'Nivel por Peso' ahora se muestra dinámicamente.",
+                    "Mejora: Cálculo de métricas se actualiza al cambiar de ejercicio.",
+                    "Accesibilidad: Se permite hacer zoom en la página.",
+                    "Nueva función: Botón 'Log' para registro de modificaciones."
+                ]
+            },
+            { 
+                date: "2024-05-15", 
+                changes: [
+                    "Lanzamiento inicial de la Bitácora de Fuerza.",
+                    "Cálculo de 1RM, niveles de fuerza y estimación de semanas."
+                ]
+            }
+        ];
+
+        function changeVal(key, step) {
+            if (key === 'reps' && data[key] + step < 1) return;
+            if (key === 'edad' && data[key] + step < 1) return;
+            if (key === 'pesoCorp' && data[key] + step < 1) return;
+            if (key === 'pesoLev' && data[key] + step < 0) return;
+            if (key === 'incSemanal' && data[key] + step < 1) return; 
+            
+            data[key] += step;
+            document.getElementById(`lbl-${key}`).innerText = data[key];
+            calculateMetrics();
+        }
+
+        function changeEx(step) {
+            currentExIndex += step;
+            if (currentExIndex < 0) currentExIndex = ejercicios.length - 1;
+            if (currentExIndex >= ejercicios.length) currentExIndex = 0;
+            
+            data.ejercicio = ejercicios[currentExIndex];
+            document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+            // Corrección: Llamar a calculateMetrics para actualizar resultados si en el futuro hay estándares por ejercicio
+            calculateMetrics(); 
+        }
+
+        function getInterpolatedStandards(age) {
+            if (age <= ageTable[0].age) return ageTable[0];
+            if (age >= ageTable[ageTable.length - 1].age) return ageTable[ageTable.length - 1];
+            for (let i = 0; i < ageTable.length - 1; i++) {
+                let current = ageTable[i];
+                let next = ageTable[i+1];
+                if (age >= current.age && age <= next.age) {
+                    let factor = (age - current.age) / (next.age - current.age);
+                    return {
+                        ppte: current.ppte + factor * (next.ppte - current.ppte),
+                        nov: current.nov + factor * (next.nov - current.nov),
+                        int: current.int + factor * (next.int - current.int),
+                        ava: current.ava + factor * (next.ava - current.ava),
+                        elite: current.elite + factor * (next.elite - current.elite)
+                    };
+                }
+            }
+            // Corrección: Removido código inalcanzable ageTable[10], devolvemos null por buenas prácticas
+            return null; 
+        }
+
+        function getLevelName(oneRM, standards) {
+            if (oneRM < standards.ppte) return "Principiante";
+            if (oneRM < standards.nov) return "Principiante Alto";
+            if (oneRM < standards.int) return "Novato";
+            if (oneRM < standards.ava) return "Intermedio";
+            if (oneRM < standards.elite) return "Avanzado";
+            return "Élite";
+        }
+
+        function getNextTarget1RM(oneRM, standards) {
+            if (oneRM < standards.ppte) return standards.ppte;
+            if (oneRM < standards.nov) return standards.nov;
+            if (oneRM < standards.int) return standards.int;
+            if (oneRM < standards.ava) return standards.ava;
+            if (oneRM < standards.elite) return standards.elite;
+            return null;
+        }
+
+        function calculateMetrics() {
+            let factorEpley = 1 + (data.reps / 30);
+            let oneRM = data.pesoLev * factorEpley;
+            let index = oneRM / data.pesoCorp;
+
+            document.getElementById('res-1rm').innerText = oneRM.toFixed(1) + " lb";
+            document.getElementById('res-indice').innerText = index.toFixed(2) + "x";
+
+            // Corrección: Actualizar dinámicamente el texto del peso en la etiqueta
+            document.getElementById('lbl-pesoDynamic').innerText = data.pesoCorp;
+            let lvlPeso = getLevelName(oneRM, weightStandard152);
+            document.getElementById('res-lvlPeso').innerText = lvlPeso;
+
+            let currentAgeStandards = getInterpolatedStandards(data.edad);
+            let lvlEdad = getLevelName(oneRM, currentAgeStandards);
+            document.getElementById('res-lvlEdad').innerText = lvlEdad;
+
+            let target1RM = getNextTarget1RM(oneRM, currentAgeStandards);
+            if (target1RM !== null) {
+                let pesoEnBarraRequerido = target1RM / factorEpley;
+                let librasFaltantes = pesoEnBarraRequerido - data.pesoLev;
+                
+                if (librasFaltantes > 0) {
+                    let semanas = librasFaltantes / data.incSemanal;
+                    document.getElementById('res-semanas').innerText = semanas.toFixed(1);
+                } else {
+                    document.getElementById('res-semanas').innerText = "0.0";
+                }
+            } else {
+                document.getElementById('res-semanas').innerText = "N/A (Máximo)";
+            }
+        }
+
+        function showInfo(key) {
+            const info = infoDic[key];
+            document.getElementById('modalTitle').innerText = info.title;
+            document.getElementById('modalText').innerText = info.text;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function closeInfo() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        // --- Funciones para el Log de Cambios ---
+        function showLog() {
+            const logList = document.getElementById('logList');
+            logList.innerHTML = ''; // Limpiar por si acaso
+            
+            changelog.forEach(entry => {
+                let li = document.createElement('li');
+                let dateHTML = `<span class="log-date">${entry.date}</span>`;
+                let changesHTML = '<ul style="padding-left: 20px; margin: 0;">';
+                entry.changes.forEach(change => {
+                    changesHTML += `<li style="margin-bottom: 4px;">${change}</li>`;
+                });
+                changesHTML += '</ul>';
+                
+                li.innerHTML = dateHTML + changesHTML;
+                logList.appendChild(li);
+            });
+
+            document.getElementById('logModal').style.display = 'flex';
+        }
+
+        function closeLog() {
+            document.getElementById('logModal').style.display = 'none';
+        }
+        // -----------------------------------------
+
+        function showToast(msg) {
+            let toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        function exportJSON() {
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 4));
+            let downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            let exName = data.ejercicio.replace(/\s+/g, '_').toLowerCase();
+            downloadAnchor.setAttribute("download", `progreso_${exName}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            
+            localStorage.setItem('bitacora_fuerza_backup', JSON.stringify(data));
+            showToast("JSON descargado y guardado");
+        }
+
+        function triggerLoad() {
+            document.getElementById('file-input').click();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    // Corrección: Validar que no sean null o undefined en lugar de usar truthy (para permitir el 0)
+                    if (importedData.edad != null && importedData.pesoCorp != null && importedData.pesoLev != null && importedData.reps != null) {
+                        data = importedData;
+                        
+                        document.getElementById('lbl-edad').innerText = data.edad;
+                        document.getElementById('lbl-pesoCorp').innerText = data.pesoCorp;
+                        document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
+                        document.getElementById('lbl-reps').innerText = data.reps;
+                        
+                        if (!data.incSemanal) data.incSemanal = 2;
+                        document.getElementById('lbl-incSemanal').innerText = data.incSemanal;
+                        
+                        if (data.ejercicio) {
+                            document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+                            currentExIndex = ejercicios.indexOf(data.ejercicio);
+                            if (currentExIndex === -1) {
+                                ejercicios.push(data.ejercicio);
+                                currentExIndex = ejercicios.length - 1;
+                            }
+                        }
+                        
+                        calculateMetrics();
+                        showToast("Datos cargados exitosamente");
+                    } else {
+                        showToast("Formato incorrecto");
+                    }
+                } catch (err) {
+                    showToast("Error al procesar JSON");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ""; 
+        }
+
+        window.onload = function() {
+            const saved = localStorage.getItem('bitacora_fuerza_backup');
+            if (saved) {
+                try {
+                    let parsedData = JSON.parse(saved);
+                    // Corrección: Verificar que el objeto parseado tenga las propiedades necesarias
+                    if (parsedData && typeof parsedData.edad !== 'undefined') {
+                        data = parsedData;
+                        
+                        document.getElementById('lbl-edad').innerText = data.edad;
+                        document.getElementById('lbl-pesoCorp').innerText = data.pesoCorp;
+                        document.getElementById('lbl-pesoLev').innerText = data.pesoLev;
+                        document.getElementById('lbl-reps').innerText = data.reps;
+                        
+                        if (!data.incSemanal) data.incSemanal = 2;
+                        document.getElementById('lbl-incSemanal').innerText = data.incSemanal;
+                        
+                        if (data.ejercicio) {
+                            document.getElementById('lbl-ejercicio').innerText = data.ejercicio;
+                            currentExIndex = ejercicios.indexOf(data.ejercicio);
+                            // Corrección: Sincronizar el arreglo de ejercicios si se carga uno personalizado
+                            if (currentExIndex === -1) {
+                                ejercicios.push(data.ejercicio);
+                                currentExIndex = ejercicios.length - 1;
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+            calculateMetrics();
+        };
+    </script>
+</body>
+</html>
+```

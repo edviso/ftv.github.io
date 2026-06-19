@@ -14,7 +14,7 @@
         body { 
             background-color: #f4f6f9; 
             color: #333; 
-            padding: 8px; 
+            padding: 5px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
@@ -26,36 +26,36 @@
             width: 100%; 
             max-width: 400px; 
             background: #ffffff; 
-            padding: 16px 15px; 
+            padding: 14px 14px; 
             border-radius: 16px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
             display: flex;
             flex-direction: column;
-            gap: 12px; 
-            max-height: 95vh;
+            gap: 10px; 
+            max-height: 98vh;
             overflow-y: auto;
         }
         h1 { 
-            font-size: 22px; 
+            font-size: 20px; 
             text-align: center; 
             color: #1a365d; 
             font-weight: 700; 
-            margin-bottom: 2px;
+            margin-bottom: 0;
         }
         .controls-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 8px; 
+            gap: 6px; 
         }
         .control-group {
             display: flex;
             flex-direction: column;
         }
         .control-label { 
-            font-size: 13px; 
+            font-size: 12px; 
             font-weight: 600; 
             color: #4a5568; 
-            margin-bottom: 3px; 
+            margin-bottom: 2px; 
             display: block; 
         }
         .counter-box { 
@@ -65,15 +65,15 @@
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
             border-radius: 10px; 
-            padding: 4px; 
+            padding: 3px; 
         }
         .btn-ctrl { 
-            width: 42px; 
-            height: 36px; 
+            width: 40px; 
+            height: 34px; 
             border: none; 
             background: #ffffff; 
             color: #2b6cb0; 
-            font-size: 22px; 
+            font-size: 20px; 
             font-weight: 600; 
             border-radius: 8px; 
             cursor: pointer; 
@@ -85,7 +85,7 @@
         }
         .btn-ctrl:active { background: #e2e8f0; }
         .val-display { 
-            font-size: 16px; 
+            font-size: 15px; 
             font-weight: 700; 
             color: #2d3748; 
             width: 60px; 
@@ -94,20 +94,20 @@
         .text-display {
             width: auto;
             flex: 1;
-            font-size: 15px;
+            font-size: 14px;
         }
         .results-panel { 
             background: #ebf8ff; 
             border: 1px solid #bee3f8; 
             border-radius: 12px; 
-            padding: 14px 15px; 
+            padding: 12px 14px; 
         }
         .result-row { 
             display: flex; 
             justify-content: space-between; 
             align-items: center;
-            margin-bottom: 8px; 
-            font-size: 14px; 
+            margin-bottom: 6px; 
+            font-size: 13px; 
         }
         .result-row:last-child { margin-bottom: 0; }
         
@@ -122,12 +122,12 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             background: #cbd5e0;
             color: #2c5282;
             border-radius: 50%;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
@@ -135,16 +135,16 @@
         .info-icon:active { background: #a0aec0; }
 
         .result-val { font-weight: 700; color: #2b6cb0; text-align: right;}
-        .result-val.highlight { font-size: 18px; }
+        .result-val.highlight { font-size: 17px; }
         
         .json-actions { 
             display: flex; 
             gap: 10px; 
-            margin-top: 2px;
+            margin-top: 0px;
         }
         .btn-json { 
             flex: 1; 
-            height: 44px; 
+            height: 40px; 
             border: none; 
             border-radius: 10px; 
             font-size: 14px; 
@@ -160,45 +160,20 @@
         .btn-save:active { background: #2c5282; }
         .btn-load { background: #e2e8f0; color: #4a5568; }
         .btn-load:active { background: #cbd5e0; }
-        #file-input { display: none; }
-
-        /* --- Estilos para el nuevo módulo de Resumen --- */
-        .summary-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 2px;
-        }
         .btn-gensum { background: #38a169; color: #ffffff; }
         .btn-gensum:active { background: #2f855a; }
-        .btn-copysum { background: #e2e8f0; color: #4a5568; }
-        .btn-copysum:active { background: #cbd5e0; }
-
-        .summary-panel {
-            display: none;
-            background: #f0fff4;
-            border: 1px solid #c6f6d5;
-            border-radius: 12px;
-            padding: 14px 15px;
-        }
-        .summary-text {
-            font-size: 14px;
-            color: #276749;
-            line-height: 1.5;
-            text-align: justify;
-            white-space: pre-wrap;
-        }
-        /* ------------------------------------------------ */
-
+        #file-input { display: none; }
+        
         .toast { 
             position: fixed; 
-            bottom: 25px; 
+            bottom: 15px; 
             background: rgba(0, 0, 0, 0.85); 
             color: white; 
             padding: 10px 20px; 
             border-radius: 20px; 
             font-size: 13px; 
             display: none; 
-            z-index: 1000; 
+            z-index: 3000; 
             text-align: center; 
         }
 
@@ -217,7 +192,7 @@
             border-radius: 16px;
             padding: 20px;
             width: 100%;
-            max-width: 350px;
+            max-width: 360px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             text-align: justify;
         }
@@ -225,7 +200,7 @@
             font-size: 18px;
             color: #1a365d;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             text-align: center;
         }
         .modal-body {
@@ -236,15 +211,15 @@
 
         .log-btn {
             position: fixed;
-            top: 15px;
-            right: 15px;
+            top: 10px;
+            right: 10px;
             z-index: 1500;
             background: #1a365d;
             color: #fff;
             border: none;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -276,8 +251,8 @@
 
         .dev-credit {
             position: fixed;
-            top: 15px;
-            left: 15px;
+            top: 10px;
+            left: 10px;
             z-index: 1500;
             font-size: 10px;
             color: #a0aec0; 
@@ -285,6 +260,22 @@
             line-height: 1.3;
             pointer-events: none;
         }
+
+        /* Estilos específicos del modal de resumen */
+        .summary-text {
+            font-size: 14px;
+            color: #2d3748;
+            line-height: 1.6;
+            text-align: justify;
+            white-space: pre-wrap;
+        }
+        .copy-btn-modal {
+            width: 100%;
+            margin-top: 15px;
+            background: #2b6cb0;
+            color: #ffffff;
+        }
+        .copy-btn-modal:active { background: #2c5282; }
     </style>
 </head>
 <body>
@@ -398,18 +389,10 @@
             <input type="file" id="file-input" accept=".json" onchange="importJSON(event)">
         </div>
 
-        <!-- Nuevos botones para el resumen -->
-        <div class="summary-actions">
-            <button class="btn-json btn-gensum" onclick="generarResumen()">📝 Generar resumen</button>
-            <button class="btn-json btn-copysum" onclick="copiarResumen()">📋 Copiar resumen</button>
-        </div>
-
-        <!-- Panel donde se mostrará el texto del resumen -->
-        <div class="summary-panel" id="summary-panel">
-            <div class="summary-text" id="summary-text"></div>
-        </div>
+        <button class="btn-json btn-gensum" onclick="generarResumen()">📝 Generar resumen</button>
     </div>
 
+    <!-- Modal para la información de las métricas -->
     <div class="modal-overlay" id="infoModal" onclick="closeInfo()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-title" id="modalTitle">Título</div>
@@ -417,12 +400,22 @@
         </div>
     </div>
 
+    <!-- Modal para el Log de cambios -->
     <div class="modal-overlay" id="logModal" onclick="closeLog()">
         <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 400px;">
             <div class="modal-title">Registro de Versiones</div>
             <div class="modal-body" id="logContent" style="max-height: 60vh; overflow-y: auto; text-align: left;">
                 <ul class="log-list" id="logList"></ul>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal para el Resumen -->
+    <div class="modal-overlay" id="summaryModal" onclick="closeSummary()">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 380px;">
+            <div class="modal-title">Resumen de Progreso</div>
+            <div class="summary-text" id="summary-text"></div>
+            <button class="btn-json copy-btn-modal" onclick="copiarResumen()">📋 Copiar resumen</button>
         </div>
     </div>
 
@@ -486,6 +479,14 @@
         const weightStandard152 = { ppte: 60, nov: 86, int: 117, ava: 154, elite: 194 };
 
         const changelog = [
+            { 
+                date: "2024-05-22", 
+                changes: [
+                    "Mejora: El resumen ahora se muestra en una ventana emergente para evitar desplazamiento.",
+                    "Mejora: Optimización de márgenes y tamaños de fuente para eliminar el scroll en la pantalla principal.",
+                    "Refactor: El botón 'Copiar resumen' se traslada a la ventana emergente."
+                ]
+            },
             { 
                 date: "2024-05-21", 
                 changes: [
@@ -605,8 +606,8 @@
                 document.getElementById('res-semanas').innerText = "N/A (Máximo)";
             }
 
-            // Actualizar el resumen automáticamente si está visible
-            if (document.getElementById('summary-panel').style.display === 'block') {
+            // Actualizar el resumen automáticamente si la ventana emergente está abierta
+            if (document.getElementById('summaryModal').style.display === 'flex') {
                 document.getElementById('summary-text').innerText = buildSummaryText();
             }
         }
@@ -625,7 +626,6 @@
             const lvlEdad = document.getElementById('res-lvlEdad').innerText;
             
             let semanasRaw = document.getElementById('res-semanas').innerText;
-            // Si es un número, formatearlo a 1 decimal, si no, dejarlo tal cual (ej. "N/A")
             let semanas = isNaN(parseFloat(semanasRaw)) ? semanasRaw : parseFloat(semanasRaw).toFixed(1);
 
             return `Con un peso corporal de ${data.pesoCorp} lb, realizaste ${data.reps} repeticiones con ${data.pesoLev} lb en ${data.ejercicio}, lo que estima una repetición máxima (1RM) de ${oneRM} lb. Tu fuerza relativa es de ${index} veces tu peso corporal, ubicándote en un nivel ${lvlPeso} para tu peso. Según tu edad, actualmente te encuentras en el nivel ${lvlEdad}. Manteniendo el ritmo de progresión actual, se estima que alcanzarás el siguiente nivel en aproximadamente ${semanas} semanas.\n\nFecha: ${fechaStr}`;
@@ -633,14 +633,17 @@
 
         function generarResumen() {
             document.getElementById('summary-text').innerText = buildSummaryText();
-            document.getElementById('summary-panel').style.display = 'block';
-            showToast("Resumen generado");
+            document.getElementById('summaryModal').style.display = 'flex';
+        }
+
+        function closeSummary() {
+            document.getElementById('summaryModal').style.display = 'none';
         }
 
         function copiarResumen() {
             const text = document.getElementById('summary-text').innerText;
             if (!text) {
-                showToast("Genera el resumen primero");
+                showToast("Error: No hay texto para copiar");
                 return;
             }
             navigator.clipboard.writeText(text).then(() => {

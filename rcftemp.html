@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Café Pro - Tostador</title>
+    <style>
+        :root {
+            --bg-dark: #1a1410;
+            --bg-card: #2c1e1a;
+            --primary: #c87f3a;
+            --primary-hover: #e0823c;
+            --text-light: #f5f5f5;
+            --text-gray: #aaa;
+            --danger: #d9534f;
+            --success: #5cb85c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            padding-bottom: 70px;
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+            background-color: #110a08;
+            border-bottom: 2px solid var(--primary);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 { color: var(--primary); font-size: 1.5rem; }
+        h2 { margin: 20px 0 10px; color: var(--text-light); font-size: 1.2rem; }
+        h3 { color: var(--primary); margin-bottom: 5px; }
+
+        main { padding: 20px; }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            display: flex;
+            background-color: #110a08;
+            border-top: 1px solid #333;
+            z-index: 100;
+        }
+
+        .bottom-nav button {
+            flex: 1;
+            background: none; border: none;
+            color: var(--text-gray);
+            padding: 15px 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .bottom-nav button.active { color: var(--primary); border-top: 3px solid var(--primary); }
+
+        .btn {
+            display: block; width: 100%;
+            padding: 15px; margin: 10px 0;
+            background-color: var(--primary);
+            color: #fff; border: none;
+            border-radius: 12px;
+            font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: #4a342c; }
+        .btn-danger { background-color: var(--danger); }
+        .btn-small { padding: 8px; font-size: 0.9rem; width: auto; display: inline-block; }
+
+        input, select, textarea {
+            width: 100%; padding: 12px; margin: 8px 0;
+            background-color: #110a08;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: var(--text-light);
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .card:active { transform: scale(0.98); }
+        .card.no-click { cursor: default; }
+        .card.no-click:active { transform: none; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: #221612;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-card h3 { color: var(--primary); font-size: 1.8rem; margin: 0; }
+        .stat-card p { font-size: 0.9rem; color: var(--text-gray); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            width: 90%; max-width: 500px;
+            padding: 30px;
+            border-radius: 20px;
+            position: relative;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-btn {
+            position: absolute; top: 15px; right: 15px;
+            background: none; border: none; color: var(--text-gray);
+            font-size: 1.5rem; cursor: pointer;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .badge-resting { background: var(--danger); color: white; }
+        .badge-ready { background: var(--success); color: white; }
+
+        .progress-bar { background: #444; height: 5px; border-radius: 5px; margin-top: 5px; }
+        .progress-fill { background: var(--primary); height: 100%; border-radius: 5px; }
+        
+        .timeline-item { border-left: 2px solid var(--primary); padding-left: 15px; margin-bottom: 15px; }
+        
+        #fileInput { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>☕ Café Pro Tostador</h1>
+    </header>
+
+    <nav class="bottom-nav">
+        <button onclick="navigateTo('home')" id="nav-home" class="active">Inicio</button>
+        <button onclick="navigateTo('beans')" id="nav-beans">Lotes</button>
+        <button onclick="navigateTo('roasts')" id="nav-roasts">Tuestes</button>
+        <button onclick="navigateTo('config')" id="nav-config">Datos</button>
+    </nav>
+
+    <main id="app-content"></main>
+
+    <!-- Modal Genérico -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">✖</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".json">
+
+    <script>
+        // --- GESTIÓN DE DATOS (LocalStorage + JSON) ---
+        let state = {
+            beans: [],
+            roasts: [],
+            cuppings: [],
+            settings: { readyDays: 7 }
+        };
+
+        function loadState() {
+            const saved = localStorage.getItem('cafeProState');
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('cafeProState', JSON.stringify(state));
+        }
+
+        // --- UTILIDADES Y CÓDIGOS ---
+        const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+
+        function formatDateCode(dateStr) {
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = meses[d.getMonth()];
+            const year = String(d.getFullYear()).substring(2);
+            return `${day}${month}${year}`;
+        }
+
+        function generateLotCode(variedad, fechaIngreso) {
+            const varAbbr = variedad.substring(0, 3).toUpperCase();
+            const dateStr = formatDateCode(fechaIngreso);
+            const existingLots = state.beans.filter(b => b.variedad.substring(0, 3).toUpperCase() === varAbbr);
+            const consecutive = existingLots.length + 1;
+            return `${varAbbr}-${dateStr}-L${String(consecutive).padStart(2, '0')}`;
+        }
+
+        function generateRoastCode(bean, fecha) {
+            const varAbbr = bean.variedad.substring(0, 3).toUpperCase();
+            const dateStr = formatDateCode(fecha);
+            const lotNum = bean.codigo.split('-L')[1];
+            const beanRoasts = state.roasts.filter(r => r.beanId === bean.id);
+            const consecutive = beanRoasts.length + 1;
+            return `${varAbbr}-L${lotNum}-${dateStr}-T${String(consecutive).padStart(2, '0')}`;
+        }
+
+        function daysSince(dateStr) {
+            const past = new Date(dateStr);
+            const now = new Date();
+            const diff = Math.abs(now - past);
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
+
+        function daysBetween(date1, date2) {
+            const d1 = new Date(date1);
+            const d2 = new Date(date2);
+            const diff = Math.abs(d2 - d1);
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
+
+        // --- NAVEGACIÓN ---
+        function navigateTo(view) {
+            closeModal();
+            const appContent = document.getElementById('app-content');
+            document.querySelectorAll('.bottom-nav button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${view}`).classList.add('active');
+            
+            if (view === 'home') renderHome(appContent);
+            else if (view === 'beans') renderBeans(appContent);
+            else if (view === 'roasts') renderRoasts(appContent);
+            else if (view === 'config') renderConfig(appContent);
+        }
+
+        // --- VISTAS ---
+        function renderHome(container) {
+            const { beans, roasts, cuppings } = state;
+            let proximosHtml = '';
+            
+            // Ordenar por fecha descendente y tomar los primeros 5
+            const roastsSorted = [...roasts].sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
+            
+            if (roastsSorted.length === 0) {
+                proximosHtml = '<div class="card no-click">No hay tuestes registrados.</div>';
+            } else {
+                roastsSorted.forEach(r => {
+                    const dias = daysSince(r.fecha);
+                    const estado = dias < state.settings.readyDays ? 'Reposando' : 'Listo para catar';
+                    const badgeClass = dias < state.settings.readyDays ? 'badge-resting' : 'badge-ready';
+                    const cCatas = cuppings.filter(c => c.roastId === r.id).length;
+                    
+                    proximosHtml += `
+                        <div class="card" onclick="openRoastDetail(${r.id})">
+                            <h3>${r.codigo}</h3>
+                            <p>Nivel: ${r.nivelTueste} - Fecha: ${new Date(r.fecha).toLocaleDateString()}</p>
+                            <p>Días: <strong>${dias}</strong> <span class="badge ${badgeClass}">${estado}</span></p>
+                            <p>Catas realizadas: ${cCatas}</p>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = `
+                <button class="btn" onclick="openBeanForm()">➕ Nuevo grano / lote</button>
+                <button class="btn btn-secondary" onclick="openRoastForm()">🔥 Nuevo tueste</button>
+                
+                <h2>Estadísticas Rápidas</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><h3>${beans.length}</h3><p>Lotes</p></div>
+                    <div class="stat-card"><h3>${roasts.length}</h3><p>Tuestes</p></div>
+                    <div class="stat-card"><h3>${cuppings.length}</h3><p>Catas</p></div>
+                    <div class="stat-card"><h3>${beans.reduce((s,b)=>s+b.cantidadRestante,0).toFixed(1)}kg</h3><p>Café Verde</p></div>
+                </div>
+
+                <h2>Próximos a cata</h2>
+                ${proximosHtml}
+            `;
+        }
+
+        function renderBeans(container) {
+            let html = '<h2>Inventario de Granos Verdes</h2>';
+            if (state.beans.length === 0) html += '<div class="card no-click">No hay lotes registrados.</div>';
+            
+            state.beans.forEach(b => {
+                const pct = b.cantidadComprada > 0 ? (b.cantidadRestante / b.cantidadComprada * 100).toFixed(0) : 0;
+                html += `
+                    <div class="card" onclick="openBeanDetail(${b.id})">
+                        <h3>${b.nombreComercial} (${b.variedad})</h3>
+                        <p>Código: ${b.codigo}</p>
+                        <p>Disponible: ${b.cantidadRestante}kg / ${b.cantidadComprada}kg (${pct}%)</p>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderRoasts(container) {
+            let html = '<h2>Historial de Tuestes</h2>';
+            if (state.roasts.length === 0) html += '<div class="card no-click">No hay tuestes registrados.</div>';
+            
+            const roastsSorted = [...state.roasts].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            roastsSorted.forEach(r => {
+                const bean = state.beans.find(b => b.id === r.beanId);
+                const dias = daysSince(r.fecha);
+                const estado = dias < state.settings.readyDays ? 'Reposando' : 'Listo';
+                const badgeClass = dias < state.settings.readyDays ? 'badge-resting' : 'badge-ready';
+                html += `
+                    <div class="card" onclick="openRoastDetail(${r.id})">
+                        <h3>${r.codigo}</h3>
+                        <p>${bean ? bean.nombreComercial : 'Lote eliminado'} - ${r.nivelTueste}</p>
+                        <p>Días: <strong>${dias}</strong> <span class="badge ${badgeClass}">${estado}</span></p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderConfig(container) {
+            container.innerHTML = `
+                <h2>Configuración y Datos</h2>
+                <div class="card no-click">
+                    <h3>Días para catar</h3>
+                    <p>Días mínimos de reposo (Por defecto: 7)</p>
+                    <input type="number" id="cfg_days" value="${state.settings.readyDays}" onchange="updateConfig()">
+                </div>
+                
+                <div class="card no-click">
+                    <h3>Respaldo de Datos (JSON)</h3>
+                    <p>Descarga todos tus datos en un archivo JSON para guardarlos en tu celular.</p>
+                    <button class="btn" onclick="exportJSON()">📥 Exportar Datos</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📤 Importar Datos</button>
+                </div>
+            `;
+        }
+
+        function updateConfig() {
+            state.settings.readyDays = parseInt(document.getElementById('cfg_days').value) || 7;
+            saveState();
+        }
+
+        // --- FORMULARIOS ---
+        function openBeanForm() {
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <h2>Nuevo Lote de Grano</h2>
+                <form id="bean-form">
+                    <input type="text" id="b_nombre" placeholder="Nombre comercial" required>
+                    <input type="text" id="b_variedad" placeholder="Variedad (ej: Borbon)" required>
+                    <input type="text" id="b_origen" placeholder="País / Región">
+                    <input type="text" id="b_productor" placeholder="Productor / Finca">
+                    <input type="text" id="b_proceso" placeholder="Proceso (Lavado, Natural, Honey)">
+                    <input type="date" id="b_fecha" required>
+                    <input type="number" id="b_cantidad" placeholder="Cantidad comprada (kg)" step="0.01" required>
+                    <input type="number" id="b_precio" placeholder="Precio por kg" step="0.01">
+                    <textarea id="b_notas" placeholder="Notas"></textarea>
+                    <button type="submit" class="btn">Guardar Lote</button>
+                </form>
+            `;
+            document.getElementById('modal').style.display = 'flex';
+            
+            document.getElementById('bean-form').onsubmit = (e) => {
+                e.preventDefault();
+                const variedad = document.getElementById('b_variedad').value;
+                const fecha = document.getElementById('b_fecha').value;
+                const cantidad = parseFloat(document.getElementById('b_cantidad').value);
+                const codigo = generateLotCode(variedad, fecha);
+                
+                const newBean = {
+                    id: Date.now(),
+                    codigo,
+                    nombreComercial: document.getElementById('b_nombre').value,
+                    variedad,
+                    origen: document.getElementById('b_origen').value,
+                    productor: document.getElementById('b_productor').value,
+                    proceso: document.getElementById('b_proceso').value,
+                    fechaCompra: fecha,
+                    cantidadComprada: cantidad,
+                    cantidadRestante: cantidad,
+                    precio: parseFloat(document.getElementById('b_precio').value) || 0,
+                    notas: document.getElementById('b_notas').value
+                };
+                
+                state.beans.push(newBean);
+                saveState();
+                closeModal();
+                navigateTo('beans');
+            };
+        }
+
+        function openRoastForm() {
+            if (state.beans.length === 0) {
+                alert('Primero registra un lote de grano verde.');
+                return;
+            }
+
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <h2>Nuevo Tueste</h2>
+                <form id="roast-form">
+                    <select id="r_bean" required>
+                        <option value="">Selecciona Lote...</option>
+                        ${state.beans.map(b => `<option value="${b.id}">${b.codigo} - ${b.nombreComercial} (${b.cantidadRestante}kg)</option>`).join('')}
+                    </select>
+                    <input type="datetime-local" id="r_fecha" required>
+                    <input type="number" id="r_verde" placeholder="Cantidad verde (kg)" step="0.01" required>
+                    <input type="number" id="r_tostada" placeholder="Cantidad tostada (kg)" step="0.01" required>
+                    <select id="r_nivel">
+                        <option value="Claro">Claro</option>
+                        <option value="Medio">Medio</option>
+                        <option value="Oscuro">Oscuro</option>
+                    </select>
+                    <input type="text" id="r_maquina" placeholder="Máquina tostadora">
+                    <input type="text" id="r_observaciones" placeholder="Observaciones (Crack, tiempos)">
+                    <button type="submit" class="btn">Guardar Tueste</button>
+                </form>
+            `;
+            document.getElementById('modal').style.display = 'flex';
+
+            document.getElementById('roast-form').onsubmit = (e) => {
+                e.preventDefault();
+                const beanId = parseInt(document.getElementById('r_bean').value);
+                const bean = state.beans.find(b => b.id === beanId);
+                const fecha = document.getElementById('r_fecha').value;
+                const cantVerde = parseFloat(document.getElementById('r_verde').value);
+
+                if (cantVerde > bean.cantidadRestante) {
+                    alert('Inventario insuficiente.');
+                    return;
+                }
+
+                const cantTostada = parseFloat(document.getElementById('r_tostada').value);
+                const perdida = cantVerde > 0 ? ((cantVerde - cantTostada) / cantVerde * 100).toFixed(1) : 0;
+                const codigo = generateRoastCode(bean, fecha);
+                
+                const newRoast = {
+                    id: Date.now(),
+                    codigo,
+                    beanId,
+                    fecha,
+                    cantidadVerde: cantVerde,
+                    cantidadTostada: cantTostada,
+                    perdida: parseFloat(perdida),
+                    nivelTueste: document.getElementById('r_nivel').value,
+                    maquina: document.getElementById('r_maquina').value,
+                    observaciones: document.getElementById('r_observaciones').value
+                };
+
+                state.roasts.push(newRoast);
+                bean.cantidadRestante -= cantVerde; // Descontar inventario
+                saveState();
+                closeModal();
+                navigateTo('home');
+            };
+        }
+
+        function openRoastDetail(id) {
+            const roast = state.roasts.find(r => r.id === id);
+            const bean = state.beans.find(b => b.id === roast.beanId);
+            const cuppings = state.cuppings.filter(c => c.roastId === id).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            const dias = daysSince(roast.fecha);
+
+            let timelineHtml = cuppings.map(c => `
+                <div class="timeline-item">
+                    <p><strong>Día ${c.diasDesdeTueste}</strong> (${new Date(c.fecha).toLocaleDateString()})</p>
+                    <p>Catador: ${c.catador} - Puntaje: ${c.puntajeTotal}/100</p>
+                    <p style="color:#aaa; font-size:0.9rem;">${c.comentarios}</p>
+                </div>
+            `).join('');
+
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <h2>${roast.codigo}</h2>
+                <p>${bean.nombreComercial} - Tueste ${roast.nivelTueste}</p>
+                <p>Fecha: ${new Date(roast.fecha).toLocaleString()}</p>
+                <p>Días de reposo actuales: <strong>${dias}</strong></p>
+                <p>Pérdida de peso: ${roast.perdida}%</p>
+                
+                <button class="btn" onclick="openCuppingForm(${roast.id})">➕ Nueva Cata</button>
+                
+                <h3>Evolución Sensorial</h3>
+                <canvas id="evolutionChart" width="400" height="200" style="background:#110a08; border-radius:8px; width:100%; margin-bottom:15px;"></canvas>
+                
+                <h3>Historial de Catas</h3>
+                <div>${timelineHtml || '<p>Sin catas aún.</p>'}</div>
+            `;
+            document.getElementById('modal').style.display = 'flex';
+            
+            drawEvolutionChart('evolutionChart', cuppings);
+        }
+
+        function openCuppingForm(roastId) {
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <h2>Registro de Cata</h2>
+                <form id="cup-form">
+                    <input type="datetime-local" id="c_fecha" required>
+                    <input type="text" id="c_catador" placeholder="Catador" required>
+                    <input type="text" id="c_metodo" placeholder="Método (V60, Espresso, etc.)">
+                    <input type="number" id="c_puntaje" placeholder="Puntaje Total (0-100)" min="0" max="100" required>
+                    <textarea id="c_comentarios" placeholder="Notas de cata (Aromas, sabores, defectos)"></textarea>
+                    <button type="submit" class="btn">Guardar Cata</button>
+                </form>
+            `;
+            
+            document.getElementById('cup-form').onsubmit = (e) => {
+                e.preventDefault();
+                const roast = state.roasts.find(r => r.id === roastId);
+                const fechaCata = document.getElementById('c_fecha').value;
+                const diasCata = daysBetween(roast.fecha, fechaCata);
+
+                const newCupping = {
+                    id: Date.now(),
+                    roastId,
+                    fecha: fechaCata,
+                    diasDesdeTueste: diasCata,
+                    catador: document.getElementById('c_catador').value,
+                    metodo: document.getElementById('c_metodo').value,
+                    puntajeTotal: parseFloat(document.getElementById('c_puntaje').value),
+                    comentarios: document.getElementById('c_comentarios').value
+                };
+
+                state.cuppings.push(newCupping);
+                saveState();
+                closeModal();
+                openRoastDetail(roastId); // Refrescar detalle
+            };
+        }
+
+        function openBeanDetail(id) {
+            const bean = state.beans.find(b => b.id === id);
+            const beanRoasts = state.roasts.filter(r => r.beanId === id);
+            
+            let roastsHtml = beanRoasts.map(r => `
+                <div class="card" onclick="closeModal(); openRoastDetail(${r.id})">
+                    <h3>${r.codigo}</h3>
+                    <p>${new Date(r.fecha).toLocaleDateString()} - ${r.nivelTueste}</p>
+                </div>
+            `).join('');
+
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <h2>${bean.nombreComercial}</h2>
+                <p><strong>Código:</strong> ${bean.codigo}</p>
+                <p><strong>Variedad:</strong> ${bean.variedad}</p>
+                <p><strong>Origen:</strong> ${bean.origen || 'N/A'}</p>
+                <p><strong>Productor:</strong> ${bean.productor || 'N/A'}</p>
+                <p><strong>Proceso:</strong> ${bean.proceso || 'N/A'}</p>
+                <p><strong>Inventario:</strong> ${bean.cantidadRestante}kg / ${bean.cantidadComprada}kg</p>
+                <p><strong>Notas:</strong> ${bean.notas || 'N/A'}</p>
+                
+                <h3 style="margin-top:20px;">Tuestes de este lote (${beanRoasts.length})</h3>
+                ${roastsHtml || '<p>Sin tuestes registrados.</p>'}
+            `;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        // --- GRÁFICO DE EVOLUCIÓN (Canvas Nativo) ---
+        function drawEvolutionChart(canvasId, cuppingsData) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (cuppingsData.length === 0) {
+                ctx.fillStyle = '#757575';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Aún no hay catas registradas', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            cuppingsData.sort((a, b) => a.diasDesdeTueste - b.diasDesdeTueste);
+            
+            const padding = 40;
+            const chartW = canvas.width - padding * 2;
+            const chartH = canvas.height - padding * 2;
+            
+            const maxX = Math.max(...cuppingsData.map(c => c.diasDesdeTueste)) + 2;
+            const maxY = 100;
+            const minY = Math.max(0, Math.min(...cuppingsData.map(c => c.puntajeTotal)) - 5);
+
+            ctx.strokeStyle = '#555';
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#c87f3a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            cuppingsData.forEach((c, i) => {
+                const x = padding + ((c.diasDesdeTueste) / maxX) * chartW;
+                const y = canvas.height - padding - ((c.puntajeTotal - minY) / (maxY - minY)) * chartH;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+                
+                ctx.fillStyle = '#e0823c';
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.stroke();
+            
+            ctx.fillStyle = '#aaa';
+            ctx.font = '10px Arial';
+            ctx.fillText('Días desde tueste', canvas.width / 2, canvas.height - 10);
+            ctx.save();
+            ctx.translate(15, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Puntaje', 0, 0);
+            ctx.restore();
+        }
+
+        // --- EXPORT / IMPORT JSON ---
+        function exportJSON() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cafe_pro_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.beans && importedData.roasts && importedData.cuppings) {
+                        state = importedData;
+                        saveState();
+                        alert('Datos importados correctamente.');
+                        navigateTo('home');
+                    } else {
+                        alert('El archivo JSON no tiene la estructura correcta.');
+                    }
+                } catch (error) {
+                    alert('Error al leer el archivo JSON.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        });
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // --- INICIALIZACIÓN ---
+        loadState();
+        navigateTo('home');
+    </script>
+</body>
+</html>

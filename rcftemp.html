@@ -77,7 +77,7 @@
         .btn-danger { background-color: var(--danger); }
         .btn-small { padding: 8px; font-size: 0.9rem; width: auto; display: inline-block; }
 
-        input, select, textarea {
+        .input, select, textarea {
             width: 100%; padding: 12px; margin: 8px 0;
             background-color: #110a08;
             border: 1px solid #444;
@@ -163,10 +163,11 @@
         .progress-fill { background: var(--primary); height: 100%; border-radius: 5px; }
         
         .timeline-item { border-left: 2px solid var(--primary); padding-left: 15px; margin-bottom: 15px; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .action-buttons button { flex: 1; margin: 0; }
         
         #fileInput { display: none; }
 
-        /* Estilos para imágenes */
         .img-preview {
             max-width: 100%;
             border-radius: 8px;
@@ -215,7 +216,6 @@
             settings: { readyDays: 7 }
         };
 
-        // Variables temporales para subida de imágenes
         let tempImages = { bean: null, roast: null, cupping: null };
 
         function loadState() {
@@ -245,19 +245,19 @@
             return `${day}${month}${year}`;
         }
 
-        function generateLotCode(variedad, fechaIngreso) {
+        function generateLotCode(variedad, fechaIngreso, id = null) {
             const varAbbr = variedad.substring(0, 3).toUpperCase();
             const dateStr = formatDateCode(fechaIngreso);
-            const existingLots = state.beans.filter(b => b.variedad.substring(0, 3).toUpperCase() === varAbbr);
+            const existingLots = state.beans.filter(b => b.variedad.substring(0, 3).toUpperCase() === varAbbr && b.id !== id);
             const consecutive = existingLots.length + 1;
             return `${varAbbr}-${dateStr}-L${String(consecutive).padStart(2, '0')}`;
         }
 
-        function generateRoastCode(bean, fecha) {
+        function generateRoastCode(bean, fecha, id = null) {
             const varAbbr = bean.variedad.substring(0, 3).toUpperCase();
             const dateStr = formatDateCode(fecha);
             const lotNum = bean.codigo.split('-L')[1];
-            const beanRoasts = state.roasts.filter(r => r.beanId === bean.id);
+            const beanRoasts = state.roasts.filter(r => r.beanId === bean.id && r.id !== id);
             const consecutive = beanRoasts.length + 1;
             return `${varAbbr}-L${lotNum}-${dateStr}-T${String(consecutive).padStart(2, '0')}`;
         }
@@ -276,7 +276,6 @@
             return Math.floor(diff / (1000 * 60 * 60 * 24));
         }
 
-        // Compresor de imágenes para no saturar el LocalStorage/JSON
         function processImage(file, callback) {
             if (!file) return callback(null);
             const reader = new FileReader();
@@ -284,7 +283,7 @@
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const maxW = 600; // Reducir a 600px de ancho máximo
+                    const maxW = 600;
                     let w = img.width;
                     let h = img.height;
                     if (w > maxW) {
@@ -295,7 +294,6 @@
                     canvas.height = h;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
-                    // Calidad al 70% (0.7)
                     callback(canvas.toDataURL('image/jpeg', 0.7));
                 };
                 img.src = e.target.result;
@@ -442,26 +440,30 @@
             saveState();
         }
 
-        // --- FORMULARIOS ---
-        function openBeanForm() {
-            tempImages.bean = null; // Limpiar temporal
+        // --- FORMULARIOS (CREAR/EDITAR) ---
+
+        // LOTES
+        function openBeanForm(id = null) {
+            const editingBean = id ? state.beans.find(b => b.id === id) : null;
+            tempImages.bean = editingBean ? editingBean.fotoVerde : null;
+
             const modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
-                <h2>Nuevo Lote de Grano</h2>
+                <h2>${editingBean ? 'Editar Lote' : 'Nuevo Lote de Grano'}</h2>
                 <form id="bean-form">
                     <label>Fotografía del grano verde:</label>
                     <input type="file" accept="image/*" id="b_foto" onchange="handleImgChange('b_foto', 'bean', 'b_img_preview')">
-                    <img id="b_img_preview" src="" style="display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;">
+                    <img id="b_img_preview" src="${editingBean?.fotoVerde || ''}" style="${editingBean?.fotoVerde ? 'display:block; width: 100%; border-radius: 8px; margin-bottom: 10px;' : 'display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;'}">
                     
-                    <input type="text" id="b_nombre" placeholder="Nombre comercial" required>
-                    <input type="text" id="b_variedad" placeholder="Variedad (ej: Borbon)" required>
-                    <input type="text" id="b_origen" placeholder="País / Región">
-                    <input type="text" id="b_productor" placeholder="Productor / Finca">
-                    <input type="text" id="b_proceso" placeholder="Proceso (Lavado, Natural, Honey)">
-                    <input type="date" id="b_fecha" required>
-                    <input type="number" id="b_cantidad" placeholder="Cantidad comprada (kg)" step="0.01" required>
-                    <input type="number" id="b_precio" placeholder="Precio por kg" step="0.01">
-                    <textarea id="b_notas" placeholder="Notas"></textarea>
+                    <input type="text" id="b_nombre" placeholder="Nombre comercial" value="${editingBean?.nombreComercial || ''}" required>
+                    <input type="text" id="b_variedad" placeholder="Variedad (ej: Borbon)" value="${editingBean?.variedad || ''}" required>
+                    <input type="text" id="b_origen" placeholder="País / Región" value="${editingBean?.origen || ''}">
+                    <input type="text" id="b_productor" placeholder="Productor / Finca" value="${editingBean?.productor || ''}">
+                    <input type="text" id="b_proceso" placeholder="Proceso (Lavado, Natural, Honey)" value="${editingBean?.proceso || ''}">
+                    <input type="date" id="b_fecha" value="${editingBean?.fechaCompra || ''}" required>
+                    <input type="number" id="b_cantidad" placeholder="Cantidad comprada (kg)" step="0.01" value="${editingBean?.cantidadComprada || ''}" required>
+                    <input type="number" id="b_precio" placeholder="Precio por kg" step="0.01" value="${editingBean?.precio || ''}">
+                    <textarea id="b_notas" placeholder="Notas">${editingBean?.notas || ''}</textarea>
                     <button type="submit" class="btn">Guardar Lote</button>
                 </form>
             `;
@@ -472,60 +474,80 @@
                 const variedad = document.getElementById('b_variedad').value;
                 const fecha = document.getElementById('b_fecha').value;
                 const cantidad = parseFloat(document.getElementById('b_cantidad').value);
-                const codigo = generateLotCode(variedad, fecha);
+
+                if (editingBean) {
+                    // Editar
+                    editingBean.nombreComercial = document.getElementById('b_nombre').value;
+                    editingBean.variedad = variedad;
+                    editingBean.origen = document.getElementById('b_origen').value;
+                    editingBean.productor = document.getElementById('b_productor').value;
+                    editingBean.proceso = document.getElementById('b_proceso').value;
+                    editingBean.fechaCompra = fecha;
+                    editingBean.cantidadComprada = cantidad;
+                    editingBean.precio = parseFloat(document.getElementById('b_precio').value) || 0;
+                    editingBean.notas = document.getElementById('b_notas').value;
+                    editingBean.fotoVerde = tempImages.bean;
+                    
+                    // Recalcular código si cambió la variedad o fecha
+                    editingBean.codigo = generateLotCode(variedad, fecha, id);
+                } else {
+                    // Crear
+                    const codigo = generateLotCode(variedad, fecha);
+                    state.beans.push({
+                        id: Date.now(),
+                        codigo,
+                        nombreComercial: document.getElementById('b_nombre').value,
+                        variedad,
+                        origen: document.getElementById('b_origen').value,
+                        productor: document.getElementById('b_productor').value,
+                        proceso: document.getElementById('b_proceso').value,
+                        fechaCompra: fecha,
+                        cantidadComprada: cantidad,
+                        cantidadRestante: cantidad,
+                        precio: parseFloat(document.getElementById('b_precio').value) || 0,
+                        notas: document.getElementById('b_notas').value,
+                        fotoVerde: tempImages.bean
+                    });
+                }
                 
-                const newBean = {
-                    id: Date.now(),
-                    codigo,
-                    nombreComercial: document.getElementById('b_nombre').value,
-                    variedad,
-                    origen: document.getElementById('b_origen').value,
-                    productor: document.getElementById('b_productor').value,
-                    proceso: document.getElementById('b_proceso').value,
-                    fechaCompra: fecha,
-                    cantidadComprada: cantidad,
-                    cantidadRestante: cantidad,
-                    precio: parseFloat(document.getElementById('b_precio').value) || 0,
-                    notas: document.getElementById('b_notas').value,
-                    fotoVerde: tempImages.bean // Guardar imagen
-                };
-                
-                state.beans.push(newBean);
                 saveState();
                 closeModal();
                 navigateTo('beans');
             };
         }
 
-        function openRoastForm() {
+        // TUESTES
+        function openRoastForm(id = null) {
             if (state.beans.length === 0) {
                 alert('Primero registra un lote de grano verde.');
                 return;
             }
-            tempImages.roast = null; // Limpiar temporal
+
+            const editingRoast = id ? state.roasts.find(r => r.id === id) : null;
+            tempImages.roast = editingRoast ? editingRoast.fotoTostado : null;
 
             const modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
-                <h2>Nuevo Tueste</h2>
+                <h2>${editingRoast ? 'Editar Tueste' : 'Nuevo Tueste'}</h2>
                 <form id="roast-form">
                     <select id="r_bean" required>
                         <option value="">Selecciona Lote...</option>
-                        ${state.beans.map(b => `<option value="${b.id}">${b.codigo} - ${b.nombreComercial} (${b.cantidadRestante}kg)</option>`).join('')}
+                        ${state.beans.map(b => `<option value="${b.id}" ${editingRoast?.beanId === b.id ? 'selected' : ''}>${b.codigo} - ${b.nombreComercial} (${b.cantidadRestante}kg)</option>`).join('')}
                     </select>
-                    <input type="datetime-local" id="r_fecha" required>
-                    <input type="number" id="r_verde" placeholder="Cantidad verde (kg)" step="0.01" required>
-                    <input type="number" id="r_tostada" placeholder="Cantidad tostada (kg)" step="0.01" required>
+                    <input type="datetime-local" id="r_fecha" value="${editingRoast?.fecha ? editingRoast.fecha.substring(0,16) : ''}" required>
+                    <input type="number" id="r_verde" placeholder="Cantidad verde (kg)" step="0.01" value="${editingRoast?.cantidadVerde || ''}" required>
+                    <input type="number" id="r_tostada" placeholder="Cantidad tostada (kg)" step="0.01" value="${editingRoast?.cantidadTostada || ''}" required>
                     <select id="r_nivel">
-                        <option value="Claro">Claro</option>
-                        <option value="Medio">Medio</option>
-                        <option value="Oscuro">Oscuro</option>
+                        <option value="Claro" ${editingRoast?.nivelTueste === 'Claro' ? 'selected' : ''}>Claro</option>
+                        <option value="Medio" ${editingRoast?.nivelTueste === 'Medio' ? 'selected' : ''}>Medio</option>
+                        <option value="Oscuro" ${editingRoast?.nivelTueste === 'Oscuro' ? 'selected' : ''}>Oscuro</option>
                     </select>
-                    <input type="text" id="r_maquina" placeholder="Máquina tostadora">
-                    <input type="text" id="r_observaciones" placeholder="Observaciones (Crack, tiempos)">
+                    <input type="text" id="r_maquina" placeholder="Máquina tostadora" value="${editingRoast?.maquina || ''}">
+                    <input type="text" id="r_observaciones" placeholder="Observaciones (Crack, tiempos)" value="${editingRoast?.observaciones || ''}">
                     
                     <label>Fotografía del grano tostado:</label>
                     <input type="file" accept="image/*" id="r_foto" onchange="handleImgChange('r_foto', 'roast', 'r_img_preview')">
-                    <img id="r_img_preview" src="" style="display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;">
+                    <img id="r_img_preview" src="${editingRoast?.fotoTostado || ''}" style="${editingRoast?.fotoTostado ? 'display:block; width: 100%; border-radius: 8px; margin-bottom: 10px;' : 'display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;'}">
 
                     <button type="submit" class="btn">Guardar Tueste</button>
                 </form>
@@ -538,38 +560,121 @@
                 const bean = state.beans.find(b => b.id === beanId);
                 const fecha = document.getElementById('r_fecha').value;
                 const cantVerde = parseFloat(document.getElementById('r_verde').value);
+                const cantTostada = parseFloat(document.getElementById('r_tostada').value);
 
-                if (cantVerde > bean.cantidadRestante) {
-                    alert('Inventario insuficiente.');
-                    return;
+                if (editingRoast) {
+                    // Editar: devolver inventario viejo, restar nuevo
+                    const oldBean = state.beans.find(b => b.id === editingRoast.beanId);
+                    if (oldBean) oldBean.cantidadRestante += editingRoast.cantidadVerde;
+                    
+                    if (cantVerde > bean.cantidadRestante) {
+                        alert('Inventario insuficiente para la nueva cantidad.');
+                        if (oldBean) oldBean.cantidadRestante -= editingRoast.cantidadVerde; // Revertir
+                        return;
+                    }
+
+                    bean.cantidadRestante -= cantVerde;
+                    editingRoast.beanId = beanId;
+                    editingRoast.fecha = fecha;
+                    editingRoast.cantidadVerde = cantVerde;
+                    editingRoast.cantidadTostada = cantTostada;
+                    editingRoast.perdida = cantVerde > 0 ? ((cantVerde - cantTostada) / cantVerde * 100).toFixed(1) : 0;
+                    editingRoast.nivelTueste = document.getElementById('r_nivel').value;
+                    editingRoast.maquina = document.getElementById('r_maquina').value;
+                    editingRoast.observaciones = document.getElementById('r_observaciones').value;
+                    editingRoast.fotoTostado = tempImages.roast;
+                    editingRoast.codigo = generateRoastCode(bean, fecha, id);
+                } else {
+                    // Crear
+                    if (cantVerde > bean.cantidadRestante) {
+                        alert('Inventario insuficiente.');
+                        return;
+                    }
+
+                    const perdida = cantVerde > 0 ? ((cantVerde - cantTostada) / cantVerde * 100).toFixed(1) : 0;
+                    const codigo = generateRoastCode(bean, fecha);
+                    
+                    state.roasts.push({
+                        id: Date.now(),
+                        codigo,
+                        beanId,
+                        fecha,
+                        cantidadVerde: cantVerde,
+                        cantidadTostada: cantTostada,
+                        perdida: parseFloat(perdida),
+                        nivelTueste: document.getElementById('r_nivel').value,
+                        maquina: document.getElementById('r_maquina').value,
+                        observaciones: document.getElementById('r_observaciones').value,
+                        fotoTostado: tempImages.roast
+                    });
+
+                    bean.cantidadRestante -= cantVerde; 
                 }
 
-                const cantTostada = parseFloat(document.getElementById('r_tostada').value);
-                const perdida = cantVerde > 0 ? ((cantVerde - cantTostada) / cantVerde * 100).toFixed(1) : 0;
-                const codigo = generateRoastCode(bean, fecha);
-                
-                const newRoast = {
-                    id: Date.now(),
-                    codigo,
-                    beanId,
-                    fecha,
-                    cantidadVerde: cantVerde,
-                    cantidadTostada: cantTostada,
-                    perdida: parseFloat(perdida),
-                    nivelTueste: document.getElementById('r_nivel').value,
-                    maquina: document.getElementById('r_maquina').value,
-                    observaciones: document.getElementById('r_observaciones').value,
-                    fotoTostado: tempImages.roast // Guardar imagen
-                };
-
-                state.roasts.push(newRoast);
-                bean.cantidadRestante -= cantVerde; 
                 saveState();
                 closeModal();
                 navigateTo('home');
             };
         }
 
+        // CATAS
+        function openCuppingForm(roastId, cuppingId = null) {
+            const editingCupping = cuppingId ? state.cuppings.find(c => c.id === cuppingId) : null;
+            tempImages.cupping = editingCupping ? editingCupping.fotoMolido : null;
+
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <h2>${editingCupping ? 'Editar Cata' : 'Registro de Cata'}</h2>
+                <form id="cup-form">
+                    <input type="datetime-local" id="c_fecha" value="${editingCupping?.fecha ? editingCupping.fecha.substring(0,16) : ''}" required>
+                    <input type="text" id="c_catador" placeholder="Catador" value="${editingCupping?.catador || ''}" required>
+                    <input type="text" id="c_metodo" placeholder="Método (V60, Espresso, etc.)" value="${editingCupping?.metodo || ''}">
+                    <input type="number" id="c_puntaje" placeholder="Puntaje Total (0-100)" min="0" max="100" value="${editingCupping?.puntajeTotal || ''}" required>
+                    <textarea id="c_comentarios" placeholder="Notas de cata (Aromas, sabores, defectos)">${editingCupping?.comentarios || ''}</textarea>
+                    
+                    <label>Fotografía del grano molido:</label>
+                    <input type="file" accept="image/*" id="c_foto" onchange="handleImgChange('c_foto', 'cupping', 'c_img_preview')">
+                    <img id="c_img_preview" src="${editingCupping?.fotoMolido || ''}" style="${editingCupping?.fotoMolido ? 'display:block; width: 100%; border-radius: 8px; margin-bottom: 10px;' : 'display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;'}">
+
+                    <button type="submit" class="btn">Guardar Cata</button>
+                </form>
+            `;
+            
+            document.getElementById('cup-form').onsubmit = (e) => {
+                e.preventDefault();
+                const roast = state.roasts.find(r => r.id === roastId);
+                const fechaCata = document.getElementById('c_fecha').value;
+                const diasCata = daysBetween(roast.fecha, fechaCata);
+
+                if (editingCupping) {
+                    editingCupping.fecha = fechaCata;
+                    editingCupping.diasDesdeTueste = diasCata;
+                    editingCupping.catador = document.getElementById('c_catador').value;
+                    editingCupping.metodo = document.getElementById('c_metodo').value;
+                    editingCupping.puntajeTotal = parseFloat(document.getElementById('c_puntaje').value);
+                    editingCupping.comentarios = document.getElementById('c_comentarios').value;
+                    editingCupping.fotoMolido = tempImages.cupping;
+                } else {
+                    state.cuppings.push({
+                        id: Date.now(),
+                        roastId,
+                        fecha: fechaCata,
+                        diasDesdeTueste: diasCata,
+                        catador: document.getElementById('c_catador').value,
+                        metodo: document.getElementById('c_metodo').value,
+                        puntajeTotal: parseFloat(document.getElementById('c_puntaje').value),
+                        comentarios: document.getElementById('c_comentarios').value,
+                        fotoMolido: tempImages.cupping
+                    });
+                }
+
+                saveState();
+                closeModal();
+                openRoastDetail(roastId); 
+            };
+        }
+
+        // --- VISTAS DE DETALLE ---
         function openRoastDetail(id) {
             const roast = state.roasts.find(r => r.id === id);
             const bean = state.beans.find(b => b.id === roast.beanId);
@@ -584,6 +689,10 @@
                         <p>Catador: ${c.catador} - Puntaje: ${c.puntajeTotal}/100</p>
                         <p style="color:#aaa; font-size:0.9rem;">${c.comentarios}</p>
                         ${imgHtml}
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openCuppingForm(${roast.id}, ${c.id})">Editar</button>
+                            <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteCupping(${roast.id}, ${c.id})">Eliminar</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -604,7 +713,12 @@
                     ${roastImgHtml ? `<div><h3>Grano Tostado</h3>${roastImgHtml}</div>` : ''}
                 </div>
 
-                <button class="btn" onclick="openCuppingForm(${roast.id})">➕ Nueva Cata</button>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="openRoastForm(${roast.id})">✏️ Editar Tueste</button>
+                    <button class="btn btn-danger" onclick="deleteRoast(${roast.id})">🗑️ Eliminar</button>
+                </div>
+
+                <button class="btn" style="margin-top:20px;" onclick="openCuppingForm(${roast.id})">➕ Nueva Cata</button>
                 
                 <h3>Evolución Sensorial</h3>
                 <canvas id="evolutionChart" width="400" height="200" style="background:#110a08; border-radius:8px; width:100%; margin-bottom:15px;"></canvas>
@@ -615,51 +729,6 @@
             document.getElementById('modal').style.display = 'flex';
             
             drawEvolutionChart('evolutionChart', cuppings);
-        }
-
-        function openCuppingForm(roastId) {
-            tempImages.cupping = null; // Limpiar temporal
-            const modalBody = document.getElementById('modal-body');
-            modalBody.innerHTML = `
-                <h2>Registro de Cata</h2>
-                <form id="cup-form">
-                    <input type="datetime-local" id="c_fecha" required>
-                    <input type="text" id="c_catador" placeholder="Catador" required>
-                    <input type="text" id="c_metodo" placeholder="Método (V60, Espresso, etc.)">
-                    <input type="number" id="c_puntaje" placeholder="Puntaje Total (0-100)" min="0" max="100" required>
-                    <textarea id="c_comentarios" placeholder="Notas de cata (Aromas, sabores, defectos)"></textarea>
-                    
-                    <label>Fotografía del grano molido:</label>
-                    <input type="file" accept="image/*" id="c_foto" onchange="handleImgChange('c_foto', 'cupping', 'c_img_preview')">
-                    <img id="c_img_preview" src="" style="display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;">
-
-                    <button type="submit" class="btn">Guardar Cata</button>
-                </form>
-            `;
-            
-            document.getElementById('cup-form').onsubmit = (e) => {
-                e.preventDefault();
-                const roast = state.roasts.find(r => r.id === roastId);
-                const fechaCata = document.getElementById('c_fecha').value;
-                const diasCata = daysBetween(roast.fecha, fechaCata);
-
-                const newCupping = {
-                    id: Date.now(),
-                    roastId,
-                    fecha: fechaCata,
-                    diasDesdeTueste: diasCata,
-                    catador: document.getElementById('c_catador').value,
-                    metodo: document.getElementById('c_metodo').value,
-                    puntajeTotal: parseFloat(document.getElementById('c_puntaje').value),
-                    comentarios: document.getElementById('c_comentarios').value,
-                    fotoMolido: tempImages.cupping // Guardar imagen
-                };
-
-                state.cuppings.push(newCupping);
-                saveState();
-                closeModal();
-                openRoastDetail(roastId); 
-            };
         }
 
         function openBeanDetail(id) {
@@ -687,10 +756,56 @@
                 <p><strong>Inventario:</strong> ${bean.cantidadRestante}kg / ${bean.cantidadComprada}kg</p>
                 <p><strong>Notas:</strong> ${bean.notas || 'N/A'}</p>
                 
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="openBeanForm(${bean.id})">✏️ Editar Lote</button>
+                    <button class="btn btn-danger" onclick="deleteBean(${bean.id})">🗑️ Eliminar</button>
+                </div>
+
                 <h3 style="margin-top:20px;">Tuestes de este lote (${beanRoasts.length})</h3>
                 ${roastsHtml || '<p>Sin tuestes registrados.</p>'}
             `;
             document.getElementById('modal').style.display = 'flex';
+        }
+
+        // --- ELIMINAR REGISTROS ---
+        function deleteBean(id) {
+            if (confirm("¿Seguro que deseas eliminar este lote? Se eliminarán también sus tuestes y catas asociadas.")) {
+                const roastsToDelete = state.roasts.filter(r => r.beanId === id);
+                const roastIds = roastsToDelete.map(r => r.id);
+                
+                state.cuppings = state.cuppings.filter(c => !roastIds.includes(c.roastId));
+                state.roasts = state.roasts.filter(r => r.beanId !== id);
+                state.beans = state.beans.filter(b => b.id !== id);
+                
+                saveState();
+                closeModal();
+                navigateTo('beans');
+            }
+        }
+
+        function deleteRoast(id) {
+            if (confirm("¿Seguro que deseas eliminar este tueste? El café verde usado volverá al inventario del lote.")) {
+                const roast = state.roasts.find(r => r.id === id);
+                const bean = state.beans.find(b => b.id === roast.beanId);
+                
+                if (bean) bean.cantidadRestante += roast.cantidadVerde; // Devolver inventario
+                
+                state.cuppings = state.cuppings.filter(c => c.roastId !== id);
+                state.roasts = state.roasts.filter(r => r.id !== id);
+                
+                saveState();
+                closeModal();
+                navigateTo('roasts');
+            }
+        }
+
+        function deleteCupping(roastId, cuppingId) {
+            if (confirm("¿Seguro que deseas eliminar esta cata?")) {
+                state.cuppings = state.cuppings.filter(c => c.id !== cuppingId);
+                saveState();
+                closeModal();
+                openRoastDetail(roastId);
+            }
         }
 
         // --- GRÁFICO DE EVOLUCIÓN ---

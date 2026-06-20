@@ -85,6 +85,11 @@
             color: var(--text-light);
         }
 
+        input[type="file"] {
+            padding: 5px;
+            border: 1px dashed var(--primary);
+        }
+
         .card {
             background-color: var(--bg-card);
             border-radius: 16px;
@@ -160,6 +165,20 @@
         .timeline-item { border-left: 2px solid var(--primary); padding-left: 15px; margin-bottom: 15px; }
         
         #fileInput { display: none; }
+
+        /* Estilos para imágenes */
+        .img-preview {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: block;
+        }
+        .detail-img-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -196,6 +215,9 @@
             settings: { readyDays: 7 }
         };
 
+        // Variables temporales para subida de imágenes
+        let tempImages = { bean: null, roast: null, cupping: null };
+
         function loadState() {
             const saved = localStorage.getItem('cafeProState');
             if (saved) {
@@ -204,7 +226,12 @@
         }
 
         function saveState() {
-            localStorage.setItem('cafeProState', JSON.stringify(state));
+            try {
+                localStorage.setItem('cafeProState', JSON.stringify(state));
+            } catch (e) {
+                alert("Memoria del navegador llena. Exporta tu JSON y borra algunos registros para liberar espacio.");
+                console.error("Error guardando", e);
+            }
         }
 
         // --- UTILIDADES Y CÓDIGOS ---
@@ -249,6 +276,46 @@
             return Math.floor(diff / (1000 * 60 * 60 * 24));
         }
 
+        // Compresor de imágenes para no saturar el LocalStorage/JSON
+        function processImage(file, callback) {
+            if (!file) return callback(null);
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxW = 600; // Reducir a 600px de ancho máximo
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxW) {
+                        h = Math.round(h * (maxW / w));
+                        w = maxW;
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    // Calidad al 70% (0.7)
+                    callback(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleImgChange(inputId, type, previewId) {
+            const input = document.getElementById(inputId);
+            if (input.files && input.files[0]) {
+                processImage(input.files[0], (b64) => {
+                    tempImages[type] = b64;
+                    if (b64) {
+                        document.getElementById(previewId).src = b64;
+                        document.getElementById(previewId).style.display = 'block';
+                    }
+                });
+            }
+        }
+
         // --- NAVEGACIÓN ---
         function navigateTo(view) {
             closeModal();
@@ -267,7 +334,6 @@
             const { beans, roasts, cuppings } = state;
             let proximosHtml = '';
             
-            // Ordenar por fecha descendente y tomar los primeros 5
             const roastsSorted = [...roasts].sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
             
             if (roastsSorted.length === 0) {
@@ -279,8 +345,11 @@
                     const badgeClass = dias < state.settings.readyDays ? 'badge-resting' : 'badge-ready';
                     const cCatas = cuppings.filter(c => c.roastId === r.id).length;
                     
+                    let imgHtml = r.fotoTostado ? `<img src="${r.fotoTostado}" class="img-preview" style="height: 150px; object-fit: cover;">` : '';
+                    
                     proximosHtml += `
                         <div class="card" onclick="openRoastDetail(${r.id})">
+                            ${imgHtml}
                             <h3>${r.codigo}</h3>
                             <p>Nivel: ${r.nivelTueste} - Fecha: ${new Date(r.fecha).toLocaleDateString()}</p>
                             <p>Días: <strong>${dias}</strong> <span class="badge ${badgeClass}">${estado}</span></p>
@@ -313,8 +382,10 @@
             
             state.beans.forEach(b => {
                 const pct = b.cantidadComprada > 0 ? (b.cantidadRestante / b.cantidadComprada * 100).toFixed(0) : 0;
+                let imgHtml = b.fotoVerde ? `<img src="${b.fotoVerde}" class="img-preview" style="height: 120px; object-fit: cover;">` : '';
                 html += `
                     <div class="card" onclick="openBeanDetail(${b.id})">
+                        ${imgHtml}
                         <h3>${b.nombreComercial} (${b.variedad})</h3>
                         <p>Código: ${b.codigo}</p>
                         <p>Disponible: ${b.cantidadRestante}kg / ${b.cantidadComprada}kg (${pct}%)</p>
@@ -335,8 +406,10 @@
                 const dias = daysSince(r.fecha);
                 const estado = dias < state.settings.readyDays ? 'Reposando' : 'Listo';
                 const badgeClass = dias < state.settings.readyDays ? 'badge-resting' : 'badge-ready';
+                let imgHtml = r.fotoTostado ? `<img src="${r.fotoTostado}" class="img-preview" style="height: 120px; object-fit: cover;">` : '';
                 html += `
                     <div class="card" onclick="openRoastDetail(${r.id})">
+                        ${imgHtml}
                         <h3>${r.codigo}</h3>
                         <p>${bean ? bean.nombreComercial : 'Lote eliminado'} - ${r.nivelTueste}</p>
                         <p>Días: <strong>${dias}</strong> <span class="badge ${badgeClass}">${estado}</span></p>
@@ -357,7 +430,7 @@
                 
                 <div class="card no-click">
                     <h3>Respaldo de Datos (JSON)</h3>
-                    <p>Descarga todos tus datos en un archivo JSON para guardarlos en tu celular.</p>
+                    <p>Descarga todos tus datos (incluyendo fotos) en un archivo JSON.</p>
                     <button class="btn" onclick="exportJSON()">📥 Exportar Datos</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📤 Importar Datos</button>
                 </div>
@@ -371,10 +444,15 @@
 
         // --- FORMULARIOS ---
         function openBeanForm() {
+            tempImages.bean = null; // Limpiar temporal
             const modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
                 <h2>Nuevo Lote de Grano</h2>
                 <form id="bean-form">
+                    <label>Fotografía del grano verde:</label>
+                    <input type="file" accept="image/*" id="b_foto" onchange="handleImgChange('b_foto', 'bean', 'b_img_preview')">
+                    <img id="b_img_preview" src="" style="display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;">
+                    
                     <input type="text" id="b_nombre" placeholder="Nombre comercial" required>
                     <input type="text" id="b_variedad" placeholder="Variedad (ej: Borbon)" required>
                     <input type="text" id="b_origen" placeholder="País / Región">
@@ -408,7 +486,8 @@
                     cantidadComprada: cantidad,
                     cantidadRestante: cantidad,
                     precio: parseFloat(document.getElementById('b_precio').value) || 0,
-                    notas: document.getElementById('b_notas').value
+                    notas: document.getElementById('b_notas').value,
+                    fotoVerde: tempImages.bean // Guardar imagen
                 };
                 
                 state.beans.push(newBean);
@@ -423,6 +502,7 @@
                 alert('Primero registra un lote de grano verde.');
                 return;
             }
+            tempImages.roast = null; // Limpiar temporal
 
             const modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
@@ -442,6 +522,11 @@
                     </select>
                     <input type="text" id="r_maquina" placeholder="Máquina tostadora">
                     <input type="text" id="r_observaciones" placeholder="Observaciones (Crack, tiempos)">
+                    
+                    <label>Fotografía del grano tostado:</label>
+                    <input type="file" accept="image/*" id="r_foto" onchange="handleImgChange('r_foto', 'roast', 'r_img_preview')">
+                    <img id="r_img_preview" src="" style="display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;">
+
                     <button type="submit" class="btn">Guardar Tueste</button>
                 </form>
             `;
@@ -473,11 +558,12 @@
                     perdida: parseFloat(perdida),
                     nivelTueste: document.getElementById('r_nivel').value,
                     maquina: document.getElementById('r_maquina').value,
-                    observaciones: document.getElementById('r_observaciones').value
+                    observaciones: document.getElementById('r_observaciones').value,
+                    fotoTostado: tempImages.roast // Guardar imagen
                 };
 
                 state.roasts.push(newRoast);
-                bean.cantidadRestante -= cantVerde; // Descontar inventario
+                bean.cantidadRestante -= cantVerde; 
                 saveState();
                 closeModal();
                 navigateTo('home');
@@ -490,13 +576,20 @@
             const cuppings = state.cuppings.filter(c => c.roastId === id).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             const dias = daysSince(roast.fecha);
 
-            let timelineHtml = cuppings.map(c => `
-                <div class="timeline-item">
-                    <p><strong>Día ${c.diasDesdeTueste}</strong> (${new Date(c.fecha).toLocaleDateString()})</p>
-                    <p>Catador: ${c.catador} - Puntaje: ${c.puntajeTotal}/100</p>
-                    <p style="color:#aaa; font-size:0.9rem;">${c.comentarios}</p>
-                </div>
-            `).join('');
+            let timelineHtml = cuppings.map(c => {
+                let imgHtml = c.fotoMolido ? `<img src="${c.fotoMolido}" class="img-preview" style="max-height: 200px; object-fit: cover;">` : '';
+                return `
+                    <div class="timeline-item">
+                        <p><strong>Día ${c.diasDesdeTueste}</strong> (${new Date(c.fecha).toLocaleDateString()})</p>
+                        <p>Catador: ${c.catador} - Puntaje: ${c.puntajeTotal}/100</p>
+                        <p style="color:#aaa; font-size:0.9rem;">${c.comentarios}</p>
+                        ${imgHtml}
+                    </div>
+                `;
+            }).join('');
+
+            let roastImgHtml = roast.fotoTostado ? `<img src="${roast.fotoTostado}" class="img-preview" style="max-height: 300px; object-fit: cover;">` : '';
+            let beanImgHtml = bean && bean.fotoVerde ? `<img src="${bean.fotoVerde}" class="img-preview" style="max-height: 200px; object-fit: cover;">` : '';
 
             const modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
@@ -506,6 +599,11 @@
                 <p>Días de reposo actuales: <strong>${dias}</strong></p>
                 <p>Pérdida de peso: ${roast.perdida}%</p>
                 
+                <div class="detail-img-grid">
+                    ${beanImgHtml ? `<div><h3>Grano Verde</h3>${beanImgHtml}</div>` : ''}
+                    ${roastImgHtml ? `<div><h3>Grano Tostado</h3>${roastImgHtml}</div>` : ''}
+                </div>
+
                 <button class="btn" onclick="openCuppingForm(${roast.id})">➕ Nueva Cata</button>
                 
                 <h3>Evolución Sensorial</h3>
@@ -520,6 +618,7 @@
         }
 
         function openCuppingForm(roastId) {
+            tempImages.cupping = null; // Limpiar temporal
             const modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
                 <h2>Registro de Cata</h2>
@@ -529,6 +628,11 @@
                     <input type="text" id="c_metodo" placeholder="Método (V60, Espresso, etc.)">
                     <input type="number" id="c_puntaje" placeholder="Puntaje Total (0-100)" min="0" max="100" required>
                     <textarea id="c_comentarios" placeholder="Notas de cata (Aromas, sabores, defectos)"></textarea>
+                    
+                    <label>Fotografía del grano molido:</label>
+                    <input type="file" accept="image/*" id="c_foto" onchange="handleImgChange('c_foto', 'cupping', 'c_img_preview')">
+                    <img id="c_img_preview" src="" style="display:none; width: 100%; border-radius: 8px; margin-bottom: 10px;">
+
                     <button type="submit" class="btn">Guardar Cata</button>
                 </form>
             `;
@@ -547,13 +651,14 @@
                     catador: document.getElementById('c_catador').value,
                     metodo: document.getElementById('c_metodo').value,
                     puntajeTotal: parseFloat(document.getElementById('c_puntaje').value),
-                    comentarios: document.getElementById('c_comentarios').value
+                    comentarios: document.getElementById('c_comentarios').value,
+                    fotoMolido: tempImages.cupping // Guardar imagen
                 };
 
                 state.cuppings.push(newCupping);
                 saveState();
                 closeModal();
-                openRoastDetail(roastId); // Refrescar detalle
+                openRoastDetail(roastId); 
             };
         }
 
@@ -568,9 +673,12 @@
                 </div>
             `).join('');
 
+            let imgHtml = bean.fotoVerde ? `<img src="${bean.fotoVerde}" class="img-preview" style="max-height: 300px; object-fit: cover;">` : '';
+
             const modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
                 <h2>${bean.nombreComercial}</h2>
+                ${imgHtml}
                 <p><strong>Código:</strong> ${bean.codigo}</p>
                 <p><strong>Variedad:</strong> ${bean.variedad}</p>
                 <p><strong>Origen:</strong> ${bean.origen || 'N/A'}</p>
@@ -585,7 +693,7 @@
             document.getElementById('modal').style.display = 'flex';
         }
 
-        // --- GRÁFICO DE EVOLUCIÓN (Canvas Nativo) ---
+        // --- GRÁFICO DE EVOLUCIÓN ---
         function drawEvolutionChart(canvasId, cuppingsData) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -680,7 +788,7 @@
                 }
             };
             reader.readAsText(file);
-            event.target.value = ''; // Reset input
+            event.target.value = ''; 
         });
 
         function closeModal() {

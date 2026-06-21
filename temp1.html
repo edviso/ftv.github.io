@@ -310,6 +310,18 @@
         </div>
     </div>
 
+    <div id="curvaModal" class="modal">
+        <div class="modal-content" style="max-width: 600px; background-color: #121212; padding:0; border: 1px solid #333;">
+            <span class="close-btn" style="color:#aaa; top: 18px; z-index: 10;" onclick="cerrarCurvaLote()">&times;</span>
+            <div style="padding: 20px; overflow-x: auto;">
+                <canvas id="curvaCanvas" width="720" height="500" style="max-width: 100%; height: auto; border-radius: 8px;"></canvas>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #333; background-color: #1a1a1a;">
+                <button type="button" class="main-btn" style="background-color: #ff9800; color: #121212; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarCurvaJPG()">📥 Descargar Gráfico JPG</button>
+            </div>
+        </div>
+    </div>
+
     <div id="chartModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" style="color:#aaa; top: 18px;" onclick="cerrarGrafico()">&times;</span>
@@ -539,7 +551,6 @@
             <p class="swipe-hint" style="margin-top: 15px; margin-bottom: 5px; font-size: 0.7rem; color: #666;">Desliza para Perfil Térmico ↔️</p>
             <div class="carousel-container" style="padding-bottom: 5px;">
                 
-                <!-- TARJETA 1: VOLÚMENES Y TIEMPOS -->
                 <div class="carousel-card flat-card">
                     <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #5d4037;">💧 Volumen y Tiempo</div>
                     
@@ -622,7 +633,6 @@
                     </div>
                 </div>
 
-                <!-- TARJETA 2: TEMPERATURAS (PERFIL TÉRMICO) -->
                 <div class="carousel-card flat-card">
                     <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #bf360c;">🌡️ Perfil Térmico (°C)</div>
                     
@@ -731,9 +741,9 @@
         <div class="card">
             <div class="card-title"><div>📜 Registro de Puntuaciones</div></div>
             
-            <!-- FILTROS (CHIPS) -->
             <div class="filters-container" id="historialFilters">
                 <div class="filter-chip filter-chip-sort" id="chip-sort-puntaje" onclick="toggleSortPuntaje()">🏆 Top Catas</div>
+                <div class="filter-chip" id="chip-codigo" onclick="abrirFiltro('codigo')">🏷️ Código</div>
                 <div class="filter-chip" id="chip-puntaje" onclick="abrirFiltro('puntaje')">🎯 Puntaje</div>
                 <div class="filter-chip" id="chip-calif" onclick="abrirFiltro('calif')">⭐ Calif.</div>
                 <div class="filter-chip" id="chip-variedad" onclick="abrirFiltro('variedad')">🌱 Variedad</div>
@@ -742,9 +752,8 @@
                 <div class="filter-chip-clear" id="chip-clear" onclick="limpiarFiltros()">❌ Limpiar</div>
             </div>
 
-            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
-                <!-- El historial se renderizará aquí -->
-            </div>
+            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
+                </div>
             
             <button type="button" class="main-btn" style="background-color: #8d6e63; color: white; width: 100%; margin-bottom: 12px; padding: 12px; font-size: 0.95rem;" onclick="registrarCataActual()">➕ Añadir cata actual al historial</button>
             
@@ -753,6 +762,8 @@
                 <button type="button" class="main-btn" style="background-color: #e0e0e0; color: #333; padding: 10px; font-size: 0.8rem; margin:0;" onclick="exportarHistorial()">💾 Exportar JSON</button>
                 <input type="file" id="importarHistorial" accept=".json" style="display:none" onchange="cargarHistorialRespaldo(event)">
             </div>
+            
+            <button type="button" class="main-btn" style="background-color: #333; color: #ffb74d; width: 100%; margin-top: 10px; padding: 10px; font-size: 0.9rem; border: 1px solid #ffb74d;" onclick="abrirCurvaLote()">📈 Curva de lote</button>
         </div>
 
         <div class="button-group">
@@ -764,7 +775,10 @@
 
     <script>
         const logHistorial = [
-            { fecha: "01-JUN-2026", resumen: "Formato Historial de Puntuaciones: Se actualizó la visualización de los detalles de la cata eliminando las viñetas por espacios simples y anexando la antigüedad del tueste calculada en 'Días/T'. Se añadió cálculo retroactivo para catas guardadas previamente." },
+            { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico, con exportación a JPG." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
             { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },
             { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
             { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
@@ -809,9 +823,33 @@
 
         // --- MEMORIA LOCAL Y FILTROS (HISTORIAL DE CATAS) ---
         let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
-        let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
+        let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
         let currentFilterType = '';
-        let sortByScoreDesc = false;
+        let sortByScoreDesc = false; // Variable global para el botón de ordenar
+
+        function calcularDiasDesdeCodigoYFecha(codigo, fechaStr) {
+            if (!codigo || !fechaStr) return null;
+            const ref = obtenerFechaDesdeInput(fechaStr); ref.setHours(0,0,0,0);
+            const matchN = codigo.match(/(\d{2})([A-Z]{3})/); 
+            const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
+            const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
+            
+            let ft = null; 
+            if (matchN && mesesStr[matchN[2]] !== undefined) { 
+                ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10)); 
+                if (ft > ref) ft.setFullYear(ref.getFullYear() - 1); 
+            } else if (matchA) { 
+                let y = parseInt(matchA[3], 10); 
+                ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10)); 
+            }
+            
+            if (ft) { 
+                ft.setHours(0,0,0,0); 
+                const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000); 
+                return diff >= 0 ? diff : null; 
+            } 
+            return null;
+        }
 
         function sanearHistorial() {
             let modificado = false;
@@ -821,6 +859,13 @@
                     if (DICCIONARIO_VARIEDADES[prefijo] && cata.variedad !== DICCIONARIO_VARIEDADES[prefijo]) {
                         cata.variedad = DICCIONARIO_VARIEDADES[prefijo];
                         modificado = true;
+                    }
+                    if (cata.dias_tueste === undefined && cata.fechaExacta) {
+                        const diff = calcularDiasDesdeCodigoYFecha(cata.codigo, cata.fechaExacta);
+                        if (diff !== null) {
+                            cata.dias_tueste = diff;
+                            modificado = true;
+                        }
                     }
                 }
             });
@@ -844,7 +889,7 @@
 
         function abrirFiltro(tipo) {
             currentFilterType = tipo;
-            const titulos = { puntaje: '🎯 Filtrar por Puntaje', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma' };
+            const titulos = { puntaje: '🎯 Filtrar por Puntaje', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma', codigo: '🏷️ Filtrar por Código' };
             document.getElementById('filtroTitulo').innerText = titulos[tipo];
             
             let html = '';
@@ -904,6 +949,19 @@
                     options += `<option value="${v}" ${val===v?'selected':''}>${v}</option>`;
                 });
                 html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
+            } else if (tipo === 'codigo') {
+                let historyCodes = historialCatas;
+                // Filtrar los códigos mostrados si ya hay una variedad seleccionada
+                if (activeFilters.variedad) {
+                    historyCodes = historyCodes.filter(c => c.variedad && c.variedad.toLowerCase() === activeFilters.variedad.toLowerCase());
+                }
+                let uniqueCodes = [...new Set(historyCodes.map(c => c.codigo).filter(v => v))].sort();
+
+                let options = '<option value="">Todos</option>';
+                uniqueCodes.forEach(c => {
+                    options += `<option value="${c}" ${val===c?'selected':''}>${c}</option>`;
+                });
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
             }
             
             document.getElementById('filtroBody').innerHTML = html;
@@ -917,12 +975,13 @@
             activeFilters[currentFilterType] = val;
             
             const chip = document.getElementById(`chip-${currentFilterType}`);
-            const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Tueste', merma: '📉 Merma' };
+            const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Tueste', merma: '📉 Merma', codigo: '🏷️ Código' };
             
             if(val !== '') {
                 chip.classList.add('active');
                 let displayVal = val;
                 if(currentFilterType === 'variedad' && val.length > 8) displayVal = val.substring(0,8) + '..';
+                else if(currentFilterType === 'codigo' && val.length > 8) displayVal = val.substring(0,8) + '..';
                 else if (currentFilterType === 'merma') displayVal = val + '%';
                 chip.innerHTML = `${chipLabels[currentFilterType]}: ${displayVal}`;
             } else {
@@ -935,13 +994,13 @@
         }
 
         function limpiarFiltros() {
-            activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '' };
+            activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
             
             // Limpiar los chips normales
-            ['puntaje', 'calif', 'variedad', 'tueste', 'merma'].forEach(tipo => {
+            ['puntaje', 'calif', 'variedad', 'tueste', 'merma', 'codigo'].forEach(tipo => {
                 const chip = document.getElementById(`chip-${tipo}`);
                 chip.classList.remove('active');
-                const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Nivel/Tueste', merma: '📉 Merma' };
+                const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Nivel/Tueste', merma: '📉 Merma', codigo: '🏷️ Código' };
                 chip.innerHTML = chipLabels[tipo];
             });
 
@@ -1002,7 +1061,7 @@
                     }
 
                     if(activeFilters.variedad && (!c.variedad || c.variedad.toLowerCase() !== activeFilters.variedad.toLowerCase())) pasa = false;
-                    
+                    if(activeFilters.codigo && (!c.codigo || c.codigo.toLowerCase() !== activeFilters.codigo.toLowerCase())) pasa = false;
                     if(activeFilters.calif && c.calificacion !== activeFilters.calif) pasa = false;
                     if(activeFilters.tueste && c.tueste !== activeFilters.tueste) pasa = false;
 
@@ -1036,31 +1095,14 @@
                 if(cata.tueste) extraInfo.push(cata.tueste);
                 if(cata.merma) extraInfo.push(cata.merma + '%');
                 
-                let baseExtra = extraInfo.join(' ');
-                
-                // Cálculo de Días/T para catas antiguas y nuevas
-                let diasVal = parseInt(cata.dias_tueste);
-                if (isNaN(diasVal) && cata.codigo && cata.fechaExacta) {
-                    const matchN = cata.codigo.toUpperCase().match(/(\d{2})([A-Z]{3})/);
-                    if (matchN) {
-                        const ref = obtenerFechaDesdeInput(cata.fechaExacta); 
-                        ref.setHours(0,0,0,0);
-                        const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
-                        if (mesesStr[matchN[2]] !== undefined) {
-                            let ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10));
-                            if (ft > ref) ft.setFullYear(ref.getFullYear() - 1);
-                            ft.setHours(0,0,0,0);
-                            const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000);
-                            if (diff >= 0) diasVal = diff;
-                        }
-                    }
+                let baseExtra = extraInfo.join(' • ');
+                if (cata.dias_tueste !== undefined && cata.dias_tueste !== '' && !isNaN(parseInt(cata.dias_tueste))) {
+                    baseExtra += ` - ${parseInt(cata.dias_tueste)} días`;
                 }
                 
-                let diasStr = !isNaN(diasVal) ? ` - ${diasVal} Dias/T` : '';
-                let finalExtraText = (baseExtra + diasStr).trim();
-                
-                let extraStr = finalExtraText !== '' ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${finalExtraText}</div>` : '';
+                let extraStr = baseExtra ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${baseExtra}</div>` : '';
 
+                // Si estamos en modo ranking, añadimos una pequeña medalla a los 3 primeros
                 let medalla = '';
                 if (sortByScoreDesc) {
                     if (index === 0) medalla = ' 🥇';
@@ -1088,7 +1130,7 @@
             
             const variedad = document.getElementById('variedad').value || '';
             const merma = document.getElementById('merma').value || '';
-            const dias_tueste = document.getElementById('dias_tueste').value || '';
+            const diasTueste = document.getElementById('dias_tueste').value || '';
             
             let tueste = '';
             if (currentRoastData.molido.lum !== null) {
@@ -1119,7 +1161,7 @@
                 variedad: variedad,
                 tueste: tueste,
                 merma: merma,
-                dias_tueste: dias_tueste
+                dias_tueste: diasTueste
             };
             
             historialCatas.push(nuevaCata);
@@ -1169,6 +1211,175 @@
             document.getElementById('logModal').style.display = 'flex';
         }
         function cerrarLog() { document.getElementById('logModal').style.display = 'none'; }
+
+        // --- FUNCIONES CURVA DE LOTE ---
+        function abrirCurvaLote() {
+            if (!activeFilters.codigo) {
+                alert("⚠️ Requisito previo: Por favor, selecciona un 'Código' en los filtros del historial primero.");
+                return;
+            }
+
+            const codigo = activeFilters.codigo;
+            
+            // Asignar el consecutivo real según el orden cronológico original de almacenamiento
+            let catasConNumero = [];
+            let contador = 1;
+            historialCatas.forEach(c => {
+                if (c.codigo === codigo) {
+                    catasConNumero.push({ ...c, consecutivo: contador });
+                    contador++;
+                }
+            });
+
+            if (catasConNumero.length === 0) {
+                alert("No hay catas registradas para este código.");
+                return;
+            }
+
+            const info = catasConNumero[catasConNumero.length - 1]; // Extraemos los metadatos de la última cata
+            const variedad = info.variedad || "Variedad N/D";
+            const tueste = info.tueste || "Tueste N/D";
+            const merma = info.merma ? info.merma + "%" : "Merma N/D";
+
+            dibujarCurvaCanvas(codigo, variedad, tueste, merma, catasConNumero);
+            document.getElementById('curvaModal').style.display = 'flex';
+        }
+
+        function cerrarCurvaLote() {
+            document.getElementById('curvaModal').style.display = 'none';
+        }
+
+        function dibujarCurvaCanvas(codigo, variedad, tueste, merma, catas) {
+            const canvas = document.getElementById('curvaCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Fondo Oscuro
+            ctx.fillStyle = '#121212';
+            ctx.fillRect(0, 0, w, h);
+
+            // Títulos
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffb74d';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('Evolución de cata', w / 2, 40);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px monospace';
+            ctx.fillText(codigo, w / 2, 70);
+
+            ctx.fillStyle = '#aaaaaa';
+            ctx.font = 'italic 16px sans-serif';
+            ctx.fillText(`(${variedad} • ${tueste} • ${merma})`, w / 2, 95);
+
+            // Márgenes del gráfico
+            const padT = 130;
+            const padB = 80;
+            const padL = 60;
+            const padR = 40;
+            const chartW = w - padL - padR;
+            const chartH = h - padT - padB;
+
+            if (catas.length === 0) return;
+
+            // Rangos para Y (Puntaje)
+            let puntajes = catas.map(c => parseFloat(c.puntaje) || 0);
+            let minP = Math.floor(Math.min(...puntajes));
+            let maxP = Math.ceil(Math.max(...puntajes));
+
+            if (maxP === minP) { minP -= 1; maxP += 1; }
+            let yMin = minP - 1;
+            let yMax = maxP + 1;
+            let yRango = yMax - yMin;
+
+            // Dibujar Eje Y (Rejilla)
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.font = '14px sans-serif';
+
+            for (let i = yMin; i <= yMax; i += 0.5) {
+                let y = padT + chartH - ((i - yMin) / yRango) * chartH;
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(w - padR, y);
+                ctx.stroke();
+
+                if (i % 1 === 0 || i % 0.5 === 0) {
+                    ctx.fillStyle = '#666666';
+                    ctx.fillText(i.toFixed(1), padL - 10, y);
+                }
+            }
+
+            // Preparar Puntos (Eje X dinámico)
+            let puntos = catas.map((c, i) => {
+                let px = catas.length === 1 ? padL + chartW / 2 : padL + (i / (catas.length - 1)) * chartW;
+                let py = padT + chartH - ((parseFloat(c.puntaje) || 0) - yMin) / yRango * chartH;
+                return { x: px, y: py, p: parseFloat(c.puntaje).toFixed(1), num: c.consecutivo, dias: c.dias_tueste };
+            });
+
+            // Dibujar Línea conector
+            if (puntos.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(puntos[0].x, puntos[0].y);
+                for (let i = 1; i < puntos.length; i++) {
+                    ctx.lineTo(puntos[i].x, puntos[i].y);
+                }
+                ctx.strokeStyle = '#81c784'; // Verde para evolución
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // Dibujar Nodos e Info de Eje X
+            ctx.textAlign = 'center';
+            puntos.forEach(pt => {
+                // Círculo
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#121212';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#81c784';
+                ctx.stroke();
+
+                // Etiqueta del puntaje
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText(pt.p, pt.x, pt.y - 15);
+
+                // Etiquetas del Eje X (Número de cata y días)
+                ctx.fillStyle = '#ffb74d';
+                ctx.font = 'bold 14px sans-serif';
+                let numStr = String(pt.num).padStart(2, '0');
+                ctx.fillText(`Cata ${numStr}`, pt.x, h - padB + 25);
+
+                let diasTxt = (pt.dias !== undefined && pt.dias !== null && pt.dias !== '') ? `${pt.dias} días` : '-';
+                ctx.fillStyle = '#aaaaaa';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(diasTxt, pt.x, h - padB + 45);
+            });
+
+            // Leyenda del Eje Y
+            ctx.save();
+            ctx.translate(20, padT + chartH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffb74d';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('Puntaje (SCA)', 0, 0);
+            ctx.restore();
+        }
+
+        function descargarCurvaJPG() {
+            const canvas = document.getElementById('curvaCanvas');
+            const link = document.createElement('a');
+            let code = activeFilters.codigo || 'Lote';
+            link.download = `Evolucion_${code}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 1.0);
+            link.click();
+        }
 
         const mapDispositivos = {
             "Filtrado": ["Origami Dripper", "Hario V60", "Chemex", "Kalita Wave"],
@@ -1464,14 +1675,13 @@
                 inputVariedad.value = "";
             }
             
-            const matchN = codigo.match(/(\d{2})([A-Z]{3})/); const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
-            const ref = obtenerFechaDesdeInput(document.getElementById('fecha_hora').value); ref.setHours(0,0,0,0);
-            let ft = null; const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
-            
-            if (matchN && mesesStr[matchN[2]] !== undefined) { ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10)); if (ft > ref) ft.setFullYear(ref.getFullYear() - 1); } 
-            else if (matchA) { let y = parseInt(matchA[3], 10); ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10)); }
-            
-            if (ft) { ft.setHours(0,0,0,0); const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000); inputDias.value = diff >= 0 ? diff : "Fecha futura"; } else { inputDias.value = "Sin fecha detectada"; }
+            const fechaStr = document.getElementById('fecha_hora').value;
+            const diff = calcularDiasDesdeCodigoYFecha(codigo, fechaStr);
+            if (diff !== null) {
+                inputDias.value = diff;
+            } else {
+                inputDias.value = "Sin fecha detectada";
+            }
         }
 
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens'); generarGridHTML(paramNotas, 'notasSensoriales', 'nota'); generarGlobalHTML();

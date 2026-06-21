@@ -310,14 +310,15 @@
         </div>
     </div>
 
+    <!-- Nuevo Modal para Curva de Lote -->
     <div id="curvaModal" class="modal">
-        <div class="modal-content" style="max-width: 600px; background-color: #121212; padding:0; border: 1px solid #333;">
-            <span class="close-btn" style="color:#aaa; top: 18px; z-index: 10;" onclick="cerrarCurvaLote()">&times;</span>
+        <div class="modal-content" style="max-width: 600px; background-color: #ffffff; padding:0; border: 1px solid #eee;">
+            <span class="close-btn" style="color:#666; top: 18px; z-index: 10;" onclick="cerrarCurvaLote()">&times;</span>
             <div style="padding: 20px; overflow-x: auto;">
                 <canvas id="curvaCanvas" width="720" height="500" style="max-width: 100%; height: auto; border-radius: 8px;"></canvas>
             </div>
-            <div style="padding: 15px; border-top: 1px solid #333; background-color: #1a1a1a;">
-                <button type="button" class="main-btn" style="background-color: #ff9800; color: #121212; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarCurvaJPG()">📥 Descargar Gráfico JPG</button>
+            <div style="padding: 15px; border-top: 1px solid #eee; background-color: #f9f9f9;">
+                <button type="button" class="main-btn" style="background-color: #4CAF50; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarCurvaJPG()">📥 Descargar Gráfico JPG</button>
             </div>
         </div>
     </div>
@@ -775,7 +776,7 @@
 
     <script>
         const logHistorial = [
-            { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico, con exportación a JPG." },
+            { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico, con fondo claro y alto contraste en exportación a JPG." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
@@ -1255,21 +1256,21 @@
             const w = canvas.width;
             const h = canvas.height;
 
-            // Fondo Oscuro
-            ctx.fillStyle = '#121212';
+            // Fondo Blanco
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, w, h);
 
             // Títulos
             ctx.textAlign = 'center';
-            ctx.fillStyle = '#ffb74d';
+            ctx.fillStyle = '#4a3b32';
             ctx.font = 'bold 24px sans-serif';
             ctx.fillText('Evolución de cata', w / 2, 40);
 
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#333333';
             ctx.font = 'bold 20px monospace';
             ctx.fillText(codigo, w / 2, 70);
 
-            ctx.fillStyle = '#aaaaaa';
+            ctx.fillStyle = '#666666';
             ctx.font = 'italic 16px sans-serif';
             ctx.fillText(`(${variedad} • ${tueste} • ${merma})`, w / 2, 95);
 
@@ -1294,7 +1295,7 @@
             let yRango = yMax - yMin;
 
             // Dibujar Eje Y (Rejilla)
-            ctx.strokeStyle = '#333333';
+            ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 1;
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
@@ -1327,7 +1328,7 @@
                 for (let i = 1; i < puntos.length; i++) {
                     ctx.lineTo(puntos[i].x, puntos[i].y);
                 }
-                ctx.strokeStyle = '#81c784'; // Verde para evolución
+                ctx.strokeStyle = '#388e3c'; // Verde más oscuro para destacar en fondo claro
                 ctx.lineWidth = 3;
                 ctx.stroke();
             }
@@ -1338,25 +1339,25 @@
                 // Círculo
                 ctx.beginPath();
                 ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
-                ctx.fillStyle = '#121212';
+                ctx.fillStyle = '#ffffff';
                 ctx.fill();
                 ctx.lineWidth = 2;
-                ctx.strokeStyle = '#81c784';
+                ctx.strokeStyle = '#388e3c';
                 ctx.stroke();
 
                 // Etiqueta del puntaje
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = '#333333';
                 ctx.font = 'bold 14px sans-serif';
                 ctx.fillText(pt.p, pt.x, pt.y - 15);
 
                 // Etiquetas del Eje X (Número de cata y días)
-                ctx.fillStyle = '#ffb74d';
+                ctx.fillStyle = '#bf360c';
                 ctx.font = 'bold 14px sans-serif';
                 let numStr = String(pt.num).padStart(2, '0');
                 ctx.fillText(`Cata ${numStr}`, pt.x, h - padB + 25);
 
                 let diasTxt = (pt.dias !== undefined && pt.dias !== null && pt.dias !== '') ? `${pt.dias} días` : '-';
-                ctx.fillStyle = '#aaaaaa';
+                ctx.fillStyle = '#666666';
                 ctx.font = '12px sans-serif';
                 ctx.fillText(diasTxt, pt.x, h - padB + 45);
             });
@@ -1366,7 +1367,7 @@
             ctx.translate(20, padT + chartH / 2);
             ctx.rotate(-Math.PI / 2);
             ctx.textAlign = 'center';
-            ctx.fillStyle = '#ffb74d';
+            ctx.fillStyle = '#8d6e63';
             ctx.font = 'bold 14px sans-serif';
             ctx.fillText('Puntaje (SCA)', 0, 0);
             ctx.restore();

@@ -310,6 +310,19 @@
         </div>
     </div>
 
+    <!-- Nuevo Modal para Curva de Lote -->
+    <div id="curvaModal" class="modal">
+        <div class="modal-content" style="max-width: 600px; background-color: #ffffff; padding:0; border: 1px solid #eee;">
+            <span class="close-btn" style="color:#666; top: 18px; z-index: 10;" onclick="cerrarCurvaLote()">&times;</span>
+            <div style="padding: 20px; overflow-x: auto;">
+                <canvas id="curvaCanvas" width="720" height="500" style="max-width: 100%; height: auto; border-radius: 8px;"></canvas>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #eee; background-color: #f9f9f9;">
+                <button type="button" class="main-btn" style="background-color: #4CAF50; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarCurvaJPG()">📥 Descargar Gráfico JPG</button>
+            </div>
+        </div>
+    </div>
+
     <div id="chartModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" style="color:#aaa; top: 18px;" onclick="cerrarGrafico()">&times;</span>
@@ -750,6 +763,8 @@
                 <button type="button" class="main-btn" style="background-color: #e0e0e0; color: #333; padding: 10px; font-size: 0.8rem; margin:0;" onclick="exportarHistorial()">💾 Exportar JSON</button>
                 <input type="file" id="importarHistorial" accept=".json" style="display:none" onchange="cargarHistorialRespaldo(event)">
             </div>
+            
+            <button type="button" class="main-btn" style="background-color: #333; color: #ffb74d; width: 100%; margin-top: 10px; padding: 10px; font-size: 0.9rem; border: 1px solid #ffb74d;" onclick="abrirCurvaLote()">📈 Curva de lote</button>
         </div>
 
         <div class="button-group">
@@ -761,6 +776,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico, con fondo claro y alto contraste en exportación a JPG." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
@@ -1196,6 +1212,175 @@
             document.getElementById('logModal').style.display = 'flex';
         }
         function cerrarLog() { document.getElementById('logModal').style.display = 'none'; }
+
+        // --- FUNCIONES CURVA DE LOTE ---
+        function abrirCurvaLote() {
+            if (!activeFilters.codigo) {
+                alert("⚠️ Requisito previo: Por favor, selecciona un 'Código' en los filtros del historial primero.");
+                return;
+            }
+
+            const codigo = activeFilters.codigo;
+            
+            // Asignar el consecutivo real según el orden cronológico original de almacenamiento
+            let catasConNumero = [];
+            let contador = 1;
+            historialCatas.forEach(c => {
+                if (c.codigo === codigo) {
+                    catasConNumero.push({ ...c, consecutivo: contador });
+                    contador++;
+                }
+            });
+
+            if (catasConNumero.length === 0) {
+                alert("No hay catas registradas para este código.");
+                return;
+            }
+
+            const info = catasConNumero[catasConNumero.length - 1]; // Extraemos los metadatos de la última cata
+            const variedad = info.variedad || "Variedad N/D";
+            const tueste = info.tueste || "Tueste N/D";
+            const merma = info.merma ? info.merma + "%" : "Merma N/D";
+
+            dibujarCurvaCanvas(codigo, variedad, tueste, merma, catasConNumero);
+            document.getElementById('curvaModal').style.display = 'flex';
+        }
+
+        function cerrarCurvaLote() {
+            document.getElementById('curvaModal').style.display = 'none';
+        }
+
+        function dibujarCurvaCanvas(codigo, variedad, tueste, merma, catas) {
+            const canvas = document.getElementById('curvaCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Fondo Blanco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+
+            // Títulos
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#4a3b32';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('Evolución de cata', w / 2, 40);
+
+            ctx.fillStyle = '#333333';
+            ctx.font = 'bold 20px monospace';
+            ctx.fillText(codigo, w / 2, 70);
+
+            ctx.fillStyle = '#666666';
+            ctx.font = 'italic 16px sans-serif';
+            ctx.fillText(`(${variedad} • ${tueste} • ${merma})`, w / 2, 95);
+
+            // Márgenes del gráfico
+            const padT = 130;
+            const padB = 80;
+            const padL = 60;
+            const padR = 40;
+            const chartW = w - padL - padR;
+            const chartH = h - padT - padB;
+
+            if (catas.length === 0) return;
+
+            // Rangos para Y (Puntaje)
+            let puntajes = catas.map(c => parseFloat(c.puntaje) || 0);
+            let minP = Math.floor(Math.min(...puntajes));
+            let maxP = Math.ceil(Math.max(...puntajes));
+
+            if (maxP === minP) { minP -= 1; maxP += 1; }
+            let yMin = minP - 1;
+            let yMax = maxP + 1;
+            let yRango = yMax - yMin;
+
+            // Dibujar Eje Y (Rejilla)
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.font = '14px sans-serif';
+
+            for (let i = yMin; i <= yMax; i += 0.5) {
+                let y = padT + chartH - ((i - yMin) / yRango) * chartH;
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(w - padR, y);
+                ctx.stroke();
+
+                if (i % 1 === 0 || i % 0.5 === 0) {
+                    ctx.fillStyle = '#666666';
+                    ctx.fillText(i.toFixed(1), padL - 10, y);
+                }
+            }
+
+            // Preparar Puntos (Eje X dinámico)
+            let puntos = catas.map((c, i) => {
+                let px = catas.length === 1 ? padL + chartW / 2 : padL + (i / (catas.length - 1)) * chartW;
+                let py = padT + chartH - ((parseFloat(c.puntaje) || 0) - yMin) / yRango * chartH;
+                return { x: px, y: py, p: parseFloat(c.puntaje).toFixed(1), num: c.consecutivo, dias: c.dias_tueste };
+            });
+
+            // Dibujar Línea conector
+            if (puntos.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(puntos[0].x, puntos[0].y);
+                for (let i = 1; i < puntos.length; i++) {
+                    ctx.lineTo(puntos[i].x, puntos[i].y);
+                }
+                ctx.strokeStyle = '#388e3c'; // Verde más oscuro para destacar en fondo claro
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // Dibujar Nodos e Info de Eje X
+            ctx.textAlign = 'center';
+            puntos.forEach(pt => {
+                // Círculo
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#388e3c';
+                ctx.stroke();
+
+                // Etiqueta del puntaje
+                ctx.fillStyle = '#333333';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText(pt.p, pt.x, pt.y - 15);
+
+                // Etiquetas del Eje X (Número de cata y días)
+                ctx.fillStyle = '#bf360c';
+                ctx.font = 'bold 14px sans-serif';
+                let numStr = String(pt.num).padStart(2, '0');
+                ctx.fillText(`Cata ${numStr}`, pt.x, h - padB + 25);
+
+                let diasTxt = (pt.dias !== undefined && pt.dias !== null && pt.dias !== '') ? `${pt.dias} días` : '-';
+                ctx.fillStyle = '#666666';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(diasTxt, pt.x, h - padB + 45);
+            });
+
+            // Leyenda del Eje Y
+            ctx.save();
+            ctx.translate(20, padT + chartH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#8d6e63';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('Puntaje (SCA)', 0, 0);
+            ctx.restore();
+        }
+
+        function descargarCurvaJPG() {
+            const canvas = document.getElementById('curvaCanvas');
+            const link = document.createElement('a');
+            let code = activeFilters.codigo || 'Lote';
+            link.download = `Evolucion_${code}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 1.0);
+            link.click();
+        }
 
         const mapDispositivos = {
             "Filtrado": ["Origami Dripper", "Hario V60", "Chemex", "Kalita Wave"],

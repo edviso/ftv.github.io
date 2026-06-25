@@ -11,24 +11,24 @@
   /* ===================== RESET & BASE ===================== */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #0f1219;
-    --surface: #1a1f2e;
-    --surface2: #232940;
-    --surface3: #2d3451;
-    --accent: #4f8ef7;
-    --accent2: #7c5cbf;
-    --green: #22c55e;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-    --text: #e8eaf2;
-    --text2: #9aa0b8;
-    --text3: #5c6480;
-    --border: #2a3050;
+    --bg: #f0ece3;
+    --surface: #ffffff;
+    --surface2: #f5f1ea;
+    --surface3: #ebe5d8;
+    --accent: #2563eb;
+    --accent2: #7c3abf;
+    --green: #16a34a;
+    --red: #dc2626;
+    --yellow: #d97706;
+    --text: #1a1a2e;
+    --text2: #4a4a6a;
+    --text3: #8a8aaa;
+    --border: #d0c8b8;
     --wall: #1a1a2e;
     --grid: rgba(79,142,247,0.08);
     --radius: 10px;
     --radius-sm: 6px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.5);
+    --shadow: 0 4px 24px rgba(0,0,0,0.12);
     --tool-h: 72px;
     --top-h: 52px;
   }
@@ -169,6 +169,14 @@
   /* Snap indicator */
   #snapDot { position:absolute; width:10px; height:10px; background:var(--green); border-radius:50%; pointer-events:none; display:none; transform:translate(-50%,-50%); box-shadow:0 0 6px var(--green); }
 
+  /* Coords */
+  #coords { position:absolute; bottom:8px; left:8px; background:rgba(255,255,255,0.9); color:var(--text2); font-size:10px; padding:3px 8px; border-radius:20px; pointer-events:none; font-family:monospace; border:1px solid var(--border); }
+
+  /* Zoom */
+  #zoomCtrl { position:absolute; right:8px; bottom:8px; display:flex; flex-direction:column; gap:6px; }
+  .zoom-btn { width:38px; height:38px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  .zoom-btn:active { background:var(--surface3); }
+
   /* Project name display */
   #projName { font-size:12px; font-weight:600; color:var(--text); padding:0 8px; flex-shrink:0; white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis; }
 </style>
@@ -181,7 +189,7 @@
   <div class="sub">Cargando herramientas…</div>
 </div>
 
-<div id="app" style="display:none">
+<div id="app">
   <!-- TOP BAR -->
   <div id="topbar">
     <span id="projName">Sin título</span>
@@ -225,7 +233,7 @@
       <div class="panel-row"><label>Rotación</label><input id="pRot" type="number" step="5" oninput="updateProp('rot',this.value)"></div>
       <div class="panel-row"><label>Color</label><input id="pColor" type="color" oninput="updateProp('color',this.value)"></div>
       <div class="panel-row"><label>Grosor (m)</label><input id="pThick" type="number" step="0.01" oninput="updateProp('thick',this.value)"></div>
-      <div class="panel-row"><label>Área</label><input id="pArea" type="text" readonly style="background:var(--bg);border-color:transparent;color:var(--green)"></div>
+      <div class="panel-row"><label>Área</label><input id="pArea" type="text" readonly style="background:var(--surface2);border-color:transparent;color:var(--green)"></div>
     </div>
 
     <!-- LAYERS PANEL -->
@@ -407,7 +415,6 @@ window.addEventListener('load', () => {
   resetView();
   setTimeout(() => {
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
     renderLayerList();
     drawAll();
     showToast('¡Bienvenido a Plano Fácil!');

@@ -28,29 +28,46 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
+            /* TRUCO PARA MÓVILES: Ancla la app a los bordes visibles */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             display: flex;
             flex-direction: column;
-            height: 100vh;
             overflow: hidden;
             touch-action: none;
         }
 
         .top-bar {
             display: flex;
+            flex-wrap: wrap; /* Permite que el título o botones bajen si no caben */
             justify-content: space-between;
             align-items: center;
             background-color: var(--panel-bg);
-            padding: 10px 15px;
+            padding: 10px;
             border-bottom: 1px solid var(--border-color);
             z-index: 10;
+            flex-shrink: 0; /* Evita que la barra sea aplastada */
         }
 
-        .top-bar button {
+        .logo {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .actions button {
             background: #333;
             color: white;
             border: none;
             padding: 8px 12px;
-            margin-left: 5px;
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
@@ -74,26 +91,28 @@
 
         .bottom-bar {
             display: flex;
-            overflow-x: auto;
+            overflow-x: auto; /* Permite deslizar el dedo si hay muchas herramientas */
             background-color: var(--panel-bg);
             padding: 10px;
             border-top: 1px solid var(--border-color);
             z-index: 10;
+            flex-shrink: 0; /* Evita que la barra desaparezca hacia abajo */
         }
 
         .tool-btn {
             background: transparent;
             color: white;
             border: 1px solid var(--border-color);
-            padding: 15px 20px;
+            padding: 10px 15px;
             margin-right: 10px;
             border-radius: 8px;
             white-space: nowrap;
-            font-size: 16px;
+            font-size: 14px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 5px;
+            flex-shrink: 0; /* Evita que los botones se deformen */
         }
 
         .tool-btn.active {
@@ -109,7 +128,7 @@
             padding: 15px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
             z-index: 20;
             display: flex;
             flex-direction: column;
@@ -156,6 +175,7 @@
             border: 1px solid #555;
             padding: 10px;
             border-radius: 5px;
+            resize: none;
         }
 
         .modal-actions {

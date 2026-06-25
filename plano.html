@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Plano Fácil - PWA Arquitectura</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --accent-color: #4CAF50;
+            --border-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--panel-bg);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .top-bar button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin-left: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .workspace {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(#f0f0f0 1px, transparent 1px),
+                linear-gradient(90deg, #f0f0f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .bottom-bar {
+            display: flex;
+            overflow-x: auto;
+            background-color: var(--panel-bg);
+            padding: 10px;
+            border-top: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .tool-btn {
+            background: transparent;
+            color: white;
+            border: 1px solid var(--border-color);
+            padding: 15px 20px;
+            margin-right: 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tool-btn.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .properties-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .properties-panel input {
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            padding: 5px;
+            width: 80px;
+            border-radius: 4px;
+        }
+
+        .btn-danger { background: #f44336 !important; }
+        .hidden { display: none !important; }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: var(--accent-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="logo">📐 Plano Fácil</div>
+        <div class="actions">
+            <button onclick="app.clearCanvas()">📄 Nuevo</button>
+            <button onclick="app.exportPNG()">🖼️ PNG</button>
+            <button onclick="app.exportPDF()">📑 PDF</button>
+            <button onclick="app.showMaterialEstimator()">🧱 Materiales</button>
+            <button onclick="app.showAIModal()">🤖 IA</button>
+        </div>
+    </header>
+
+    <main class="workspace">
+        <div class="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <div id="propertiesPanel" class="properties-panel hidden">
+            <h3>Propiedades</h3>
+            <label>Ancho (cm): <input type="number" id="propWidth" onchange="app.updateObject()"></label>
+            <label>Alto (cm): <input type="number" id="propHeight" onchange="app.updateObject()"></label>
+            <button onclick="app.deleteSelected()" class="btn-danger">Eliminar</button>
+            <button onclick="app.closeProperties()">Cerrar</button>
+        </div>
+    </main>
+
+    <footer class="bottom-bar">
+        <button class="tool-btn active" data-tool="select" onclick="app.setTool('select')">👆 Seleccionar</button>
+        <button class="tool-btn" data-tool="wall" onclick="app.setTool('wall')">🏠 Muro</button>
+        <button class="tool-btn" data-tool="room" onclick="app.setTool('room')">⬜ Habitación</button>
+        <button class="tool-btn" data-tool="door" onclick="app.addDoor()">🚪 Puerta</button>
+        <button class="tool-btn" data-tool="window" onclick="app.addWindow()">🪟 Ventana</button>
+        <button class="tool-btn" data-tool="text" onclick="app.addText()">📝 Texto</button>
+    </footer>
+
+    <div id="aiModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Generar Plano con IA</h2>
+            <p>Describe el proyecto. Ej:</p>
+            <textarea id="aiPrompt" rows="4">Cerramiento perimetral y casa para un terreno de 10m x 20m con un dormitorio principal, baño y sala de estar.</textarea>
+            <div class="modal-actions">
+                <button onclick="app.generateAIPlan()">Generar</button>
+                <button onclick="app.closeModals()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="estimatorModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Estimación de Materiales</h2>
+            <div id="estimatorResults"></div>
+            <div class="modal-actions">
+                <button onclick="app.closeModals()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PIXEL_TO_CM = 1; 
+
+        const app = {
+            canvas: null,
+            currentTool: 'select',
+            isDrawing: false,
+            line: null,
+            startX: 0,
+            startY: 0,
+            activeObject: null,
+
+            init: function() {
+                this.canvas = new fabric.Canvas('mainCanvas', {
+                    selection: true,
+                    preserveObjectStacking: true
+                });
+
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+
+                this.setupEvents();
+                this.setupTouchPanning();
+            },
+
+            resizeCanvas: function() {
+                const container = document.querySelector('.canvas-container');
+                this.canvas.setWidth(container.clientWidth);
+                this.canvas.setHeight(container.clientHeight);
+                this.canvas.renderAll();
+            },
+
+            setTool: function(toolName) {
+                this.currentTool = toolName;
+                document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-tool="${toolName}"]`).classList.add('active');
+
+                if (toolName === 'select') {
+                    this.canvas.isDrawingMode = false;
+                    this.canvas.selection = true;
+                    this.canvas.forEachObject(o => o.set('selectable', true));
+                } else {
+                    this.canvas.selection = false;
+                    this.canvas.discardActiveObject();
+                    this.canvas.forEachObject(o => o.set('selectable', false));
+                }
+                this.canvas.requestRenderAll();
+            },
+
+            setupEvents: function() {
+                this.canvas.on('mouse:down', (o) => this.onMouseDown(o));
+                this.canvas.on('mouse:move', (o) => this.onMouseMove(o));
+                this.canvas.on('mouse:up', (o) => this.onMouseUp(o));
+                
+                this.canvas.on('selection:created', (e) => this.onObjectSelected(e));
+                this.canvas.on('selection:updated', (e) => this.onObjectSelected(e));
+                this.canvas.on('selection:cleared', () => this.closeProperties());
+                
+                this.canvas.on('object:scaling', (e) => {
+                    if(e.target && e.target.isRoom) {
+                        this.updateRoomArea(e.target);
+                    }
+                });
+            },
+
+            setupTouchPanning: function() {
+                this.canvas.on('mouse:wheel', function(opt) {
+                    var delta = opt.e.deltaY;
+                    var zoom = this.getZoom();
+                    zoom *= 0.999 ** delta;
+                    if (zoom > 20) zoom = 20;
+                    if (zoom < 0.1) zoom = 0.1;
+                    this.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+                    opt.e.preventDefault();
+                    opt.e.stopPropagation();
+                });
+            },
+
+            onMouseDown: function(o) {
+                if (this.currentTool === 'select') return;
+                
+                let pointer = this.canvas.getPointer(o.e);
+                this.isDrawing = true;
+                this.startX = pointer.x;
+                this.startY = pointer.y;
+
+                if (this.currentTool === 'wall') {
+                    let points = [pointer.x, pointer.y, pointer.x, pointer.y];
+                    this.line = new fabric.Line(points, {
+                        strokeWidth: 15, 
+                        fill: '#222',
+                        stroke: '#222',
+                        originX: 'center',
+                        originY: 'center',
+                        selectable: false,
+                        isWall: true,
+                        strokeLineCap: 'square'
+                    });
+                    this.canvas.add(this.line);
+                }
+                else if (this.currentTool === 'room') {
+                    this.line = new fabric.Rect({
+                        left: pointer.x,
+                        top: pointer.y,
+                        width: 0,
+                        height: 0,
+                        fill: 'rgba(76, 175, 80, 0.2)',
+                        stroke: '#4CAF50',
+                        strokeWidth: 2,
+                        selectable: false,
+                        isRoom: true
+                    });
+                    this.canvas.add(this.line);
+                }
+            },
+
+            onMouseMove: function(o) {
+                if (!this.isDrawing) return;
+                let pointer = this.canvas.getPointer(o.e);
+
+                if (this.currentTool === 'wall') {
+                    this.line.set({ x2: pointer.x, y2: pointer.y });
+                }
+                else if (this.currentTool === 'room') {
+                    this.line.set({
+                        width: Math.abs(pointer.x - this.startX),
+                        height: Math.abs(pointer.y - this.startY)
+                    });
+                }
+                this.canvas.renderAll();
+            },
+
+            onMouseUp: function(o) {
+                this.isDrawing = false;
+                if (this.currentTool === 'room' && this.line) {
+                    let type = prompt("¿Tipo de espacio? (Ej: Dormitorio, Sala, Cocina)", "Dormitorio");
+                    if(type) {
+                        this.line.roomType = type;
+                        this.addTextToRoom(this.line);
+                    }
+                }
+                this.line = null;
+                this.setTool('select'); 
+            },
+
+            addTextToRoom: function(rect) {
+                let areaSqMeters = ((rect.width * rect.scaleX * PIXEL_TO_CM) * (rect.height * rect.scaleY * PIXEL_TO_CM) / 10000).toFixed(2);
+                
+                let text = new fabric.Text(`${rect.roomType}\n${areaSqMeters} m²`, {
+                    fontSize: 20,
+                    fill: '#333',
+                    originX: 'center',
+                    originY: 'center',
+                    textAlign: 'center',
+                    left: rect.left + (rect.width * rect.scaleX)/2,
+                    top: rect.top + (rect.height * rect.scaleY)/2,
+                    selectable: false
+                });
+                
+                rect.textLabel = text;
+                this.canvas.add(text);
+            },
+
+            updateRoomArea: function(rect) {
+                if(rect.textLabel) {
+                    let w = rect.width * rect.scaleX;
+                    let h = rect.height * rect.scaleY;
+                    let areaSqMeters = ((w * PIXEL_TO_CM) * (h * PIXEL_TO_CM) / 10000).toFixed(2);
+                    rect.textLabel.set({
+                        text: `${rect.roomType}\n${areaSqMeters} m²`,
+                        left: rect.left + w/2,
+                        top: rect.top + h/2
+                    });
+                }
+            },
+
+            addDoor: function() {
+                let doorGroup = new fabric.Group([
+                    new fabric.Rect({ width: 10, height: 80, fill: 'brown', left: 0, top: 0 }),
+                    new fabric.Circle({ radius: 80, startAngle: 0, endAngle: Math.PI/2, stroke: 'black', strokeWidth: 1, fill: 'transparent', left: 10, top: 0 })
+                ], {
+                    left: 100, top: 100, selectable: true
+                });
+                this.canvas.add(doorGroup);
+                this.setTool('select');
+            },
+
+            addWindow: function() {
+                let win = new fabric.Rect({
+                    width: 120, height: 15, fill: '#ADD8E6', stroke: 'black', strokeWidth: 2, left: 150, top: 150, selectable: true
+                });
+                this.canvas.add(win);
+                this.setTool('select');
+            },
+
+            addText: function() {
+                let txt = new fabric.IText('Nota...', { left: 100, top: 100, fontSize: 24 });
+                this.canvas.add(txt);
+                this.setTool('select');
+            },
+
+            onObjectSelected: function(e) {
+                this.activeObject = e.selected[0];
+                const panel = document.getElementById('propertiesPanel');
+                panel.classList.remove('hidden');
+                
+                document.getElementById('propWidth').value = Math.round(this.activeObject.width * this.activeObject.scaleX);
+                document.getElementById('propHeight').value = Math.round(this.activeObject.height * this.activeObject.scaleY);
+            },
+
+            updateObject: function() {
+                if (!this.activeObject) return;
+                const w = parseInt(document.getElementById('propWidth').value);
+                const h = parseInt(document.getElementById('propHeight').value);
+                
+                this.activeObject.set({
+                    scaleX: 1, scaleY: 1,
+                    width: w, height: h
+                });
+                
+                if(this.activeObject.isRoom) this.updateRoomArea(this.activeObject);
+                this.canvas.renderAll();
+            },
+
+            deleteSelected: function() {
+                let activeObjects = this.canvas.getActiveObjects();
+                activeObjects.forEach((obj) => {
+                    if(obj.textLabel) this.canvas.remove(obj.textLabel);
+                    this.canvas.remove(obj);
+                });
+                this.canvas.discardActiveObject();
+                this.closeProperties();
+            },
+
+            closeProperties: function() {
+                document.getElementById('propertiesPanel').classList.add('hidden');
+                this.activeObject = null;
+            },
+
+            clearCanvas: function() {
+                if(confirm("¿Borrar todo el proyecto?")) {
+                    this.canvas.clear();
+                }
+            },
+
+            exportPNG: function() {
+                const dataURL = this.canvas.toDataURL({ format: 'png', multiplier: 2 });
+                const link = document.createElement('a');
+                link.download = 'plano-facil.png';
+                link.href = dataURL;
+                link.click();
+            },
+
+            exportPDF: function() {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'landscape' });
+                const dataURL = this.canvas.toDataURL({ format: 'jpeg', quality: 1.0 });
+                pdf.addImage(dataURL, 'JPEG', 10, 10, 277, 190);
+                pdf.save("proyecto-arquitectonico.pdf");
+            },
+
+            showMaterialEstimator: function() {
+                let totalMurosCm = 0;
+                let totalAreaCm2 = 0;
+
+                this.canvas.getObjects().forEach(obj => {
+                    if (obj.isWall) {
+                        let length = Math.sqrt(Math.pow(obj.x2 - obj.x1, 2) + Math.pow(obj.y2 - obj.y1, 2));
+                        totalMurosCm += length;
+                    }
+                    if (obj.isRoom) {
+                        totalAreaCm2 += (obj.width * obj.scaleX) * (obj.height * obj.scaleY);
+                    }
+                });
+
+                const mLineares = (totalMurosCm / 100).toFixed(2);
+                const areaMetros = (totalAreaCm2 / 10000).toFixed(2);
+                const bloquesAprox = Math.round(mLineares * 2.4 * 12.5);
+
+                let html = `
+                    <p><strong>Área Construida:</strong> ${areaMetros} m²</p>
+                    <p><strong>Longitud de Muros:</strong> ${mLineares} metros</p>
+                    <hr style="margin:10px 0; border-color:#555;">
+                    <p><strong>Bloques estim. (10x20x40):</strong> ~${bloquesAprox} und.</p>
+                    <p><strong>Volumen Concreto (Cadenas):</strong> ~${(mLineares * 0.15 * 0.20).toFixed(2)} m³</p>
+                `;
+                document.getElementById('estimatorResults').innerHTML = html;
+                document.getElementById('estimatorModal').classList.remove('hidden');
+            },
+
+            showAIModal: function() {
+                document.getElementById('aiModal').classList.remove('hidden');
+            },
+
+            generateAIPlan: function() {
+                const promptText = document.getElementById('aiPrompt').value.toLowerCase();
+                this.canvas.clear();
+                this.closeModals();
+
+                let w = 800; 
+                let h = 1000; 
+                
+                const dimMatch = promptText.match(/(\d+)\s*m?\s*x\s*(\d+)\s*m?/);
+                if (dimMatch) {
+                    w = parseInt(dimMatch[1]) * 100; 
+                    h = parseInt(dimMatch[2]) * 100;
+                }
+
+                let base = new fabric.Rect({
+                    left: 50, top: 50, width: w, height: h,
+                    fill: 'transparent', stroke: '#333', strokeWidth: 15,
+                    selectable: false, isRoom: true, roomType: 'Perímetro/Base'
+                });
+                this.canvas.add(base);
+                this.addTextToRoom(base);
+
+                alert("Plano base generado por IA. Puedes continuar editando los muros y divisiones.");
+                this.canvas.renderAll();
+            },
+
+            closeModals: function() {
+                document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>

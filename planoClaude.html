@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1f2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Plano Fácil</title>
+<style>
+  /* ===================== RESET & BASE ===================== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1219;
+    --surface: #1a1f2e;
+    --surface2: #232940;
+    --surface3: #2d3451;
+    --accent: #4f8ef7;
+    --accent2: #7c5cbf;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e8eaf2;
+    --text2: #9aa0b8;
+    --text3: #5c6480;
+    --border: #2a3050;
+    --wall: #1a1a2e;
+    --grid: rgba(79,142,247,0.08);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.5);
+    --tool-h: 72px;
+    --top-h: 52px;
+  }
+  html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; touch-action:none; }
+
+  /* ===================== LAYOUT ===================== */
+  #app { display:flex; flex-direction:column; height:100%; width:100%; }
+  #topbar { display:flex; align-items:center; gap:4px; padding:4px 6px; background:var(--surface); border-bottom:1px solid var(--border); height:var(--top-h); flex-shrink:0; overflow-x:auto; overflow-y:hidden; }
+  #topbar::-webkit-scrollbar { display:none; }
+  #canvas-area { flex:1; position:relative; overflow:hidden; }
+  #canvas-wrap { position:absolute; inset:0; }
+  #mainCanvas { display:block; cursor:crosshair; touch-action:none; }
+  #toolbar { display:flex; align-items:center; gap:6px; padding:6px 8px; background:var(--surface); border-top:1px solid var(--border); height:var(--tool-h); overflow-x:auto; flex-shrink:0; }
+  #toolbar::-webkit-scrollbar { display:none; }
+
+  /* ===================== BUTTONS ===================== */
+  .btn { display:flex; flex-direction:column; align-items:center; justify-content:center; border:none; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.15s; user-select:none; -webkit-tap-highlight-color:transparent; white-space:nowrap; }
+  .btn-top { background:var(--surface2); color:var(--text); padding:5px 10px; font-size:11px; gap:2px; min-width:44px; height:38px; border:1px solid var(--border); }
+  .btn-top .icon { font-size:14px; line-height:1; }
+  .btn-top .lbl { font-size:9px; color:var(--text2); }
+  .btn-top:active, .btn-top.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-tool { background:var(--surface2); color:var(--text); padding:4px 6px; font-size:11px; gap:2px; min-width:52px; height:56px; border:2px solid transparent; flex-shrink:0; }
+  .btn-tool .icon { font-size:20px; line-height:1; }
+  .btn-tool .lbl { font-size:9px; color:var(--text2); line-height:1.2; text-align:center; }
+  .btn-tool:active, .btn-tool.active { border-color:var(--accent); background:var(--surface3); color:var(--accent); }
+  .btn-tool.active .lbl { color:var(--accent); }
+  .sep { width:1px; height:32px; background:var(--border); flex-shrink:0; }
+
+  /* ===================== PANELS ===================== */
+  .panel { position:absolute; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); z-index:100; }
+  .panel h3 { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
+  .panel-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .panel-row label { font-size:11px; color:var(--text2); flex:0 0 80px; }
+  .panel-row input, .panel-row select { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:5px 8px; font-size:12px; }
+  .panel-close { position:absolute; top:10px; right:10px; background:none; border:none; color:var(--text2); font-size:18px; cursor:pointer; padding:2px 6px; }
+  .panel-close:active { color:var(--text); }
+
+  /* Props panel */
+  #propsPanel { right:6px; top:calc(var(--top-h) + 8px); width:200px; display:none; }
+  #propsPanel.visible { display:block; }
+
+  /* Layers panel */
+  #layersPanel { left:6px; top:calc(var(--top-h) + 8px); width:160px; display:none; }
+  #layersPanel.visible { display:block; }
+  .layer-row { display:flex; align-items:center; gap:6px; padding:5px 4px; border-radius:var(--radius-sm); margin-bottom:3px; }
+  .layer-row:active { background:var(--surface2); }
+  .layer-eye { background:none; border:none; font-size:14px; cursor:pointer; color:var(--text2); padding:0 2px; }
+  .layer-eye.hidden { opacity:0.3; }
+  .layer-name { font-size:11px; color:var(--text); flex:1; }
+
+  /* Grid settings */
+  #gridPanel { left:50%; top:calc(var(--top-h)+8px); transform:translateX(-50%); width:200px; display:none; }
+  #gridPanel.visible { display:block; }
+
+  /* Room name modal */
+  #roomModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; }
+  #roomModal.visible { display:flex; }
+  #roomModalBox { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; width:280px; }
+  #roomModalBox h3 { font-size:14px; margin-bottom:14px; color:var(--text); }
+  .room-opt { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+  .room-opt-btn { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; font-size:13px; cursor:pointer; color:var(--text); transition:all 0.15s; text-align:center; }
+  .room-opt-btn:active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .modal-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; }
+
+  /* AI Panel */
+  #aiPanel { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:flex-end; justify-content:center; }
+  #aiPanel.visible { display:flex; }
+  #aiBox { background:var(--surface); border-top:1px solid var(--border); border-radius:16px 16px 0 0; padding:20px; width:100%; max-width:480px; }
+  #aiBox h3 { font-size:15px; margin-bottom:12px; color:var(--text); }
+  #aiBox textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:10px; font-size:13px; min-height:90px; resize:none; margin-bottom:10px; }
+  #aiBox .btn-primary { width:100%; background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); padding:13px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:8px; }
+  #aiBox .btn-primary:active { filter:brightness(0.85); }
+  #aiBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; }
+
+  /* Materials panel */
+  #matsPanel { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:flex-end; justify-content:center; }
+  #matsPanel.visible { display:flex; }
+  #matsBox { background:var(--surface); border-top:1px solid var(--border); border-radius:16px 16px 0 0; padding:20px; width:100%; max-width:480px; max-height:70vh; overflow-y:auto; }
+  #matsBox h3 { font-size:15px; margin-bottom:14px; color:var(--text); }
+  #matsBox table { width:100%; border-collapse:collapse; font-size:12px; }
+  #matsBox td, #matsBox th { padding:7px 6px; border-bottom:1px solid var(--border); }
+  #matsBox th { color:var(--text2); font-weight:500; text-align:left; }
+  #matsBox td:last-child { text-align:right; color:var(--accent); }
+  #matsBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; margin-top:14px; }
+
+  /* Toast */
+  #toast { position:fixed; bottom:calc(var(--tool-h)+16px); left:50%; transform:translateX(-50%); background:var(--surface3); color:var(--text); padding:9px 18px; border-radius:20px; font-size:13px; z-index:300; opacity:0; transition:opacity 0.3s; pointer-events:none; border:1px solid var(--border); white-space:nowrap; }
+  #toast.show { opacity:1; }
+
+  /* Coordinates display */
+  #coords { position:absolute; bottom:8px; left:8px; background:rgba(15,18,25,0.8); color:var(--text2); font-size:10px; padding:3px 8px; border-radius:20px; pointer-events:none; font-family:monospace; }
+
+  /* Zoom controls */
+  #zoomCtrl { position:absolute; right:8px; bottom:8px; display:flex; flex-direction:column; gap:6px; }
+  .zoom-btn { width:38px; height:38px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .zoom-btn:active { background:var(--surface3); }
+
+  /* Furniture picker */
+  #furnPanel { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:flex-end; justify-content:center; }
+  #furnPanel.visible { display:flex; }
+  #furnBox { background:var(--surface); border-top:1px solid var(--border); border-radius:16px 16px 0 0; padding:16px; width:100%; max-width:480px; max-height:65vh; overflow-y:auto; }
+  #furnBox h3 { font-size:14px; margin-bottom:12px; color:var(--text); }
+  .furn-category { margin-bottom:12px; }
+  .furn-cat-title { font-size:11px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin-bottom:7px; }
+  .furn-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .furn-item { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 4px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; font-size:11px; color:var(--text2); text-align:center; }
+  .furn-item .fi { font-size:22px; }
+  .furn-item:active { border-color:var(--accent); color:var(--accent); }
+  #furnBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; margin-top:12px; }
+
+  /* Project modal */
+  #projModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; }
+  #projModal.visible { display:flex; }
+  #projBox { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; width:300px; }
+  #projBox h3 { font-size:14px; margin-bottom:14px; }
+  #projBox input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:8px 10px; font-size:13px; margin-bottom:10px; }
+  .proj-list { max-height:220px; overflow-y:auto; margin-bottom:10px; }
+  .proj-item { display:flex; align-items:center; padding:8px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom:6px; cursor:pointer; background:var(--surface2); }
+  .proj-item:active { border-color:var(--accent); }
+  .proj-item-name { flex:1; font-size:13px; }
+  .proj-item-date { font-size:10px; color:var(--text3); }
+  .proj-del { background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:2px 6px; }
+  #projBox .btn-primary { width:100%; background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:8px; }
+  #projBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:var(--surface); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+  /* Loading */
+  #loading { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; z-index:999; }
+  #loading .logo { font-size:32px; font-weight:700; color:var(--accent); letter-spacing:-0.5px; }
+  #loading .sub { font-size:13px; color:var(--text2); }
+  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Snap indicator */
+  #snapDot { position:absolute; width:10px; height:10px; background:var(--green); border-radius:50%; pointer-events:none; display:none; transform:translate(-50%,-50%); box-shadow:0 0 6px var(--green); }
+
+  /* Project name display */
+  #projName { font-size:12px; font-weight:600; color:var(--text); padding:0 8px; flex-shrink:0; white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="logo">📐 Plano Fácil</div>
+  <div class="spinner"></div>
+  <div class="sub">Cargando herramientas…</div>
+</div>
+
+<div id="app" style="display:none">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <span id="projName">Sin título</span>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="newProject()"><span class="icon">🆕</span><span class="lbl">Nuevo</span></button>
+    <button class="btn btn-top" onclick="openProject()"><span class="icon">📂</span><span class="lbl">Abrir</span></button>
+    <button class="btn btn-top" onclick="saveProject()"><span class="icon">💾</span><span class="lbl">Guardar</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="undo()"><span class="icon">↩</span><span class="lbl">Deshacer</span></button>
+    <button class="btn btn-top" onclick="redo()"><span class="icon">↪</span><span class="lbl">Rehacer</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="exportPNG()"><span class="icon">🖼</span><span class="lbl">PNG</span></button>
+    <button class="btn btn-top" onclick="exportPDF()"><span class="icon">📄</span><span class="lbl">PDF</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="toggleLayers()"><span class="icon">🗂</span><span class="lbl">Capas</span></button>
+    <button class="btn btn-top" onclick="toggleGrid()"><span class="icon">⊞</span><span class="lbl">Cuadrícula</span></button>
+    <button class="btn btn-top" onclick="openAI()"><span class="icon">🤖</span><span class="lbl">IA</span></button>
+    <button class="btn btn-top" onclick="showMaterials()"><span class="icon">📊</span><span class="lbl">Materiales</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="deleteSelected()"><span class="icon">🗑</span><span class="lbl">Borrar</span></button>
+    <button class="btn btn-top" onclick="selectAll()"><span class="icon">⬜</span><span class="lbl">Todo</span></button>
+  </div>
+
+  <!-- CANVAS AREA -->
+  <div id="canvas-area">
+    <div id="canvas-wrap">
+      <canvas id="mainCanvas"></canvas>
+    </div>
+    <div id="coords">X: 0.00m  Y: 0.00m</div>
+    <div id="snapDot"></div>
+
+    <!-- PROPS PANEL -->
+    <div class="panel" id="propsPanel">
+      <button class="panel-close" onclick="closePanelProps()">×</button>
+      <h3>Propiedades</h3>
+      <div class="panel-row"><label>Nombre</label><input id="pName" type="text" oninput="updateProp('name',this.value)"></div>
+      <div class="panel-row"><label>Ancho (m)</label><input id="pW" type="number" step="0.05" oninput="updateProp('w',this.value)"></div>
+      <div class="panel-row"><label>Alto (m)</label><input id="pH" type="number" step="0.05" oninput="updateProp('h',this.value)"></div>
+      <div class="panel-row"><label>X (m)</label><input id="pX" type="number" step="0.05" oninput="updateProp('x',this.value)"></div>
+      <div class="panel-row"><label>Y (m)</label><input id="pY" type="number" step="0.05" oninput="updateProp('y',this.value)"></div>
+      <div class="panel-row"><label>Rotación</label><input id="pRot" type="number" step="5" oninput="updateProp('rot',this.value)"></div>
+      <div class="panel-row"><label>Color</label><input id="pColor" type="color" oninput="updateProp('color',this.value)"></div>
+      <div class="panel-row"><label>Grosor (m)</label><input id="pThick" type="number" step="0.01" oninput="updateProp('thick',this.value)"></div>
+      <div class="panel-row"><label>Área</label><input id="pArea" type="text" readonly style="background:var(--bg);border-color:transparent;color:var(--green)"></div>
+    </div>
+
+    <!-- LAYERS PANEL -->
+    <div class="panel" id="layersPanel">
+      <button class="panel-close" onclick="toggleLayers()">×</button>
+      <h3>Capas</h3>
+      <div id="layerList"></div>
+    </div>
+
+    <!-- GRID PANEL -->
+    <div class="panel" id="gridPanel">
+      <button class="panel-close" onclick="toggleGridPanel()">×</button>
+      <h3>Cuadrícula</h3>
+      <div class="panel-row"><label>Tamaño</label>
+        <select id="gridSize" onchange="setGridSize(this.value)">
+          <option value="0.1">10 cm</option>
+          <option value="0.2">20 cm</option>
+          <option value="0.5" selected>50 cm</option>
+          <option value="1">1 metro</option>
+        </select>
+      </div>
+      <div class="panel-row"><label>Mostrar</label><input type="checkbox" id="showGrid" checked onchange="toggleGridVisible(this.checked)"></div>
+      <div class="panel-row"><label>Snap</label><input type="checkbox" id="snapGrid" checked onchange="toggleSnap(this.checked)"></div>
+    </div>
+
+    <!-- ZOOM CONTROLS -->
+    <div id="zoomCtrl">
+      <button class="zoom-btn" onclick="zoomIn()">+</button>
+      <button class="zoom-btn" onclick="zoomOut()">−</button>
+      <button class="zoom-btn" onclick="resetView()" style="font-size:12px">⊙</button>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div id="toolbar">
+    <button class="btn btn-tool active" id="tool-select" onclick="setTool('select')"><span class="icon">↖</span><span class="lbl">Seleccionar</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-wall" onclick="setTool('wall')"><span class="icon">🏠</span><span class="lbl">Muros</span></button>
+    <button class="btn btn-tool" id="tool-door" onclick="setTool('door')"><span class="icon">🚪</span><span class="lbl">Puertas</span></button>
+    <button class="btn btn-tool" id="tool-window" onclick="setTool('window')"><span class="icon">🪟</span><span class="lbl">Ventanas</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-room" onclick="setTool('room')"><span class="icon">🛏</span><span class="lbl">Habitación</span></button>
+    <button class="btn btn-tool" id="tool-furniture" onclick="openFurnPanel()"><span class="icon">🛋</span><span class="lbl">Mobiliario</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-dim" onclick="setTool('dim')"><span class="icon">📏</span><span class="lbl">Cotas</span></button>
+    <button class="btn btn-tool" id="tool-text" onclick="setTool('text')"><span class="icon">📝</span><span class="lbl">Texto</span></button>
+    <button class="btn btn-tool" id="tool-rect" onclick="setTool('rect')"><span class="icon">⬜</span><span class="lbl">Rectángulo</span></button>
+    <button class="btn btn-tool" id="tool-circle" onclick="setTool('circle')"><span class="icon">⭕</span><span class="lbl">Círculo</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-measure" onclick="setTool('measure')"><span class="icon">📐</span><span class="lbl">Medir</span></button>
+    <div class="sep"></div>
+    <!-- Wall thickness selector -->
+    <select id="wallThick" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:var(--radius-sm);font-size:11px;height:40px;">
+      <option value="0.10">Muro 10cm</option>
+      <option value="0.15" selected>Muro 15cm</option>
+      <option value="0.20">Muro 20cm</option>
+      <option value="0.25">Muro 25cm</option>
+    </select>
+    <!-- Door size -->
+    <select id="doorSize" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:var(--radius-sm);font-size:11px;height:40px;">
+      <option value="0.70">Puerta 70cm</option>
+      <option value="0.80" selected>Puerta 80cm</option>
+      <option value="0.90">Puerta 90cm</option>
+      <option value="1.00">Puerta 100cm</option>
+    </select>
+    <!-- Window size -->
+    <select id="winSize" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:var(--radius-sm);font-size:11px;height:40px;">
+      <option value="0.60">Ventana 60cm</option>
+      <option value="0.80" selected>Ventana 80cm</option>
+      <option value="1.00">Ventana 100cm</option>
+      <option value="1.20">Ventana 120cm</option>
+      <option value="1.50">Ventana 150cm</option>
+      <option value="2.00">Ventana 200cm</option>
+    </select>
+  </div>
+</div>
+
+<!-- ROOM MODAL -->
+<div id="roomModal">
+  <div id="roomModalBox">
+    <h3>¿Qué tipo de espacio?</h3>
+    <div class="room-opt" id="roomOpts"></div>
+    <button class="modal-cancel" onclick="closeRoomModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- AI PANEL -->
+<div id="aiPanel">
+  <div id="aiBox">
+    <h3>🤖 Generar Plano con IA</h3>
+    <textarea id="aiPrompt" placeholder='Ejemplo: "Casa de 8x15 m con dormitorio de 4.5x4.5 m, baño 1.5x3 m, cocina 3x6 m y sala-comedor."'></textarea>
+    <button class="btn-primary" onclick="generateWithAI()">✨ Generar</button>
+    <button class="btn-cancel" onclick="closeAI()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MATERIALS PANEL -->
+<div id="matsPanel">
+  <div id="matsBox">
+    <h3>📊 Estimador de Materiales</h3>
+    <div id="matsContent"></div>
+    <button class="btn-cancel" onclick="closeMaterials()">Cerrar</button>
+  </div>
+</div>
+
+<!-- FURNITURE PANEL -->
+<div id="furnPanel">
+  <div id="furnBox">
+    <h3>🛋 Mobiliario</h3>
+    <div id="furnContent"></div>
+    <button class="btn-cancel" onclick="closeFurnPanel()">Cerrar</button>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div id="projModal">
+  <div id="projBox">
+    <h3 id="projModalTitle">Guardar proyecto</h3>
+    <input type="text" id="projNameInput" placeholder="Nombre del proyecto">
+    <div class="proj-list" id="projList"></div>
+    <button class="btn-primary" id="projSaveBtn" onclick="doSaveProject()">Guardar</button>
+    <button class="btn-cancel" onclick="closeProjModal()">Cancelar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// =====================================================================
+// PLANO FÁCIL - Core Application
+// =====================================================================
+
+const M = 60; // pixels per meter at zoom=1
+
+let state = {
+  tool: 'select',
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  gridSize: 0.5,
+  showGrid: true,
+  snapGrid: true,
+  elements: [],
+  selected: [],
+  layers: { wall:true, door:true, window:true, furniture:true, text:true, dim:true, room:true, shape:true },
+  history: [],
+  historyIdx: -1,
+  wallThick: 0.15,
+  doorSize: 0.80,
+  winSize: 0.80,
+  projectName: 'Sin título',
+  projectId: null,
+};
+
+let drawing = false;
+let drawStart = null;
+let drawCurrent = null;
+let dragEl = null;
+let dragOffX = 0, dragOffY = 0;
+let pinchStartDist = 0, pinchStartZoom = 1;
+let pinchStartPanX = 0, pinchStartPanY = 0;
+let panStart = null;
+let rotHandle = false;
+let rotCenter = null;
+let rotStartAngle = 0;
+let rotElStart = 0;
+let pendingRoomRect = null;
+let measurePoints = [];
+let wallPoints = [];
+let tempText = null;
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const snapDot = document.getElementById('snapDot');
+
+// ======== INIT ========
+window.addEventListener('load', () => {
+  resizeCanvas();
+  resetView();
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    renderLayerList();
+    drawAll();
+    showToast('¡Bienvenido a Plano Fácil!');
+  }, 800);
+});
+window.addEventListener('resize', () => { resizeCanvas(); drawAll(); });
+
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  canvas.width = area.offsetWidth;
+  canvas.height = area.offsetHeight;
+}
+
+function resetView() {
+  const area = document.getElementById('canvas-area');
+  state.panX = (area.offsetWidth || canvas.width) / 2;
+  state.panY = (area.offsetHeight || canvas.height) / 2;
+  state.zoom = 1;
+  drawAll();
+}
+
+// ======== COORDINATE TRANSFORMS ========
+function worldToScreen(wx, wy) {
+  return { x: state.panX + wx * M * state.zoom, y: state.panY + wy * M * state.zoom };
+}
+function screenToWorld(sx, sy) {
+  return { x: (sx - state.panX) / (M * state.zoom), y: (sy - state.panY) / (M * state.zoom) };
+}
+function snapWorld(wx, wy) {
+  if (!state.snapGrid) return { x: wx, y: wy };
+  const s = state.gridSize;
+  return { x: Math.round(wx / s) * s, y: Math.round(wy / s) * s };
+}
+function pxPerM() { return M * state.zoom; }
+
+// ======== DRAW ========
+function drawAll() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#f5f0e8';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  if (state.showGrid) drawGrid(W, H);
+
+  // Elements by layer
+  const layerOrder = ['room','wall','door','window','furniture','shape','dim','text'];
+  for (const layer of layerOrder) {
+    if (!state.layers[layer]) continue;
+    for (const el of state.elements) {
+      if (el.layer !== layer) continue;
+      drawElement(el);
+    }
+  }
+
+  // Preview
+  if (drawing && drawStart && drawCurrent) drawPreview();
+  if (wallPoints.length > 0) drawWallPreview();
+  if (measurePoints.length === 1) drawMeasurePreview();
+
+  // Selection handles
+  for (const el of state.selected) drawHandles(el);
+}
+
+function drawGrid(W, H) {
+  const s = state.gridSize * M * state.zoom;
+  if (s < 5) return;
+  const offX = ((state.panX % s) + s) % s;
+  const offY = ((state.panY % s) + s) % s;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(160,140,100,0.2)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  for (let x = offX; x < W; x += s) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = offY; y < H; y += s) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+
+  // Major grid (every 1m)
+  const mS = 1 * M * state.zoom;
+  if (mS > 20) {
+    const mOffX = ((state.panX % mS) + mS) % mS;
+    const mOffY = ((state.panY % mS) + mS) % mS;
+    ctx.strokeStyle = 'rgba(160,140,100,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = mOffX; x < W; x += mS) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let y = mOffY; y < H; y += mS) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+
+    // Coordinate labels
+    if (mS > 40) {
+      ctx.fillStyle = 'rgba(140,120,80,0.6)';
+      ctx.font = '9px monospace';
+      const startWX = Math.ceil(-state.panX / (M * state.zoom));
+      const startWY = Math.ceil(-state.panY / (M * state.zoom));
+      for (let x = mOffX; x < W; x += mS) {
+        const wx = Math.round((x - state.panX) / (M * state.zoom));
+        ctx.fillText(wx + 'm', x + 2, 10);
+      }
+      for (let y = mOffY; y < H; y += mS) {
+        const wy = Math.round((y - state.panY) / (M * state.zoom));
+        ctx.fillText(wy + 'm', 2, y - 2);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawElement(el) {
+  ctx.save();
+  const ppm = pxPerM();
+  const sp = worldToScreen(el.x, el.y);
+
+  ctx.translate(sp.x, sp.y);
+  if (el.rotation) ctx.rotate(el.rotation * Math.PI / 180);
+
+  switch (el.type) {
+    case 'room':   drawRoom(ctx, el, ppm); break;
+    case 'wall':   drawWall(ctx, el, ppm); break;
+    case 'door':   drawDoor(ctx, el, ppm); break;
+    case 'window': drawWindowEl(ctx, el, ppm); break;
+    case 'furniture': drawFurniture(ctx, el, ppm); break;
+    case 'text':   drawText(ctx, el, ppm); break;
+    case 'dim':    drawDim(ctx, el, ppm); break;
+    case 'rect':   drawRect(ctx, el, ppm); break;
+    case 'circle': drawCircle(ctx, el, ppm); break;
+  }
+  ctx.restore();
+}
+
+function drawRoom(ctx, el, ppm) {
+  const w = el.w * ppm, h = el.h * ppm;
+  // Fill
+  ctx.fillStyle = el.color || 'rgba(245,235,210,0.6)';
+  ctx.fillRect(0, 0, w, h);
+  // Walls
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = (el.thick || 0.15) * ppm;
+  ctx.strokeRect(0, 0, w, h);
+  // Room name
+  ctx.fillStyle = '#333';
+  ctx.font = `bold ${Math.max(10, Math.min(16, w/8))}px 'Segoe UI',sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(el.name || 'Espacio', w/2, h/2 - 10);
+  // Dimensions text
+  ctx.font = `${Math.max(8, Math.min(12, w/10))}px 'Segoe UI',sans-serif`;
+  ctx.fillStyle = '#666';
+  ctx.fillText(`${el.w.toFixed(2)}m × ${el.h.toFixed(2)}m`, w/2, h/2 + 8);
+  ctx.fillText(`${(el.w * el.h).toFixed(2)} m²`, w/2, h/2 + 22);
+  // Dimension lines
+  drawInlineDims(ctx, el, ppm);
+}
+
+function drawInlineDims(ctx, el, ppm) {
+  const w = el.w * ppm, h = el.h * ppm;
+  const offset = 18;
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#555';
+  ctx.font = `9px monospace`;
+  ctx.textAlign = 'center';
+  // Top dim
+  ctx.beginPath(); ctx.moveTo(0,-offset); ctx.lineTo(w,-offset); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,-offset-5); ctx.lineTo(0,-offset+5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w,-offset-5); ctx.lineTo(w,-offset+5); ctx.stroke();
+  ctx.fillText(`${el.w.toFixed(2)}m`, w/2, -offset-7);
+  // Left dim
+  ctx.save();
+  ctx.translate(-offset, h/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(`${el.h.toFixed(2)}m`, 0, -7);
+  ctx.restore();
+  ctx.beginPath(); ctx.moveTo(-offset,0); ctx.lineTo(-offset,h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-offset-5,0); ctx.lineTo(-offset+5,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-offset-5,h); ctx.lineTo(-offset+5,h); ctx.stroke();
+}
+
+function drawWall(ctx, el, ppm) {
+  const len = el.len * ppm;
+  const thick = (el.thick || 0.15) * ppm;
+  ctx.fillStyle = el.color || '#2a2a40';
+  ctx.fillRect(0, -thick/2, len, thick);
+  // Hatching for walls
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  for (let i = 0; i < len; i += 8) {
+    ctx.moveTo(i, -thick/2);
+    ctx.lineTo(i + thick, thick/2);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDoor(ctx, el, ppm) {
+  const w = el.w * ppm;
+  const frameW = 4;
+  // Wall interruption (fill with bg)
+  ctx.fillStyle = '#f5f0e8';
+  ctx.fillRect(0, -(el.thick||0.15)*ppm/2, w, (el.thick||0.15)*ppm);
+  // Door frame
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(0, -(el.thick||0.15)*ppm/2 - frameW, w, (el.thick||0.15)*ppm + frameW*2);
+  // Door leaf
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(w, 0);
+  ctx.stroke();
+  // Arc
+  ctx.beginPath();
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.arc(0, 0, w, 0, Math.PI/2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Dimension
+  ctx.fillStyle = '#555';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${el.w.toFixed(2)}m`, w/2, -20);
+}
+
+function drawWindowEl(ctx, el, ppm) {
+  const w = el.w * ppm;
+  const thick = (el.thick||0.15) * ppm;
+  // Clear background
+  ctx.fillStyle = '#e8f0ff';
+  ctx.fillRect(0, -thick/2, w, thick);
+  // Frame lines
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(0, -thick/2, w, thick);
+  // Glass lines
+  ctx.strokeStyle = '#7ca8ff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(w*0.33, -thick/2); ctx.lineTo(w*0.33, thick/2);
+  ctx.moveTo(w*0.67, -thick/2); ctx.lineTo(w*0.67, thick/2);
+  ctx.stroke();
+  // Dimension
+  ctx.fillStyle = '#555';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${el.w.toFixed(2)}m`, w/2, -thick/2 - 8);
+}
+
+function drawFurniture(ctx, el, ppm) {
+  const w = el.w * ppm, h = el.h * ppm;
+  ctx.fillStyle = el.color || 'rgba(180,160,130,0.3)';
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+
+  switch (el.furnitureType) {
+    case 'bed-single':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      // Pillow
+      ctx.fillStyle = '#ddd';
+      ctx.fillRect(w*0.1, h*0.05, w*0.8, h*0.2);
+      ctx.strokeRect(w*0.1, h*0.05, w*0.8, h*0.2);
+      break;
+    case 'bed-double': case 'bed-queen': case 'bed-king':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      ctx.fillStyle = '#ddd';
+      ctx.fillRect(w*0.05, h*0.05, w*0.42, h*0.2);
+      ctx.strokeRect(w*0.05, h*0.05, w*0.42, h*0.2);
+      ctx.fillRect(w*0.53, h*0.05, w*0.42, h*0.2);
+      ctx.strokeRect(w*0.53, h*0.05, w*0.42, h*0.2);
+      break;
+    case 'sofa':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.fillRect(0, h*0.6, w, h*0.4);
+      ctx.fillRect(0, 0, w*0.15, h);
+      ctx.fillRect(w*0.85, 0, w*0.15, h);
+      break;
+    case 'toilet':
+      ctx.beginPath();
+      ctx.ellipse(w/2, h*0.55, w*0.45, h*0.4, 0, 0, Math.PI*2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = el.color || 'rgba(180,160,130,0.3)';
+      ctx.fillRect(w*0.1, 0, w*0.8, h*0.22);
+      ctx.strokeRect(w*0.1, 0, w*0.8, h*0.22);
+      break;
+    case 'sink':
+      ctx.beginPath();
+      ctx.ellipse(w/2, h/2, w*0.42, h*0.42, 0, 0, Math.PI*2);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(w/2, h/2, 5, 0, Math.PI*2);
+      ctx.fillStyle = '#888';
+      ctx.fill();
+      break;
+    case 'shower':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      ctx.strokeStyle = '#7ca8ff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(w/2, h/2, Math.min(w,h)*0.3, 0, Math.PI*2);
+      ctx.stroke();
+      // shower head
+      ctx.beginPath();
+      ctx.moveTo(w*0.1, h*0.1);
+      for (let i=0;i<6;i++) {
+        ctx.moveTo(w*0.1, h*0.1);
+        ctx.lineTo(w*0.1 + Math.cos(i*60*Math.PI/180)*12, h*0.1 + Math.sin(i*60*Math.PI/180)*12);
+      }
+      ctx.stroke();
+      break;
+    case 'kitchen-stove':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      for (let ci=0;ci<4;ci++) {
+        const bx = (ci%2)*w*0.5+w*0.15, by = Math.floor(ci/2)*h*0.5+h*0.1;
+        ctx.beginPath();
+        ctx.arc(bx, by, Math.min(w,h)*0.15, 0, Math.PI*2);
+        ctx.strokeStyle = '#555'; ctx.lineWidth=1.5;
+        ctx.stroke();
+      }
+      break;
+    case 'fridge':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      ctx.strokeStyle = '#888';
+      ctx.beginPath(); ctx.moveTo(0, h*0.35); ctx.lineTo(w, h*0.35); ctx.stroke();
+      ctx.fillStyle = '#888';
+      ctx.fillRect(w*0.4, h*0.15, w*0.05, h*0.1);
+      ctx.fillRect(w*0.4, h*0.45, w*0.05, h*0.15);
+      break;
+    case 'car-small': case 'car-medium': case 'car-truck':
+      ctx.fillStyle = 'rgba(100,120,160,0.3)';
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle = '#4466aa';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0,0,w,h);
+      // Windshield
+      ctx.fillStyle = 'rgba(150,200,255,0.4)';
+      ctx.fillRect(w*0.15, h*0.1, w*0.7, h*0.25);
+      ctx.fillRect(w*0.15, h*0.65, w*0.7, h*0.2);
+      // Wheels
+      ctx.fillStyle = '#333';
+      [[0.05,0.1],[0.8,0.1],[0.05,0.75],[0.8,0.75]].forEach(([fx,fy])=>{
+        ctx.fillRect(fx*w, fy*h, w*0.12, h*0.12);
+      });
+      break;
+    case 'table-4': case 'table-6': case 'table-8':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      // Chairs
+      const chairs = el.furnitureType === 'table-4' ? 4 : el.furnitureType === 'table-6' ? 6 : 8;
+      ctx.fillStyle = 'rgba(140,120,90,0.4)';
+      const cw = w*0.18, ch = h*0.15;
+      // Top/bottom
+      for (let i=0;i<Math.ceil(chairs/2);i++) {
+        ctx.strokeRect(w*(0.1+i*(0.8/Math.ceil(chairs/2))), -ch-4, cw, ch);
+        ctx.strokeRect(w*(0.1+i*(0.8/Math.ceil(chairs/2))), h+4, cw, ch);
+      }
+      break;
+    case 'tv':
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0,0,w,h*0.8);
+      ctx.strokeStyle = '#555'; ctx.lineWidth=1.5;
+      ctx.strokeRect(0,0,w,h*0.8);
+      ctx.fillStyle = '#111';
+      ctx.fillRect(w*0.05, h*0.05, w*0.9, h*0.7);
+      break;
+    case 'wardrobe':
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+      ctx.beginPath(); ctx.moveTo(w/2,0); ctx.lineTo(w/2,h); ctx.stroke();
+      ctx.fillStyle = '#888';
+      ctx.fillRect(w*0.42, h*0.45, w*0.06, h*0.08);
+      ctx.fillRect(w*0.52, h*0.45, w*0.06, h*0.08);
+      break;
+    default:
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeRect(0,0,w,h);
+  }
+  // Label
+  ctx.fillStyle = '#333';
+  ctx.font = `${Math.max(8, Math.min(11, w/8))}px 'Segoe UI'`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  const shortName = el.name || '';
+  if (shortName && w > 30 && h > 20) ctx.fillText(shortName, w/2, h-2);
+}
+
+function drawText(ctx, el, ppm) {
+  ctx.fillStyle = el.color || '#222';
+  ctx.font = `${(el.fontSize||14) * state.zoom}px 'Segoe UI',sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(el.text || '', 0, 0);
+}
+
+function drawDim(ctx, el, ppm) {
+  const len = el.len * ppm;
+  const offset = 30;
+  ctx.strokeStyle = '#555';
+  ctx.fillStyle = '#333';
+  ctx.lineWidth = 1.2;
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(0, offset);
+  ctx.lineTo(len, offset);
+  ctx.stroke();
+  // End ticks
+  ctx.beginPath();
+  ctx.moveTo(0, offset-8); ctx.lineTo(0, offset+8);
+  ctx.moveTo(len, offset-8); ctx.lineTo(len, offset+8);
+  // Leaders
+  ctx.moveTo(0, 0); ctx.lineTo(0, offset);
+  ctx.moveTo(len, 0); ctx.lineTo(len, offset);
+  ctx.stroke();
+  // Label
+  ctx.fillText(`${el.len.toFixed(2)} m`, len/2, offset+4);
+}
+
+function drawRect(ctx, el, ppm) {
+  const w = el.w * ppm, h = el.h * ppm;
+  ctx.fillStyle = el.color || 'rgba(79,142,247,0.1)';
+  ctx.strokeStyle = el.strokeColor || '#4f8ef7';
+  ctx.lineWidth = (el.thick || 0.02) * ppm;
+  ctx.fillRect(0,0,w,h);
+  ctx.strokeRect(0,0,w,h);
+}
+
+function drawCircle(ctx, el, ppm) {
+  const rx = el.w/2 * ppm, ry = el.h/2 * ppm;
+  ctx.fillStyle = el.color || 'rgba(79,142,247,0.1)';
+  ctx.strokeStyle = el.strokeColor || '#4f8ef7';
+  ctx.lineWidth = (el.thick || 0.02) * ppm;
+  ctx.beginPath();
+  ctx.ellipse(rx, ry, rx, ry, 0, 0, Math.PI*2);
+  ctx.fill(); ctx.stroke();
+}
+
+function drawPreview() {
+  const s = drawStart, c = drawCurrent;
+  const ps = worldToScreen(s.x, s.y);
+  const pc = worldToScreen(c.x, c.y);
+  ctx.save();
+  ctx.setLineDash([6,4]);
+  ctx.strokeStyle = '#4f8ef7';
+  ctx.lineWidth = 2;
+
+  if (state.tool === 'room' || state.tool === 'rect') {
+    ctx.strokeRect(ps.x, ps.y, pc.x-ps.x, pc.y-ps.y);
+    ctx.fillStyle = 'rgba(79,142,247,0.08)';
+    ctx.fillRect(ps.x, ps.y, pc.x-ps.x, pc.y-ps.y);
+    const w = Math.abs(c.x - s.x), h = Math.abs(c.y - s.y);
+    ctx.fillStyle = '#4f8ef7';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${w.toFixed(2)}×${h.toFixed(2)}m`, (ps.x+pc.x)/2, (ps.y+pc.y)/2);
+  } else if (state.tool === 'circle') {
+    const rx = Math.abs(pc.x-ps.x)/2, ry = Math.abs(pc.y-ps.y)/2;
+    ctx.beginPath();
+    ctx.ellipse(ps.x+rx*(pc.x>ps.x?1:-1), ps.y+ry*(pc.y>ps.y?1:-1), rx, ry, 0, 0, Math.PI*2);
+    ctx.stroke();
+  } else if (state.tool === 'door') {
+    ctx.strokeRect(ps.x, ps.y - 10, pc.x-ps.x, 20);
+  } else if (state.tool === 'window') {
+    ctx.strokeRect(ps.x, ps.y - 8, pc.x-ps.x, 16);
+  } else if (state.tool === 'dim') {
+    ctx.beginPath();
+    ctx.moveTo(ps.x, ps.y+20); ctx.lineTo(pc.x, pc.y+20);
+    ctx.stroke();
+    const dist = Math.sqrt((c.x-s.x)**2+(c.y-s.y)**2);
+    ctx.fillStyle = '#4f8ef7';
+    ctx.font = '11px monospace';
+    ctx.fillText(`${dist.toFixed(2)}m`, (ps.x+pc.x)/2, ps.y+15);
+  }
+  ctx.restore();
+}
+
+function drawWallPreview() {
+  const pts = wallPoints;
+  ctx.save();
+  ctx.strokeStyle = '#2a2a40';
+  ctx.lineWidth = (state.wallThick) * pxPerM();
+  ctx.lineCap = 'square';
+  ctx.beginPath();
+  for (let i=0; i<pts.length; i++) {
+    const sp = worldToScreen(pts[i].x, pts[i].y);
+    if (i===0) ctx.moveTo(sp.x, sp.y); else ctx.lineTo(sp.x, sp.y);
+  }
+  if (drawCurrent) {
+    const sp = worldToScreen(drawCurrent.x, drawCurrent.y);
+    ctx.lineTo(sp.x, sp.y);
+  }
+  ctx.stroke();
+  // Points
+  pts.forEach(p => {
+    const sp = worldToScreen(p.x, p.y);
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#4f8ef7';
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawMeasurePreview() {
+  if (!drawCurrent) return;
+  const p1 = worldToScreen(measurePoints[0].x, measurePoints[0].y);
+  const p2 = worldToScreen(drawCurrent.x, drawCurrent.y);
+  ctx.save();
+  ctx.setLineDash([5,3]);
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.stroke();
+  const dist = Math.sqrt((drawCurrent.x-measurePoints[0].x)**2 + (drawCurrent.y-measurePoints[0].y)**2);
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${dist.toFixed(2)} m`, (p1.x+p2.x)/2, (p1.y+p2.y)/2 - 10);
+  ctx.restore();
+}
+
+function drawHandles(el) {
+  const sp = worldToScreen(el.x, el.y);
+  const ppm = pxPerM();
+  const w = (el.w || el.len || 0) * ppm;
+  const h = (el.h || (el.thick||0.15)) * ppm;
+
+  ctx.save();
+  ctx.translate(sp.x, sp.y);
+  if (el.rotation) ctx.rotate(el.rotation * Math.PI/180);
+
+  // Selection border
+  ctx.strokeStyle = '#4f8ef7';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5,3]);
+  const pad = 6;
+  ctx.strokeRect(-pad, -pad, w + pad*2, h + pad*2);
+  ctx.setLineDash([]);
+
+  // Corner handles
+  const corners = [[0,0],[w,0],[0,h],[w,h]];
+  corners.forEach(([cx,cy]) => {
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#4f8ef7';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+  });
+
+  // Rotate handle
+  ctx.fillStyle = '#22c55e';
+  ctx.strokeStyle = '#16a34a';
+  ctx.beginPath();
+  ctx.arc(w/2, -20, 7, 0, Math.PI*2);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(w/2, -13);
+  ctx.lineTo(w/2, -pad);
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ======== TOOLS ========
+function setTool(t) {
+  state.tool = t;
+  state.selected = [];
+  drawing = false;
+  drawStart = null;
+  wallPoints = [];
+  measurePoints = [];
+  document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tool-'+t);
+  if (btn) btn.classList.add('active');
+  document.getElementById('propsPanel').classList.remove('visible');
+  drawAll();
+}
+
+function openFurnPanel() {
+  setTool('select');
+  document.getElementById('furnPanel').classList.add('visible');
+  renderFurnPanel();
+}
+function closeFurnPanel() { document.getElementById('furnPanel').classList.remove('visible'); }
+
+function renderFurnPanel() {
+  const cats = {
+    '🛏 Dormitorio': [
+      {id:'bed-single',icon:'🛏',name:'Cama Individual',w:0.9,h:1.9},
+      {id:'bed-double',icon:'🛏',name:'Cama Matrimonial',w:1.4,h:1.9},
+      {id:'bed-queen',icon:'🛏',name:'Cama Queen',w:1.6,h:2.0},
+      {id:'bed-king',icon:'🛏',name:'Cama King',w:1.9,h:2.0},
+      {id:'nightstand',icon:'🗄',name:'Velador',w:0.5,h:0.5},
+      {id:'wardrobe',icon:'🗃',name:'Armario',w:1.5,h:0.6},
+    ],
+    '🛋 Sala': [
+      {id:'sofa',icon:'🛋',name:'Sofá',w:2.0,h:0.9},
+      {id:'sofa-l',icon:'🛋',name:'Sofá en L',w:2.5,h:1.8},
+      {id:'coffee-table',icon:'⬜',name:'Mesa centro',w:1.0,h:0.5},
+      {id:'tv',icon:'📺',name:'Televisor',w:1.2,h:0.2},
+    ],
+    '🍽 Comedor': [
+      {id:'table-4',icon:'🍽',name:'Mesa 4 per.',w:1.0,h:0.9},
+      {id:'table-6',icon:'🍽',name:'Mesa 6 per.',w:1.5,h:0.9},
+      {id:'table-8',icon:'🍽',name:'Mesa 8 per.',w:2.0,h:0.9},
+    ],
+    '🍳 Cocina': [
+      {id:'kitchen-stove',icon:'🍳',name:'Cocina',w:0.6,h:0.6},
+      {id:'fridge',icon:'❄',name:'Refrigerador',w:0.7,h:0.75},
+      {id:'dishwasher',icon:'🚿',name:'Lavaplatos',w:0.6,h:0.6},
+      {id:'island',icon:'⬜',name:'Isla',w:1.5,h:0.9},
+    ],
+    '🚿 Baño': [
+      {id:'toilet',icon:'🚽',name:'Inodoro',w:0.4,h:0.6},
+      {id:'sink',icon:'🪣',name:'Lavamanos',w:0.5,h:0.45},
+      {id:'shower',icon:'🚿',name:'Ducha',w:0.9,h:0.9},
+    ],
+    '🚗 Garaje': [
+      {id:'car-small',icon:'🚗',name:'Auto pequeño',w:3.5,h:1.7},
+      {id:'car-medium',icon:'🚙',name:'Auto mediano',w:4.0,h:1.8},
+      {id:'car-truck',icon:'🚚',name:'Camioneta',w:4.8,h:2.0},
+    ],
+  };
+
+  let html = '';
+  for (const [cat, items] of Object.entries(cats)) {
+    html += `<div class="furn-category"><div class="furn-cat-title">${cat}</div><div class="furn-grid">`;
+    items.forEach(it => {
+      html += `<div class="furn-item" onclick="placeFurniture('${it.id}','${it.name}',${it.w},${it.h})">
+        <span class="fi">${it.icon}</span><span>${it.name}</span></div>`;
+    });
+    html += `</div></div>`;
+  }
+  document.getElementById('furnContent').innerHTML = html;
+}
+
+function placeFurniture(type, name, w, h) {
+  closeFurnPanel();
+  const wc = screenToWorld(canvas.width/2, canvas.height/2);
+  const el = makeEl('furniture', { furnitureType:type, name, w, h, x:wc.x - w/2, y:wc.y - h/2, layer:'furniture' });
+  addEl(el);
+  state.selected = [el];
+  updatePropsPanel();
+  drawAll();
+  showToast(`${name} agregado`);
+}
+
+// ======== ELEMENT FACTORY ========
+let elId = 1;
+function makeEl(type, props) {
+  return { id: elId++, type, x:0, y:0, w:1, h:1, rotation:0, layer:type, ...props };
+}
+
+function addEl(el) {
+  pushHistory();
+  state.elements.push(el);
+}
+
+function deleteSelected() {
+  if (!state.selected.length) { showToast('Nada seleccionado'); return; }
+  pushHistory();
+  const ids = state.selected.map(e=>e.id);
+  state.elements = state.elements.filter(e => !ids.includes(e.id));
+  state.selected = [];
+  document.getElementById('propsPanel').classList.remove('visible');
+  drawAll();
+}
+
+function selectAll() {
+  state.selected = [...state.elements];
+  updatePropsPanel();
+  drawAll();
+}
+
+// ======== HISTORY ========
+function pushHistory() {
+  const snap = JSON.stringify(state.elements);
+  state.history = state.history.slice(0, state.historyIdx + 1);
+  state.history.push(snap);
+  if (state.history.length > 50) state.history.shift();
+  state.historyIdx = state.history.length - 1;
+}
+
+function undo() {
+  if (state.historyIdx < 0) { showToast('Nada que deshacer'); return; }
+  state.historyIdx--;
+  state.elements = state.historyIdx >= 0 ? JSON.parse(state.history[state.historyIdx]) : [];
+  state.selected = [];
+  drawAll();
+}
+
+function redo() {
+  if (state.historyIdx >= state.history.length - 1) { showToast('Nada que rehacer'); return; }
+  state.historyIdx++;
+  state.elements = JSON.parse(state.history[state.historyIdx]);
+  state.selected = [];
+  drawAll();
+}
+
+// ======== ROOM MODAL ========
+const ROOM_TYPES = ['Dormitorio','Baño','Cocina','Sala','Comedor','Garaje','Lavandería','Oficina','Bodega'];
+const ROOM_COLORS = {
+  'Dormitorio':'rgba(220,200,255,0.35)',
+  'Baño':'rgba(180,220,255,0.35)',
+  'Cocina':'rgba(255,230,180,0.35)',
+  'Sala':'rgba(200,255,200,0.35)',
+  'Comedor':'rgba(255,220,200,0.35)',
+  'Garaje':'rgba(200,200,200,0.35)',
+  'Lavandería':'rgba(220,255,240,0.35)',
+  'Oficina':'rgba(255,240,200,0.35)',
+  'Bodega':'rgba(220,210,190,0.35)',
+};
+
+function openRoomModal(x, y, w, h) {
+  pendingRoomRect = {x,y,w:Math.abs(w),h:Math.abs(h)};
+  if (w < 0) pendingRoomRect.x = x + w;
+  if (h < 0) pendingRoomRect.y = y + h;
+  const opts = ROOM_TYPES.map(t =>
+    `<button class="room-opt-btn" onclick="createRoom('${t}')">${t}</button>`
+  ).join('');
+  document.getElementById('roomOpts').innerHTML = opts;
+  document.getElementById('roomModal').classList.add('visible');
+}
+
+function createRoom(type) {
+  const r = pendingRoomRect;
+  const el = makeEl('room', {
+    name: type, x:r.x, y:r.y, w:r.w, h:r.h,
+    thick: parseFloat(document.getElementById('wallThick').value),
+    layer:'room', color: ROOM_COLORS[type] || 'rgba(245,235,210,0.5)'
+  });
+  addEl(el);
+  closeRoomModal();
+  state.selected = [el];
+  updatePropsPanel();
+  drawAll();
+}
+
+function closeRoomModal() {
+  document.getElementById('roomModal').classList.remove('visible');
+  pendingRoomRect = null;
+}
+
+// ======== PROPS PANEL ========
+function updatePropsPanel() {
+  const panel = document.getElementById('propsPanel');
+  if (!state.selected.length) { panel.classList.remove('visible'); return; }
+  panel.classList.add('visible');
+  const el = state.selected[0];
+  document.getElementById('pName').value = el.name || el.type;
+  document.getElementById('pW').value = (el.w || el.len || 0).toFixed(3);
+  document.getElementById('pH').value = (el.h || el.thick || 0).toFixed(3);
+  document.getElementById('pX').value = (el.x || 0).toFixed(3);
+  document.getElementById('pY').value = (el.y || 0).toFixed(3);
+  document.getElementById('pRot').value = (el.rotation || 0).toFixed(1);
+  document.getElementById('pColor').value = el.color ? rgbToHex(el.color) : '#cccccc';
+  document.getElementById('pThick').value = (el.thick || 0).toFixed(3);
+  const area = (el.w && el.h) ? (el.w * el.h).toFixed(2) + ' m²' : '-';
+  document.getElementById('pArea').value = area;
+}
+
+function closePanelProps() {
+  state.selected = [];
+  document.getElementById('propsPanel').classList.remove('visible');
+  drawAll();
+}
+
+function updateProp(prop, val) {
+  if (!state.selected.length) return;
+  pushHistory();
+  state.selected.forEach(el => {
+    switch(prop) {
+      case 'name': el.name = val; break;
+      case 'w': el.w = parseFloat(val)||el.w; if(el.len!==undefined) el.len=parseFloat(val)||el.len; break;
+      case 'h': el.h = parseFloat(val)||el.h; break;
+      case 'x': el.x = parseFloat(val)||el.x; break;
+      case 'y': el.y = parseFloat(val)||el.y; break;
+      case 'rot': el.rotation = parseFloat(val)||0; break;
+      case 'color': el.color = val; break;
+      case 'thick': el.thick = parseFloat(val)||el.thick; break;
+    }
+  });
+  drawAll();
+}
+
+function rgbToHex(c) {
+  if (!c || c[0]==='#') return c || '#cccccc';
+  return '#cccccc';
+}
+
+// ======== LAYERS ========
+function toggleLayers() {
+  const p = document.getElementById('layersPanel');
+  p.classList.toggle('visible');
+  renderLayerList();
+}
+
+function renderLayerList() {
+  const names = { room:'Habitaciones', wall:'Muros', door:'Puertas', window:'Ventanas', furniture:'Mobiliario', text:'Textos', dim:'Cotas', shape:'Formas' };
+  let html = '';
+  for (const [key,label] of Object.entries(names)) {
+    const vis = state.layers[key] !== false;
+    html += `<div class="layer-row">
+      <button class="layer-eye ${vis?'':'hidden'}" onclick="toggleLayer('${key}',${!vis})">${vis?'👁':'🙈'}</button>
+      <span class="layer-name">${label}</span>
+    </div>`;
+  }
+  document.getElementById('layerList').innerHTML = html;
+}
+
+function toggleLayer(key, visible) {
+  state.layers[key] = visible;
+  renderLayerList();
+  drawAll();
+}
+
+// ======== GRID ========
+function toggleGrid() { document.getElementById('gridPanel').classList.toggle('visible'); }
+function toggleGridPanel() { document.getElementById('gridPanel').classList.remove('visible'); }
+function setGridSize(v) { state.gridSize = parseFloat(v); drawAll(); }
+function toggleGridVisible(v) { state.showGrid = v; drawAll(); }
+function toggleSnap(v) { state.snapGrid = v; }
+
+// ======== ZOOM ========
+function zoomIn() { state.zoom = Math.min(state.zoom * 1.25, 8); drawAll(); }
+function zoomOut() { state.zoom = Math.max(state.zoom / 1.25, 0.1); drawAll(); }
+
+// ======== HIT TESTING ========
+function hitTest(wx, wy) {
+  for (let i = state.elements.length-1; i >= 0; i--) {
+    const el = state.elements[i];
+    if (!state.layers[el.layer]) continue;
+    if (hitElement(el, wx, wy)) return el;
+  }
+  return null;
+}
+
+function hitElement(el, wx, wy) {
+  // Rotate test point
+  let lx = wx - el.x, ly = wy - el.y;
+  if (el.rotation) {
+    const a = -el.rotation * Math.PI/180;
+    const cx = lx, cy = ly;
+    lx = cx*Math.cos(a) - cy*Math.sin(a);
+    ly = cx*Math.sin(a) + cy*Math.cos(a);
+  }
+  const w = el.w || el.len || 0;
+  const h = el.h || el.thick || 0.3;
+  const pad = 0.15;
+  return lx >= -pad && lx <= w+pad && ly >= -h-pad && ly <= h+pad;
+}
+
+// ======== TOUCH / MOUSE EVENTS ========
+function getEventPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  let x, y;
+  if (e.touches && e.touches.length > 0) {
+    x = e.touches[0].clientX - rect.left;
+    y = e.touches[0].clientY - rect.top;
+  } else {
+    x = e.clientX - rect.left;
+    y = e.clientY - rect.top;
+  }
+  return { x, y };
+}
+
+function onPointerDown(e) {
+  e.preventDefault();
+  const sp = getEventPos(e);
+  const wp = screenToWorld(sp.x, sp.y);
+  const snapped = snapWorld(wp.x, wp.y);
+
+  // Two-finger pan/pinch
+  if (e.touches && e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    pinchStartDist = Math.sqrt(dx*dx+dy*dy);
+    pinchStartZoom = state.zoom;
+    pinchStartPanX = state.panX;
+    pinchStartPanY = state.panY;
+    panStart = { x:(e.touches[0].clientX+e.touches[1].clientX)/2, y:(e.touches[0].clientY+e.touches[1].clientY)/2 };
+    return;
+  }
+
+  switch(state.tool) {
+    case 'select': {
+      // Check rotate handle
+      if (state.selected.length === 1) {
+        const el = state.selected[0];
+        const elSP = worldToScreen(el.x, el.y);
+        const ppm = pxPerM();
+        const w = (el.w||el.len||0) * ppm;
+        const rx = elSP.x + w/2, ry = elSP.y - 20;
+        if (Math.hypot(sp.x-rx, sp.y-ry) < 14) {
+          rotHandle = true;
+          rotCenter = { x: el.x + (el.w||el.len||0)/2, y: el.y + (el.h||0)/2 };
+          rotStartAngle = Math.atan2(wp.y - rotCenter.y, wp.x - rotCenter.x) * 180/Math.PI;
+          rotElStart = el.rotation || 0;
+          return;
+        }
+      }
+      // Hit test
+      const hit = hitTest(wp.x, wp.y);
+      if (hit) {
+        state.selected = [hit];
+        dragEl = hit;
+        dragOffX = wp.x - hit.x;
+        dragOffY = wp.y - hit.y;
+        updatePropsPanel();
+      } else {
+        state.selected = [];
+        dragEl = null;
+        document.getElementById('propsPanel').classList.remove('visible');
+        panStart = sp;
+      }
+      drawAll();
+      break;
+    }
+    case 'wall':
+      wallPoints.push(snapped);
+      drawAll();
+      break;
+    case 'room': case 'rect': case 'circle': case 'door': case 'window': case 'dim':
+      drawing = true;
+      drawStart = snapped;
+      drawCurrent = snapped;
+      break;
+    case 'text': {
+      const txt = prompt('Ingrese texto:');
+      if (txt) {
+        const el = makeEl('text', { text:txt, x:snapped.x, y:snapped.y, layer:'text', w:txt.length*0.1, h:0.2, fontSize:14 });
+        addEl(el);
+        drawAll();
+      }
+      break;
+    }
+    case 'measure':
+      if (measurePoints.length === 0) {
+        measurePoints = [snapped];
+        drawing = true;
+        drawCurrent = snapped;
+      } else {
+        const d = Math.sqrt((snapped.x-measurePoints[0].x)**2 + (snapped.y-measurePoints[0].y)**2);
+        showToast(`Distancia: ${d.toFixed(3)} m`);
+        measurePoints = [];
+        drawing = false;
+        drawAll();
+      }
+      break;
+  }
+}
+
+function onPointerMove(e) {
+  e.preventDefault();
+  const sp = getEventPos(e);
+  const wp = screenToWorld(sp.x, sp.y);
+  const snapped = snapWorld(wp.x, wp.y);
+
+  // Update coords
+  document.getElementById('coords').textContent = `X: ${snapped.x.toFixed(2)}m  Y: ${snapped.y.toFixed(2)}m`;
+
+  // Show snap indicator
+  if (state.snapGrid) {
+    const ssp = worldToScreen(snapped.x, snapped.y);
+    snapDot.style.display = 'block';
+    snapDot.style.left = ssp.x + 'px';
+    snapDot.style.top = ssp.y + 'px';
+  }
+
+  // Two-finger pinch/pan
+  if (e.touches && e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    const scale = dist / pinchStartDist;
+    state.zoom = Math.max(0.1, Math.min(8, pinchStartZoom * scale));
+    const cx = (e.touches[0].clientX + e.touches[1].clientX)/2;
+    const cy = (e.touches[0].clientY + e.touches[1].clientY)/2;
+    if (panStart) {
+      state.panX = pinchStartPanX + (cx - panStart.x);
+      state.panY = pinchStartPanY + (cy - panStart.y);
+    }
+    drawAll();
+    return;
+  }
+
+  if (rotHandle && state.selected.length === 1) {
+    const el = state.selected[0];
+    const angle = Math.atan2(wp.y - rotCenter.y, wp.x - rotCenter.x) * 180/Math.PI;
+    el.rotation = rotElStart + (angle - rotStartAngle);
+    updatePropsPanel();
+    drawAll();
+    return;
+  }
+
+  if (state.tool === 'select') {
+    if (dragEl) {
+      dragEl.x = snapped.x - dragOffX;
+      dragEl.y = snapped.y - dragOffY;
+      updatePropsPanel();
+      drawAll();
+    } else if (panStart && !state.selected.length) {
+      state.panX += sp.x - panStart.x;
+      state.panY += sp.y - panStart.y;
+      panStart = sp;
+      drawAll();
+    }
+    return;
+  }
+
+  if (drawing) {
+    drawCurrent = snapped;
+    drawAll();
+  } else if (state.tool === 'wall' && wallPoints.length > 0) {
+    drawCurrent = snapped;
+    drawAll();
+  }
+}
+
+function onPointerUp(e) {
+  e.preventDefault();
+
+  if (rotHandle) { rotHandle = false; pushHistory(); drawAll(); return; }
+
+  if (dragEl) { pushHistory(); dragEl = null; return; }
+  if (panStart && state.tool === 'select') { panStart = null; return; }
+  panStart = null;
+
+  if (!drawing) return;
+
+  const snapped = drawCurrent;
+  if (!snapped || !drawStart) { drawing = false; return; }
+
+  const dx = snapped.x - drawStart.x, dy = snapped.y - drawStart.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ang = Math.atan2(dy, dx) * 180/Math.PI;
+  const x0 = Math.min(drawStart.x, snapped.x);
+  const y0 = Math.min(drawStart.y, snapped.y);
+  const w = Math.abs(dx), h = Math.abs(dy);
+
+  switch(state.tool) {
+    case 'room':
+      if (w > 0.1 && h > 0.1) openRoomModal(drawStart.x, drawStart.y, dx, dy);
+      break;
+    case 'rect':
+      if (w > 0.05 || h > 0.05) {
+        const el = makeEl('rect', {x:x0,y:y0,w,h,layer:'shape'});
+        addEl(el); state.selected=[el]; updatePropsPanel();
+      }
+      break;
+    case 'circle':
+      if (w > 0.05 || h > 0.05) {
+        const el = makeEl('circle', {x:x0,y:y0,w,h,layer:'shape'});
+        addEl(el); state.selected=[el]; updatePropsPanel();
+      }
+      break;
+    case 'door': {
+      const dw = parseFloat(document.getElementById('doorSize').value);
+      const thick = parseFloat(document.getElementById('wallThick').value);
+      const el = makeEl('door', {x:drawStart.x,y:drawStart.y,w:dw,h:thick,thick,len:dw,rotation:ang,layer:'door'});
+      addEl(el); state.selected=[el]; updatePropsPanel();
+      break;
+    }
+    case 'window': {
+      const ww = parseFloat(document.getElementById('winSize').value);
+      const thick = parseFloat(document.getElementById('wallThick').value);
+      const el = makeEl('window', {x:drawStart.x,y:drawStart.y,w:ww,h:thick,thick,len:ww,rotation:ang,layer:'window'});
+      addEl(el); state.selected=[el]; updatePropsPanel();
+      break;
+    }
+    case 'dim':
+      if (len > 0.1) {
+        const el = makeEl('dim', {x:drawStart.x,y:drawStart.y,len,w:len,h:0.3,rotation:ang,layer:'dim'});
+        addEl(el); state.selected=[el]; updatePropsPanel();
+      }
+      break;
+  }
+  drawing = false;
+  drawStart = null;
+  drawAll();
+}
+
+function onDoubleClick(e) {
+  // Finish wall drawing
+  if (state.tool === 'wall' && wallPoints.length >= 2) {
+    for (let i=0; i<wallPoints.length-1; i++) {
+      const p1 = wallPoints[i], p2 = wallPoints[i+1];
+      const dx = p2.x-p1.x, dy = p2.y-p1.y;
+      const len = Math.sqrt(dx*dx+dy*dy);
+      const ang = Math.atan2(dy, dx) * 180/Math.PI;
+      const thick = parseFloat(document.getElementById('wallThick').value);
+      const el = makeEl('wall', {x:p1.x,y:p1.y,len,w:len,h:thick,thick,rotation:ang,layer:'wall'});
+      addEl(el);
+    }
+    wallPoints = [];
+    drawAll();
+    showToast('Muros creados');
+  }
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  state.panX = mx + (state.panX - mx) * factor;
+  state.panY = my + (state.panY - my) * factor;
+  state.zoom = Math.max(0.1, Math.min(8, state.zoom * factor));
+  drawAll();
+}
+
+canvas.addEventListener('mousedown', onPointerDown, { passive:false });
+canvas.addEventListener('mousemove', onPointerMove, { passive:false });
+canvas.addEventListener('mouseup', onPointerUp, { passive:false });
+canvas.addEventListener('dblclick', onDoubleClick);
+canvas.addEventListener('wheel', onWheel, { passive:false });
+canvas.addEventListener('touchstart', onPointerDown, { passive:false });
+canvas.addEventListener('touchmove', onPointerMove, { passive:false });
+canvas.addEventListener('touchend', onPointerUp, { passive:false });
+
+canvas.addEventListener('mouseleave', () => { snapDot.style.display='none'; });
+
+// ======== AI GENERATION ========
+function openAI() { document.getElementById('aiPanel').classList.add('visible'); }
+function closeAI() { document.getElementById('aiPanel').classList.remove('visible'); }
+
+async function generateWithAI() {
+  const prompt = document.getElementById('aiPrompt').value.trim();
+  if (!prompt) { showToast('Ingrese una descripción'); return; }
+
+  const btn = document.querySelector('#aiBox .btn-primary');
+  btn.textContent = '⏳ Generando…';
+  btn.disabled = true;
+
+  try {
+    const sysPrompt = `Eres un generador de planos arquitectónicos residenciales. El usuario describe una casa y tú generas los elementos del plano en formato JSON.
+
+Responde SOLO con un objeto JSON válido con esta estructura exacta:
+{
+  "rooms": [{"type":"Dormitorio","x":0,"y":0,"w":4.5,"h":3.5},...],
+  "walls": [{"x1":0,"y1":0,"x2":10,"y2":0,"thick":0.15},...],
+  "doors": [{"x":2,"y":0,"w":0.9,"angle":0},...],
+  "windows": [{"x":1,"y":0,"w":1.2,"angle":0},...],
+  "projectName":"Casa Residencial"
+}
+
+Usa metros para todas las medidas. Las habitaciones son rectángulos. Genera un plano coherente y a escala.`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        system: sysPrompt,
+        messages:[{role:'user',content:`Genera un plano para: ${prompt}`}]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.map(c=>c.text||'').join('');
+    const clean = text.replace(/```json|```/g,'').trim();
+    const plan = JSON.parse(clean);
+
+    applyAIPlan(plan);
+    closeAI();
+  } catch(err) {
+    // Fallback: generate a default plan
+    generateDefaultPlan(prompt);
+    closeAI();
+  } finally {
+    btn.textContent = '✨ Generar';
+    btn.disabled = false;
+  }
+}
+
+function applyAIPlan(plan) {
+  pushHistory();
+  if (plan.projectName) {
+    state.projectName = plan.projectName;
+    document.getElementById('projName').textContent = state.projectName;
+  }
+
+  const ROOM_COLORS = {
+    'Dormitorio':'rgba(220,200,255,0.35)', 'Baño':'rgba(180,220,255,0.35)',
+    'Cocina':'rgba(255,230,180,0.35)', 'Sala':'rgba(200,255,200,0.35)',
+    'Comedor':'rgba(255,220,200,0.35)', 'Garaje':'rgba(200,200,200,0.35)',
+  };
+
+  (plan.rooms||[]).forEach(r => {
+    state.elements.push(makeEl('room', {
+      name:r.type, x:r.x, y:r.y, w:r.w, h:r.h,
+      thick:0.15, layer:'room', color:ROOM_COLORS[r.type]||'rgba(245,235,210,0.5)'
+    }));
+  });
+  (plan.walls||[]).forEach(w => {
+    const dx=w.x2-w.x1, dy=w.y2-w.y1;
+    const len=Math.sqrt(dx*dx+dy*dy);
+    const ang=Math.atan2(dy,dx)*180/Math.PI;
+    state.elements.push(makeEl('wall', {x:w.x1,y:w.y1,len,w:len,h:w.thick||0.15,thick:w.thick||0.15,rotation:ang,layer:'wall'}));
+  });
+  (plan.doors||[]).forEach(d => {
+    state.elements.push(makeEl('door', {x:d.x,y:d.y,w:d.w||0.9,h:0.15,thick:0.15,len:d.w||0.9,rotation:d.angle||0,layer:'door'}));
+  });
+  (plan.windows||[]).forEach(w => {
+    state.elements.push(makeEl('window', {x:w.x,y:w.y,w:w.w||1.2,h:0.15,thick:0.15,len:w.w||1.2,rotation:w.angle||0,layer:'window'}));
+  });
+
+  resetView();
+  drawAll();
+  showToast('¡Plano generado con IA!');
+}
+
+function generateDefaultPlan(prompt) {
+  // Parse basic dimensions from prompt
+  const mMatch = prompt.match(/(\d+)\s*[xX×]\s*(\d+)/);
+  const totalW = mMatch ? parseInt(mMatch[1]) : 8;
+  const totalH = mMatch ? parseInt(mMatch[2]) : 12;
+
+  pushHistory();
+  state.elements = [];
+
+  // Auto-generate a simple house plan
+  const rooms = [
+    {type:'Sala',x:0,y:0,w:totalW*0.5,h:totalH*0.35,color:'rgba(200,255,200,0.35)'},
+    {type:'Comedor',x:totalW*0.5,y:0,w:totalW*0.5,h:totalH*0.35,color:'rgba(255,220,200,0.35)'},
+    {type:'Cocina',x:0,y:totalH*0.35,w:totalW*0.4,h:totalH*0.3,color:'rgba(255,230,180,0.35)'},
+    {type:'Baño',x:totalW*0.4,y:totalH*0.35,w:totalW*0.2,h:totalH*0.3,color:'rgba(180,220,255,0.35)'},
+    {type:'Dormitorio',x:totalW*0.6,y:totalH*0.35,w:totalW*0.4,h:totalH*0.3,color:'rgba(220,200,255,0.35)'},
+    {type:'Dormitorio',x:0,y:totalH*0.65,w:totalW*0.5,h:totalH*0.35,color:'rgba(220,200,255,0.35)'},
+    {type:'Dormitorio',x:totalW*0.5,y:totalH*0.65,w:totalW*0.5,h:totalH*0.35,color:'rgba(220,200,255,0.35)'},
+  ];
+
+  rooms.forEach(r => {
+    state.elements.push(makeEl('room', {
+      name:r.type, x:r.x, y:r.y, w:r.w, h:r.h,
+      thick:0.15, layer:'room', color:r.color
+    }));
+  });
+
+  state.projectName = 'Casa Generada';
+  document.getElementById('projName').textContent = state.projectName;
+  resetView();
+  drawAll();
+  showToast('Plano base generado');
+}
+
+// ======== MATERIALS ESTIMATOR ========
+function showMaterials() {
+  const rooms = state.elements.filter(e=>e.type==='room');
+  const walls = state.elements.filter(e=>e.type==='wall');
+
+  let totalArea = 0, wallLen = 0;
+  rooms.forEach(r => { totalArea += (r.w||0)*(r.h||0); });
+  walls.forEach(w => { wallLen += (w.len||w.w||0); });
+
+  // Also count room perimeters
+  rooms.forEach(r => { wallLen += 2*((r.w||0)+(r.h||0)); });
+
+  const blocks = Math.ceil(wallLen * 3.2 * 4.5); // approx blocks/m2 wall area (3.2h)
+  const concrete = +(wallLen * 0.15 * 3.2 * 0.04).toFixed(2); // rough concrete volume
+  const paintArea = +(wallLen * 3.2 * 2).toFixed(1);
+  const roofArea = +totalArea.toFixed(1);
+
+  const html = `
+    <table>
+      <tr><th>Material</th><th>Cantidad</th></tr>
+      <tr><td>Área construida</td><td>${totalArea.toFixed(2)} m²</td></tr>
+      <tr><td>Long. total de muros</td><td>${wallLen.toFixed(2)} m</td></tr>
+      <tr><td>Bloques estimados</td><td>~${blocks} unid.</td></tr>
+      <tr><td>Volumen de concreto</td><td>~${concrete} m³</td></tr>
+      <tr><td>Área de pintura</td><td>~${paintArea} m²</td></tr>
+      <tr><td>Área de cubierta</td><td>~${roofArea} m²</td></tr>
+    </table>
+    <p style="font-size:10px;color:var(--text3);margin-top:10px">* Valores estimados. Consulte a un profesional.</p>`;
+
+  document.getElementById('matsContent').innerHTML = html;
+  document.getElementById('matsPanel').classList.add('visible');
+}
+function closeMaterials() { document.getElementById('matsPanel').classList.remove('visible'); }
+
+// ======== EXPORT ========
+function exportPNG() {
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = canvas.width * 2;
+  offCanvas.height = canvas.height * 2;
+  const offCtx = offCanvas.getContext('2d');
+  offCtx.scale(2, 2);
+  // Redraw to offCanvas
+  const savedSelected = state.selected;
+  state.selected = [];
+  const savedCtx = ctx;
+  // Use same draw functions on offCtx
+  offCtx.fillStyle = '#f5f0e8';
+  offCtx.fillRect(0, 0, canvas.width, canvas.height);
+  if (state.showGrid) {
+    const W = canvas.width, H = canvas.height;
+    const s = state.gridSize * M * state.zoom;
+    if (s >= 5) {
+      const offX = ((state.panX % s) + s) % s;
+      const offY = ((state.panY % s) + s) % s;
+      offCtx.strokeStyle = 'rgba(160,140,100,0.2)';
+      offCtx.lineWidth = 0.5;
+      offCtx.beginPath();
+      for (let x = offX; x < W; x += s) { offCtx.moveTo(x,0); offCtx.lineTo(x,H); }
+      for (let y = offY; y < H; y += s) { offCtx.moveTo(0,y); offCtx.lineTo(W,y); }
+      offCtx.stroke();
+    }
+  }
+  const layerOrder = ['room','wall','door','window','furniture','shape','dim','text'];
+  for (const layer of layerOrder) {
+    if (!state.layers[layer]) continue;
+    for (const el of state.elements) {
+      if (el.layer !== layer) continue;
+      offCtx.save();
+      const sp = worldToScreen(el.x, el.y);
+      offCtx.translate(sp.x, sp.y);
+      if (el.rotation) offCtx.rotate(el.rotation * Math.PI/180);
+      const ppm = pxPerM();
+      switch(el.type) {
+        case 'room': drawRoom(offCtx,el,ppm); break;
+        case 'wall': drawWall(offCtx,el,ppm); break;
+        case 'door': drawDoor(offCtx,el,ppm); break;
+        case 'window': drawWindowEl(offCtx,el,ppm); break;
+        case 'furniture': drawFurniture(offCtx,el,ppm); break;
+        case 'text': drawText(offCtx,el,ppm); break;
+        case 'dim': drawDim(offCtx,el,ppm); break;
+        case 'rect': drawRect(offCtx,el,ppm); break;
+        case 'circle': drawCircle(offCtx,el,ppm); break;
+      }
+      offCtx.restore();
+    }
+  }
+  state.selected = savedSelected;
+
+  const link = document.createElement('a');
+  link.download = `${state.projectName || 'plano'}.png`;
+  link.href = offCanvas.toDataURL('image/png');
+  link.click();
+  showToast('PNG exportado');
+}
+
+function exportPDF() {
+  const dataURL = canvas.toDataURL('image/png');
+  const A4W = 210, A4H = 297; // mm
+  const margin = 10;
+  const imgW = A4W - 2*margin, imgH = A4H - 2*margin;
+  const scaleX = imgW / (canvas.width/3.78); // px to mm at 96dpi
+  const scaleY = imgH / (canvas.height/3.78);
+  const scale = Math.min(scaleX, scaleY, 1);
+  const fw = (canvas.width/3.78)*scale, fh = (canvas.height/3.78)*scale;
+
+  // Build PDF manually (minimal PDF structure)
+  const now = new Date().toISOString().slice(0,19);
+  // We'll use a data URI to open in browser for printing
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>${state.projectName}</title>
+  <style>
+    body{margin:0;padding:0;background:#fff;}
+    .page{width:210mm;min-height:297mm;padding:10mm;box-sizing:border-box;display:flex;flex-direction:column;}
+    h2{font-family:sans-serif;font-size:14pt;margin-bottom:6mm;color:#333;}
+    img{max-width:100%;height:auto;border:1px solid #ccc;}
+    .meta{font-family:monospace;font-size:9pt;color:#666;margin-top:6mm;}
+    @media print{body{print-color-adjust:exact;}}
+  </style>
+  </head><body>
+  <div class="page">
+    <h2>📐 ${state.projectName} — Plano Fácil</h2>
+    <img src="${dataURL}">
+    <div class="meta">Generado: ${now} | Escala aproximada | Plano Fácil v1.0</div>
+  </div>
+  <script>window.onload=()=>window.print();<\/script>
+  </body></html>`);
+  win.document.close();
+  showToast('PDF abierto para impresión');
+}
+
+// ======== INDEXEDDB STORAGE ========
+let db = null;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    if (db) return res(db);
+    const req = indexedDB.open('PlanoFacil', 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('projects')) {
+        d.createObjectStore('projects', {keyPath:'id', autoIncrement:true});
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = rej;
+  });
+}
+
+function saveProject() {
+  document.getElementById('projModalTitle').textContent = 'Guardar proyecto';
+  document.getElementById('projSaveBtn').style.display = 'block';
+  document.getElementById('projNameInput').value = state.projectName;
+  document.getElementById('projModal').classList.add('visible');
+  loadProjectList();
+}
+
+function openProject() {
+  document.getElementById('projModalTitle').textContent = 'Abrir proyecto';
+  document.getElementById('projSaveBtn').style.display = 'none';
+  document.getElementById('projNameInput').value = '';
+  document.getElementById('projModal').classList.add('visible');
+  loadProjectList();
+}
+
+function closeProjModal() { document.getElementById('projModal').classList.remove('visible'); }
+
+async function loadProjectList() {
+  const d = await openDB();
+  const tx = d.transaction('projects', 'readonly');
+  const store = tx.objectStore('projects');
+  const req = store.getAll();
+  req.onsuccess = () => {
+    const projects = req.result;
+    let html = '';
+    if (!projects.length) { html = '<p style="font-size:12px;color:var(--text3)">No hay proyectos guardados</p>'; }
+    projects.forEach(p => {
+      html += `<div class="proj-item" onclick="loadProject(${p.id})">
+        <div>
+          <div class="proj-item-name">${p.name}</div>
+          <div class="proj-item-date">${p.date}</div>
+        </div>
+        <button class="proj-del" onclick="event.stopPropagation();deleteProject(${p.id})">🗑</button>
+      </div>`;
+    });
+    document.getElementById('projList').innerHTML = html;
+  };
+}
+
+async function doSaveProject() {
+  const name = document.getElementById('projNameInput').value.trim() || 'Sin título';
+  state.projectName = name;
+  document.getElementById('projName').textContent = name;
+
+  const d = await openDB();
+  const tx = d.transaction('projects', 'readwrite');
+  const store = tx.objectStore('projects');
+  const proj = {
+    name, date: new Date().toLocaleString('es'),
+    elements: state.elements,
+    panX: state.panX, panY: state.panY, zoom: state.zoom,
+    gridSize: state.gridSize,
+  };
+  if (state.projectId) {
+    proj.id = state.projectId;
+    store.put(proj);
+  } else {
+    const req = store.add(proj);
+    req.onsuccess = e => { state.projectId = e.target.result; };
+  }
+  closeProjModal();
+  showToast('Proyecto guardado');
+}
+
+async function loadProject(id) {
+  const d = await openDB();
+  const tx = d.transaction('projects', 'readonly');
+  const store = tx.objectStore('projects');
+  const req = store.get(id);
+  req.onsuccess = () => {
+    const p = req.result;
+    if (!p) return;
+    pushHistory();
+    state.elements = p.elements || [];
+    state.panX = p.panX || canvas.width/2;
+    state.panY = p.panY || canvas.height/2;
+    state.zoom = p.zoom || 1;
+    state.gridSize = p.gridSize || 0.5;
+    state.projectName = p.name;
+    state.projectId = id;
+    document.getElementById('projName').textContent = p.name;
+    closeProjModal();
+    drawAll();
+    showToast(`Proyecto "${p.name}" cargado`);
+  };
+}
+
+async function deleteProject(id) {
+  const d = await openDB();
+  const tx = d.transaction('projects', 'readwrite');
+  tx.objectStore('projects').delete(id);
+  loadProjectList();
+  showToast('Proyecto eliminado');
+}
+
+function newProject() {
+  if (!confirm('¿Crear nuevo proyecto? Los cambios no guardados se perderán.')) return;
+  pushHistory();
+  state.elements = [];
+  state.selected = [];
+  state.projectName = 'Sin título';
+  state.projectId = null;
+  document.getElementById('projName').textContent = 'Sin título';
+  document.getElementById('propsPanel').classList.remove('visible');
+  resetView();
+  showToast('Nuevo proyecto creado');
+}
+
+// ======== TOAST ========
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ======== KEYBOARD SHORTCUTS ========
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  switch(e.key) {
+    case 'Delete': case 'Backspace': deleteSelected(); break;
+    case 'Escape': setTool('select'); break;
+    case 'z': if (e.ctrlKey||e.metaKey) { e.shiftKey ? redo() : undo(); } break;
+    case 's': if (e.ctrlKey||e.metaKey) { e.preventDefault(); saveProject(); } break;
+    case 'a': if (e.ctrlKey||e.metaKey) { e.preventDefault(); selectAll(); } break;
+    case '+': case '=': zoomIn(); break;
+    case '-': zoomOut(); break;
+    case '0': resetView(); break;
+    case 'w': setTool('wall'); break;
+    case 'r': setTool('room'); break;
+    case 'd': setTool('door'); break;
+    case 'v': setTool('window'); break;
+    case 't': setTool('text'); break;
+    case 'm': setTool('measure'); break;
+  }
+});
+
+// Init wall thick/door/window from selectors
+document.getElementById('wallThick').addEventListener('change', e => { state.wallThick = parseFloat(e.target.value); });
+document.getElementById('doorSize').addEventListener('change', e => { state.doorSize = parseFloat(e.target.value); });
+document.getElementById('winSize').addEventListener('change', e => { state.winSize = parseFloat(e.target.value); });
+
+// Initialize DB on load
+openDB().catch(()=>{});
+</script>
+</body>
+</html>

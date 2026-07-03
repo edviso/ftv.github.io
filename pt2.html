@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Etiquetas de Tueste - 4x7cm v2</title>
+    <title>Etiquetas de Tueste - 4x7cm v3 (Corrección 5x4)</title>
     <style>
         :root {
             --bg-interface: #f4f6f8;
             --primary-color: #5D4037;
-            --card-w: 40mm;
-            --card-h: 70mm;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,40 +55,46 @@
         .btn-print { background: #2E7D32; margin-left: 10px; }
         .btn-print:hover { background: #1b5e20; }
 
-        /* Contenedor A4 */
+        /* Contenedor A4 y Vista Previa */
         .preview-container { display: flex; justify-content: center; padding-bottom: 40px; }
+        
         .a4-page {
             background: white;
             width: 210mm;
             height: 297mm;
-            padding: 8.5mm 4mm; 
+            /* 5mm a cada lado asegura exactamente 200mm de ancho interno (5x40mm) */
+            padding: 8.5mm 5mm; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
+            margin: 0 auto;
         }
 
-        /* Cuadrícula de 20 Tarjetas (5x4) */
+        /* En lugar de Grid, usamos Flexbox estricto para forzar 5 columnas matemáticas */
         .grid-container {
-            display: grid;
-            grid-template-columns: repeat(5, var(--card-w));
-            grid-template-rows: repeat(4, var(--card-h));
-            gap: 0;
-            justify-content: center;
+            display: flex;
+            flex-wrap: wrap;
+            width: 200mm; /* 200mm exactos para forzar que entren las 5 tarjetas de 40mm */
+            height: 280mm;
+            margin: 0 auto;
         }
 
         /* Diseño de la tarjeta de 4x7 cm */
         .card {
-            width: var(--card-w);
-            height: var(--card-h);
+            width: 40mm;
+            height: 70mm;
+            flex: 0 0 40mm; /* Prohíbe que crezca o se encoja. Anclado a 40mm */
             border: 0.5px dashed #a0a0a0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             background: white;
+            box-sizing: border-box; /* Asegura que los bordes vayan por dentro y no ensanchen la tarjeta */
         }
 
         .header {
             color: white; font-weight: 700; font-size: 6.5px;
             text-align: center; padding: 2.5px 0; letter-spacing: 0.5px;
+            width: 100%;
         }
 
         /* Colores de Perfiles (Modo Color) */
@@ -134,8 +138,8 @@
         @media print {
             .no-print { display: none !important; }
             body { background: white; margin: 0; padding: 0; }
-            .preview-container { padding: 0; }
-            .a4-page { box-shadow: none; padding: 8.5mm 4mm; margin: 0; }
+            .preview-container { padding: 0; justify-content: flex-start; }
+            .a4-page { box-shadow: none; padding: 8.5mm 5mm; margin: 0; }
             @page { size: A4; margin: 0; }
             .card { border: 0.5px dashed #ccc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -350,7 +354,6 @@
             }
         });
         
-        // Mantener el filtro seleccionado después de regenerar los datos
         aplicarModoFiltro();
     }
 

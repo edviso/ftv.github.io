@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Etiquetas de Tueste - 4x7cm</title>
+    <title>Etiquetas de Tueste - 4x7cm v2</title>
     <style>
         :root {
             --bg-interface: #f4f6f8;
@@ -24,7 +24,7 @@
         .panel-title { font-size: 1.1rem; color: var(--primary-color); font-weight: 700; margin-bottom: 15px; }
 
         .profiles-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;
         }
 
         .profile-setup {
@@ -36,6 +36,22 @@
         input, select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; }
         textarea { height: 120px; font-family: monospace; font-size: 0.75rem; padding: 6px; border: 1px solid #ccc; resize: none; white-space: pre; overflow-wrap: normal; overflow-x: scroll;}
         
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f3f5;
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .options-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
         button { padding: 10px 15px; background: var(--primary-color); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
         button:hover { background: #4a322b; }
         .btn-print { background: #2E7D32; margin-left: 10px; }
@@ -47,8 +63,6 @@
             background: white;
             width: 210mm;
             height: 297mm;
-            /* Calculo para centrar: 5 tarjetas x 40mm = 200mm. Quedan 10mm (5mm por lado) */
-            /* 4 tarjetas x 70mm = 280mm. Quedan 17mm (8.5mm por lado) */
             padding: 8.5mm 4mm; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
@@ -59,15 +73,15 @@
             display: grid;
             grid-template-columns: repeat(5, var(--card-w));
             grid-template-rows: repeat(4, var(--card-h));
-            gap: 0; /* Sin espacio para maximizar el uso de la hoja, pero con bordes de recorte */
+            gap: 0;
             justify-content: center;
         }
 
-        /* Diseño exacto de la tarjeta de 4x7 cm */
+        /* Diseño de la tarjeta de 4x7 cm */
         .card {
             width: var(--card-w);
             height: var(--card-h);
-            border: 0.5px dashed #a0a0a0; /* Borde guía para recortar */
+            border: 0.5px dashed #a0a0a0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -79,16 +93,16 @@
             text-align: center; padding: 2.5px 0; letter-spacing: 0.5px;
         }
 
-        /* Colores de Perfiles */
+        /* Colores de Perfiles (Modo Color) */
         .bg-generico { background-color: #5D4037 !important; }
         .bg-honey { background-color: #b57309 !important; } 
         .bg-lavado { background-color: #2E7D32 !important; }
 
-        table { width: 100%; border-collapse: collapse; font-size: 5.5px; } /* Letra ultra pequeña para 4x7cm */
+        table { width: 100%; border-collapse: collapse; font-size: 5.5px; }
         th { color: #333; background-color: #f1f3f5; padding: 1.5px 1px; border-bottom: 1px solid #ccc; }
         td { padding: 1px 1px; text-align: center; border-bottom: 1px solid #f8f9fa; }
 
-        /* Colores de Filas (Fases) */
+        /* Colores de Filas - Fases (Modo Color) */
         .row-carga { background-color: #CFD8DC !important; }
         .row-secado-start { background-color: #FFF9C4 !important; }
         .row-secado-cont { background-color: #FFFDF5 !important; }
@@ -98,6 +112,24 @@
         .row-desarrollo-start { background-color: #C8E6C9 !important; }
         .row-desarrollo-cont { background-color: #F2F9F2 !important; }
         .row-descarga { background-color: #E0E0E0 !important; }
+
+        /* --- ESTILOS EN BLANCO Y NEGRO / ESCALA DE GRISES --- */
+        .bw-mode .header { 
+            background-color: #1a1a1a !important; 
+            color: #ffffff !important;
+            border-bottom: 1px solid #000;
+        }
+        .bw-mode .row-carga { background-color: #d6d6d6 !important; }
+        .bw-mode .row-secado-start { background-color: #eaeaea !important; }
+        .bw-mode .row-secado-cont { background-color: #ffffff !important; }
+        .bw-mode .row-maillard-start { background-color: #dddddd !important; }
+        .bw-mode .row-maillard-cont { background-color: #f9f9f9 !important; }
+        .bw-mode .row-crack-start { background-color: #c4c4c4 !important; }
+        .bw-mode .row-desarrollo-start { background-color: #e2e2e2 !important; }
+        .bw-mode .row-desarrollo-cont { background-color: #fdfdfd !important; }
+        .bw-mode .row-descarga { background-color: #aeaeae !important; }
+        .bw-mode th { background-color: #e6e6e6 !important; color: #000 !important; }
+        .bw-mode td { color: #000 !important; border-bottom: 1px solid #e6e6e6 !important; }
 
         @media print {
             .no-print { display: none !important; }
@@ -114,7 +146,7 @@
 
 <div class="no-print">
     <div class="panel-title">⚙️ Matriz de 3 Perfiles (4x7 cm) - Hoja A4</div>
-    <p style="font-size: 0.8rem; margin-bottom: 15px; color: #555;">Una hoja A4 permite exactamente 20 etiquetas de 4x7 cm (5 columnas x 4 filas). El sistema calculará 7, 7 y 6 etiquetas para cada perfil respectivamente.</p>
+    <p style="font-size: 0.8rem; margin-bottom: 15px; color: #555;">Una hoja A4 permite exactamente 20 etiquetas de 4x7 cm (5 columnas x 4 filas). Distribución automática: 7, 7 y 6 etiquetas.</p>
     
     <div class="profiles-grid">
         <!-- Perfil 1 -->
@@ -160,9 +192,20 @@
         </div>
     </div>
 
-    <div>
-        <button onclick="generarMatriz()">Generar Matriz Combinada</button>
-        <button class="btn-print" onclick="window.print()">Imprimir PDF</button>
+    <div class="actions-bar">
+        <div class="options-group">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label for="printMode" style="font-size: 0.85rem; font-weight: bold; color: #444;">Modo Visual / Impresión:</label>
+                <select id="printMode" onchange="aplicarModoFiltro()" style="padding: 6px 12px; font-weight: 600;">
+                    <option value="color" selected>🎨 A Colores Full</option>
+                    <option value="bw">⚫ Blanco y Negro (Tinta Negra)</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <button onclick="generarMatriz()">Generar Matriz Combinada</button>
+            <button class="btn-print" onclick="window.print()">Imprimir PDF</button>
+        </div>
     </div>
 </div>
 
@@ -281,6 +324,16 @@
             </div>`;
     }
 
+    function aplicarModoFiltro() {
+        const mode = document.getElementById('printMode').value;
+        const container = document.getElementById('gridContainer');
+        if (mode === 'bw') {
+            container.classList.add('bw-mode');
+        } else {
+            container.classList.remove('bw-mode');
+        }
+    }
+
     function generarMatriz() {
         const cont = document.getElementById('gridContainer');
         cont.innerHTML = '';
@@ -296,6 +349,9 @@
                 for(let i=0; i<p.q; i++) cont.innerHTML += crearTarjeta(p.n, p.c, p.d);
             }
         });
+        
+        // Mantener el filtro seleccionado después de regenerar los datos
+        aplicarModoFiltro();
     }
 
     window.onload = generarMatriz;

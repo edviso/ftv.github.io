@@ -92,6 +92,7 @@
         .btn-secondary { background-color: #555; color: white; }
         .btn-danger { background-color: var(--danger-color); color: white; }
         .btn-info { background-color: var(--info-color); color: white; }
+        .btn-warning { background-color: var(--accent-color); color: white; }
 
         .status-container {
             display: flex;
@@ -183,6 +184,7 @@
         .summary-grid div { background: #2a2a2a; padding: 10px; border-radius: 6px; }
         .summary-grid strong { color: #aaa; display: block; font-size: 0.9rem; }
 
+        /* Estilos generales para tablas (Historial) */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -197,6 +199,28 @@
         tr:hover { background-color: #2a2a2a; }
         
         .row-controls { display: flex; gap: 10px; }
+
+        /* Estilos específicos para la Tabla Comparativa */
+        #comparative-table-container {
+            margin-top: 15px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        #comp-table {
+            margin-bottom: 0;
+            font-size: 0.95rem; /* Ajustado para móviles */
+        }
+        #comp-table th, #comp-table td {
+            padding: 8px 4px; /* Padding reducido para encajar a lo ancho */
+            text-align: center;
+        }
+        #comp-table th {
+            color: #ddd;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -308,9 +332,26 @@
 
         <canvas id="result-chart"></canvas>
 
-        <div style="margin-top: 20px;">
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 5px;">
             <button id="btn-download-json" class="btn-primary">Descargar JSON</button>
             <button id="btn-back-home" class="btn-secondary">Volver al Inicio</button>
+            <button id="btn-toggle-comp" class="btn-warning">Datos Comparativos</button>
+        </div>
+
+        <div id="comparative-table-container" style="display: none;">
+            <table id="comp-table">
+                <thead>
+                    <tr>
+                        <th>Temp</th>
+                        <th>Teó</th>
+                        <th>Real</th>
+                        <th>Dif</th>
+                        <th>Fase</th>
+                    </tr>
+                </thead>
+                <tbody id="comp-body">
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -412,7 +453,6 @@
             return totalHitos > 0 ? Math.round(totalPoints / totalHitos) : 0;
         }
 
-        // --- GENERADOR DE ANÁLISIS DE FASES ---
         function generarAnalisis() {
             if (actualData.length <= 1) return "Tueste incompleto o sin datos suficientes para analizar.";
             
@@ -424,7 +464,6 @@
                     let expectedSec = sequenceData[i].seconds;
                     let realSec = actualData[i].seconds;
                     let temp = sequenceData[i].tempValue;
-                    
                     let errorSecs = Math.abs(expectedSec - realSec);
                     
                     let fase = "";
@@ -456,17 +495,66 @@
             let analisisHtml = `La mayor cantidad de errores se concentró en la <strong>Fase de ${faseCritica}</strong>.<br><br>`;
             
             if (faseCritica === "Secado") {
-                analisisHtml += "<em>Posibles consecuencias en bebida:</em> Si el error fue por exceso de velocidad, riesgo de astringencia o falta de uniformidad. Si fue muy lento, puede generar notas a pan horneado y apagar la acidez de la variedad.";
+                analisisHtml += "<em>Posibles consecuencias:</em> Si fue muy rápido, riesgo de astringencia. Si fue muy lento, puede generar notas a pan horneado y apagar la acidez.";
             } else if (faseCritica === "Maillard") {
-                analisisHtml += "<em>Posibles consecuencias en bebida:</em> Esta fase define el dulzor y el cuerpo. Un paso irregular por Maillard puede resultar en una bebida con acidez plana (si fue lento) o con notas vegetales y astringentes (si se apresuró).";
+                analisisHtml += "<em>Posibles consecuencias:</em> Un paso irregular aquí puede resultar en una bebida con acidez plana (lento) o con notas vegetales (apresurado).";
             } else {
-                analisisHtml += "<em>Posibles consecuencias en bebida:</em> Altered origin notes. Un desarrollo inestable o apresurado puede dejar sabores agrios o herbáceos. Si se prolongó demasiado, perderás las notas florales/frutales dando paso a sabores cenizos o amargos.";
+                analisisHtml += "<em>Posibles consecuencias:</em> Un desarrollo inestable o apresurado puede dejar sabores agrios. Si se prolongó, perderás notas florales dando paso a sabores cenizos.";
             }
-            
             return analisisHtml;
         }
 
-        // --- DIBUJO DE GRÁFICOS (ORDEN INVERTIDO) ---
+        // --- GENERADOR DE LA TABLA COMPARATIVA ---
+        function poblarTablaComparativa(seqData, actData) {
+            const tbody = document.getElementById('comp-body');
+            tbody.innerHTML = '';
+
+            // Empezamos desde 1 para ignorar el 0:00 inicial
+            for (let i = 1; i < actData.length; i++) {
+                if (i < seqData.length) {
+                    let temp = seqData[i].tempValue;
+                    let teoStr = seqData[i].timeLabel;
+                    let realStr = actData[i].timeLabel;
+                    let dif = actData[i].seconds - seqData[i].seconds;
+                    
+                    let fase = temp <= 150 ? "Sec" : (temp <= 195 ? "Mail" : "Des");
+                    
+                    // Formateo visual del desvío
+                    let difStr, difColor;
+                    if (dif === 0) {
+                        difStr = "0";
+                        difColor = "var(--success-color)"; // Verde
+                    } else if (dif > 0) {
+                        difStr = "+" + dif;
+                        difColor = "#ff5722"; // Naranja rojizo (Atrasado)
+                    } else {
+                        difStr = dif;
+                        difColor = "var(--info-color)"; // Azul (Adelantado)
+                    }
+
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${temp}°</td>
+                        <td>${teoStr}</td>
+                        <td>${realStr}</td>
+                        <td style="color: ${difColor}; font-weight: bold;">${difStr}</td>
+                        <td style="color: #aaa;">${fase}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            }
+        }
+
+        // Botón de alternar tabla
+        document.getElementById('btn-toggle-comp').addEventListener('click', () => {
+            const tableContainer = document.getElementById('comparative-table-container');
+            if (tableContainer.style.display === 'none') {
+                tableContainer.style.display = 'block';
+            } else {
+                tableContainer.style.display = 'none';
+            }
+        });
+
         function drawChart(canvas, ctx, seqData, actData, showAxes = false) {
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width;
@@ -507,18 +595,16 @@
                 ctx.fillText(formatTime(maxSec), width - 15, height - paddingY + 15);
             }
 
-            // 1. PRIMERO DIBUJAMOS LA CURVA REAL (Naranja Gruesa)
             if (actData.length > 0) {
                 ctx.beginPath();
                 ctx.strokeStyle = '#ff9800';
-                ctx.lineWidth = 4; // Un poco más gruesa para destacar
+                ctx.lineWidth = 4;
                 actData.forEach((pt, i) => {
                     if (i === 0) ctx.moveTo(getX(pt.seconds), getY(pt.tempValue));
                     else ctx.lineTo(getX(pt.seconds), getY(pt.tempValue));
                 });
                 ctx.stroke();
                 
-                // Puntos de la curva real
                 ctx.fillStyle = '#ff9800';
                 actData.forEach(pt => {
                     ctx.beginPath();
@@ -527,9 +613,8 @@
                 });
             }
 
-            // 2. DESPUÉS DIBUJAMOS LA CURVA TEÓRICA (Punteada Gris por encima)
             ctx.beginPath();
-            ctx.strokeStyle = '#cccccc'; // Gris más claro para que resalte sobre el naranja
+            ctx.strokeStyle = '#cccccc';
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             seqData.forEach((pt, i) => {
@@ -539,7 +624,6 @@
             ctx.stroke();
             ctx.setLineDash([]); 
             
-            // Puntos de la curva teórica (Opcional, ayuda a ver el objetivo exacto)
             ctx.fillStyle = '#ffffff';
             seqData.forEach(pt => {
                 ctx.beginPath();
@@ -662,8 +746,11 @@
             else if(dataObj.score >= 70) scoreEl.style.color = "var(--accent-color)";
             else scoreEl.style.color = "var(--danger-color)";
 
-            // Mostrar el análisis
             document.getElementById('analysis-text').innerHTML = dataObj.analisis || "Análisis no disponible para este archivo.";
+
+            // Generar tabla y asegurarse de que esté oculta al entrar
+            poblarTablaComparativa(dataObj.secuencia_teorica, dataObj.puntos_reales);
+            document.getElementById('comparative-table-container').style.display = 'none';
 
             showScreen('result');
             
@@ -737,5 +824,3 @@
     </script>
 </body>
 </html>
-
-

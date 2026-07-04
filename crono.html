@@ -107,6 +107,7 @@
             border-radius: 16px;
             border-left: 12px solid;
             text-align: center;
+            position: relative; /* Para posicionar el RoR */
         }
 
         #box-actual { border-color: var(--success-color); background-color: #152516; }
@@ -130,6 +131,16 @@
         }
 
         #box-next .box-data { color: #ddd; }
+
+        /* Estilo para el RoR Dinámico */
+        #ror-display {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #888;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
 
         .action-controls {
             display: flex;
@@ -184,7 +195,6 @@
         .summary-grid div { background: #2a2a2a; padding: 10px; border-radius: 6px; }
         .summary-grid strong { color: #aaa; display: block; font-size: 0.9rem; }
 
-        /* Estilos generales para tablas (Historial) */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -200,7 +210,6 @@
         
         .row-controls { display: flex; gap: 10px; }
 
-        /* Estilos específicos para la Tabla Comparativa */
         #comparative-table-container {
             margin-top: 15px;
             background-color: #1a1a1a;
@@ -209,20 +218,19 @@
         }
         #comp-table {
             margin-bottom: 0;
-            font-size: 0.95rem; 
+            font-size: 0.90rem; /* Ligeramente más pequeño para la nueva columna */
         }
         #comp-table th, #comp-table td {
-            padding: 8px 4px; 
+            padding: 8px 2px; /* Reducción de padding para encajar en móvil */
             text-align: center;
         }
         #comp-table th {
             color: #ddd;
-            font-size: 0.85rem;
+            font-size: 0.80rem;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        /* Botón eliminar */
         .btn-delete {
             background: transparent;
             border: none;
@@ -311,6 +319,7 @@
                     <span id="actual-time">00:00</span>
                     <span id="actual-temp">--°C</span>
                 </div>
+                <div id="ror-display">RoR: -- °C/min</div>
             </div>
 
             <div class="status-box" id="box-next">
@@ -362,7 +371,8 @@
                         <th>Teó</th>
                         <th>Real</th>
                         <th>Dif</th>
-                        <th>Fase</th>
+                        <th>F</th>
+                        <th>RoR</th>
                     </tr>
                 </thead>
                 <tbody id="comp-body">
@@ -412,6 +422,7 @@
         const liveCtx = liveCanvas.getContext('2d');
         const resultCanvas = document.getElementById('result-chart');
         const resultCtx = resultCanvas.getContext('2d');
+        const rorDisplayEl = document.getElementById('ror-display');
 
         function showScreen(screenName) {
             Object.values(screens).forEach(s => s.style.display = 'none');
@@ -539,6 +550,7 @@
                     let teoStr = seqData[i].timeLabel;
                     let realStr = actData[i].timeLabel;
                     let faseLetra = seqData[i].faseLetra || "-"; 
+                    let rorValue = actData[i].ror !== undefined ? actData[i].ror : "-";
                     let dif = actData[i].seconds - seqData[i].seconds;
                     
                     let difStr, difColor;
@@ -560,6 +572,7 @@
                         <td>${realStr}</td>
                         <td style="color: ${difColor}; font-weight: bold;">${difStr}</td>
                         <td style="color: #aaa; font-weight: bold;">${faseLetra}</td>
+                        <td style="color: #ddd;">${rorValue}</td>
                     `;
                     tbody.appendChild(tr);
                 }
@@ -691,6 +704,10 @@
             
             if (sequenceData.length === 0) return alert("Verifica el formato de la secuencia.");
 
+            // Reset UI de RoR
+            rorDisplayEl.innerHTML = "RoR: -- °C/min";
+            rorDisplayEl.style.color = "#888";
+
             showScreen('roast');
             document.getElementById('btn-hito').disabled = false;
             await activarMantenerPantalla();
@@ -698,7 +715,7 @@
             startTime = Date.now();
             expectedHitoIndex = 1; 
             
-            actualData = [{ timeLabel: "0:00", seconds: 0, tempValue: sequenceData[0].tempValue }];
+            actualData = [{ timeLabel: "0:00", seconds: 0, tempValue: sequenceData[0].tempValue, ror: 0 }];
             
             setTimeout(() => drawChart(liveCanvas, liveCtx, sequenceData, actualData, false), 100); 
             updateDisplay();
@@ -708,11 +725,48 @@
         document.getElementById('btn-hito').addEventListener('click', () => {
             if (expectedHitoIndex < sequenceData.length) {
                 let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                let targetTemp = sequenceData[expectedHitoIndex].tempValue;
+                
+                // --- CÁLCULO DE RoR ---
+                let prevPoint = actualData[actualData.length - 1];
+                let deltaSec = elapsedSeconds - prevPoint.seconds;
+                let deltaTemp = targetTemp - prevPoint.tempValue;
+                let currentRoR = 0;
+                
+                if (deltaSec > 0) {
+                    currentRoR = Math.round((deltaTemp / deltaSec) * 60);
+                }
+
                 actualData.push({
                     timeLabel: formatTime(elapsedSeconds),
                     seconds: elapsedSeconds,
-                    tempValue: sequenceData[expectedHitoIndex].tempValue
+                    tempValue: targetTemp,
+                    ror: currentRoR
                 });
+
+                // --- LÓGICA VISUAL DEL RoR ---
+                if (actualData.length === 2) {
+                    // Primer tramo medido, color neutro
+                    rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min`;
+                    rorDisplayEl.style.color = "var(--text-color)";
+                } else {
+                    let prevRoR = actualData[actualData.length - 2].ror;
+                    
+                    if (currentRoR <= 3) {
+                        // Riesgo de Baking (muy bajo)
+                        rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ❄️`;
+                        rorDisplayEl.style.color = "var(--info-color)";
+                    } else if (currentRoR > prevRoR) {
+                        // Flick / Pico (Alerta)
+                        rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ⬆️`;
+                        rorDisplayEl.style.color = "var(--danger-color)";
+                    } else {
+                        // Decreciente o estable (Ideal)
+                        rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ⬇️`;
+                        rorDisplayEl.style.color = "var(--success-color)";
+                    }
+                }
+
                 expectedHitoIndex++;
                 drawChart(liveCanvas, liveCtx, sequenceData, actualData, false);
                 updateDisplay();
@@ -789,7 +843,6 @@
             URL.revokeObjectURL(url);
         });
 
-        // --- LÓGICA DEL HISTORIAL Y BOTÓN ELIMINAR ---
         document.getElementById('btn-view-history').addEventListener('click', () => {
             const tbody = document.getElementById('history-body');
             tbody.innerHTML = '';
@@ -799,8 +852,6 @@
             if (historial.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay tuestes registrados aún.</td></tr>';
             } else {
-                // Leemos de inicio a fin pero insertamos al principio (prepend) para que el más nuevo salga arriba,
-                // manteniendo el "index" real del array en localStorage para poder borrarlo correctamente.
                 historial.forEach((t, index) => {
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -815,15 +866,14 @@
                     tbody.prepend(tr);
                 });
 
-                // Asignar evento a los botones de borrar
                 document.querySelectorAll('.btn-delete').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const idx = this.getAttribute('data-index');
                         if (confirm('¿Estás seguro de que deseas eliminar este tueste de prueba del historial?')) {
                             let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                            currentHistorial.splice(idx, 1); // Elimina 1 elemento en la posición idx
+                            currentHistorial.splice(idx, 1);
                             localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
-                            document.getElementById('btn-view-history').click(); // Recargar la tabla
+                            document.getElementById('btn-view-history').click(); 
                         }
                     });
                 });

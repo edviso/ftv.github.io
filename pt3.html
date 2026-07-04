@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etiquetas de Tueste - 4x7cm v5 (Líneas y Texto Puro)</title>
+    <style>
+        :root {
+            --bg-interface: #f4f6f8;
+            --primary-color: #5D4037;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-interface); color: #333; }
+
+        /* Panel de Control */
+        .no-print {
+            background-color: #fff; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-bottom: 1px solid #e0e0e0; margin-bottom: 20px;
+        }
+        
+        .panel-title { font-size: 1.1rem; color: var(--primary-color); font-weight: 700; margin-bottom: 15px; }
+
+        .profiles-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;
+        }
+
+        .profile-setup {
+            background: #fafafa; padding: 10px; border: 1px solid #ddd; border-radius: 4px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        label { font-size: 0.8rem; font-weight: 600; color: #555; }
+        input, select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; }
+        textarea { height: 120px; font-family: monospace; font-size: 0.75rem; padding: 6px; border: 1px solid #ccc; resize: none; white-space: pre; overflow-wrap: normal; overflow-x: scroll;}
+        
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f3f5;
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .options-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        button { padding: 10px 15px; background: var(--primary-color); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #4a322b; }
+        .btn-print { background: #2E7D32; margin-left: 10px; }
+        .btn-print:hover { background: #1b5e20; }
+
+        /* Contenedor A4 y Vista Previa */
+        .preview-container { display: flex; justify-content: center; padding-bottom: 40px; }
+        
+        .a4-page {
+            background: white;
+            width: 210mm;
+            height: 297mm;
+            padding: 8.5mm 5mm; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .grid-container {
+            display: flex;
+            flex-wrap: wrap;
+            width: 200mm; 
+            height: 280mm;
+            margin: 0 auto;
+        }
+
+        /* Diseño de la tarjeta de 4x7 cm */
+        .card {
+            width: 40mm;
+            height: 70mm;
+            flex: 0 0 40mm; 
+            border: 0.5px dashed #a0a0a0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            box-sizing: border-box; 
+        }
+
+        .header {
+            color: white; font-weight: 800; font-size: 8px;
+            text-align: center; padding: 3px 0; letter-spacing: 0.5px;
+            width: 100%;
+            text-transform: uppercase;
+        }
+
+        /* Colores de Perfiles (Modo Color) */
+        .bg-generico { background-color: #5D4037 !important; }
+        .bg-honey { background-color: #b57309 !important; } 
+        .bg-lavado { background-color: #2E7D32 !important; }
+
+        /* TABLA DE ALTA LEGIBILIDAD */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 8.5px; 
+            font-weight: 700; 
+            line-height: 1.05;
+        }
+        th { 
+            color: #000; 
+            background-color: #e9ecef; 
+            padding: 2px 1px; 
+            border-bottom: 1.5px solid #666; 
+            font-size: 7.5px;
+            font-weight: 800;
+        }
+        td { 
+            padding: 0.3px 1px; 
+            text-align: center; 
+            border-bottom: none; 
+        }
+
+        /* Colores de Filas - Fases (Modo Color) */
+        .row-carga { background-color: #CFD8DC !important; }
+        .row-secado-start { background-color: #FFF9C4 !important; }
+        .row-secado-cont { background-color: #FFFDF5 !important; }
+        .row-maillard-start { background-color: #FFE0B2 !important; }
+        .row-maillard-cont { background-color: #FFF9F0 !important; }
+        .row-crack-start { background-color: #FFCDD2 !important; }
+        .row-desarrollo-start { background-color: #C8E6C9 !important; }
+        .row-desarrollo-cont { background-color: #F2F9F2 !important; }
+        .row-descarga { background-color: #E0E0E0 !important; }
+
+        /* --- ESTILOS EN BLANCO Y NEGRO PURO (MÁXIMA LEGIBILIDAD, SÓLO LÍNEAS Y TEXTO) --- */
+        .bw-mode .card {
+            border: 0.5px solid #000000 !important; /* Línea de marco exterior sólida negra */
+        }
+        
+        .bw-mode .header { 
+            background-color: #ffffff !important; 
+            color: #000000 !important;
+            font-size: 8.5px;
+            font-weight: 800;
+            border-bottom: 1px solid #000000 !important;
+            padding: 4px 0;
+        }
+        
+        /* Forzar fondo blanco absoluto para eliminar cualquier escala de grises en las fases */
+        .bw-mode .row-carga,
+        .bw-mode .row-secado-start,
+        .bw-mode .row-secado-cont,
+        .bw-mode .row-maillard-start,
+        .bw-mode .row-maillard-cont,
+        .bw-mode .row-crack-start,
+        .bw-mode .row-desarrollo-start,
+        .bw-mode .row-desarrollo-cont,
+        .bw-mode .row-descarga { 
+            background-color: #ffffff !important; 
+        }
+        
+        /* Ajuste de encabezados de tabla en Blanco y Negro */
+        .bw-mode th { 
+            background-color: #ffffff !important; 
+            color: #000000 !important; 
+            border-bottom: 1px solid #000000 !important; 
+            font-size: 7.5px;
+        }
+        
+        /* Crear marcos internos usando únicamente líneas finas */
+        .bw-mode td { 
+            color: #000000 !important; 
+            border-bottom: 0.3px solid #666666 !important; /* Líneas horizontales nítidas */
+        }
+        
+        /* Líneas verticales divisorias para formar la cuadrícula/marco interno */
+        .bw-mode td:not(:last-child), 
+        .bw-mode th:not(:last-child) {
+            border-right: 0.3px solid #666666 !important;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; margin: 0; padding: 0; }
+            .preview-container { padding: 0; justify-content: flex-start; }
+            .a4-page { box-shadow: none; padding: 8.5mm 5mm; margin: 0; }
+            @page { size: A4; margin: 0; }
+            
+            /* Preservar las líneas nítidas en la impresión */
+            .card { border: 0.5px dashed #bbbbbb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bw-mode .card { border: 0.5px solid #000000 !important; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <div class="panel-title">⚙️ Matriz de 3 Perfiles (4x7 cm) - Modo Blanco y Negro Puro</div>
+    <p style="font-size: 0.8rem; margin-bottom: 15px; color: #555;">Se rediseñó el modo Blanco y Negro: elimina los fondos grises y el título negro. Ahora genera letras negras sobre fondo blanco, usando líneas finas como marcos para asegurar un contraste absoluto.</p>
+    
+    <div class="profiles-grid">
+        <!-- Perfil 1 -->
+        <div class="profile-setup">
+            <div class="form-group">
+                <label>Perfil 1 (7 etiquetas)</label>
+                <input type="text" id="name1" value="GENÉRICO">
+            </div>
+            <div class="form-group">
+                <select id="color1"><option value="bg-generico" selected>Marrón (Genérico)</option><option value="bg-honey">Ámbar (Honey)</option><option value="bg-lavado">Verde (Lavado)</option></select>
+            </div>
+            <div class="form-group">
+                <textarea id="data1" placeholder="Pega los datos aquí..."></textarea>
+            </div>
+        </div>
+
+        <!-- Perfil 2 -->
+        <div class="profile-setup">
+            <div class="form-group">
+                <label>Perfil 2 (7 etiquetas)</label>
+                <input type="text" id="name2" value="SIDRA HONEY">
+            </div>
+            <div class="form-group">
+                <select id="color2"><option value="bg-generico">Marrón (Genérico)</option><option value="bg-honey" selected>Ámbar (Honey)</option><option value="bg-lavado">Verde (Lavado)</option></select>
+            </div>
+            <div class="form-group">
+                <textarea id="data2" placeholder="Pega los datos aquí..."></textarea>
+            </div>
+        </div>
+
+        <!-- Perfil 3 -->
+        <div class="profile-setup">
+            <div class="form-group">
+                <label>Perfil 3 (6 etiquetas)</label>
+                <input type="text" id="name3" value="SIDRA LAVADO">
+            </div>
+            <div class="form-group">
+                <select id="color3"><option value="bg-generico">Marrón (Genérico)</option><option value="bg-honey">Ámbar (Honey)</option><option value="bg-lavado" selected>Verde (Lavado)</option></select>
+            </div>
+            <div class="form-group">
+                <textarea id="data3" placeholder="Pega los datos aquí..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions-bar">
+        <div class="options-group">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label for="printMode" style="font-size: 0.85rem; font-weight: bold; color: #444;">Modo Visual / Impresión:</label>
+                <select id="printMode" onchange="aplicarModoFiltro()" style="padding: 6px 12px; font-weight: 600;">
+                    <option value="color" selected>🎨 A Colores Full</option>
+                    <option value="bw">⚫ Blanco y Negro Puro (Texto y Marcos)</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <button onclick="generarMatriz()">Generar Matriz Combinada</button>
+            <button class="btn-print" onclick="window.print()">Imprimir PDF</button>
+        </div>
+    </div>
+</div>
+
+<div class="preview-container">
+    <div class="a4-page">
+        <div class="grid-container" id="gridContainer">
+            <!-- Las 20 tarjetas se insertan aquí -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const exData1 = `0:00	32°C	CARGA
+0:30	95°C	SECADO
+1:00	105°C	secado
+1:30	114°C	secado
+2:00	122°C	secado
+2:30	130°C	secado
+3:00	138°C	secado
+3:30	145°C	secado
+4:00	151°C	secado
+4:30	156°C	MAILLARD
+5:00	161°C	maillard
+5:30	167°C	maillard
+6:00	173°C	maillard
+6:30	178°C	maillard
+7:00	184°C	maillard
+7:30	189°C	maillard
+8:00	193°C	maillard
+8:30	196°C	maillard
+8:45	197°C	1ER CRACK
+9:00	199°C	DESARROLLO
+9:30	202°C	desarrollo
+10:00	205°C	DESCARGA`;
+    const exData2 = `0:00	32°C	CARGA
+0:30	75°C	SECADO
+1:00	95°C	secado
+1:30	108°C	secado
+2:00	118°C	secado
+2:30	127°C	secado
+3:00	135°C	secado
+3:30	142°C	secado
+4:00	148°C	secado
+4:30	153°C	MAILLARD
+5:00	159°C	maillard
+5:30	165°C	maillard
+6:00	171°C	maillard
+6:30	177°C	maillard
+7:00	183°C	maillard
+7:30	188°C	maillard
+8:00	192°C	maillard
+8:30	195°C	1ER CRACK
+9:00	198°C	DESARROLLO
+9:30	201°C	desarrollo
+10:00	204°C	DESCARGA`;
+    const exData3 = `0:00	32°C	CARGA
+0:30	78°C	SECADO
+1:00	98°C	secado
+1:30	112°C	secado
+2:00	122°C	secado
+2:30	132°C	secado
+3:00	142°C	secado
+3:30	149°C	secado
+4:00	155°C	secado
+4:30	161°C	MAILLARD
+5:00	167°C	maillard
+5:30	172°C	maillard
+6:00	177°C	maillard
+6:30	182°C	maillard
+7:00	187°C	maillard
+7:30	191°C	maillard
+8:00	194°C	maillard
+8:30	197°C	1ER CRACK
+9:00	200°C	DESARROLLO
+9:30	203°C	desarrollo
+10:00	205°C	DESCARGA`;
+
+    document.getElementById('data1').value = exData1;
+    document.getElementById('data2').value = exData2;
+    document.getElementById('data3').value = exData3;
+
+    function examinarFase(f) {
+        if (!f) return { clase: 'row-secado-cont', letra: 'S' };
+        const txt = f.trim().toUpperCase();
+        
+        if (txt.includes('CARGA') || txt === 'C') return { clase: 'row-carga', letra: 'C' };
+        
+        if (txt.includes('SECADO') || txt === 'S') {
+            let cl = (txt === 'SECADO' || txt.includes('1ER') || txt.includes('START')) ? 'row-secado-start' : 'row-secado-cont';
+            return { clase: cl, letra: 'S' };
+        }
+        if (txt.includes('MAILLARD') || txt === 'M') {
+            let cl = (txt === 'MAILLARD' || txt.includes('START')) ? 'row-maillard-start' : 'row-maillard-cont';
+            return { clase: cl, letra: 'M' };
+        }
+        if (txt.includes('CRACK') || txt.includes('1ER') || txt === '1') return { clase: 'row-crack-start', letra: '1' };
+        
+        if (txt.includes('DESARROLLO') || txt === 'D') {
+            let cl = (txt === 'DESARROLLO' || txt.includes('START')) ? 'row-desarrollo-start' : 'row-desarrollo-cont';
+            return { clase: cl, letra: 'D' };
+        }
+        if (txt.includes('DESCARGA')) return { clase: 'row-descarga', letra: 'D' };
+        
+        return { clase: 'row-secado-cont', letra: txt.charAt(0) || 'S' };
+    }
+
+    function procesar(texto) {
+        const lineas = texto.trim().split('\n');
+        let html = '';
+        lineas.forEach(l => {
+            if(!l.trim()) return;
+            const c = l.split(/\t|,|\|/); 
+            if(c.length >= 2) {
+                const tiempo = c[0].trim();
+                const temp = c[1].trim();
+                const faseStr = c[2] ? c[2].trim() : '';
+                
+                const infoFase = examinarFase(faseStr);
+                
+                html += `<tr class="${infoFase.clase}">
+                    <td>${tiempo}</td>
+                    <td>${temp}</td>
+                    <td>${infoFase.letra}</td>
+                </tr>`;
+            }
+        });
+        return html;
+    }
+
+    function crearTarjeta(nombre, color, htmlFilas) {
+        return `
+            <div class="card">
+                <div class="header ${color}">${nombre}</div>
+                <table>
+                    <thead><tr><th>TIEMPO</th><th>(°C)</th><th>F</th></tr></thead>
+                    <tbody>${htmlFilas}</tbody>
+                </table>
+            </div>`;
+    }
+
+    function aplicarModoFiltro() {
+        const mode = document.getElementById('printMode').value;
+        const container = document.getElementById('gridContainer');
+        if (mode === 'bw') {
+            container.classList.add('bw-mode');
+        } else {
+            container.classList.remove('bw-mode');
+        }
+    }
+
+    function generarMatriz() {
+        const cont = document.getElementById('gridContainer');
+        cont.innerHTML = '';
+        
+        const perfiles = [
+            { n: document.getElementById('name1').value, c: document.getElementById('color1').value, d: procesar(document.getElementById('data1').value), q: 7 },
+            { n: document.getElementById('name2').value, c: document.getElementById('color2').value, d: procesar(document.getElementById('data2').value), q: 7 },
+            { n: document.getElementById('name3').value, c: document.getElementById('color3').value, d: procesar(document.getElementById('data3').value), q: 6 }
+        ];
+
+        perfiles.forEach(p => {
+            if(p.d) {
+                for(let i=0; i<p.q; i++) cont.innerHTML += crearTarjeta(p.n, p.c, p.d);
+            }
+        });
+        
+        aplicarModoFiltro();
+    }
+
+    window.onload = generarMatriz;
+</script>
+</body>
+</html>

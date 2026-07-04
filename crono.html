@@ -107,7 +107,7 @@
             border-radius: 16px;
             border-left: 12px solid;
             text-align: center;
-            position: relative; /* Para posicionar el RoR */
+            position: relative;
         }
 
         #box-actual { border-color: var(--success-color); background-color: #152516; }
@@ -132,7 +132,6 @@
 
         #box-next .box-data { color: #ddd; }
 
-        /* Estilo para el RoR Dinámico */
         #ror-display {
             margin-top: 10px;
             font-size: 1.2rem;
@@ -217,11 +216,11 @@
             padding: 10px;
         }
         #comp-table {
-            margin-bottom: 0;
-            font-size: 0.90rem; /* Ligeramente más pequeño para la nueva columna */
+            margin-bottom: 15px;
+            font-size: 0.90rem; 
         }
         #comp-table th, #comp-table td {
-            padding: 8px 2px; /* Reducción de padding para encajar en móvil */
+            padding: 8px 2px; 
             text-align: center;
         }
         #comp-table th {
@@ -229,6 +228,18 @@
             font-size: 0.80rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+
+        /* Estilo para el mini-análisis de la tabla */
+        #comp-analysis-text {
+            font-size: 0.9rem;
+            color: #ccc;
+            line-height: 1.5;
+            background-color: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--info-color);
+            text-align: left;
         }
 
         .btn-delete {
@@ -344,7 +355,6 @@
             <h2>Análisis del Tueste</h2>
             <div class="score-display" id="final-score">0%</div>
             <p style="margin:0; color:#aaa;">Precisión del Perfil</p>
-            
             <div id="analysis-text"></div>
         </div>
 
@@ -378,6 +388,7 @@
                 <tbody id="comp-body">
                 </tbody>
             </table>
+            <div id="comp-analysis-text"></div>
         </div>
     </div>
 
@@ -449,7 +460,6 @@
         function parseSequence(text) {
             const lines = text.trim().split('\n');
             const data = [];
-            
             const linesLimpio = lines.filter(l => l.includes('|') && !l.toLowerCase().includes('tiempo'));
 
             for (let line of linesLimpio) {
@@ -544,6 +554,11 @@
             const tbody = document.getElementById('comp-body');
             tbody.innerHTML = '';
 
+            let countAdelanto = 0;
+            let countAtraso = 0;
+            let countFlicks = 0;
+            let countCrashes = 0;
+
             for (let i = 1; i < actData.length; i++) {
                 if (i < seqData.length) {
                     let temp = seqData[i].tempValue;
@@ -553,16 +568,36 @@
                     let rorValue = actData[i].ror !== undefined ? actData[i].ror : "-";
                     let dif = actData[i].seconds - seqData[i].seconds;
                     
+                    // Color DIF
                     let difStr, difColor;
                     if (dif === 0) {
                         difStr = "0";
                         difColor = "var(--success-color)";
                     } else if (dif > 0) {
                         difStr = "+" + dif;
-                        difColor = "#ff5722";
+                        difColor = "#ff5722"; // Naranja/Rojo
+                        countAtraso++;
                     } else {
                         difStr = dif;
-                        difColor = "var(--info-color)"; 
+                        difColor = "var(--info-color)"; // Azul
+                        countAdelanto++;
+                    }
+
+                    // Color RoR
+                    let rorColor = "#ddd"; 
+                    if (i === 1 || rorValue === "-") {
+                        rorColor = "#ddd"; // Primer tramo (neutro)
+                    } else {
+                        let prevRoR = actData[i - 1].ror;
+                        if (rorValue <= 3) {
+                            rorColor = "var(--info-color)"; // Crash
+                            countCrashes++;
+                        } else if (rorValue > prevRoR) {
+                            rorColor = "var(--danger-color)"; // Flick
+                            countFlicks++;
+                        } else {
+                            rorColor = "var(--success-color)"; // Decreciente o igual
+                        }
                     }
 
                     let tr = document.createElement('tr');
@@ -572,11 +607,28 @@
                         <td>${realStr}</td>
                         <td style="color: ${difColor}; font-weight: bold;">${difStr}</td>
                         <td style="color: #aaa; font-weight: bold;">${faseLetra}</td>
-                        <td style="color: #ddd;">${rorValue}</td>
+                        <td style="color: ${rorColor}; font-weight: bold;">${rorValue}</td>
                     `;
                     tbody.appendChild(tr);
                 }
             }
+
+            // Generar Mini-Análisis para la Tabla
+            let analisisRitmo = "bastante equilibrado respecto al perfil teórico.";
+            if (countAdelanto > countAtraso + 2) analisisRitmo = "más rápido (adelantado) en general.";
+            else if (countAtraso > countAdelanto + 2) analisisRitmo = "más lento (atrasado) en general.";
+
+            let textoAnalisisComp = `<strong>Resumen Técnico:</strong> El ritmo del tueste fue ${analisisRitmo} `;
+            textoAnalisisComp += `En la curva de aceleración (RoR), se detectaron <strong>${countFlicks} pico(s) de calor (flicks)</strong> `;
+            textoAnalisisComp += `y <strong>${countCrashes} caída(s) crítica(s) (crashes)</strong>. `;
+            
+            if (countFlicks === 0 && countCrashes === 0) {
+                textoAnalisisComp += "<br><span style='color: var(--success-color);'>¡Excelente control del dimmer! Mantuviste un RoR decreciente ideal.</span>";
+            } else {
+                textoAnalisisComp += "<br><span style='color: #aaa;'>Revisa los puntos rojos (aceleración brusca) y azules (pérdida de impulso) para suavizar la curva la próxima vez.</span>";
+            }
+
+            document.getElementById('comp-analysis-text').innerHTML = textoAnalisisComp;
         }
 
         document.getElementById('btn-toggle-comp').addEventListener('click', () => {
@@ -704,7 +756,6 @@
             
             if (sequenceData.length === 0) return alert("Verifica el formato de la secuencia.");
 
-            // Reset UI de RoR
             rorDisplayEl.innerHTML = "RoR: -- °C/min";
             rorDisplayEl.style.color = "#888";
 
@@ -727,7 +778,6 @@
                 let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
                 let targetTemp = sequenceData[expectedHitoIndex].tempValue;
                 
-                // --- CÁLCULO DE RoR ---
                 let prevPoint = actualData[actualData.length - 1];
                 let deltaSec = elapsedSeconds - prevPoint.seconds;
                 let deltaTemp = targetTemp - prevPoint.tempValue;
@@ -744,24 +794,19 @@
                     ror: currentRoR
                 });
 
-                // --- LÓGICA VISUAL DEL RoR ---
                 if (actualData.length === 2) {
-                    // Primer tramo medido, color neutro
                     rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min`;
                     rorDisplayEl.style.color = "var(--text-color)";
                 } else {
                     let prevRoR = actualData[actualData.length - 2].ror;
                     
                     if (currentRoR <= 3) {
-                        // Riesgo de Baking (muy bajo)
                         rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ❄️`;
                         rorDisplayEl.style.color = "var(--info-color)";
                     } else if (currentRoR > prevRoR) {
-                        // Flick / Pico (Alerta)
                         rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ⬆️`;
                         rorDisplayEl.style.color = "var(--danger-color)";
                     } else {
-                        // Decreciente o estable (Ideal)
                         rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ⬇️`;
                         rorDisplayEl.style.color = "var(--success-color)";
                     }
@@ -913,4 +958,3 @@
     </script>
 </body>
 </html>
-

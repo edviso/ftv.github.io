@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistente de Tueste - Vinza</title>
+    <title>Asistente de Tueste Dinámico</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -28,6 +28,7 @@
         h1 {
             color: var(--accent-color);
             margin-bottom: 20px;
+            text-align: center;
         }
 
         /* Pantalla de Configuración */
@@ -93,54 +94,55 @@
         #roast-screen {
             display: none;
             width: 100%;
-            max-width: 800px;
+            max-width: 600px;
             text-align: center;
-        }
-
-        #main-timer {
-            font-size: 6rem;
-            font-weight: bold;
-            color: var(--accent-color);
-            margin: 20px 0;
-            font-variant-numeric: tabular-nums;
+            margin-top: 10px;
         }
 
         .status-container {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 25px;
             margin-bottom: 30px;
         }
 
         .status-box {
             background-color: var(--box-bg);
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 8px solid;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            padding: 30px 20px;
+            border-radius: 16px;
+            border-left: 12px solid;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.6);
         }
 
-        #box-actual { border-color: var(--success-color); }
-        #box-next { border-color: var(--accent-color); }
+        #box-actual { 
+            border-color: var(--success-color); 
+            background-color: #152516;
+        }
+        #box-next { 
+            border-color: var(--accent-color); 
+        }
 
         .box-title {
-            font-size: 1.5rem;
-            color: #aaa;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            color: #bbb;
+            margin-bottom: 15px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            font-weight: bold;
         }
 
         .box-data {
-            font-size: 3.5rem;
+            font-size: 4.8rem;
             font-weight: bold;
             display: flex;
             justify-content: center;
             gap: 40px;
+            font-variant-numeric: tabular-nums;
         }
 
-        .box-data span {
-            display: inline-block;
+        #box-next .box-data {
+            font-size: 3.2rem;
+            color: #ddd;
         }
 
         #btn-stop {
@@ -151,9 +153,10 @@
         }
         
         .header-info {
-            font-size: 1.2rem;
-            color: #888;
-            margin-bottom: 10px;
+            font-size: 1.4rem;
+            color: #aaa;
+            margin-bottom: 20px;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -212,20 +215,18 @@
 
     <div id="roast-screen">
         <div class="header-info" id="info-header"></div>
-        
-        <div id="main-timer">00:00</div>
 
         <div class="status-container">
             <div class="status-box" id="box-actual">
                 <div class="box-title">Actual</div>
                 <div class="box-data">
-                    <span id="actual-time">--:--</span>
+                    <span id="actual-time">00:00</span>
                     <span id="actual-temp">--°C</span>
                 </div>
             </div>
 
             <div class="status-box" id="box-next">
-                <div class="box-title">Siguiente</div>
+                <div class="box-title">Siguiente Hito</div>
                 <div class="box-data">
                     <span id="next-time">--:--</span>
                     <span id="next-temp">--°C</span>
@@ -237,32 +238,53 @@
     </div>
 
     <script>
-        // Variables globales
         let timerInterval;
         let startTime;
         let sequenceData = [];
+        let wakeLock = null;
 
-        // Elementos del DOM
         const setupScreen = document.getElementById('setup-screen');
         const roastScreen = document.getElementById('roast-screen');
         const secuenciaInput = document.getElementById('secuencia');
         const btnStart = document.getElementById('btn-start');
         const btnStop = document.getElementById('btn-stop');
         
-        const mainTimer = document.getElementById('main-timer');
         const actualTimeEl = document.getElementById('actual-time');
         const actualTempEl = document.getElementById('actual-temp');
         const nextTimeEl = document.getElementById('next-time');
         const nextTempEl = document.getElementById('next-temp');
         const infoHeader = document.getElementById('info-header');
 
-        // Función para procesar el texto de la secuencia
+        // Función para mantener la pantalla encendida
+        async function activarMantenerPantalla() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log("Anti-bloqueo de pantalla activado con éxito.");
+                } catch (err) {
+                    console.error("No se pudo activar el anti-bloqueo:", err.message);
+                }
+            } else {
+                console.log("El navegador no soporta mantener la pantalla encendida automáticamente.");
+            }
+        }
+
+        // Liberar el bloqueo de pantalla
+        function desactivarMantenerPantalla() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => {
+                    wakeLock = null;
+                    console.log("Pantalla liberada a su comportamiento normal.");
+                });
+            }
+        }
+
         function parseSequence(text) {
             const lines = text.trim().split('\n');
             const data = [];
             
             for (let line of lines) {
-                if (!line.includes('|')) continue; // Ignorar líneas inválidas
+                if (!line.includes('|')) continue;
                 
                 let parts = line.split('|');
                 let timeStr = parts[0].trim();
@@ -274,34 +296,33 @@
                     let sec = parseInt(timeParts[1]);
                     let totalSeconds = (min * 60) + sec;
                     
+                    // Extraer solo los números de la temperatura (ej: "114°C" -> 114)
+                    let tempValue = parseFloat(tempStr.replace(/[^0-9.]/g, ''));
+                    
                     data.push({
                         seconds: totalSeconds,
                         timeLabel: timeStr,
-                        tempLabel: tempStr
+                        tempValue: tempValue
                     });
                 }
             }
-            
-            // Ordenar por si acaso los pegaron en desorden
             return data.sort((a, b) => a.seconds - b.seconds);
         }
 
-        // Formatear segundos a MM:SS
         function formatTime(totalSeconds) {
             let m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
             let s = (totalSeconds % 60).toString().padStart(2, '0');
             return `${m}:${s}`;
         }
 
-        // Actualizar la pantalla cada segundo
         function updateDisplay() {
             let now = Date.now();
             let elapsedSeconds = Math.floor((now - startTime) / 1000);
             
-            // Actualizar cronómetro general
-            mainTimer.textContent = formatTime(elapsedSeconds);
+            // 1. Actualizar el CRONÓMETRO de reojo en el cuadro Actual
+            actualTimeEl.textContent = formatTime(elapsedSeconds);
 
-            // Determinar etapa actual y siguiente
+            // Buscar en qué tramo de la secuencia nos encontramos
             let currentIndex = 0;
             for (let i = 0; i < sequenceData.length; i++) {
                 if (elapsedSeconds >= sequenceData[i].seconds) {
@@ -313,57 +334,70 @@
 
             let nextIndex = currentIndex + 1;
 
-            // Mostrar Actual
-            actualTimeEl.textContent = sequenceData[currentIndex].timeLabel;
-            actualTempEl.textContent = sequenceData[currentIndex].tempLabel;
-
-            // Mostrar Siguiente (o Finalizado)
+            // 2. Calcular la TEMPERATURA DINÁMICA (Interpolación segundo a segundo)
             if (nextIndex < sequenceData.length) {
-                nextTimeEl.textContent = sequenceData[nextIndex].timeLabel;
-                nextTempEl.textContent = sequenceData[nextIndex].tempLabel;
+                let currentMilestone = sequenceData[currentIndex];
+                let nextMilestone = sequenceData[nextIndex];
+                
+                let tiempoTramo = nextMilestone.seconds - currentMilestone.seconds;
+                let tiempoTranscurridoTramo = elapsedSeconds - currentMilestone.seconds;
+                
+                // Fracción de progreso en el tramo de 30s (o el tiempo que dure el tramo)
+                let progreso = tiempoTranscurridoTramo / tiempoTramo;
+                
+                // Evitar desbordes por pequeños desfases de milisegundos
+                if (progreso > 1) progreso = 1; 
+                
+                let rangoTemp = nextMilestone.tempValue - currentMilestone.tempValue;
+                let tempInterpolada = currentMilestone.tempValue + (rangoTemp * progreso);
+                
+                // Mostrar temperatura estimada al segundo (Redondeada)
+                actualTempEl.textContent = Math.round(tempInterpolada) + "°C";
+
+                // Mostrar el hito Fijo que viene en el bloque Siguiente
+                nextTimeEl.textContent = nextMilestone.timeLabel;
+                nextTempEl.textContent = nextMilestone.tempValue + "°C";
             } else {
+                // Si pasamos el último hito de la lista
+                actualTempEl.textContent = sequenceData[sequenceData.length - 1].tempValue + "°C";
                 nextTimeEl.textContent = "FIN";
                 nextTempEl.textContent = "---";
             }
         }
 
-        // Iniciar el proceso
-        btnStart.addEventListener('click', () => {
+        btnStart.addEventListener('click', async () => {
             let seqText = secuenciaInput.value;
             sequenceData = parseSequence(seqText);
             
             if (sequenceData.length === 0) {
-                alert("La secuencia no tiene el formato correcto. Asegúrate de usar 'Min:Seg | Temp°C'");
+                alert("Verifica el formato de la secuencia.");
                 return;
             }
 
-            // Mostrar info en la cabecera
             let variedad = document.getElementById('variedad').value;
             let perfil = document.getElementById('perfil').value;
-            infoHeader.textContent = `Tostando: ${variedad} - Perfil: ${perfil}`;
+            infoHeader.textContent = `${variedad} (${perfil})`;
 
-            // Cambiar pantallas
             setupScreen.style.display = 'none';
             roastScreen.style.display = 'block';
 
-            // Iniciar cronómetros
+            // Activar la persistencia de pantalla
+            await activarMantenerPantalla();
+
             startTime = Date.now();
-            updateDisplay(); // Llamada inicial para no esperar 1 segundo
+            updateDisplay();
             timerInterval = setInterval(updateDisplay, 1000);
         });
 
-        // Detener el proceso
         btnStop.addEventListener('click', () => {
             clearInterval(timerInterval);
-            let confirmacion = confirm("¿Deseas terminar este tueste y volver al menú?");
+            let confirmacion = confirm("¿Terminar este proceso y volver a la configuración?");
             if (confirmacion) {
+                desactivarMantenerPantalla(); // Devolver control de pantalla al sistema
                 setupScreen.style.display = 'block';
                 roastScreen.style.display = 'none';
-                mainTimer.textContent = "00:00";
+                actualTimeEl.textContent = "00:00";
             } else {
-                // Si cancela, el cronómetro sigue donde se quedó (calculando la diferencia)
-                // Se tendría que reajustar startTime si se quiere pausar, 
-                // pero en tueste no hay pausa, el calor sigue. Así que reiniciamos el intervalo.
                 timerInterval = setInterval(updateDisplay, 1000);
             }
         });

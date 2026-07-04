@@ -230,7 +230,6 @@
             letter-spacing: 1px;
         }
 
-        /* Estilo para el mini-análisis de la tabla */
         #comp-analysis-text {
             font-size: 0.9rem;
             color: #ccc;
@@ -538,18 +537,11 @@
                  return "<strong>¡Excelente consistencia!</strong> Las variaciones fueron mínimas. El tueste fue sumamente estable y no se esperan impactos negativos en la taza.";
             }
 
-            let analisisHtml = `La mayor cantidad de errores se concentró en la <strong>Fase de ${faseCritica}</strong>.<br><br>`;
-            
-            if (faseCritica === "Secado") {
-                analisisHtml += "<em>Posibles consecuencias:</em> Si fue muy rápido, riesgo de astringencia. Si fue muy lento, puede generar notas a pan horneado y apagar la acidez.";
-            } else if (faseCritica === "Maillard") {
-                analisisHtml += "<em>Posibles consecuencias:</em> Un paso irregular aquí puede resultar en una bebida con acidez plana (lento) o con notas vegetales (apresurado).";
-            } else {
-                analisisHtml += "<em>Posibles consecuencias:</em> Un desarrollo inestable o apresurado puede dejar sabores agrios. Si se prolongó, perderás notas florales dando paso a sabores cenizos.";
-            }
+            let analisisHtml = `La mayor cantidad de errores de precisión se concentró en la <strong>Fase de ${faseCritica}</strong>.`;
             return analisisHtml;
         }
 
+        // Lógica actualizada de la tabla comparativa y el resumen sensorial
         function poblarTablaComparativa(seqData, actData) {
             const tbody = document.getElementById('comp-body');
             tbody.innerHTML = '';
@@ -568,35 +560,33 @@
                     let rorValue = actData[i].ror !== undefined ? actData[i].ror : "-";
                     let dif = actData[i].seconds - seqData[i].seconds;
                     
-                    // Color DIF
                     let difStr, difColor;
                     if (dif === 0) {
                         difStr = "0";
                         difColor = "var(--success-color)";
                     } else if (dif > 0) {
                         difStr = "+" + dif;
-                        difColor = "#ff5722"; // Naranja/Rojo
+                        difColor = "#ff5722"; 
                         countAtraso++;
                     } else {
                         difStr = dif;
-                        difColor = "var(--info-color)"; // Azul
+                        difColor = "var(--info-color)"; 
                         countAdelanto++;
                     }
 
-                    // Color RoR
                     let rorColor = "#ddd"; 
                     if (i === 1 || rorValue === "-") {
-                        rorColor = "#ddd"; // Primer tramo (neutro)
+                        rorColor = "#ddd"; 
                     } else {
                         let prevRoR = actData[i - 1].ror;
                         if (rorValue <= 3) {
-                            rorColor = "var(--info-color)"; // Crash
+                            rorColor = "var(--info-color)"; 
                             countCrashes++;
                         } else if (rorValue > prevRoR) {
-                            rorColor = "var(--danger-color)"; // Flick
+                            rorColor = "var(--danger-color)"; 
                             countFlicks++;
                         } else {
-                            rorColor = "var(--success-color)"; // Decreciente o igual
+                            rorColor = "var(--success-color)"; 
                         }
                     }
 
@@ -613,19 +603,39 @@
                 }
             }
 
-            // Generar Mini-Análisis para la Tabla
+            // --- GENERACIÓN DEL RESUMEN SENSORIAL (MÉTODOS DE VERTIDO) ---
             let analisisRitmo = "bastante equilibrado respecto al perfil teórico.";
-            if (countAdelanto > countAtraso + 2) analisisRitmo = "más rápido (adelantado) en general.";
-            else if (countAtraso > countAdelanto + 2) analisisRitmo = "más lento (atrasado) en general.";
+            let impRitmo = "Permitirá una extracción limpia y balanceada, reflejando fielmente el perfil de la variedad.";
+            
+            if (countAdelanto > countAtraso + 2) {
+                analisisRitmo = "más rápido (adelantado) en general.";
+                impRitmo = "Resaltará la acidez, pero existe el riesgo de un grano subdesarrollado en el centro, aportando notas herbáceas o vegetales indeseadas.";
+            } else if (countAtraso > countAdelanto + 2) {
+                analisisRitmo = "más lento (atrasado) en general.";
+                impRitmo = "Desarrollará más cuerpo, pero apagará la acidez vibrante natural, acercándose a notas planas o a pan horneado.";
+            }
+
+            let impFlicks = countFlicks === 0 
+                ? "Ausencia de picos. El dulzor se preservará impecable sin amargos abrasivos." 
+                : "Estos picos tuestan bruscamente el exterior. En preparaciones como V60 u Origami, probablemente se traduzca en <strong>astringencia</strong> (sensación seca) y notas a ceniza que opacan el dulzor.";
+                
+            let impCrashes = countCrashes === 0
+                ? "Caídas nulas. Asegura una acidez brillante y prolongada."
+                : "La pérdida brusca de impulso genera horneado (*baking*). Esto aplana la acidez característica y puede dejar un final hueco o retrogusto a cartón.";
 
             let textoAnalisisComp = `<strong>Resumen Técnico:</strong> El ritmo del tueste fue ${analisisRitmo} `;
             textoAnalisisComp += `En la curva de aceleración (RoR), se detectaron <strong>${countFlicks} pico(s) de calor (flicks)</strong> `;
-            textoAnalisisComp += `y <strong>${countCrashes} caída(s) crítica(s) (crashes)</strong>. `;
+            textoAnalisisComp += `y <strong>${countCrashes} caída(s) crítica(s) (crashes)</strong>.<br><br>`;
             
-            if (countFlicks === 0 && countCrashes === 0) {
-                textoAnalisisComp += "<br><span style='color: var(--success-color);'>¡Excelente control del dimmer! Mantuviste un RoR decreciente ideal.</span>";
-            } else {
-                textoAnalisisComp += "<br><span style='color: #aaa;'>Revisa los puntos rojos (aceleración brusca) y azules (pérdida de impulso) para suavizar la curva la próxima vez.</span>";
+            textoAnalisisComp += `<strong>Impacto en taza (Métodos de Vertido):</strong>`;
+            textoAnalisisComp += `<ul style="margin-top: 8px; padding-left: 20px; color: #ddd;">`;
+            textoAnalisisComp += `<li style="margin-bottom: 5px;"><strong>Ritmo:</strong> ${impRitmo}</li>`;
+            textoAnalisisComp += `<li style="margin-bottom: 5px;"><strong>Flicks (${countFlicks}):</strong> ${impFlicks}</li>`;
+            textoAnalisisComp += `<li><strong>Crashes (${countCrashes}):</strong> ${impCrashes}</li>`;
+            textoAnalisisComp += `</ul>`;
+            
+            if (countFlicks === 0 && countCrashes === 0 && (countAdelanto <= countAtraso + 2 && countAtraso <= countAdelanto + 2)) {
+                textoAnalisisComp += "<span style='color: var(--success-color); font-weight:bold; display:block; margin-top:10px;'>¡Excelente control del dimmer! Perfil ideal para resaltar la claridad en taza.</span>";
             }
 
             document.getElementById('comp-analysis-text').innerHTML = textoAnalisisComp;

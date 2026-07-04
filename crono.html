@@ -221,6 +221,20 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+
+        /* Botón eliminar */
+        .btn-delete {
+            background: transparent;
+            border: none;
+            color: var(--danger-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s;
+        }
+        .btn-delete:hover {
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -367,6 +381,7 @@
                         <th>Tostador</th>
                         <th>Variedad</th>
                         <th>Score</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="history-body">
@@ -420,12 +435,10 @@
             return `${m}:${s}`;
         }
 
-        // --- PARSER ACTUALIZADO PARA 3 COLUMNAS ---
         function parseSequence(text) {
             const lines = text.trim().split('\n');
             const data = [];
             
-            // Ignorar encabezados si el usuario los pega
             const linesLimpio = lines.filter(l => l.includes('|') && !l.toLowerCase().includes('tiempo'));
 
             for (let line of linesLimpio) {
@@ -434,7 +447,7 @@
                 if (timeParts.length === 2) {
                     let totalSeconds = (parseInt(timeParts[0]) * 60) + parseInt(timeParts[1]);
                     let tempValue = parseFloat(parts[1].replace(/[^0-9.]/g, ''));
-                    let faseLetra = parts.length > 2 ? parts[2].trim() : ""; // Extraer la letra de la fase
+                    let faseLetra = parts.length > 2 ? parts[2].trim() : ""; 
 
                     data.push({ 
                         seconds: totalSeconds, 
@@ -466,7 +479,6 @@
             return totalHitos > 0 ? Math.round(totalPoints / totalHitos) : 0;
         }
 
-        // --- ANÁLISIS ACTUALIZADO BASADO EN LA LETRA ---
         function generarAnalisis() {
             if (actualData.length <= 1) return "Tueste incompleto o sin datos suficientes para analizar.";
             
@@ -480,8 +492,7 @@
                     let letra = sequenceData[i].faseLetra.toUpperCase();
                     let errorSecs = Math.abs(expectedSec - realSec);
                     
-                    // Mapear la letra a las 3 fases analíticas principales
-                    let fase = "Secado"; // S, C o por defecto
+                    let fase = "Secado"; 
                     if (letra === 'M') fase = "Maillard";
                     if (letra === '1' || letra === 'D') fase = "Desarrollo";
                     
@@ -518,7 +529,6 @@
             return analisisHtml;
         }
 
-        // --- TABLA COMPARATIVA CON LETRA DE FASE ---
         function poblarTablaComparativa(seqData, actData) {
             const tbody = document.getElementById('comp-body');
             tbody.innerHTML = '';
@@ -565,7 +575,6 @@
             }
         });
 
-        // Gráfico dinámico (Se ajusta automáticamente al tiempo máximo de la secuencia)
         function drawChart(canvas, ctx, seqData, actData, showAxes = false) {
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width;
@@ -780,23 +789,43 @@
             URL.revokeObjectURL(url);
         });
 
+        // --- LÓGICA DEL HISTORIAL Y BOTÓN ELIMINAR ---
         document.getElementById('btn-view-history').addEventListener('click', () => {
             const tbody = document.getElementById('history-body');
             tbody.innerHTML = '';
             
             let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+            
             if (historial.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay tuestes registrados aún.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay tuestes registrados aún.</td></tr>';
             } else {
-                historial.slice().reverse().forEach(t => {
+                // Leemos de inicio a fin pero insertamos al principio (prepend) para que el más nuevo salga arriba,
+                // manteniendo el "index" real del array en localStorage para poder borrarlo correctamente.
+                historial.forEach((t, index) => {
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${t.fecha.split(',')[0]}</td>
                         <td>${t.tostador}</td>
                         <td>${t.variedad}</td>
                         <td><strong>${t.score}%</strong></td>
+                        <td style="text-align: center;">
+                            <button class="btn-delete" data-index="${index}" title="Eliminar tueste">🗑️</button>
+                        </td>
                     `;
-                    tbody.appendChild(tr);
+                    tbody.prepend(tr);
+                });
+
+                // Asignar evento a los botones de borrar
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = this.getAttribute('data-index');
+                        if (confirm('¿Estás seguro de que deseas eliminar este tueste de prueba del historial?')) {
+                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                            currentHistorial.splice(idx, 1); // Elimina 1 elemento en la posición idx
+                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                            document.getElementById('btn-view-history').click(); // Recargar la tabla
+                        }
+                    });
                 });
             }
             showScreen('history');
@@ -834,4 +863,3 @@
     </script>
 </body>
 </html>
-

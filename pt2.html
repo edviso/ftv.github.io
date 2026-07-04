@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Etiquetas de Tueste - 4x7cm v3 (Corrección 5x4)</title>
+    <title>Etiquetas de Tueste - 4x7cm v5 (Líneas y Texto Puro)</title>
     <style>
         :root {
             --bg-interface: #f4f6f8;
@@ -62,18 +62,16 @@
             background: white;
             width: 210mm;
             height: 297mm;
-            /* 5mm a cada lado asegura exactamente 200mm de ancho interno (5x40mm) */
             padding: 8.5mm 5mm; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
             margin: 0 auto;
         }
 
-        /* En lugar de Grid, usamos Flexbox estricto para forzar 5 columnas matemáticas */
         .grid-container {
             display: flex;
             flex-wrap: wrap;
-            width: 200mm; /* 200mm exactos para forzar que entren las 5 tarjetas de 40mm */
+            width: 200mm; 
             height: 280mm;
             margin: 0 auto;
         }
@@ -82,19 +80,20 @@
         .card {
             width: 40mm;
             height: 70mm;
-            flex: 0 0 40mm; /* Prohíbe que crezca o se encoja. Anclado a 40mm */
+            flex: 0 0 40mm; 
             border: 0.5px dashed #a0a0a0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             background: white;
-            box-sizing: border-box; /* Asegura que los bordes vayan por dentro y no ensanchen la tarjeta */
+            box-sizing: border-box; 
         }
 
         .header {
-            color: white; font-weight: 700; font-size: 6.5px;
-            text-align: center; padding: 2.5px 0; letter-spacing: 0.5px;
+            color: white; font-weight: 800; font-size: 8px;
+            text-align: center; padding: 3px 0; letter-spacing: 0.5px;
             width: 100%;
+            text-transform: uppercase;
         }
 
         /* Colores de Perfiles (Modo Color) */
@@ -102,9 +101,27 @@
         .bg-honey { background-color: #b57309 !important; } 
         .bg-lavado { background-color: #2E7D32 !important; }
 
-        table { width: 100%; border-collapse: collapse; font-size: 5.5px; }
-        th { color: #333; background-color: #f1f3f5; padding: 1.5px 1px; border-bottom: 1px solid #ccc; }
-        td { padding: 1px 1px; text-align: center; border-bottom: 1px solid #f8f9fa; }
+        /* TABLA DE ALTA LEGIBILIDAD */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 8.5px; 
+            font-weight: 700; 
+            line-height: 1.05;
+        }
+        th { 
+            color: #000; 
+            background-color: #e9ecef; 
+            padding: 2px 1px; 
+            border-bottom: 1.5px solid #666; 
+            font-size: 7.5px;
+            font-weight: 800;
+        }
+        td { 
+            padding: 0.3px 1px; 
+            text-align: center; 
+            border-bottom: none; 
+        }
 
         /* Colores de Filas - Fases (Modo Color) */
         .row-carga { background-color: #CFD8DC !important; }
@@ -117,23 +134,52 @@
         .row-desarrollo-cont { background-color: #F2F9F2 !important; }
         .row-descarga { background-color: #E0E0E0 !important; }
 
-        /* --- ESTILOS EN BLANCO Y NEGRO / ESCALA DE GRISES --- */
-        .bw-mode .header { 
-            background-color: #1a1a1a !important; 
-            color: #ffffff !important;
-            border-bottom: 1px solid #000;
+        /* --- ESTILOS EN BLANCO Y NEGRO PURO (MÁXIMA LEGIBILIDAD, SÓLO LÍNEAS Y TEXTO) --- */
+        .bw-mode .card {
+            border: 0.5px solid #000000 !important; /* Línea de marco exterior sólida negra */
         }
-        .bw-mode .row-carga { background-color: #d6d6d6 !important; }
-        .bw-mode .row-secado-start { background-color: #eaeaea !important; }
-        .bw-mode .row-secado-cont { background-color: #ffffff !important; }
-        .bw-mode .row-maillard-start { background-color: #dddddd !important; }
-        .bw-mode .row-maillard-cont { background-color: #f9f9f9 !important; }
-        .bw-mode .row-crack-start { background-color: #c4c4c4 !important; }
-        .bw-mode .row-desarrollo-start { background-color: #e2e2e2 !important; }
-        .bw-mode .row-desarrollo-cont { background-color: #fdfdfd !important; }
-        .bw-mode .row-descarga { background-color: #aeaeae !important; }
-        .bw-mode th { background-color: #e6e6e6 !important; color: #000 !important; }
-        .bw-mode td { color: #000 !important; border-bottom: 1px solid #e6e6e6 !important; }
+        
+        .bw-mode .header { 
+            background-color: #ffffff !important; 
+            color: #000000 !important;
+            font-size: 8.5px;
+            font-weight: 800;
+            border-bottom: 1px solid #000000 !important;
+            padding: 4px 0;
+        }
+        
+        /* Forzar fondo blanco absoluto para eliminar cualquier escala de grises en las fases */
+        .bw-mode .row-carga,
+        .bw-mode .row-secado-start,
+        .bw-mode .row-secado-cont,
+        .bw-mode .row-maillard-start,
+        .bw-mode .row-maillard-cont,
+        .bw-mode .row-crack-start,
+        .bw-mode .row-desarrollo-start,
+        .bw-mode .row-desarrollo-cont,
+        .bw-mode .row-descarga { 
+            background-color: #ffffff !important; 
+        }
+        
+        /* Ajuste de encabezados de tabla en Blanco y Negro */
+        .bw-mode th { 
+            background-color: #ffffff !important; 
+            color: #000000 !important; 
+            border-bottom: 1px solid #000000 !important; 
+            font-size: 7.5px;
+        }
+        
+        /* Crear marcos internos usando únicamente líneas finas */
+        .bw-mode td { 
+            color: #000000 !important; 
+            border-bottom: 0.3px solid #666666 !important; /* Líneas horizontales nítidas */
+        }
+        
+        /* Líneas verticales divisorias para formar la cuadrícula/marco interno */
+        .bw-mode td:not(:last-child), 
+        .bw-mode th:not(:last-child) {
+            border-right: 0.3px solid #666666 !important;
+        }
 
         @media print {
             .no-print { display: none !important; }
@@ -141,7 +187,10 @@
             .preview-container { padding: 0; justify-content: flex-start; }
             .a4-page { box-shadow: none; padding: 8.5mm 5mm; margin: 0; }
             @page { size: A4; margin: 0; }
-            .card { border: 0.5px dashed #ccc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            /* Preservar las líneas nítidas en la impresión */
+            .card { border: 0.5px dashed #bbbbbb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bw-mode .card { border: 0.5px solid #000000 !important; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
@@ -149,8 +198,8 @@
 <body>
 
 <div class="no-print">
-    <div class="panel-title">⚙️ Matriz de 3 Perfiles (4x7 cm) - Hoja A4</div>
-    <p style="font-size: 0.8rem; margin-bottom: 15px; color: #555;">Una hoja A4 permite exactamente 20 etiquetas de 4x7 cm (5 columnas x 4 filas). Distribución automática: 7, 7 y 6 etiquetas.</p>
+    <div class="panel-title">⚙️ Matriz de 3 Perfiles (4x7 cm) - Modo Blanco y Negro Puro</div>
+    <p style="font-size: 0.8rem; margin-bottom: 15px; color: #555;">Se rediseñó el modo Blanco y Negro: elimina los fondos grises y el título negro. Ahora genera letras negras sobre fondo blanco, usando líneas finas como marcos para asegurar un contraste absoluto.</p>
     
     <div class="profiles-grid">
         <!-- Perfil 1 -->
@@ -202,7 +251,7 @@
                 <label for="printMode" style="font-size: 0.85rem; font-weight: bold; color: #444;">Modo Visual / Impresión:</label>
                 <select id="printMode" onchange="aplicarModoFiltro()" style="padding: 6px 12px; font-weight: 600;">
                     <option value="color" selected>🎨 A Colores Full</option>
-                    <option value="bw">⚫ Blanco y Negro (Tinta Negra)</option>
+                    <option value="bw">⚫ Blanco y Negro Puro (Texto y Marcos)</option>
                 </select>
             </div>
         </div>
@@ -291,16 +340,29 @@
     document.getElementById('data2').value = exData2;
     document.getElementById('data3').value = exData3;
 
-    function detFase(f) {
-        if (!f) return 'row-secado-cont';
-        const txt = f.trim().toLowerCase();
-        if (txt.includes('carga')) return 'row-carga';
-        if (txt.includes('secado')) return (txt==='secado'||txt.includes('1er')||txt.includes('start')) ? 'row-secado-start' : 'row-secado-cont';
-        if (txt.includes('maillard')) return (txt==='maillard'||txt.includes('start')) ? 'row-maillard-start' : 'row-maillard-cont';
-        if (txt.includes('crack')||txt.includes('1er')) return 'row-crack-start';
-        if (txt.includes('desarrollo')) return (txt==='desarrollo'||txt.includes('start')) ? 'row-desarrollo-start' : 'row-desarrollo-cont';
-        if (txt.includes('descarga')) return 'row-descarga';
-        return 'row-secado-cont';
+    function examinarFase(f) {
+        if (!f) return { clase: 'row-secado-cont', letra: 'S' };
+        const txt = f.trim().toUpperCase();
+        
+        if (txt.includes('CARGA') || txt === 'C') return { clase: 'row-carga', letra: 'C' };
+        
+        if (txt.includes('SECADO') || txt === 'S') {
+            let cl = (txt === 'SECADO' || txt.includes('1ER') || txt.includes('START')) ? 'row-secado-start' : 'row-secado-cont';
+            return { clase: cl, letra: 'S' };
+        }
+        if (txt.includes('MAILLARD') || txt === 'M') {
+            let cl = (txt === 'MAILLARD' || txt.includes('START')) ? 'row-maillard-start' : 'row-maillard-cont';
+            return { clase: cl, letra: 'M' };
+        }
+        if (txt.includes('CRACK') || txt.includes('1ER') || txt === '1') return { clase: 'row-crack-start', letra: '1' };
+        
+        if (txt.includes('DESARROLLO') || txt === 'D') {
+            let cl = (txt === 'DESARROLLO' || txt.includes('START')) ? 'row-desarrollo-start' : 'row-desarrollo-cont';
+            return { clase: cl, letra: 'D' };
+        }
+        if (txt.includes('DESCARGA')) return { clase: 'row-descarga', letra: 'D' };
+        
+        return { clase: 'row-secado-cont', letra: txt.charAt(0) || 'S' };
     }
 
     function procesar(texto) {
@@ -308,10 +370,19 @@
         let html = '';
         lineas.forEach(l => {
             if(!l.trim()) return;
-            const c = l.split(/\t|,/);
+            const c = l.split(/\t|,|\|/); 
             if(c.length >= 2) {
+                const tiempo = c[0].trim();
+                const temp = c[1].trim();
                 const faseStr = c[2] ? c[2].trim() : '';
-                html += `<tr class="${detFase(faseStr)}"><td>${c[0].trim()}</td><td>${c[1].trim()}</td><td>${faseStr.toUpperCase()}</td></tr>`;
+                
+                const infoFase = examinarFase(faseStr);
+                
+                html += `<tr class="${infoFase.clase}">
+                    <td>${tiempo}</td>
+                    <td>${temp}</td>
+                    <td>${infoFase.letra}</td>
+                </tr>`;
             }
         });
         return html;
@@ -322,7 +393,7 @@
             <div class="card">
                 <div class="header ${color}">${nombre}</div>
                 <table>
-                    <thead><tr><th>T</th><th>TEMP</th><th>FASE</th></tr></thead>
+                    <thead><tr><th>TIEMPO</th><th>(°C)</th><th>F</th></tr></thead>
                     <tbody>${htmlFilas}</tbody>
                 </table>
             </div>`;

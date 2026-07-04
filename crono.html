@@ -541,7 +541,6 @@
             return analisisHtml;
         }
 
-        // Lógica actualizada de la tabla comparativa y el resumen sensorial
         function poblarTablaComparativa(seqData, actData) {
             const tbody = document.getElementById('comp-body');
             tbody.innerHTML = '';
@@ -603,7 +602,6 @@
                 }
             }
 
-            // --- GENERACIÓN DEL RESUMEN SENSORIAL (MÉTODOS DE VERTIDO) ---
             let analisisRitmo = "bastante equilibrado respecto al perfil teórico.";
             let impRitmo = "Permitirá una extracción limpia y balanceada, reflejando fielmente el perfil de la variedad.";
             
@@ -948,6 +946,41 @@
             reader.onload = function(e) {
                 try {
                     const loadedData = JSON.parse(e.target.result);
+                    
+                    // --- MOTOR DE RECÁLCULO PARA JSON ANTIGUOS ---
+                    if (loadedData.puntos_reales && loadedData.puntos_reales.length > 0) {
+                        for (let i = 1; i < loadedData.puntos_reales.length; i++) {
+                            if (loadedData.puntos_reales[i].ror === undefined) {
+                                let deltaSec = loadedData.puntos_reales[i].seconds - loadedData.puntos_reales[i-1].seconds;
+                                let deltaTemp = loadedData.puntos_reales[i].tempValue - loadedData.puntos_reales[i-1].tempValue;
+                                loadedData.puntos_reales[i].ror = (deltaSec > 0) ? Math.round((deltaTemp / deltaSec) * 60) : 0;
+                            }
+                        }
+                    }
+
+                    if (loadedData.secuencia_teorica) {
+                        loadedData.secuencia_teorica.forEach(pto => {
+                            if (!pto.faseLetra) {
+                                if (pto.tempValue <= 150) pto.faseLetra = "S";
+                                else if (pto.tempValue <= 195) pto.faseLetra = "M";
+                                else pto.faseLetra = "D";
+                            }
+                        });
+                    }
+
+                    let tempSeq = sequenceData;
+                    let tempAct = actualData;
+                    
+                    sequenceData = loadedData.secuencia_teorica;
+                    actualData = loadedData.puntos_reales;
+                    
+                    loadedData.score = generateFinalScore();
+                    loadedData.analisis = generarAnalisis(); 
+                    
+                    sequenceData = tempSeq;
+                    actualData = tempAct;
+                    // --- FIN MOTOR DE RECÁLCULO ---
+
                     currentRoastExportData = loadedData;
                     mostrarPantallaResultados(loadedData);
                 } catch (error) {

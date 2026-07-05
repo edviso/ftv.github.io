@@ -1171,6 +1171,22 @@
                     sequenceData = tempSeq;
                     actualData = tempAct;
 
+                    // --- NUEVO: ACTUALIZACIÓN AUTOMÁTICA DEL HISTORIAL ---
+                    let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                    let actualizado = false;
+                    for (let i = 0; i < historial.length; i++) {
+                        // Compara la fecha del JSON con la fecha guardada en el historial
+                        if (historial[i].fecha === loadedData.fecha) {
+                            historial[i].score = precis.total; // Sobrescribe con el nuevo score
+                            actualizado = true;
+                            break;
+                        }
+                    }
+                    if (actualizado) {
+                        localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+                    }
+                    // ------------------------------------------------------
+
                     currentRoastExportData = loadedData;
                     mostrarPantallaResultados(loadedData);
                 } catch (error) {
@@ -1191,4 +1207,3 @@
     </script>
 </body>
 </html>
-

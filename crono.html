@@ -253,6 +253,27 @@
         .btn-delete:hover {
             transform: scale(1.2);
         }
+        .btn-edit {
+            background: transparent;
+            border: none;
+            color: var(--info-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s;
+        }
+        .btn-edit:hover {
+            transform: scale(1.2);
+        }
+        .edit-select {
+            width: 100%;
+            padding: 5px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -262,7 +283,11 @@
         
         <div class="form-group">
             <label for="tostador">Tostador:</label>
-            <input type="text" id="tostador" placeholder="Nombre (Ej. Yo, Mi hijo...)" required>
+            <select id="tostador">
+                <option value="Edgar">Edgar</option>
+                <option value="Adrián">Adrián</option>
+                <option value="Javier">Javier</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -270,7 +295,6 @@
             <select id="variedad">
                 <option value="Sidra Honey">Sidra Honey</option>
                 <option value="Sidra Lavado">Sidra Lavado</option>
-                <option value="Typica Lavado">Typica Lavado</option>
                 <option value="Blend">Blend</option>
             </select>
         </div>
@@ -759,7 +783,7 @@
         }
 
         document.getElementById('btn-start').addEventListener('click', async () => {
-            const tostador = document.getElementById('tostador').value.trim() || "Anónimo";
+            const tostador = document.getElementById('tostador').value;
             sequenceData = parseSequence(document.getElementById('secuencia').value);
             
             if (sequenceData.length === 0) return alert("Verifica el formato de la secuencia.");
@@ -830,7 +854,7 @@
             clearInterval(timerInterval);
             desactivarMantenerPantalla();
             
-            const tostador = document.getElementById('tostador').value.trim() || "Anónimo";
+            const tostador = document.getElementById('tostador').value;
             const variedad = document.getElementById('variedad').value;
             const perfil = document.getElementById('perfil').value;
             const fecha = new Date().toLocaleString();
@@ -909,10 +933,11 @@
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${t.fecha.split(',')[0]}</td>
-                        <td>${t.tostador}</td>
-                        <td>${t.variedad}</td>
+                        <td class="cell-tostador">${t.tostador}</td>
+                        <td class="cell-variedad">${t.variedad}</td>
                         <td><strong>${t.score}%</strong></td>
-                        <td style="text-align: center;">
+                        <td style="text-align: center; min-width: 80px;">
+                            <button class="btn-edit" data-index="${index}" title="Editar tueste">✏️</button>
                             <button class="btn-delete" data-index="${index}" title="Eliminar tueste">🗑️</button>
                         </td>
                     `;
@@ -925,6 +950,40 @@
                         if (confirm('¿Estás seguro de que deseas eliminar este tueste de prueba del historial?')) {
                             let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
                             currentHistorial.splice(idx, 1);
+                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                            document.getElementById('btn-view-history').click(); 
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.btn-edit').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = this.getAttribute('data-index');
+                        const row = this.closest('tr');
+                        const isEditing = row.classList.contains('editing');
+                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                        let registro = currentHistorial[idx];
+
+                        if (!isEditing) {
+                            row.classList.add('editing');
+                            this.textContent = '💾';
+                            this.title = 'Guardar cambios';
+
+                            const cellTostador = row.querySelector('.cell-tostador');
+                            const cellVariedad = row.querySelector('.cell-variedad');
+
+                            const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
+                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Blend'];
+
+                            cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+                            cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                        } else {
+                            const nuevoTostador = row.querySelector('.select-tostador').value;
+                            const nuevaVariedad = row.querySelector('.select-variedad').value;
+
+                            currentHistorial[idx].tostador = nuevoTostador;
+                            currentHistorial[idx].variedad = nuevaVariedad;
+                            
                             localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
                             document.getElementById('btn-view-history').click(); 
                         }
@@ -947,7 +1006,6 @@
                 try {
                     const loadedData = JSON.parse(e.target.result);
                     
-                    // --- MOTOR DE RECÁLCULO PARA JSON ANTIGUOS ---
                     if (loadedData.puntos_reales && loadedData.puntos_reales.length > 0) {
                         for (let i = 1; i < loadedData.puntos_reales.length; i++) {
                             if (loadedData.puntos_reales[i].ror === undefined) {
@@ -979,7 +1037,6 @@
                     
                     sequenceData = tempSeq;
                     actualData = tempAct;
-                    // --- FIN MOTOR DE RECÁLCULO ---
 
                     currentRoastExportData = loadedData;
                     mostrarPantallaResultados(loadedData);

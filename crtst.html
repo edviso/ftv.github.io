@@ -26,7 +26,7 @@
             align-items: center;
         }
 
-        h1, h2 {
+        h1, h2, h3 {
             color: var(--accent-color);
             margin-bottom: 20px;
             text-align: center;
@@ -209,6 +209,23 @@
         
         .row-controls { display: flex; gap: 10px; }
 
+        #stats-table-container {
+            margin-top: 15px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        #stats-table {
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+        #stats-table th {
+            color: var(--info-color);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
         #comparative-table-container {
             margin-top: 15px;
             background-color: #1a1a1a;
@@ -241,30 +258,18 @@
             text-align: left;
         }
 
-        .btn-delete {
+        .btn-delete, .btn-edit {
             background: transparent;
             border: none;
-            color: var(--danger-color);
             font-size: 1.2rem;
             cursor: pointer;
             padding: 5px;
             transition: transform 0.2s;
         }
-        .btn-delete:hover {
-            transform: scale(1.2);
-        }
-        .btn-edit {
-            background: transparent;
-            border: none;
-            color: var(--info-color);
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 5px;
-            transition: transform 0.2s;
-        }
-        .btn-edit:hover {
-            transform: scale(1.2);
-        }
+        .btn-delete { color: var(--danger-color); }
+        .btn-edit { color: var(--info-color); }
+        .btn-delete:hover, .btn-edit:hover { transform: scale(1.2); }
+
         .edit-select {
             width: 100%;
             padding: 5px;
@@ -387,6 +392,21 @@
             <div><strong>Variedad:</strong> <span id="res-variedad"></span></div>
             <div><strong>Perfil:</strong> <span id="res-perfil"></span></div>
         </div>
+        
+        <div id="stats-table-container">
+            <h3 style="color: var(--info-color); margin-top: 0; font-size: 1.1rem;">Estadísticas Térmicas (RoR EMA)</h3>
+            <table id="stats-table">
+                <thead>
+                    <tr>
+                        <th>Fase</th>
+                        <th>Promedio</th>
+                        <th>Estabilidad (σ)</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-body">
+                </tbody>
+            </table>
+        </div>
 
         <canvas id="result-chart"></canvas>
 
@@ -444,6 +464,7 @@
         let wakeLock = null;
         let currentRoastScore = 0;
         let currentRoastExportData = null; 
+        const alphaEMA = 0.25; 
 
         const screens = {
             setup: document.getElementById('setup-screen'),
@@ -491,7 +512,7 @@
                 if (timeParts.length === 2) {
                     let totalSeconds = (parseInt(timeParts[0]) * 60) + parseInt(timeParts[1]);
                     let tempValue = parseFloat(parts[1].replace(/[^0-9.]/g, ''));
-                    let faseLetra = parts.length > 2 ? parts[2].trim() : ""; 
+                    let faseLetra = parts.length > 2 ? parts[2].trim().toUpperCase() : ""; 
 
                     data.push({ 
                         seconds: totalSeconds, 
@@ -533,7 +554,7 @@
                 if (i < sequenceData.length) {
                     let expectedSec = sequenceData[i].seconds;
                     let realSec = actualData[i].seconds;
-                    let letra = sequenceData[i].faseLetra.toUpperCase();
+                    let letra = sequenceData[i].faseLetra;
                     let errorSecs = Math.abs(expectedSec - realSec);
                     
                     let fase = "Secado"; 
@@ -558,59 +579,95 @@
             if (promErrores.Desarrollo > maxError) { faseCritica = "Desarrollo"; maxError = promErrores.Desarrollo; }
             
             if (maxError < 3) {
-                 return "<strong>¡Excelente consistencia!</strong> Las variaciones fueron mínimas. El tueste fue sumamente estable y no se esperan impactos negativos en la taza.";
+                 return "<strong>¡Excelente consistencia!</strong> Las variaciones fueron mínimas. El tueste fue sumamente estable.";
+            }
+            return `La mayor cantidad de errores de precisión se concentró en la <strong>Fase de ${faseCritica}</strong>.`;
+        }
+
+        function generarEstadisticasRoR(actData) {
+            let fases = {
+                'S': { name: 'Secado', values: [] },
+                'M': { name: 'Maillard', values: [] },
+                'D': { name: 'Desarrollo', values: [] }
+            };
+            let allValues = [];
+
+            for (let i = 1; i < actData.length; i++) {
+                let pt = actData[i];
+                if (pt.rorEma !== undefined) {
+                    let f = pt.fase;
+                    if (f === '1' || f === 'C') f = f === '1' ? 'D' : 'S'; 
+                    if (fases[f]) {
+                        fases[f].values.push(pt.rorEma);
+                    }
+                    allValues.push(pt.rorEma);
+                }
             }
 
-            let analisisHtml = `La mayor cantidad de errores de precisión se concentró en la <strong>Fase de ${faseCritica}</strong>.`;
-            return analisisHtml;
+            function calcStats(arr) {
+                if(arr.length === 0) return { mean: 0, std: 0 };
+                let sum = arr.reduce((a, b) => a + b, 0);
+                let mean = sum / arr.length;
+                let variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length;
+                return { mean: mean, std: Math.sqrt(variance) };
+            }
+
+            let statsHtml = '';
+            ['S', 'M', 'D'].forEach(key => {
+                let st = calcStats(fases[key].values);
+                let badge = '';
+                if(fases[key].values.length > 0) {
+                    if (st.std < 1.5) badge = '🟢';
+                    else if (st.std < 3.0) badge = '🟡';
+                    else badge = '🔴';
+                    
+                    statsHtml += `<tr>
+                        <td><strong>${fases[key].name}</strong></td>
+                        <td>${st.mean.toFixed(1)} °C/m</td>
+                        <td>± ${st.std.toFixed(2)} ${badge}</td>
+                    </tr>`;
+                }
+            });
+            
+            if (allValues.length > 0) {
+                let totalSt = calcStats(allValues);
+                statsHtml += `<tr style="background-color: #2a2a2a; color: var(--accent-color);">
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>${totalSt.mean.toFixed(1)} °C/m</strong></td>
+                    <td><strong>± ${totalSt.std.toFixed(2)}</strong></td>
+                </tr>`;
+            } else {
+                statsHtml = '<tr><td colspan="3" style="text-align:center;">Sin datos suficientes</td></tr>';
+            }
+
+            document.getElementById('stats-body').innerHTML = statsHtml;
         }
 
         function poblarTablaComparativa(seqData, actData) {
             const tbody = document.getElementById('comp-body');
             tbody.innerHTML = '';
-
-            let countAdelanto = 0;
-            let countAtraso = 0;
-            let countFlicks = 0;
-            let countCrashes = 0;
+            let countAdelanto = 0, countAtraso = 0, countFlicks = 0, countCrashes = 0;
 
             for (let i = 1; i < actData.length; i++) {
                 if (i < seqData.length) {
                     let temp = seqData[i].tempValue;
                     let teoStr = seqData[i].timeLabel;
                     let realStr = actData[i].timeLabel;
-                    let faseLetra = seqData[i].faseLetra || "-"; 
+                    let faseLetra = actData[i].fase || "-"; 
                     let rorValue = actData[i].ror !== undefined ? actData[i].ror : "-";
                     let dif = actData[i].seconds - seqData[i].seconds;
                     
                     let difStr, difColor;
-                    if (dif === 0) {
-                        difStr = "0";
-                        difColor = "var(--success-color)";
-                    } else if (dif > 0) {
-                        difStr = "+" + dif;
-                        difColor = "#ff5722"; 
-                        countAtraso++;
-                    } else {
-                        difStr = dif;
-                        difColor = "var(--info-color)"; 
-                        countAdelanto++;
-                    }
+                    if (dif === 0) { difStr = "0"; difColor = "var(--success-color)"; } 
+                    else if (dif > 0) { difStr = "+" + dif; difColor = "#ff5722"; countAtraso++; } 
+                    else { difStr = dif; difColor = "var(--info-color)"; countAdelanto++; }
 
                     let rorColor = "#ddd"; 
-                    if (i === 1 || rorValue === "-") {
-                        rorColor = "#ddd"; 
-                    } else {
+                    if (i > 1 && rorValue !== "-") {
                         let prevRoR = actData[i - 1].ror;
-                        if (rorValue <= 3) {
-                            rorColor = "var(--info-color)"; 
-                            countCrashes++;
-                        } else if (rorValue > prevRoR) {
-                            rorColor = "var(--danger-color)"; 
-                            countFlicks++;
-                        } else {
-                            rorColor = "var(--success-color)"; 
-                        }
+                        if (rorValue <= 3) { rorColor = "var(--info-color)"; countCrashes++; } 
+                        else if (rorValue > prevRoR) { rorColor = "var(--danger-color)"; countFlicks++; } 
+                        else { rorColor = "var(--success-color)"; }
                     }
 
                     let tr = document.createElement('tr');
@@ -626,50 +683,18 @@
                 }
             }
 
-            let analisisRitmo = "bastante equilibrado respecto al perfil teórico.";
-            let impRitmo = "Permitirá una extracción limpia y balanceada, reflejando fielmente el perfil de la variedad.";
-            
-            if (countAdelanto > countAtraso + 2) {
-                analisisRitmo = "más rápido (adelantado) en general.";
-                impRitmo = "Resaltará la acidez, pero existe el riesgo de un grano subdesarrollado en el centro, aportando notas herbáceas o vegetales indeseadas.";
-            } else if (countAtraso > countAdelanto + 2) {
-                analisisRitmo = "más lento (atrasado) en general.";
-                impRitmo = "Desarrollará más cuerpo, pero apagará la acidez vibrante natural, acercándose a notas planas o a pan horneado.";
-            }
+            let analisisRitmo = "bastante equilibrado.";
+            if (countAdelanto > countAtraso + 2) analisisRitmo = "más rápido (adelantado) en general.";
+            else if (countAtraso > countAdelanto + 2) analisisRitmo = "más lento (atrasado) en general.";
 
-            let impFlicks = countFlicks === 0 
-                ? "Ausencia de picos. El dulzor se preservará impecable sin amargos abrasivos." 
-                : "Estos picos tuestan bruscamente el exterior. En preparaciones como V60 u Origami, probablemente se traduzca en <strong>astringencia</strong> (sensación seca) y notas a ceniza que opacan el dulzor.";
-                
-            let impCrashes = countCrashes === 0
-                ? "Caídas nulas. Asegura una acidez brillante y prolongada."
-                : "La pérdida brusca de impulso genera horneado (*baking*). Esto aplana la acidez característica y puede dejar un final hueco o retrogusto a cartón.";
-
-            let textoAnalisisComp = `<strong>Resumen Técnico:</strong> El ritmo del tueste fue ${analisisRitmo} `;
-            textoAnalisisComp += `En la curva de aceleración (RoR), se detectaron <strong>${countFlicks} pico(s) de calor (flicks)</strong> `;
-            textoAnalisisComp += `y <strong>${countCrashes} caída(s) crítica(s) (crashes)</strong>.<br><br>`;
-            
-            textoAnalisisComp += `<strong>Impacto en taza (Métodos de Vertido):</strong>`;
-            textoAnalisisComp += `<ul style="margin-top: 8px; padding-left: 20px; color: #ddd;">`;
-            textoAnalisisComp += `<li style="margin-bottom: 5px;"><strong>Ritmo:</strong> ${impRitmo}</li>`;
-            textoAnalisisComp += `<li style="margin-bottom: 5px;"><strong>Flicks (${countFlicks}):</strong> ${impFlicks}</li>`;
-            textoAnalisisComp += `<li><strong>Crashes (${countCrashes}):</strong> ${impCrashes}</li>`;
-            textoAnalisisComp += `</ul>`;
-            
-            if (countFlicks === 0 && countCrashes === 0 && (countAdelanto <= countAtraso + 2 && countAtraso <= countAdelanto + 2)) {
-                textoAnalisisComp += "<span style='color: var(--success-color); font-weight:bold; display:block; margin-top:10px;'>¡Excelente control del dimmer! Perfil ideal para resaltar la claridad en taza.</span>";
-            }
-
+            let textoAnalisisComp = `<strong>Resumen Técnico:</strong> El ritmo del tueste fue ${analisisRitmo}<br>`;
+            textoAnalisisComp += `Flicks detectados: <strong>${countFlicks}</strong> | Crashes detectados: <strong>${countCrashes}</strong>.`;
             document.getElementById('comp-analysis-text').innerHTML = textoAnalisisComp;
         }
 
         document.getElementById('btn-toggle-comp').addEventListener('click', () => {
             const tableContainer = document.getElementById('comparative-table-container');
-            if (tableContainer.style.display === 'none') {
-                tableContainer.style.display = 'block';
-            } else {
-                tableContainer.style.display = 'none';
-            }
+            tableContainer.style.display = tableContainer.style.display === 'none' ? 'block' : 'none';
         });
 
         function drawChart(canvas, ctx, seqData, actData, showAxes = false) {
@@ -798,7 +823,13 @@
             startTime = Date.now();
             expectedHitoIndex = 1; 
             
-            actualData = [{ timeLabel: "0:00", seconds: 0, tempValue: sequenceData[0].tempValue, ror: 0 }];
+            actualData = [{ 
+                timeLabel: "0:00", 
+                seconds: 0, 
+                tempValue: sequenceData[0].tempValue, 
+                ror: 0, 
+                fase: sequenceData[0].faseLetra || 'C' 
+            }];
             
             setTimeout(() => drawChart(liveCanvas, liveCtx, sequenceData, actualData, false), 100); 
             updateDisplay();
@@ -809,37 +840,52 @@
             if (expectedHitoIndex < sequenceData.length) {
                 let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
                 let targetTemp = sequenceData[expectedHitoIndex].tempValue;
+                let phaseLetra = sequenceData[expectedHitoIndex].faseLetra || "S";
                 
-                let prevPoint = actualData[actualData.length - 1];
-                let deltaSec = elapsedSeconds - prevPoint.seconds;
-                let deltaTemp = targetTemp - prevPoint.tempValue;
-                let currentRoR = 0;
+                let rawRoR = 0;
+                let currentEma = 0;
+                let n = actualData.length;
                 
-                if (deltaSec > 0) {
-                    currentRoR = Math.round((deltaTemp / deltaSec) * 60);
+                if (n >= 1) {
+                    let indexAnterior = (n >= 3) ? n - 2 : n - 1; 
+                    let refPoint = actualData[indexAnterior];
+                    
+                    let deltaSec = elapsedSeconds - refPoint.seconds;
+                    let deltaTemp = targetTemp - refPoint.tempValue;
+                    
+                    if (deltaSec > 0) rawRoR = (deltaTemp / deltaSec) * 60;
+
+                    if (n === 1) {
+                        currentEma = rawRoR; 
+                    } else {
+                        let prevEma = actualData[n - 1].rorEma || rawRoR;
+                        currentEma = (alphaEMA * rawRoR) + ((1 - alphaEMA) * prevEma);
+                    }
                 }
 
                 actualData.push({
                     timeLabel: formatTime(elapsedSeconds),
                     seconds: elapsedSeconds,
                     tempValue: targetTemp,
-                    ror: currentRoR
+                    ror: Math.round(currentEma),
+                    rorEma: currentEma,
+                    fase: phaseLetra
                 });
 
+                let rorRounded = Math.round(currentEma);
                 if (actualData.length === 2) {
-                    rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min`;
+                    rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min`;
                     rorDisplayEl.style.color = "var(--text-color)";
                 } else {
                     let prevRoR = actualData[actualData.length - 2].ror;
-                    
-                    if (currentRoR <= 3) {
-                        rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ❄️`;
+                    if (rorRounded <= 3) {
+                        rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min ❄️`;
                         rorDisplayEl.style.color = "var(--info-color)";
-                    } else if (currentRoR > prevRoR) {
-                        rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ⬆️`;
+                    } else if (rorRounded > prevRoR) {
+                        rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min ⬆️`;
                         rorDisplayEl.style.color = "var(--danger-color)";
                     } else {
-                        rorDisplayEl.innerHTML = `RoR: ${currentRoR}°C/min ⬇️`;
+                        rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min ⬇️`;
                         rorDisplayEl.style.color = "var(--success-color)";
                     }
                 }
@@ -899,6 +945,7 @@
 
             document.getElementById('analysis-text').innerHTML = dataObj.analisis || "Análisis no disponible para este archivo.";
 
+            generarEstadisticasRoR(dataObj.puntos_reales);
             poblarTablaComparativa(dataObj.secuencia_teorica, dataObj.puntos_reales);
             document.getElementById('comparative-table-container').style.display = 'none';
 
@@ -947,7 +994,7 @@
                 document.querySelectorAll('.btn-delete').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const idx = this.getAttribute('data-index');
-                        if (confirm('¿Estás seguro de que deseas eliminar este tueste de prueba del historial?')) {
+                        if (confirm('¿Estás seguro de que deseas eliminar este tueste del historial?')) {
                             let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
                             currentHistorial.splice(idx, 1);
                             localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
@@ -1006,12 +1053,28 @@
                 try {
                     const loadedData = JSON.parse(e.target.result);
                     
+                    // --- NUEVO MOTOR DE RECÁLCULO (3 Puntos + EMA) ---
                     if (loadedData.puntos_reales && loadedData.puntos_reales.length > 0) {
                         for (let i = 1; i < loadedData.puntos_reales.length; i++) {
-                            if (loadedData.puntos_reales[i].ror === undefined) {
-                                let deltaSec = loadedData.puntos_reales[i].seconds - loadedData.puntos_reales[i-1].seconds;
-                                let deltaTemp = loadedData.puntos_reales[i].tempValue - loadedData.puntos_reales[i-1].tempValue;
-                                loadedData.puntos_reales[i].ror = (deltaSec > 0) ? Math.round((deltaTemp / deltaSec) * 60) : 0;
+                            let n = i + 1; 
+                            let indexAnterior = (n >= 3) ? i - 2 : i - 1;
+                            let refPoint = loadedData.puntos_reales[indexAnterior];
+                            let pt = loadedData.puntos_reales[i];
+                            
+                            let deltaSec = pt.seconds - refPoint.seconds;
+                            let deltaTemp = pt.tempValue - refPoint.tempValue;
+                            let rawRoR = (deltaSec > 0) ? (deltaTemp / deltaSec) * 60 : 0;
+                            
+                            if (i === 1) {
+                                pt.rorEma = rawRoR;
+                            } else {
+                                let prevEma = loadedData.puntos_reales[i-1].rorEma || rawRoR;
+                                pt.rorEma = (alphaEMA * rawRoR) + ((1 - alphaEMA) * prevEma);
+                            }
+                            pt.ror = Math.round(pt.rorEma);
+
+                            if (!pt.fase && loadedData.secuencia_teorica[i]) {
+                                pt.fase = loadedData.secuencia_teorica[i].faseLetra;
                             }
                         }
                     }
@@ -1037,6 +1100,7 @@
                     
                     sequenceData = tempSeq;
                     actualData = tempAct;
+                    // --- FIN MOTOR DE RECÁLCULO ---
 
                     currentRoastExportData = loadedData;
                     mostrarPantallaResultados(loadedData);

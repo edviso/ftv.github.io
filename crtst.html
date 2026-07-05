@@ -594,7 +594,8 @@
 
             for (let i = 1; i < actData.length; i++) {
                 let pt = actData[i];
-                if (pt.rorEma !== undefined) {
+                // Solo incluir si no es un punto de inicialización
+                if (pt.rorEma !== null && pt.rorEma !== undefined && !pt.isInit) {
                     let f = pt.fase;
                     if (f === '1' || f === 'C') f = f === '1' ? 'D' : 'S'; 
                     if (fases[f]) {
@@ -663,7 +664,7 @@
                     else { difStr = dif; difColor = "var(--info-color)"; countAdelanto++; }
 
                     let rorColor = "#ddd"; 
-                    if (i > 1 && rorValue !== "-") {
+                    if (!actData[i].isInit && actData[i].ror !== "-") {
                         let prevRoR = actData[i - 1].ror;
                         if (rorValue <= 3) { rorColor = "var(--info-color)"; countCrashes++; } 
                         else if (rorValue > prevRoR) { rorColor = "var(--danger-color)"; countFlicks++; } 
@@ -827,8 +828,10 @@
                 timeLabel: "0:00", 
                 seconds: 0, 
                 tempValue: sequenceData[0].tempValue, 
-                ror: 0, 
-                fase: sequenceData[0].faseLetra || 'C' 
+                ror: "-", 
+                rorEma: null,
+                fase: sequenceData[0].faseLetra || 'C',
+                isInit: true 
             }];
             
             setTimeout(() => drawChart(liveCanvas, liveCtx, sequenceData, actualData, false), 100); 
@@ -842,42 +845,55 @@
                 let targetTemp = sequenceData[expectedHitoIndex].tempValue;
                 let phaseLetra = sequenceData[expectedHitoIndex].faseLetra || "S";
                 
-                let rawRoR = 0;
-                let currentEma = 0;
                 let n = actualData.length;
+                let rawRoR = 0;
+                let currentEma = null;
+                let isInit = false;
                 
-                if (n >= 1) {
-                    let indexAnterior = (n >= 3) ? n - 2 : n - 1; 
-                    let refPoint = actualData[indexAnterior];
-                    
+                if (n === 1) {
+                    isInit = true;
+                    currentEma = null;
+                } else if (n === 2) {
+                    let refPoint = actualData[1];
                     let deltaSec = elapsedSeconds - refPoint.seconds;
                     let deltaTemp = targetTemp - refPoint.tempValue;
-                    
                     if (deltaSec > 0) rawRoR = (deltaTemp / deltaSec) * 60;
-
-                    if (n === 1) {
-                        currentEma = rawRoR; 
-                    } else {
-                        let prevEma = actualData[n - 1].rorEma || rawRoR;
-                        currentEma = (alphaEMA * rawRoR) + ((1 - alphaEMA) * prevEma);
-                    }
+                    currentEma = rawRoR;
+                    isInit = true;
+                } else if (n >= 3) {
+                    let refPoint = actualData[n - 2];
+                    let deltaSec = elapsedSeconds - refPoint.seconds;
+                    let deltaTemp = targetTemp - refPoint.tempValue;
+                    if (deltaSec > 0) rawRoR = (deltaTemp / deltaSec) * 60;
+                    
+                    let prevEma = actualData[n - 1].rorEma;
+                    if (prevEma === null || prevEma === undefined) prevEma = rawRoR;
+                    
+                    currentEma = (alphaEMA * rawRoR) + ((1 - alphaEMA) * prevEma);
+                    isInit = false;
                 }
 
                 actualData.push({
                     timeLabel: formatTime(elapsedSeconds),
                     seconds: elapsedSeconds,
                     tempValue: targetTemp,
-                    ror: Math.round(currentEma),
+                    ror: currentEma !== null ? Math.round(currentEma) : "-",
                     rorEma: currentEma,
-                    fase: phaseLetra
+                    fase: phaseLetra,
+                    isInit: isInit
                 });
 
-                let rorRounded = Math.round(currentEma);
-                if (actualData.length === 2) {
-                    rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min`;
-                    rorDisplayEl.style.color = "var(--text-color)";
+                if (n === 1) {
+                    rorDisplayEl.innerHTML = `RoR: Inicializando...`;
+                    rorDisplayEl.style.color = "#888";
+                } else if (n === 2) {
+                    rorDisplayEl.innerHTML = `RoR: Estabilizando...`;
+                    rorDisplayEl.style.color = "var(--info-color)";
                 } else {
-                    let prevRoR = actualData[actualData.length - 2].ror;
+                    let rorRounded = Math.round(currentEma);
+                    let prevPoint = actualData[n - 1];
+                    let prevRoR = prevPoint.ror !== "-" ? prevPoint.ror : rorRounded;
+                    
                     if (rorRounded <= 3) {
                         rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min ❄️`;
                         rorDisplayEl.style.color = "var(--info-color)";
@@ -1053,25 +1069,32 @@
                 try {
                     const loadedData = JSON.parse(e.target.result);
                     
-                    // --- NUEVO MOTOR DE RECÁLCULO (3 Puntos + EMA) ---
                     if (loadedData.puntos_reales && loadedData.puntos_reales.length > 0) {
                         for (let i = 1; i < loadedData.puntos_reales.length; i++) {
-                            let n = i + 1; 
-                            let indexAnterior = (n >= 3) ? i - 2 : i - 1;
-                            let refPoint = loadedData.puntos_reales[indexAnterior];
                             let pt = loadedData.puntos_reales[i];
                             
-                            let deltaSec = pt.seconds - refPoint.seconds;
-                            let deltaTemp = pt.tempValue - refPoint.tempValue;
-                            let rawRoR = (deltaSec > 0) ? (deltaTemp / deltaSec) * 60 : 0;
-                            
                             if (i === 1) {
-                                pt.rorEma = rawRoR;
+                                pt.isInit = true;
+                                pt.rorEma = null;
+                                pt.ror = "-";
+                            } else if (i === 2) {
+                                pt.isInit = true;
+                                let ref = loadedData.puntos_reales[1];
+                                let dSec = pt.seconds - ref.seconds;
+                                let dTemp = pt.tempValue - ref.tempValue;
+                                pt.rorEma = (dSec > 0) ? (dTemp / dSec) * 60 : 0;
+                                pt.ror = Math.round(pt.rorEma);
                             } else {
-                                let prevEma = loadedData.puntos_reales[i-1].rorEma || rawRoR;
-                                pt.rorEma = (alphaEMA * rawRoR) + ((1 - alphaEMA) * prevEma);
+                                pt.isInit = false;
+                                let ref = loadedData.puntos_reales[i - 2];
+                                let dSec = pt.seconds - ref.seconds;
+                                let dTemp = pt.tempValue - ref.tempValue;
+                                let raw = (dSec > 0) ? (dTemp / dSec) * 60 : 0;
+                                let prev = loadedData.puntos_reales[i - 1].rorEma;
+                                if(prev === null || prev === undefined) prev = raw;
+                                pt.rorEma = (alphaEMA * raw) + ((1 - alphaEMA) * prev);
+                                pt.ror = Math.round(pt.rorEma);
                             }
-                            pt.ror = Math.round(pt.rorEma);
 
                             if (!pt.fase && loadedData.secuencia_teorica[i]) {
                                 pt.fase = loadedData.secuencia_teorica[i].faseLetra;
@@ -1100,7 +1123,6 @@
                     
                     sequenceData = tempSeq;
                     actualData = tempAct;
-                    // --- FIN MOTOR DE RECÁLCULO ---
 
                     currentRoastExportData = loadedData;
                     mostrarPantallaResultados(loadedData);

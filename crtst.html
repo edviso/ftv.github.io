@@ -172,13 +172,13 @@
         }
 
         #analysis-text {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #ccc;
             margin: 15px auto;
-            max-width: 90%;
+            max-width: 95%;
             line-height: 1.5;
             background-color: #2a2a2a;
-            padding: 12px;
+            padding: 12px 20px;
             border-radius: 8px;
             border-left: 4px solid var(--accent-color);
             text-align: left;
@@ -382,7 +382,7 @@
         <div class="result-header">
             <h2>Análisis del Tueste</h2>
             <div class="score-display" id="final-score">0%</div>
-            <p style="margin:0; color:#aaa;">Precisión del Perfil</p>
+            <p style="margin:0; color:#aaa;">Calidad de Ejecución Global</p>
             <div id="analysis-text"></div>
         </div>
 
@@ -525,63 +525,107 @@
             return data.sort((a, b) => a.seconds - b.seconds);
         }
 
-        function calculateScore(targetSec, realSec) {
-            let error = Math.abs(targetSec - realSec);
-            if (error >= 10) return 0;
-            return 100 - (error * 10); 
-        }
+        function calcularPrecision(seqData, actData) {
+            if (actData.length <= 1) return { total: 0, shape: 0, energy: 0, dev: 0, time: 0, r: 0 };
 
-        function generateFinalScore() {
-            if (actualData.length <= 1) return 0; 
-            let totalPoints = 0;
-            let totalHitos = 0;
-            for (let i = 1; i < actualData.length; i++) {
-                if (i < sequenceData.length) {
-                    totalPoints += calculateScore(sequenceData[i].seconds, actualData[i].seconds);
-                    totalHitos++;
+            let n = 0;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+            let timeScores = [];
+            let flicks = 0;
+            let crashes = 0;
+            let rorValues = [];
+
+            for (let i = 1; i < actData.length; i++) {
+                if (i < seqData.length) {
+                    let teoSec = seqData[i].seconds;
+                    let actSec = actData[i].seconds;
+
+                    n++;
+                    sumX += teoSec;
+                    sumY += actSec;
+                    sumXY += teoSec * actSec;
+                    sumX2 += teoSec * teoSec;
+                    sumY2 += actSec * actSec;
+
+                    let diff = Math.abs(teoSec - actSec);
+                    if (diff <= 10) timeScores.push(1);
+                    else if (diff <= 40) timeScores.push(Math.pow((40 - diff) / 30, 2));
+                    else timeScores.push(0);
+                }
+
+                if (!actData[i].isInit && actData[i].ror !== "-") {
+                    rorValues.push(actData[i].rorEma);
+                    if (i > 1 && actData[i-1] && !actData[i-1].isInit && actData[i-1].ror !== "-") {
+                        let prevRoR = actData[i-1].ror;
+                        let currRoR = actData[i].ror;
+                        if (currRoR <= 3) crashes++;
+                        else if (currRoR > prevRoR) flicks++;
+                    }
                 }
             }
-            return totalHitos > 0 ? Math.round(totalPoints / totalHitos) : 0;
-        }
 
-        function generarAnalisis() {
-            if (actualData.length <= 1) return "Tueste incompleto o sin datos suficientes para analizar.";
-            
-            let erroresFase = { Secado: 0, Maillard: 0, Desarrollo: 0 };
-            let conteoFase = { Secado: 0, Maillard: 0, Desarrollo: 0 };
-            
-            for (let i = 1; i < actualData.length; i++) {
-                if (i < sequenceData.length) {
-                    let expectedSec = sequenceData[i].seconds;
-                    let realSec = actualData[i].seconds;
-                    let letra = sequenceData[i].faseLetra;
-                    let errorSecs = Math.abs(expectedSec - realSec);
-                    
-                    let fase = "Secado"; 
-                    if (letra === 'M') fase = "Maillard";
-                    if (letra === '1' || letra === 'D') fase = "Desarrollo";
-                    
-                    erroresFase[fase] += errorSecs;
-                    conteoFase[fase]++;
-                }
+            // 1. Forma (40%) - Correlación de Pearson
+            let r = 0;
+            if (n > 1) {
+                let denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                if (denominator !== 0) r = (n * sumXY - sumX * sumY) / denominator;
+            } else { r = 1; }
+            let scoreShape = Math.max(0, r) * 40;
+
+            // 2. Energía (30%) - Penalizaciones por inestabilidad
+            let rorPenalty = (flicks * 5) + (crashes * 3);
+            let stdDev = 0;
+            if (rorValues.length > 0) {
+                let mean = rorValues.reduce((a, b) => a + b, 0) / rorValues.length;
+                let variance = rorValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / rorValues.length;
+                stdDev = Math.sqrt(variance);
             }
+            let stdPenalty = stdDev > 2.0 ? (stdDev - 2.0) * 2 : 0;
+            let scoreEnergy = Math.max(0, 30 - rorPenalty - stdPenalty);
+
+            // 3. Desviación de Tolerancia (20%)
+            let avgDev = timeScores.length > 0 ? timeScores.reduce((a,b)=>a+b,0)/timeScores.length : 0;
+            let scoreDev = avgDev * 20;
+
+            // 4. Tiempo Total (10%)
+            let scoreTime = 0;
+            let lastMatched = Math.min(actData.length - 1, seqData.length - 1);
+            if (lastMatched > 0) {
+                let lastTeo = seqData[lastMatched].seconds; 
+                let lastAct = actData[lastMatched].seconds;
+                let totalDiff = Math.abs(lastTeo - lastAct);
+                let ratio = lastTeo > 0 ? totalDiff / lastTeo : 0;
+                scoreTime = Math.max(0, (1 - (ratio / 0.2))) * 10;
+            }
+
+            let totalScore = Math.min(100, Math.max(0, Math.round(scoreShape + scoreEnergy + scoreDev + scoreTime)));
             
-            let promErrores = {
-                Secado: conteoFase.Secado > 0 ? erroresFase.Secado / conteoFase.Secado : 0,
-                Maillard: conteoFase.Maillard > 0 ? erroresFase.Maillard / conteoFase.Maillard : 0,
-                Desarrollo: conteoFase.Desarrollo > 0 ? erroresFase.Desarrollo / conteoFase.Desarrollo : 0
+            return {
+                total: totalScore,
+                shape: scoreShape,
+                energy: scoreEnergy,
+                dev: scoreDev,
+                time: scoreTime,
+                r: r
             };
+        }
+
+        function generarAnalisis(details, actData) {
+            if (actData.length <= 1) return "Tueste incompleto o sin datos suficientes para analizar.";
             
-            let faseCritica = "Secado";
-            let maxError = promErrores.Secado;
+            let html = `<div style="margin-bottom: 10px; text-align: center; font-weight: bold;">Desglose Termodinámico:</div>`;
+            html += `<ul style="padding-left: 20px; margin-top: 5px; margin-bottom: 0;">`;
             
-            if (promErrores.Maillard > maxError) { faseCritica = "Maillard"; maxError = promErrores.Maillard; }
-            if (promErrores.Desarrollo > maxError) { faseCritica = "Desarrollo"; maxError = promErrores.Desarrollo; }
+            html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.r >= 0.98) ? 'Excelente correlación con la tendencia del perfil.' : 'Se detectaron distorsiones en la progresión.'}</span></li>`;
             
-            if (maxError < 3) {
-                 return "<strong>¡Excelente consistencia!</strong> Las variaciones fueron mínimas. El tueste fue sumamente estable.";
-            }
-            return `La mayor cantidad de errores de precisión se concentró en la <strong>Fase de ${faseCritica}</strong>.`;
+            html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por cambios bruscos o exceso de oscilación.'}</span></li>`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Tolerancia de Hitos (20%):</strong> Obtenido ${Math.round(details.dev)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.dev >= 16) ? 'Tiempos muy ajustados a la curva ideal.' : 'Desfasajes de tiempo fuera del margen de gracia.'}</span></li>`;
+            
+            html += `<li><strong>Cierre de Tiempo (10%):</strong> Obtenido ${Math.round(details.time)} pts.</li>`;
+            
+            html += `</ul>`;
+            return html;
         }
 
         function generarEstadisticasRoR(actData) {
@@ -594,7 +638,6 @@
 
             for (let i = 1; i < actData.length; i++) {
                 let pt = actData[i];
-                // Solo incluir si no es un punto de inicialización
                 if (pt.rorEma !== null && pt.rorEma !== undefined && !pt.isInit) {
                     let f = pt.fase;
                     if (f === '1' || f === 'C') f = f === '1' ? 'D' : 'S'; 
@@ -921,8 +964,9 @@
             const perfil = document.getElementById('perfil').value;
             const fecha = new Date().toLocaleString();
             
-            currentRoastScore = generateFinalScore();
-            const textoAnalisis = generarAnalisis();
+            const precis = calcularPrecision(sequenceData, actualData);
+            currentRoastScore = precis.total;
+            const textoAnalisis = generarAnalisis(precis, actualData);
 
             currentRoastExportData = {
                 fecha: fecha,
@@ -932,7 +976,8 @@
                 score: currentRoastScore,
                 analisis: textoAnalisis,
                 secuencia_teorica: sequenceData,
-                puntos_reales: actualData
+                puntos_reales: actualData,
+                desglose_calificacion: precis
             };
 
             let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
@@ -1118,8 +1163,10 @@
                     sequenceData = loadedData.secuencia_teorica;
                     actualData = loadedData.puntos_reales;
                     
-                    loadedData.score = generateFinalScore();
-                    loadedData.analisis = generarAnalisis(); 
+                    const precis = calcularPrecision(sequenceData, actualData);
+                    loadedData.score = precis.total;
+                    loadedData.analisis = generarAnalisis(precis, actualData);
+                    loadedData.desglose_calificacion = precis;
                     
                     sequenceData = tempSeq;
                     actualData = tempAct;
@@ -1144,4 +1191,3 @@
     </script>
 </body>
 </html>
-

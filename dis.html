@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1f2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Plano Fácil</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0ece3; --surface: #ffffff; --surface2: #f5f1ea; --surface3: #ebe5d8;
+    --accent: #2563eb; --accent2: #7c3abf; --green: #16a34a; --red: #dc2626; --yellow: #d97706;
+    --text: #1a1a2e; --text2: #4a4a6a; --text3: #8a8aaa;
+    --border: #d0c8b8; --wall: #1a1a2e; --grid: rgba(79,142,247,0.08);
+    --radius: 10px; --radius-sm: 6px; --shadow: 0 4px 24px rgba(0,0,0,0.12);
+    --tool-h: 72px; --top-h: 52px;
+  }
+  html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; touch-action:none; }
+  #app { display:flex; flex-direction:column; height:100%; width:100%; }
+  #topbar { display:flex; align-items:center; gap:4px; padding:4px 6px; background:var(--surface); border-bottom:1px solid var(--border); height:var(--top-h); flex-shrink:0; overflow-x:auto; overflow-y:hidden; }
+  #topbar::-webkit-scrollbar { display:none; }
+  #canvas-area { flex:1; position:relative; overflow:hidden; }
+  #canvas-wrap { position:absolute; inset:0; }
+  #mainCanvas { display:block; cursor:crosshair; touch-action:none; }
+  #toolbar { display:flex; align-items:center; gap:6px; padding:6px 8px; background:var(--surface); border-top:1px solid var(--border); height:var(--tool-h); overflow-x:auto; flex-shrink:0; }
+  #toolbar::-webkit-scrollbar { display:none; }
+  .btn { display:flex; flex-direction:column; align-items:center; justify-content:center; border:none; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.15s; user-select:none; -webkit-tap-highlight-color:transparent; white-space:nowrap; }
+  .btn-top { background:var(--surface2); color:var(--text); padding:5px 10px; font-size:11px; gap:2px; min-width:44px; height:38px; border:1px solid var(--border); }
+  .btn-top .icon { font-size:14px; line-height:1; }
+  .btn-top .lbl { font-size:9px; color:var(--text2); }
+  .btn-top:active, .btn-top.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-tool { background:var(--surface2); color:var(--text); padding:4px 6px; font-size:11px; gap:2px; min-width:52px; height:56px; border:2px solid transparent; flex-shrink:0; }
+  .btn-tool .icon { font-size:20px; line-height:1; }
+  .btn-tool .lbl { font-size:9px; color:var(--text2); line-height:1.2; text-align:center; }
+  .btn-tool:active, .btn-tool.active { border-color:var(--accent); background:var(--surface3); color:var(--accent); }
+  .btn-tool.active .lbl { color:var(--accent); }
+  .sep { width:1px; height:32px; background:var(--border); flex-shrink:0; }
+  .panel { position:absolute; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); z-index:100; }
+  .panel h3 { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
+  .panel-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .panel-row label { font-size:11px; color:var(--text2); flex:0 0 80px; }
+  .panel-row input, .panel-row select { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:5px 8px; font-size:12px; }
+  .panel-close { position:absolute; top:10px; right:10px; background:none; border:none; color:var(--text2); font-size:18px; cursor:pointer; padding:2px 6px; }
+  .panel-close:active { color:var(--text); }
+  #propsPanel { right:6px; top:calc(var(--top-h) + 8px); width:210px; display:none; }
+  #propsPanel.visible { display:block; }
+  #layersPanel { left:6px; top:calc(var(--top-h) + 8px); width:160px; display:none; }
+  #layersPanel.visible { display:block; }
+  .layer-row { display:flex; align-items:center; gap:6px; padding:5px 4px; border-radius:var(--radius-sm); margin-bottom:3px; cursor:pointer; }
+  .layer-row:active { background:var(--surface2); }
+  .layer-eye { background:none; border:none; font-size:14px; cursor:pointer; color:var(--text2); padding:0 2px; }
+  .layer-eye.hidden { opacity:0.3; }
+  .layer-name { font-size:11px; color:var(--text); flex:1; }
+  #gridPanel { left:50%; top:calc(var(--top-h)+8px); transform:translateX(-50%); width:200px; display:none; }
+  #gridPanel.visible { display:block; }
+  #roomModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; }
+  #roomModal.visible { display:flex; }
+  #roomModalBox { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; width:280px; }
+  #roomModalBox h3 { font-size:14px; margin-bottom:14px; color:var(--text); }
+  .room-opt { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+  .room-opt-btn { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; font-size:13px; cursor:pointer; color:var(--text); transition:all 0.15s; text-align:center; }
+  .room-opt-btn:active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .modal-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; }
+  #aiPanel { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:flex-end; justify-content:center; }
+  #aiPanel.visible { display:flex; }
+  #aiBox { background:var(--surface); border-top:1px solid var(--border); border-radius:16px 16px 0 0; padding:20px; width:100%; max-width:480px; }
+  #aiBox h3 { font-size:15px; margin-bottom:12px; color:var(--text); }
+  #aiBox textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:10px; font-size:13px; min-height:90px; resize:none; margin-bottom:10px; font-family:inherit; }
+  #aiBox .btn-primary { width:100%; background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); padding:13px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:8px; }
+  #aiBox .btn-primary:active { filter:brightness(0.85); }
+  #aiBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; }
+  #matsPanel { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:flex-end; justify-content:center; }
+  #matsPanel.visible { display:flex; }
+  #matsBox { background:var(--surface); border-top:1px solid var(--border); border-radius:16px 16px 0 0; padding:20px; width:100%; max-width:480px; max-height:70vh; overflow-y:auto; }
+  #matsBox h3 { font-size:15px; margin-bottom:14px; color:var(--text); }
+  #matsBox table { width:100%; border-collapse:collapse; font-size:12px; }
+  #matsBox td, #matsBox th { padding:7px 6px; border-bottom:1px solid var(--border); }
+  #matsBox th { color:var(--text2); font-weight:500; text-align:left; }
+  #matsBox td:last-child { text-align:right; color:var(--accent); font-weight:600; }
+  #matsBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; margin-top:14px; }
+  #furnPanel { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:flex-end; justify-content:center; }
+  #furnPanel.visible { display:flex; }
+  #furnBox { background:var(--surface); border-top:1px solid var(--border); border-radius:16px 16px 0 0; padding:16px; width:100%; max-width:480px; max-height:65vh; overflow-y:auto; }
+  #furnBox h3 { font-size:14px; margin-bottom:12px; color:var(--text); }
+  .furn-category { margin-bottom:12px; }
+  .furn-cat-title { font-size:11px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin-bottom:7px; }
+  .furn-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .furn-item { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 4px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; font-size:11px; color:var(--text2); text-align:center; transition:all 0.15s; }
+  .furn-item .fi { font-size:22px; }
+  .furn-item:active { border-color:var(--accent); color:var(--accent); background:#eef2ff; }
+  #furnBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; margin-top:12px; }
+  #projModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; }
+  #projModal.visible { display:flex; }
+  #projBox { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; width:300px; }
+  #projBox h3 { font-size:14px; margin-bottom:14px; }
+  #projBox input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:8px 10px; font-size:13px; margin-bottom:10px; }
+  .proj-list { max-height:220px; overflow-y:auto; margin-bottom:10px; }
+  .proj-item { display:flex; align-items:center; padding:8px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom:6px; cursor:pointer; background:var(--surface2); transition:border-color 0.15s; }
+  .proj-item:active { border-color:var(--accent); }
+  .proj-item-name { flex:1; font-size:13px; }
+  .proj-item-date { font-size:10px; color:var(--text3); }
+  .proj-del { background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:2px 6px; }
+  #projBox .btn-primary { width:100%; background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:8px; }
+  #projBox .btn-primary:active { filter:brightness(0.85); }
+  #projBox .btn-cancel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; color:var(--text2); cursor:pointer; font-size:13px; }
+  #toast { position:fixed; bottom:calc(var(--tool-h)+16px); left:50%; transform:translateX(-50%); background:var(--surface3); color:var(--text); padding:9px 18px; border-radius:20px; font-size:13px; z-index:300; opacity:0; transition:opacity 0.3s; pointer-events:none; border:1px solid var(--border); white-space:nowrap; }
+  #toast.show { opacity:1; }
+  #coords { position:absolute; bottom:8px; left:8px; background:rgba(255,255,255,0.92); color:var(--text2); font-size:10px; padding:3px 8px; border-radius:20px; pointer-events:none; font-family:monospace; border:1px solid var(--border); z-index:10; }
+  #zoomCtrl { position:absolute; right:8px; bottom:8px; display:flex; flex-direction:column; gap:6px; z-index:10; }
+  .zoom-btn { width:38px; height:38px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:background 0.15s; }
+  .zoom-btn:active { background:var(--surface3); }
+  #snapDot { position:absolute; width:10px; height:10px; background:var(--green); border-radius:50%; pointer-events:none; display:none; transform:translate(-50%,-50%); box-shadow:0 0 6px var(--green); z-index:10; }
+  #projName { font-size:12px; font-weight:600; color:var(--text); padding:0 8px; flex-shrink:0; white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis; }
+  #loading { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; z-index:999; }
+  #loading .logo { font-size:32px; font-weight:700; color:var(--accent); letter-spacing:-0.5px; }
+  #loading .sub { font-size:13px; color:var(--text2); }
+  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:var(--surface); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+  @media (max-width:600px) {
+    .btn-top { min-width:38px; padding:4px 6px; }
+    .btn-top .lbl { display:none; }
+    .btn-tool { min-width:44px; height:50px; }
+    .btn-tool .lbl { font-size:8px; }
+    #propsPanel { width:180px; right:2px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="logo">Plano Fácil</div>
+  <div class="spinner"></div>
+  <div class="sub">Cargando herramientas...</div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <span id="projName">Sin titulo</span>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="newProject()"><span class="icon">+</span><span class="lbl">Nuevo</span></button>
+    <button class="btn btn-top" onclick="openProject()"><span class="icon">&#128194;</span><span class="lbl">Abrir</span></button>
+    <button class="btn btn-top" onclick="saveProject()"><span class="icon">&#128190;</span><span class="lbl">Guardar</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="undo()"><span class="icon">&#8617;</span><span class="lbl">Deshacer</span></button>
+    <button class="btn btn-top" onclick="redo()"><span class="icon">&#8618;</span><span class="lbl">Rehacer</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="exportPNG()"><span class="icon">&#128444;</span><span class="lbl">PNG</span></button>
+    <button class="btn btn-top" onclick="exportPDF()"><span class="icon">&#128196;</span><span class="lbl">PDF</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="toggleLayers()"><span class="icon">&#128203;</span><span class="lbl">Capas</span></button>
+    <button class="btn btn-top" onclick="toggleGrid()"><span class="icon">&#8862;</span><span class="lbl">Cuadricula</span></button>
+    <button class="btn btn-top" onclick="openAI()"><span class="icon">&#129302;</span><span class="lbl">IA</span></button>
+    <button class="btn btn-top" onclick="showMaterials()"><span class="icon">&#128202;</span><span class="lbl">Materiales</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-top" onclick="deleteSelected()"><span class="icon">&#128465;</span><span class="lbl">Borrar</span></button>
+    <button class="btn btn-top" onclick="selectAll()"><span class="icon">&#9633;</span><span class="lbl">Todo</span></button>
+  </div>
+
+  <div id="canvas-area">
+    <div id="canvas-wrap"><canvas id="mainCanvas"></canvas></div>
+    <div id="coords">X: 0.00m  Y: 0.00m</div>
+    <div id="snapDot"></div>
+
+    <div class="panel" id="propsPanel">
+      <button class="panel-close" onclick="closePanelProps()">&times;</button>
+      <h3>Propiedades</h3>
+      <div class="panel-row"><label id="lblName">Nombre</label><input id="pName" type="text" oninput="updateProp('name',this.value)"></div>
+      <div class="panel-row"><label id="lblW">Ancho (m)</label><input id="pW" type="number" step="0.05" oninput="updateProp('w',this.value)"></div>
+      <div class="panel-row"><label id="lblH">Alto (m)</label><input id="pH" type="number" step="0.05" oninput="updateProp('h',this.value)"></div>
+      <div class="panel-row"><label>X (m)</label><input id="pX" type="number" step="0.05" oninput="updateProp('x',this.value)"></div>
+      <div class="panel-row"><label>Y (m)</label><input id="pY" type="number" step="0.05" oninput="updateProp('y',this.value)"></div>
+      <div class="panel-row"><label>Rotacion</label><input id="pRot" type="number" step="5" oninput="updateProp('rot',this.value)"></div>
+      <div class="panel-row"><label>Color</label><input id="pColor" type="color" oninput="updateProp('color',this.value)"></div>
+      <div class="panel-row"><label>Grosor (m)</label><input id="pThick" type="number" step="0.01" oninput="updateProp('thick',this.value)"></div>
+      <div class="panel-row"><label>Area</label><input id="pArea" type="text" readonly style="background:var(--surface2);border-color:transparent;color:var(--green);font-weight:600;"></div>
+    </div>
+
+    <div class="panel" id="layersPanel">
+      <button class="panel-close" onclick="toggleLayers()">&times;</button>
+      <h3>Capas</h3>
+      <div id="layerList"></div>
+    </div>
+
+    <div class="panel" id="gridPanel">
+      <button class="panel-close" onclick="toggleGridPanel()">&times;</button>
+      <h3>Cuadricula</h3>
+      <div class="panel-row"><label>Tamano</label>
+        <select id="gridSize" onchange="setGridSize(this.value)">
+          <option value="0.1">10 cm</option>
+          <option value="0.2">20 cm</option>
+          <option value="0.5" selected>50 cm</option>
+          <option value="1">1 metro</option>
+        </select>
+      </div>
+      <div class="panel-row"><label>Mostrar</label><input type="checkbox" id="showGrid" checked onchange="toggleGridVisible(this.checked)"></div>
+      <div class="panel-row"><label>Snap</label><input type="checkbox" id="snapGrid" checked onchange="toggleSnap(this.checked)"></div>
+    </div>
+
+    <div id="zoomCtrl">
+      <button class="zoom-btn" onclick="zoomIn()">+</button>
+      <button class="zoom-btn" onclick="zoomOut()">&minus;</button>
+      <button class="zoom-btn" onclick="resetView()" style="font-size:12px">&#9678;</button>
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <button class="btn btn-tool active" id="tool-select" onclick="setTool('select')"><span class="icon">&#8617;</span><span class="lbl">Seleccionar</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-wall" onclick="setTool('wall')"><span class="icon">&#127968;</span><span class="lbl">Muros</span></button>
+    <button class="btn btn-tool" id="tool-door" onclick="setTool('door')"><span class="icon">&#128682;</span><span class="lbl">Puertas</span></button>
+    <button class="btn btn-tool" id="tool-window" onclick="setTool('window')"><span class="icon">&#128434;</span><span class="lbl">Ventanas</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-room" onclick="setTool('room')"><span class="icon">&#128719;</span><span class="lbl">Habitacion</span></button>
+    <button class="btn btn-tool" id="tool-furniture" onclick="openFurnPanel()"><span class="icon">&#128715;</span><span class="lbl">Mobiliario</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-dim" onclick="setTool('dim')"><span class="icon">&#128207;</span><span class="lbl">Cotas</span></button>
+    <button class="btn btn-tool" id="tool-text" onclick="setTool('text')"><span class="icon">&#128221;</span><span class="lbl">Texto</span></button>
+    <button class="btn btn-tool" id="tool-rect" onclick="setTool('rect')"><span class="icon">&#9633;</span><span class="lbl">Rectangulo</span></button>
+    <button class="btn btn-tool" id="tool-circle" onclick="setTool('circle')"><span class="icon">&#9899;</span><span class="lbl">Circulo</span></button>
+    <div class="sep"></div>
+    <button class="btn btn-tool" id="tool-measure" onclick="setTool('measure')"><span class="icon">&#128208;</span><span class="lbl">Medir</span></button>
+    <div class="sep"></div>
+    <select id="wallThick" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:var(--radius-sm);font-size:11px;height:40px;">
+      <option value="0.10">Muro 10cm</option>
+      <option value="0.15" selected>Muro 15cm</option>
+      <option value="0.20">Muro 20cm</option>
+      <option value="0.25">Muro 25cm</option>
+    </select>
+    <select id="doorSize" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:var(--radius-sm);font-size:11px;height:40px;">
+      <option value="0.70">Puerta 70cm</option>
+      <option value="0.80" selected>Puerta 80cm</option>
+      <option value="0.90">Puerta 90cm</option>
+      <option value="1.00">Puerta 100cm</option>
+    </select>
+    <select id="winSize" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:var(--radius-sm);font-size:11px;height:40px;">
+      <option value="0.60">Ventana 60cm</option>
+      <option value="0.80" selected>Ventana 80cm</option>
+      <option value="1.00">Ventana 100cm</option>
+      <option value="1.20">Ventana 120cm</option>
+      <option value="1.50">Ventana 150cm</option>
+      <option value="2.00">Ventana 200cm</option>
+    </select>
+  </div>
+</div>
+
+<div id="roomModal">
+  <div id="roomModalBox">
+    <h3>Tipo de espacio</h3>
+    <div class="room-opt" id="roomOpts"></div>
+    <button class="modal-cancel" onclick="closeRoomModal()">Cancelar</button>
+  </div>
+</div>
+
+<div id="aiPanel">
+  <div id="aiBox">
+    <h3>Generar Plano con IA</h3>
+    <textarea id="aiPrompt" placeholder='Ejemplo: "Casa de 8x15 m con dormitorio de 4.5x4.5 m, bano 1.5x3 m, cocina 3x6 m y sala-comedor."'></textarea>
+    <button class="btn-primary" onclick="generateWithAI()">Generar</button>
+    <button class="btn-cancel" onclick="closeAI()">Cancelar</button>
+  </div>
+</div>
+
+<div id="matsPanel">
+  <div id="matsBox">
+    <h3>Estimador de Materiales</h3>
+    <div id="matsContent"></div>
+    <button class="btn-cancel" onclick="closeMaterials()">Cerrar</button>
+  </div>
+</div>
+
+<div id="furnPanel">
+  <div id="furnBox">
+    <h3>Mobiliario</h3>
+    <div id="furnContent"></div>
+    <button class="btn-cancel" onclick="closeFurnPanel()">Cerrar</button>
+  </div>
+</div>
+
+<div id="projModal">
+  <div id="projBox">
+    <h3 id="projModalTitle">Guardar proyecto</h3>
+    <input type="text" id="projNameInput" placeholder="Nombre del proyecto">
+    <div class="proj-list" id="projList"></div>
+    <button class="btn-primary" id="projSaveBtn" onclick="doSaveProject()">Guardar</button>
+    <button class="btn-cancel" onclick="closeProjModal()">Cancelar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// =====================================================================
+// PLANO FACIL - Aplicacion completa
+// =====================================================================
+
+const M = 60; // pixeles por metro a zoom=1
+
+// ---- Estado global ----
+const state = {
+  tool: 'select', zoom: 1, panX: 0, panY: 0,
+  gridSize: 0.5, showGrid: true, snapGrid: true,
+  elements: [], selected: [],
+  layers: { wall:true, door:true, window:true, furniture:true, text:true, dim:true, room:true, shape:true },
+  history: [], historyIdx: -1,
+  wallThick: 0.15, doorSize: 0.80, winSize: 0.80,
+  projectName: 'Sin titulo', projectId: null,
+};
+
+// ---- Variables de interaccion ----
+let drawing = false, drawStart = null, drawCurrent = null;
+let isPanning = false, isDragging = false, isRotating = false;
+let dragStartWorld = null, panStartX = 0, panStartY = 0;
+let rotCenter = null, rotStartAngle = 0, rotElStart = 0;
+let pinchStartDist = 0, pinchStartZoom = 1;
+let pendingRoomRect = null;
+let measurePoints = [], wallPoints = [];
+let wallHistoryPushed = false, propHistoryPushed = false;
+let propDebounce = null;
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const snapDot = document.getElementById('snapDot');
+const pointers = new Map();
+let elId = 1;
+
+// =====================================================================
+// INIT
+// =====================================================================
+window.addEventListener('load', () => {
+  resizeCanvas();
+  resetView();
+  pushHistory(); // guardar estado inicial vacio
+  syncSelects();
+  renderLayerList();
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    drawAll();
+    showToast('Bienvenido a Plano Facil');
+  }, 600);
+});
+window.addEventListener('resize', () => { resizeCanvas(); drawAll(); });
+
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  canvas.width = area.offsetWidth;
+  canvas.height = area.offsetHeight;
+}
+
+function resetView() {
+  const area = document.getElementById('canvas-area');
+  state.panX = (area.offsetWidth || canvas.width) / 2;
+  state.panY = (area.offsetHeight || canvas.height) / 2;
+  state.zoom = 1;
+  drawAll();
+}
+
+function syncSelects() {
+  document.getElementById('wallThick').addEventListener('change', e => { state.wallThick = parseFloat(e.target.value); });
+  document.getElementById('doorSize').addEventListener('change', e => { state.doorSize = parseFloat(e.target.value); });
+  document.getElementById('winSize').addEventListener('change', e => { state.winSize = parseFloat(e.target.value); });
+}
+
+// =====================================================================
+// COORDENADAS
+// =====================================================================
+function worldToScreen(wx, wy) {
+  return { x: state.panX + wx * M * state.zoom, y: state.panY + wy * M * state.zoom };
+}
+function screenToWorld(sx, sy) {
+  return { x: (sx - state.panX) / (M * state.zoom), y: (sy - state.panY) / (M * state.zoom) };
+}
+function snapWorld(wx, wy) {
+  if (!state.snapGrid) return { x: wx, y: wy };
+  const s = state.gridSize;
+  return { x: Math.round(wx / s) * s, y: Math.round(wy / s) * s };
+}
+function pxPerM() { return M * state.zoom; }
+
+// =====================================================================
+// DIBUJO - Cuadricula
+// =====================================================================
+function drawAll() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#f5f0e8';
+  ctx.fillRect(0, 0, W, H);
+  if (state.showGrid) drawGrid(W, H);
+
+  const layerOrder = ['room','wall','door','window','furniture','shape','dim','text'];
+  for (const layer of layerOrder) {
+    if (!state.layers[layer]) continue;
+    for (const el of state.elements) {
+      if (el.layer !== layer) continue;
+      drawElement(el);
+    }
+  }
+
+  if (drawing && drawStart && drawCurrent) drawPreview();
+  if (wallPoints.length > 0) drawWallPreview();
+  if (measurePoints.length === 1 && drawCurrent) drawMeasurePreview();
+  for (const el of state.selected) drawHandles(el);
+}
+
+function drawGrid(W, H) {
+  const s = state.gridSize * M * state.zoom;
+  if (s < 5) return;
+  const offX = ((state.panX % s) + s) % s;
+  const offY = ((state.panY % s) + s) % s;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(160,140,100,0.2)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  for (let x = offX; x < W; x += s) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = offY; y < H; y += s) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+
+  const mS = 1 * M * state.zoom;
+  if (mS > 20) {
+    const mOx = ((state.panX % mS) + mS) % mS;
+    const mOy = ((state.panY % mS) + mS) % mS;
+    ctx.strokeStyle = 'rgba(160,140,100,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = mOx; x < W; x += mS) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let y = mOy; y < H; y += mS) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+    if (mS > 40) {
+      ctx.fillStyle = 'rgba(140,120,80,0.6)';
+      ctx.font = '9px monospace';
+      for (let x = mOx; x < W; x += mS) {
+        ctx.fillText(Math.round((x - state.panX) / (M * state.zoom)) + 'm', x + 2, 10);
+      }
+      for (let y = mOy; y < H; y += mS) {
+        ctx.fillText(Math.round((y - state.panY) / (M * state.zoom)) + 'm', 2, y - 2);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+// =====================================================================
+// DIBUJO - Elementos
+// =====================================================================
+function drawElement(el) {
+  ctx.save();
+  const ppm = pxPerM();
+  const sp = worldToScreen(el.x, el.y);
+  ctx.translate(sp.x, sp.y);
+  if (el.rotation) ctx.rotate(el.rotation * Math.PI / 180);
+  switch (el.type) {
+    case 'room': drawRoom(ctx, el, ppm); break;
+    case 'wall': drawWall(ctx, el, ppm); break;
+    case 'door': drawDoor(ctx, el, ppm); break;
+    case 'window': drawWindowEl(ctx, el, ppm); break;
+    case 'furniture': drawFurniture(ctx, el, ppm); break;
+    case 'text': drawTextEl(ctx, el, ppm); break;
+    case 'dim': drawDim(ctx, el, ppm); break;
+    case 'rect': drawRectEl(ctx, el, ppm); break;
+    case 'circle': drawCircleEl(ctx, el, ppm); break;
+  }
+  ctx.restore();
+}
+
+function drawRoom(c, el, ppm) {
+  const w = el.w * ppm, h = el.h * ppm;
+  c.fillStyle = el.color || 'rgba(245,235,210,0.6)';
+  c.fillRect(0, 0, w, h);
+  c.strokeStyle = '#1a1a2e';
+  c.lineWidth = (el.thick || 0.15) * ppm;
+  c.strokeRect(0, 0, w, h);
+  c.fillStyle = '#333';
+  c.font = `bold ${Math.max(10, Math.min(16, w/8))}px 'Segoe UI',sans-serif`;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(el.name || 'Espacio', w/2, h/2 - 10);
+  c.font = `${Math.max(8, Math.min(12, w/10))}px 'Segoe UI',sans-serif`;
+  c.fillStyle = '#666';
+  c.fillText(`${el.w.toFixed(2)}m x ${el.h.toFixed(2)}m`, w/2, h/2 + 8);
+  c.fillText(`${(el.w * el.h).toFixed(2)} m2`, w/2, h/2 + 22);
+  drawInlineDims(c, el, ppm);
+}
+
+function drawInlineDims(c, el, ppm) {
+  const w = el.w * ppm, h = el.h * ppm, off = 18;
+  c.strokeStyle = '#888'; c.lineWidth = 1; c.fillStyle = '#555'; c.font = '9px monospace'; c.textAlign = 'center';
+  c.beginPath(); c.moveTo(0,-off); c.lineTo(w,-off); c.stroke();
+  c.beginPath(); c.moveTo(0,-off-5); c.lineTo(0,-off+5); c.stroke();
+  c.beginPath(); c.moveTo(w,-off-5); c.lineTo(w,-off+5); c.stroke();
+  c.fillText(el.w.toFixed(2)+'m', w/2, -off-7);
+  c.save(); c.translate(-off, h/2); c.rotate(-Math.PI/2);
+  c.fillText(el.h.toFixed(2)+'m', 0, -7); c.restore();
+  c.beginPath(); c.moveTo(-off,0); c.lineTo(-off,h); c.stroke();
+  c.beginPath(); c.moveTo(-off-5,0); c.lineTo(-off+5,0); c.stroke();
+  c.beginPath(); c.moveTo(-off-5,h); c.lineTo(-off+5,h); c.stroke();
+}
+
+function drawWall(c, el, ppm) {
+  const len = el.len * ppm, thick = (el.thick || 0.15) * ppm;
+  c.fillStyle = el.color || '#2a2a40';
+  c.fillRect(0, -thick/2, len, thick);
+  c.save(); c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 0.5; c.beginPath();
+  for (let i = 0; i < len; i += 8) { c.moveTo(i, -thick/2); c.lineTo(i + thick, thick/2); }
+  c.stroke(); c.restore();
+}
+
+function drawDoor(c, el, ppm) {
+  const w = el.w * ppm, th = (el.thick||0.15)*ppm, fw = 4;
+  c.fillStyle = '#f5f0e8'; c.fillRect(0, -th/2, w, th);
+  c.strokeStyle = '#1a1a2e'; c.lineWidth = 3; c.strokeRect(0, -th/2-fw, w, th+fw*2);
+  c.strokeStyle = '#333'; c.lineWidth = 2; c.beginPath(); c.moveTo(0,0); c.lineTo(w,0); c.stroke();
+  c.beginPath(); c.strokeStyle = '#666'; c.lineWidth = 1.5; c.setLineDash([4,3]);
+  c.arc(0, 0, w, 0, Math.PI/2); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#555'; c.font = '9px monospace'; c.textAlign = 'center';
+  c.fillText(el.w.toFixed(2)+'m', w/2, -20);
+}
+
+function drawWindowEl(c, el, ppm) {
+  const w = el.w * ppm, th = (el.thick||0.15)*ppm;
+  c.fillStyle = '#e8f0ff'; c.fillRect(0, -th/2, w, th);
+  c.strokeStyle = '#1a1a2e'; c.lineWidth = 2.5; c.strokeRect(0, -th/2, w, th);
+  c.strokeStyle = '#7ca8ff'; c.lineWidth = 1.5; c.beginPath();
+  c.moveTo(w*0.33,-th/2); c.lineTo(w*0.33,th/2);
+  c.moveTo(w*0.67,-th/2); c.lineTo(w*0.67,th/2); c.stroke();
+  c.fillStyle = '#555'; c.font = '9px monospace'; c.textAlign = 'center';
+  c.fillText(el.w.toFixed(2)+'m', w/2, -th/2-8);
+}
+
+function drawFurniture(c, el, ppm) {
+  const w = el.w * ppm, h = el.h * ppm;
+  c.fillStyle = el.color || 'rgba(180,160,130,0.3)';
+  c.strokeStyle = '#555'; c.lineWidth = 1.5;
+  switch (el.furnitureType) {
+    case 'bed-single':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+      c.fillStyle='#ddd'; c.fillRect(w*0.1,h*0.05,w*0.8,h*0.2); c.strokeRect(w*0.1,h*0.05,w*0.8,h*0.2); break;
+    case 'bed-double': case 'bed-queen': case 'bed-king':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+      c.fillStyle='#ddd';
+      c.fillRect(w*0.05,h*0.05,w*0.42,h*0.2); c.strokeRect(w*0.05,h*0.05,w*0.42,h*0.2);
+      c.fillRect(w*0.53,h*0.05,w*0.42,h*0.2); c.strokeRect(w*0.53,h*0.05,w*0.42,h*0.2); break;
+    case 'sofa':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+      c.fillStyle='rgba(0,0,0,0.1)'; c.fillRect(0,h*0.6,w,h*0.4); c.fillRect(0,0,w*0.15,h); c.fillRect(w*0.85,0,w*0.15,h); break;
+    case 'toilet':
+      c.beginPath(); c.ellipse(w/2,h*0.55,w*0.45,h*0.4,0,0,Math.PI*2); c.fill(); c.stroke();
+      c.fillStyle=el.color||'rgba(180,160,130,0.3)'; c.fillRect(w*0.1,0,w*0.8,h*0.22); c.strokeRect(w*0.1,0,w*0.8,h*0.22); break;
+    case 'sink':
+      c.beginPath(); c.ellipse(w/2,h/2,w*0.42,h*0.42,0,0,Math.PI*2); c.fill(); c.stroke();
+      c.beginPath(); c.arc(w/2,h/2,5,0,Math.PI*2); c.fillStyle='#888'; c.fill(); break;
+    case 'shower':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+      c.strokeStyle='#7ca8ff'; c.lineWidth=1; c.beginPath(); c.arc(w/2,h/2,Math.min(w,h)*0.3,0,Math.PI*2); c.stroke(); break;
+    case 'kitchen-stove':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+      for(let i=0;i<4;i++){const bx=(i%2)*w*0.5+w*0.15,by=Math.floor(i/2)*h*0.5+h*0.1;
+      c.beginPath();c.arc(bx,by,Math.min(w,h)*0.15,0,Math.PI*2);c.strokeStyle='#555';c.lineWidth=1.5;c.stroke();} break;
+    case 'fridge':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+      c.strokeStyle='#888'; c.beginPath(); c.moveTo(0,h*0.35); c.lineTo(w,h*0.35); c.stroke(); break;
+    case 'car-small': case 'car-medium': case 'car-truck':
+      c.fillStyle='rgba(100,120,160,0.3)'; c.fillRect(0,0,w,h);
+      c.strokeStyle='#4466aa'; c.lineWidth=2; c.strokeRect(0,0,w,h);
+      c.fillStyle='rgba(150,200,255,0.4)'; c.fillRect(w*0.15,h*0.1,w*0.7,h*0.25);
+      c.fillStyle='#333'; [[0.05,0.1],[0.8,0.1],[0.05,0.75],[0.8,0.75]].forEach(([fx,fy])=>{c.fillRect(fx*w,fy*h,w*0.12,h*0.12);}); break;
+    case 'table-4': case 'table-6': case 'table-8':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h); break;
+    case 'tv':
+      c.fillStyle='#222'; c.fillRect(0,0,w,h*0.8);
+      c.strokeStyle='#555'; c.lineWidth=1.5; c.strokeRect(0,0,w,h*0.8); break;
+    case 'wardrobe':
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+      c.beginPath(); c.moveTo(w/2,0); c.lineTo(w/2,h); c.stroke(); break;
+    default:
+      c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+  }
+  c.fillStyle='#333'; c.font=`${Math.max(8,Math.min(11,w/8))}px 'Segoe UI'`;
+  c.textAlign='center'; c.textBaseline='bottom';
+  if (el.name && w>30 && h>20) c.fillText(el.name, w/2, h-2);
+}
+
+function drawTextEl(c, el, ppm) {
+  c.fillStyle = el.color || '#222';
+  c.font = `${(el.fontSize||14) * state.zoom}px 'Segoe UI',sans-serif`;
+  c.textAlign = 'left'; c.textBaseline = 'top';
+  c.fillText(el.text || '', 0, 0);
+}
+
+function drawDim(c, el, ppm) {
+  const len = el.len * ppm, off = 30;
+  c.strokeStyle='#555'; c.fillStyle='#333'; c.lineWidth=1.2; c.font='10px monospace'; c.textAlign='center';
+  c.beginPath(); c.moveTo(0,off); c.lineTo(len,off); c.stroke();
+  c.beginPath(); c.moveTo(0,off-8); c.lineTo(0,off+8); c.moveTo(len,off-8); c.lineTo(len,off+8);
+  c.moveTo(0,0); c.lineTo(0,off); c.moveTo(len,0); c.lineTo(len,off); c.stroke();
+  c.fillText(el.len.toFixed(2)+' m', len/2, off+14);
+}
+
+function drawRectEl(c, el, ppm) {
+  const w = el.w*ppm, h = el.h*ppm;
+  c.fillStyle = el.color || 'rgba(79,142,247,0.1)';
+  c.strokeStyle = el.strokeColor || '#4f8ef7';
+  c.lineWidth = (el.thick||0.02)*ppm;
+  c.fillRect(0,0,w,h); c.strokeRect(0,0,w,h);
+}
+
+function drawCircleEl(c, el, ppm) {
+  const rx = el.w/2*ppm, ry = el.h/2*ppm;
+  c.fillStyle = el.color || 'rgba(79,142,247,0.1)';
+  c.strokeStyle = el.strokeColor || '#4f8ef7';
+  c.lineWidth = (el.thick||0.02)*ppm;
+  c.beginPath(); c.ellipse(rx,ry,rx,ry,0,0,Math.PI*2); c.fill(); c.stroke();
+}
+
+// =====================================================================
+// DIBUJO - Previews y handles
+// =====================================================================
+function drawPreview() {
+  const s = drawStart, c = drawCurrent;
+  const ps = worldToScreen(s.x, s.y), pc = worldToScreen(c.x, c.y);
+  ctx.save(); ctx.setLineDash([6,4]); ctx.strokeStyle='#4f8ef7'; ctx.lineWidth=2;
+  if (state.tool==='room'||state.tool==='rect') {
+    ctx.strokeRect(ps.x,ps.y,pc.x-ps.x,pc.y-ps.y);
+    ctx.fillStyle='rgba(79,142,247,0.08)'; ctx.fillRect(ps.x,ps.y,pc.x-ps.x,pc.y-ps.y);
+    ctx.fillStyle='#4f8ef7'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText(`${Math.abs(c.x-s.x).toFixed(2)}x${Math.abs(c.y-s.y).toFixed(2)}m`, (ps.x+pc.x)/2, (ps.y+pc.y)/2);
+  } else if (state.tool==='circle') {
+    const rx=Math.abs(pc.x-ps.x)/2, ry=Math.abs(pc.y-ps.y)/2;
+    ctx.beginPath(); ctx.ellipse(ps.x+rx*(pc.x>ps.x?1:-1),ps.y+ry*(pc.y>ps.y?1:-1),rx,ry,0,0,Math.PI*2); ctx.stroke();
+  } else if (state.tool==='door'||state.tool==='window') {
+    ctx.strokeRect(ps.x,ps.y-10,pc.x-ps.x,20);
+  } else if (state.tool==='dim') {
+    ctx.beginPath(); ctx.moveTo(ps.x,ps.y+20); ctx.lineTo(pc.x,pc.y+20); ctx.stroke();
+    const d=Math.sqrt((c.x-s.x)**2+(c.y-s.y)**2);
+    ctx.fillStyle='#4f8ef7'; ctx.font='11px monospace'; ctx.fillText(d.toFixed(2)+'m', (ps.x+pc.x)/2, ps.y+15);
+  }
+  ctx.restore();
+}
+
+function drawWallPreview() {
+  const pts = wallPoints;
+  ctx.save();
+  ctx.strokeStyle='#2a2a40'; ctx.lineWidth=state.wallThick*pxPerM(); ctx.lineCap='square';
+  ctx.beginPath();
+  for (let i=0;i<pts.length;i++){const sp=worldToScreen(pts[i].x,pts[i].y);i===0?ctx.moveTo(sp.x,sp.y):ctx.lineTo(sp.x,sp.y);}
+  if (drawCurrent){const sp=worldToScreen(drawCurrent.x,drawCurrent.y);ctx.lineTo(sp.x,sp.y);}
+  ctx.stroke();
+  pts.forEach(p=>{const sp=worldToScreen(p.x,p.y);ctx.beginPath();ctx.arc(sp.x,sp.y,5,0,Math.PI*2);ctx.fillStyle='#4f8ef7';ctx.fill();});
+  ctx.restore();
+}
+
+function drawMeasurePreview() {
+  const p1=worldToScreen(measurePoints[0].x,measurePoints[0].y);
+  const p2=worldToScreen(drawCurrent.x,drawCurrent.y);
+  ctx.save(); ctx.setLineDash([5,3]); ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+  const d=Math.sqrt((drawCurrent.x-measurePoints[0].x)**2+(drawCurrent.y-measurePoints[0].y)**2);
+  ctx.fillStyle='#f59e0b'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+  ctx.fillText(d.toFixed(2)+' m', (p1.x+p2.x)/2, (p1.y+p2.y)/2-10);
+  ctx.restore();
+}
+
+function drawHandles(el) {
+  const sp=worldToScreen(el.x,el.y), ppm=pxPerM();
+  let w=(el.w||el.len||0)*ppm, h=(el.h||0)*ppm;
+  if (el.type==='wall') h=(el.thick||0.15)*ppm;
+  if (el.type==='text') { ctx.font=`${(el.fontSize||14)*state.zoom}px 'Segoe UI'`; w=ctx.measureText(el.text||'').width; h=(el.fontSize||14)*state.zoom*1.2; }
+  if (el.type==='dim') h=40;
+  ctx.save(); ctx.translate(sp.x,sp.y);
+  if (el.rotation) ctx.rotate(el.rotation*Math.PI/180);
+  const pad=6;
+  ctx.strokeStyle='#4f8ef7'; ctx.lineWidth=2; ctx.setLineDash([5,3]);
+  ctx.strokeRect(-pad,-pad,w+pad*2,h+pad*2); ctx.setLineDash([]);
+  [[0,0],[w,0],[0,h],[w,h]].forEach(([cx,cy])=>{
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#4f8ef7'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(cx,cy,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+  ctx.fillStyle='#22c55e'; ctx.strokeStyle='#16a34a';
+  ctx.beginPath(); ctx.arc(w/2,-20,7,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w/2,-13); ctx.lineTo(w/2,-pad); ctx.strokeStyle='#22c55e'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.restore();
+}
+
+// =====================================================================
+// HIT TESTING
+// =====================================================================
+function hitTest(wx, wy, el) {
+  let dx=wx-el.x, dy=wy-el.y;
+  if (el.rotation) {
+    const r=-el.rotation*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+    const rx=dx*c-dy*s, ry=dx*s+dy*c; dx=rx; dy=ry;
+  }
+  let w=el.w||el.len||0, h=el.h||0;
+  if (el.type==='wall') h=el.thick||0.15;
+  if (el.type==='dim') h=0.4;
+  if (el.type==='text') { w=(el.text||'').length*0.08; h=0.25; }
+  const m=0.15;
+  return dx>=-m && dx<=w+m && dy>=-m && dy<=h+m;
+}
+
+function hitRotateHandle(sx, sy, el) {
+  const sp=worldToScreen(el.x,el.y), ppm=pxPerM();
+  let w=(el.w||el.len||0)*ppm;
+  if (el.type==='text'){ctx.font=`${(el.fontSize||14)*state.zoom}px 'Segoe UI'`;w=ctx.measureText(el.text||'').width;}
+  const rad=(el.rotation||0)*Math.PI/180, lx=w/2, ly=-20;
+  const hx=sp.x+lx*Math.cos(rad)-ly*Math.sin(rad);
+  const hy=sp.y+lx*Math.sin(rad)+ly*Math.cos(rad);
+  return Math.hypot(sx-hx,sy-hy)<=14;
+}
+
+// =====================================================================
+// EVENT HANDLERS - Canvas
+// =====================================================================
+canvas.addEventListener('pointerdown', onDown, {passive:false});
+canvas.addEventListener('pointermove', onMove, {passive:false});
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+canvas.addEventListener('dblclick', onDblClick);
+canvas.addEventListener('wheel', onWheel, {passive:false});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function getCanvasPos(e) {
+  const r=canvas.getBoundingClientRect();
+  return {x:e.clientX-r.left, y:e.clientY-r.top};
+}
+
+function onDown(e) {
+  e.preventDefault();
+  const pos=getCanvasPos(e), world=screenToWorld(pos.x,pos.y), snapped=snapWorld(world.x,world.y);
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+  // Pinch zoom inicio
+  if (pointers.size===2) {
+    drawing=false; drawStart=null; isPanning=false; isDragging=false;
+    const [a,b]=[...pointers.values()];
+    pinchStartDist=Math.hypot(a.x-b.x,a.y-b.y);
+    pinchStartZoom=state.zoom;
+    return;
+  }
+
+  // Click derecho o medio = pan siempre
+  if (e.button===1||e.button===2) { isPanning=true; panStartX=pos.x; panStartY=pos.y; return; }
+
+  switch(state.tool) {
+    case 'select': handleSelectDown(pos,world,snapped); break;
+    case 'wall': handleWallDown(snapped); break;
+    case 'room': case 'rect': case 'circle': case 'door': case 'window': case 'dim':
+      drawing=true; drawStart=snapped; drawCurrent=snapped; break;
+    case 'text': handleTextDown(pos); break;
+    case 'measure': handleMeasureDown(snapped); break;
+  }
+  updateSnapDot(pos.x,pos.y,snapped);
+}
+
+function onMove(e) {
+  e.preventDefault();
+  const pos=getCanvasPos(e), world=screenToWorld(pos.x,pos.y), snapped=snapWorld(world.x,world.y);
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+  // Pinch zoom movimiento
+  if (pointers.size>=2) {
+    const [a,b]=[...pointers.values()];
+    const dist=Math.hypot(a.x-b.x,a.y-b.y);
+    if (pinchStartDist>0) {
+      const scale=dist/pinchStartDist;
+      const nz=Math.max(0.1,Math.min(10,pinchStartZoom*scale));
+      const r=canvas.getBoundingClientRect();
+      const mx=((a.x+b.x)/2)-r.left, my=((a.y+b.y)/2)-r.top;
+      state.panX=mx-(mx-state.panX)*(nz/state.zoom);
+      state.panY=my-(my-state.panY)*(nz/state.zoom);
+      state.zoom=nz;
+      drawAll();
+    }
+    return;
+  }
+
+  document.getElementById('coords').textContent=`X: ${snapped.x.toFixed(2)}m  Y: ${snapped.y.toFixed(2)}m`;
+
+  switch(state.tool) {
+    case 'select': handleSelectMove(pos,world); break;
+    case 'wall': drawCurrent=snapped; drawAll(); break;
+    case 'room': case 'rect': case 'circle': case 'door': case 'window': case 'dim':
+      if(drawing){drawCurrent=snapped;drawAll();} break;
+    case 'measure':
+      if(measurePoints.length===1){drawCurrent=snapped;drawAll();} break;
+  }
+  updateSnapDot(pos.x,pos.y,snapped);
+}
+
+function onUp(e) {
+  const pos=e.clientX!==undefined?getCanvasPos(e):null;
+  const world=pos?screenToWorld(pos.x,pos.y):null;
+  const snapped=world?snapWorld(world.x,world.y):null;
+
+  if (pointers.size>=2) { pointers.delete(e.pointerId); pinchStartDist=0; return; }
+  pointers.delete(e.pointerId);
+
+  switch(state.tool) {
+    case 'select': handleSelectUp(); break;
+    case 'room':
+      if (drawing&&drawStart&&drawCurrent) {
+        const w=drawCurrent.x-drawStart.x, h=drawCurrent.y-drawStart.y;
+        if (Math.abs(w)>0.2&&Math.abs(h)>0.2) openRoomModal(drawStart.x,drawStart.y,w,h);
+      }
+      drawing=false; drawStart=null; drawCurrent=null; break;
+    case 'rect':
+      if (drawing&&drawStart&&drawCurrent) {
+        const w=Math.abs(drawCurrent.x-drawStart.x), h=Math.abs(drawCurrent.y-drawStart.y);
+        if (w>0.1&&h>0.1) {
+          pushHistory();
+          const el=makeEl('rect',{x:Math.min(drawStart.x,drawCurrent.x),y:Math.min(drawStart.y,drawCurrent.y),w,h,layer:'shape'});
+          state.elements.push(el); state.selected=[el]; updatePropsPanel();
+        }
+      }
+      drawing=false; drawStart=null; drawCurrent=null; drawAll(); break;
+    case 'circle':
+      if (drawing&&drawStart&&drawCurrent) {
+        const w=Math.abs(drawCurrent.x-drawStart.x), h=Math.abs(drawCurrent.y-drawStart.y);
+        if (w>0.1&&h>0.1) {
+          pushHistory();
+          const el=makeEl('circle',{x:Math.min(drawStart.x,drawCurrent.x),y:Math.min(drawStart.y,drawCurrent.y),w,h,layer:'shape'});
+          state.elements.push(el); state.selected=[el]; updatePropsPanel();
+        }
+      }
+      drawing=false; drawStart=null; drawCurrent=null; drawAll(); break;
+    case 'door':
+      if (drawing&&drawStart&&drawCurrent) {
+        const w=Math.abs(drawCurrent.x-drawStart.x);
+        if (w>0.3) {
+          pushHistory();
+          state.elements.push(makeEl('door',{x:Math.min(drawStart.x,drawCurrent.x),y:drawStart.y,w,thick:state.wallThick,layer:'door'}));
+          showToast('Puerta agregada');
+        }
+      }
+      drawing=false; drawStart=null; drawCurrent=null; drawAll(); break;
+    case 'window':
+      if (drawing&&drawStart&&drawCurrent) {
+        const w=Math.abs(drawCurrent.x-drawStart.x);
+        if (w>0.3) {
+          pushHistory();
+          state.elements.push(makeEl('window',{x:Math.min(drawStart.x,drawCurrent.x),y:drawStart.y,w,thick:state.wallThick,layer:'window'}));
+          showToast('Ventana agregada');
+        }
+      }
+      drawing=false; drawStart=null; drawCurrent=null; drawAll(); break;
+    case 'dim':
+      if (drawing&&drawStart&&drawCurrent) {
+        const dx=drawCurrent.x-drawStart.x, dy=drawCurrent.y-drawStart.y, len=Math.sqrt(dx*dx+dy*dy);
+        if (len>0.1) {
+          pushHistory();
+          const angle=Math.atan2(dy,dx)*180/Math.PI;
+          state.elements.push(makeEl('dim',{x:drawStart.x,y:drawStart.y,len,rotation:angle,layer:'dim'}));
+        }
+      }
+      drawing=false; drawStart=null; drawCurrent=null; drawAll(); break;
+  }
+  snapDot.style.display='none';
+}
+
+function onDblClick(e) {
+  if (state.tool==='wall'&&wallPoints.length>=2) finalizeWalls();
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  const pos=getCanvasPos(e), old=state.zoom;
+  const f=e.deltaY<0?1.12:1/1.12;
+  state.zoom=Math.max(0.1,Math.min(10,state.zoom*f));
+  state.panX=pos.x-(pos.x-state.panX)*(state.zoom/old);
+  state.panY=pos.y-(pos.y-state.panY)*(state.zoom/old);
+  drawAll();
+}
+
+function updateSnapDot(sx,sy,snapped) {
+  if(!state.snapGrid){snapDot.style.display='none';return;}
+  const sp=worldToScreen(snapped.x,snapped.y);
+  snapDot.style.display='block'; snapDot.style.left=sp.x+'px'; snapDot.style.top=sp.y+'px';
+}
+
+// =====================================================================
+// HANDLERS POR HERRAMIENTA
+// =====================================================================
+function handleSelectDown(pos,world,snapped) {
+  // Rotar handle
+  for (const el of state.selected) {
+    if (hitRotateHandle(pos.x,pos.y,el)) {
+      isRotating=true; rotCenter={x:el.x,y:el.y};
+      rotStartAngle=Math.atan2(world.y-el.y,world.x-el.x)*180/Math.PI;
+      rotElStart=el.rotation||0; return;
+    }
+  }
+  // Hit test elementos (de arriba a abajo)
+  let found=null;
+  for (let i=state.elements.length-1;i>=0;i--) {
+    const el=state.elements[i];
+    if (!state.layers[el.layer]) continue;
+    if (hitTest(world.x,world.y,el)) { found=el; break; }
+  }
+  if (found) {
+    if (!state.selected.includes(found)) state.selected=[found];
+    isDragging=true;
+    dragStartWorld={x:snapped.x-found.x, y:snapped.y-found.y};
+    updatePropsPanel(); drawAll();
+  } else {
+    state.selected=[]; isPanning=true; panStartX=pos.x; panStartY=pos.y;
+    document.getElementById('propsPanel').classList.remove('visible');
+    propHistoryPushed=false; drawAll();
+  }
+}
+
+function handleSelectMove(pos,world) {
+  if (isRotating&&state.selected.length) {
+    const el=state.selected[0];
+    const a=Math.atan2(world.y-rotCenter.y,world.x-rotCenter.x)*180/Math.PI;
+    el.rotation=rotElStart+(a-rotStartAngle);
+    el.rotation=Math.round(el.rotation/5)*5; // snap a 5 grados
+    updatePropsPanel(); drawAll(); return;
+  }
+  if (isDragging&&state.selected.length) {
+    const snapped=snapWorld(world.x,world.y);
+    const el=state.selected[0];
+    el.x=snapped.x-dragStartWorld.x; el.y=snapped.y-dragStartWorld.y;
+    updatePropsPanel(); drawAll(); return;
+  }
+  if (isPanning) {
+    state.panX+=pos.x-panStartX; state.panY+=pos.y-panStartY;
+    panStartX=pos.x; panStartY=pos.y; drawAll(); return;
+  }
+  // Hover cursor
+  let hovering=false;
+  for (let i=state.elements.length-1;i>=0;i--) {
+    if (hitTest(world.x,world.y,state.elements[i])) {hovering=true;break;}
+  }
+  canvas.style.cursor=hovering?'move':'default';
+}
+
+function handleSelectUp() {
+  if (isDragging||isRotating) pushHistory();
+  isDragging=false; isRotating=false; isPanning=false;
+}
+
+function handleWallDown(snapped) {
+  if (!wallHistoryPushed) { pushHistory(); wallHistoryPushed=true; }
+  wallPoints.push(snapped); drawCurrent=snapped;
+  if (wallPoints.length>=2) {
+    const p1=wallPoints[wallPoints.length-2], p2=wallPoints[wallPoints.length-1];
+    const dx=p2.x-p1.x, dy=p2.y-p1.y, len=Math.sqrt(dx*dx+dy*dy);
+    if (len>0.05) {
+      const angle=Math.atan2(dy,dx)*180/Math.PI;
+      state.elements.push(makeEl('wall',{x:p1.x,y:p1.y,len,rotation:angle,thick:state.wallThick,layer:'wall'}));
+    }
+  }
+  drawAll();
+}
+
+function finalizeWalls() {
+  wallPoints=[]; wallHistoryPushed=false; drawCurrent=null; drawAll();
+  showToast('Muros creados (doble click para finalizar)');
+}
+
+function handleTextDown(pos) {
+  const input=document.createElement('input');
+  input.type='text';
+  input.style.cssText=`position:absolute;left:${pos.x}px;top:${pos.y}px;background:rgba(255,255,255,0.97);border:2px solid #2563eb;padding:5px 8px;font-size:14px;z-index:150;outline:none;min-width:140px;border-radius:4px;font-family:'Segoe UI',sans-serif;color:#1a1a2e;`;
+  input.placeholder='Escribe texto...';
+  document.getElementById('canvas-area').appendChild(input);
+  input.focus();
+  let done=false;
+  function finish() {
+    if(done)return; done=true;
+    if(input.value.trim()){
+      const w=screenToWorld(pos.x,pos.y);
+      pushHistory();
+      ctx.font='14px Segoe UI, sans-serif';
+      const tw=ctx.measureText(input.value.trim()).width/M;
+      state.elements.push(makeEl('text',{x:w.x,y:w.y,text:input.value.trim(),fontSize:14,w:tw,h:14/M*1.2,layer:'text',color:'#222222'}));
+      drawAll();
+    }
+    if(input.parentNode)input.remove();
+  }
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish();}if(e.key==='Escape'){done=true;input.remove();}});
+  input.addEventListener('blur',finish);
+}
+
+function handleMeasureDown(snapped) {
+  measurePoints.push(snapped);
+  if (measurePoints.length===2) {
+    const dx=measurePoints[1].x-measurePoints[0].x, dy=measurePoints[1].y-measurePoints[0].y;
+    showToast(`Distancia: ${Math.sqrt(dx*dx+dy*dy).toFixed(2)} m`);
+    measurePoints=[]; drawCurrent=null; drawAll();
+  }
+}
+
+// =====================================================================
+// HERRAMIENTAS
+// =====================================================================
+function setTool(t) {
+  state.tool=t; state.selected=[]; drawing=false; drawStart=null; drawCurrent=null;
+  wallPoints=[]; wallHistoryPushed=false; measurePoints=[];
+  isDragging=false; isPanning=false; isRotating=false; propHistoryPushed=false;
+  document.querySelectorAll('.btn-tool').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('tool-'+t);
+  if(btn)btn.classList.add('active');
+  document.getElementById('propsPanel').classList.remove('visible');
+  canvas.style.cursor=t==='select'?'default':'crosshair';
+  drawAll();
+}
+
+// =====================================================================
+// FACTORIA DE ELEMENTOS
+// =====================================================================
+function makeEl(type, props) {
+  return {id:elId++, type, x:0, y:0, w:1, h:1, rotation:0, layer:type, ...props};
+}
+
+function deleteSelected() {
+  if(!state.selected.length){showToast('Nada seleccionado');return;}
+  pushHistory();
+  const ids=state.selected.map(e=>e.id);
+  state.elements=state.elements.filter(e=>!ids.includes(e.id));
+  state.selected=[]; propHistoryPushed=false;
+  document.getElementById('propsPanel').classList.remove('visible');
+  drawAll(); showToast('Eliminado');
+}
+
+function selectAll() {
+  state.selected=[...state.elements];
+  updatePropsPanel(); drawAll();
+}
+
+// =====================================================================
+// HISTORIAL
+// =====================================================================
+function pushHistory() {
+  const snap=JSON.stringify(state.elements);
+  if(state.historyIdx>=0&&state.history[state.historyIdx]===snap)return;
+  state.history=state.history.slice(0,state.historyIdx+1);
+  state.history.push(snap);
+  if(state.history.length>50){state.history.shift();state.historyIdx--;}
+  state.historyIdx=state.history.length-1;
+}
+
+function undo() {
+  if(state.historyIdx<=0){showToast('Nada que deshacer');return;}
+  state.historyIdx--;
+  state.elements=JSON.parse(state.history[state.historyIdx]);
+  state.selected=[]; propHistoryPushed=false;
+  document.getElementById('propsPanel').classList.remove('visible');
+  drawAll();
+}
+
+function redo() {
+  if(state.historyIdx>=state.history.length-1){showToast('Nada que rehacer');return;}
+  state.historyIdx++;
+  state.elements=JSON.parse(state.history[state.historyIdx]);
+  state.selected=[]; propHistoryPushed=false;
+  document.getElementById('propsPanel').classList.remove('visible');
+  drawAll();
+}
+
+// =====================================================================
+// PANEL DE PROPIEDADES
+// =====================================================================
+function updatePropsPanel() {
+  const panel=document.getElementById('propsPanel');
+  if(!state.selected.length){panel.classList.remove('visible');return;}
+  panel.classList.add('visible');
+  const el=state.selected[0];
+  const isLinear=el.type==='wall'||el.type==='dim'||el.type==='door'||el.type==='window';
+  document.getElementById('lblW').textContent=isLinear?'Largo (m)':'Ancho (m)';
+  document.getElementById('lblH').textContent=isLinear?'Grosor (m)':'Alto (m)';
+  document.getElementById('pName').value=el.name||el.type;
+  document.getElementById('pW').value=(isLinear?(el.len||0):(el.w||0)).toFixed(3);
+  document.getElementById('pH').value=(isLinear?(el.thick||0.15):(el.h||0)).toFixed(3);
+  document.getElementById('pX').value=(el.x||0).toFixed(3);
+  document.getElementById('pY').value=(el.y||0).toFixed(3);
+  document.getElementById('pRot').value=(el.rotation||0).toFixed(1);
+  document.getElementById('pColor').value=rgbToHex(el.color);
+  document.getElementById('pThick').value=(el.thick||0).toFixed(3);
+  const area=el.type==='wall'?((el.len||0)*(el.thick||0)).toFixed(3):
+              (el.w&&el.h)?(el.w*el.h).toFixed(2)+' m2':'-';
+  document.getElementById('pArea').value=area;
+}
+
+function updateProp(key, val) {
+  if(!state.selected.length)return;
+  const el=state.selected[0];
+  if(!propHistoryPushed){pushHistory();propHistoryPushed=true;}
+  const isLinear=el.type==='wall'||el.type==='dim'||el.type==='door'||el.type==='window';
+  switch(key) {
+    case 'name': el.name=val; break;
+    case 'w': isLinear?(el.len=parseFloat(val)||0):(el.w=parseFloat(val)||0); break;
+    case 'h': isLinear?(el.thick=parseFloat(val)||0.15):(el.h=parseFloat(val)||0); break;
+    case 'x': el.x=parseFloat(val)||0; break;
+    case 'y': el.y=parseFloat(val)||0; break;
+    case 'rot': el.rotation=parseFloat(val)||0; break;
+    case 'color': el.color=val; break;
+    case 'thick': el.thick=parseFloat(val)||0; break;
+  }
+  const area=el.type==='wall'?((el.len||0)*(el.thick||0)).toFixed(3):
+              (el.w&&el.h)?(el.w*el.h).toFixed(2)+' m2':'-';
+  document.getElementById('pArea').value=area;
+  drawAll();
+}
+
+function closePanelProps() {
+  state.selected=[]; propHistoryPushed=false;
+  document.getElementById('propsPanel').classList.remove('visible');
+  drawAll();
+}
+
+// =====================================================================
+// CAPAS
+// =====================================================================
+const LAYER_NAMES={room:'Habitaciones',wall:'Muros',door:'Puertas',window:'Ventanas',furniture:'Mobiliario',text:'Texto',dim:'Cotas',shape:'Formas'};
+
+function renderLayerList() {
+  let html='';
+  for(const [key,name] of Object.entries(LAYER_NAMES)){
+    const v=state.layers[key];
+    html+=`<div class="layer-row" onclick="toggleLayer('${key}')">
+      <button class="layer-eye ${v?'':'hidden'}">${v?'&#128065;':'&#128065;&#8205;&#128311;'}</button>
+      <span class="layer-name">${name}</span></div>`;
+  }
+  document.getElementById('layerList').innerHTML=html;
+}
+
+function toggleLayer(key) { state.layers[key]=!state.layers[key]; renderLayerList(); drawAll(); }
+
+function toggleLayers() { document.getElementById('layersPanel').classList.toggle('visible'); }
+
+// =====================================================================
+// CUADRICULA
+// =====================================================================
+function toggleGrid() { document.getElementById('gridPanel').classList.toggle('visible'); }
+function toggleGridPanel() { document.getElementById('gridPanel').classList.remove('visible'); }
+function setGridSize(val) { state.gridSize=parseFloat(val); drawAll(); }
+function toggleGridVisible(c) { state.showGrid=c; drawAll(); }
+function toggleSnap(c) { state.snapGrid=c; }
+
+// =====================================================================
+// ZOOM
+// =====================================================================
+function zoomAt(factor) {
+  const a=document.getElementById('canvas-area');
+  const cx=a.offsetWidth/2, cy=a.offsetHeight/2, old=state.zoom;
+  state.zoom=Math.max(0.1,Math.min(10,state.zoom*factor));
+  state.panX=cx-(cx-state.panX)*(state.zoom/old);
+  state.panY=cy-(cy-state.panY)*(state.zoom/old);
+  drawAll();
+}
+function zoomIn() { zoomAt(1.3); }
+function zoomOut() { zoomAt(1/1.3); }
+
+// =====================================================================
+// MODAL DE HABITACION
+// =====================================================================
+const ROOM_TYPES=['Dormitorio','Bano','Cocina','Sala','Comedor','Garaje','Lavanderia','Oficina','Bodega'];
+const ROOM_COLORS={'Dormitorio':'rgba(220,200,255,0.35)','Bano':'rgba(180,220,255,0.35)','Cocina':'rgba(255,230,180,0.35)','Sala':'rgba(200,255,200,0.35)','Comedor':'rgba(255,220,200,0.35)','Garaje':'rgba(200,200,200,0.35)','Lavanderia':'rgba(220,255,240,0.35)','Oficina':'rgba(255,240,200,0.35)','Bodega':'rgba(220,210,190,0.35)'};
+
+function openRoomModal(x,y,w,h) {
+  pendingRoomRect={x,y,w:Math.abs(w),h:Math.abs(h)};
+  if(w<0)pendingRoomRect.x=x+w;
+  if(h<0)pendingRoomRect.y=y+h;
+  document.getElementById('roomOpts').innerHTML=ROOM_TYPES.map(t=>`<button class="room-opt-btn" onclick="createRoom('${t}')">${t}</button>`).join('');
+  document.getElementById('roomModal').classList.add('visible');
+}
+
+function createRoom(type) {
+  const r=pendingRoomRect;
+  pushHistory();
+  const el=makeEl('room',{name:type,x:r.x,y:r.y,w:r.w,h:r.h,thick:parseFloat(document.getElementById('wallThick').value),layer:'room',color:ROOM_COLORS[type]||'rgba(245,235,210,0.5)'});
+  state.elements.push(el);
+  closeRoomModal(); state.selected=[el]; updatePropsPanel(); drawAll();
+  showToast(type+' creada');
+}
+
+function closeRoomModal() { document.getElementById('roomModal').classList.remove('visible'); pendingRoomRect=null; }
+
+// =====================================================================
+// MOBILIARIO
+// =====================================================================
+function openFurnPanel() { setTool('select'); document.getElementById('furnPanel').classList.add('visible'); renderFurnPanel(); }
+function closeFurnPanel() { document.getElementById('furnPanel').classList.remove('visible'); }
+
+function renderFurnPanel() {
+  const cats={
+    'Dormitorio':[
+      {id:'bed-single',icon:'&#128719;',name:'Cama Individual',w:0.9,h:1.9},
+      {id:'bed-double',icon:'&#128719;',name:'Cama Matrimonial',w:1.4,h:1.9},
+      {id:'bed-queen',icon:'&#128719;',name:'Cama Queen',w:1.6,h:2.0},
+      {id:'bed-king',icon:'&#128719;',name:'Cama King',w:1.9,h:2.0},
+      {id:'nightstand',icon:'&#128230;',name:'Velador',w:0.5,h:0.5},
+      {id:'wardrobe',icon:'&#128230;',name:'Armario',w:1.5,h:0.6},
+    ],
+    'Sala':[
+      {id:'sofa',icon:'&#128715;',name:'Sofa',w:2.0,h:0.9},
+      {id:'coffee-table',icon:'&#9633;',name:'Mesa centro',w:1.0,h:0.5},
+      {id:'tv',icon:'&#128250;',name:'Televisor',w:1.2,h:0.2},
+    ],
+    'Comedor':[
+      {id:'table-4',icon:'&#127869;',name:'Mesa 4 per.',w:1.0,h:0.9},
+      {id:'table-6',icon:'&#127869;',name:'Mesa 6 per.',w:1.5,h:0.9},
+      {id:'table-8',icon:'&#127869;',name:'Mesa 8 per.',w:2.0,h:0.9},
+    ],
+    'Cocina':[
+      {id:'kitchen-stove',icon:'&#127859;',name:'Cocina',w:0.6,h:0.6},
+      {id:'fridge',icon:'&#10052;',name:'Refrigerador',w:0.7,h:0.75},
+    ],
+    'Bano':[
+      {id:'toilet',icon:'&#128701;',name:'Inodoro',w:0.4,h:0.6},
+      {id:'sink',icon:'&#128367;',name:'Lavamanos',w:0.5,h:0.45},
+      {id:'shower',icon:'&#128704;',name:'Ducha',w:0.9,h:0.9},
+    ],
+    'Garaje':[
+      {id:'car-small',icon:'&#128663;',name:'Auto pequeno',w:3.5,h:1.7},
+      {id:'car-medium',icon:'&#128659;',name:'Auto mediano',w:4.0,h:1.8},
+      {id:'car-truck',icon:'&#128666;',name:'Camioneta',w:4.8,h:2.0},
+    ],
+  };
+  let html='';
+  for(const [cat,items] of Object.entries(cats)){
+    html+=`<div class="furn-category"><div class="furn-cat-title">${cat}</div><div class="furn-grid">`;
+    items.forEach(it=>{
+      html+=`<div class="furn-item" onclick="placeFurniture('${it.id}','${it.name}',${it.w},${it.h})"><span class="fi">${it.icon}</span><span>${it.name}</span></div>`;
+    });
+    html+=`</div></div>`;
+  }
+  document.getElementById('furnContent').innerHTML=html;
+}
+
+function placeFurniture(type,name,w,h) {
+  closeFurnPanel();
+  const wc=screenToWorld(canvas.width/2,canvas.height/2);
+  pushHistory();
+  const el=makeEl('furniture',{furnitureType:type,name,w,h,x:wc.x-w/2,y:wc.y-h/2,layer:'furniture'});
+  state.elements.push(el); state.selected=[el]; updatePropsPanel(); drawAll();
+  showToast(name+' agregado');
+}
+
+// =====================================================================
+// PROYECTOS (localStorage)
+// =====================================================================
+function newProject() {
+  pushHistory();
+  state.elements=[]; state.selected=[]; state.projectName='Sin titulo'; state.projectId=null;
+  document.getElementById('projName').textContent='Sin titulo';
+  document.getElementById('propsPanel').classList.remove('visible');
+  resetView(); showToast('Proyecto nuevo');
+}
+
+function saveProject() {
+  document.getElementById('projModalTitle').textContent='Guardar proyecto';
+  document.getElementById('projSaveBtn').style.display='block';
+  document.getElementById('projNameInput').value=state.projectName;
+  renderProjectList(); document.getElementById('projModal').classList.add('visible');
+}
+
+function openProject() {
+  document.getElementById('projModalTitle').textContent='Abrir proyecto';
+  document.getElementById('projSaveBtn').style.display='none';
+  renderProjectList(); document.getElementById('projModal').classList.add('visible');
+}
+
+function doSaveProject() {
+  const name=document.getElementById('projNameInput').value.trim()||'Sin titulo';
+  const projects=JSON.parse(localStorage.getItem('planoFacil_projects')||'[]');
+  const data={name,elements:state.elements,date:new Date().toLocaleDateString()};
+  if(state.projectId){
+    const idx=projects.findIndex(p=>p.id===state.projectId);
+    if(idx>=0) projects[idx]={...data,id:state.projectId};
+    else { data.id=Date.now().toString(); projects.unshift(data); }
+  } else {
+    data.id=Date.now().toString(); projects.unshift(data);
+  }
+  state.projectName=name; state.projectId=data.id;
+  document.getElementById('projName').textContent=name;
+  localStorage.setItem('planoFacil_projects',JSON.stringify(projects));
+  closeProjModal(); showToast('Proyecto guardado');
+}
+
+function loadProject(id) {
+  const projects=JSON.parse(localStorage.getItem('planoFacil_projects')||'[]');
+  const proj=projects.find(p=>p.id===id);
+  if(!proj)return;
+  pushHistory();
+  state.elements=proj.elements||[];
+  elId=Math.max(elId,...state.elements.map(e=>e.id||0))+1;
+  state.projectName=proj.name; state.projectId=proj.id;
+  document.getElementById('projName').textContent=proj.name;
+  closeProjModal(); resetView(); showToast('Proyecto cargado');
+}
+
+function deleteProject(id) {
+  let projects=JSON.parse(localStorage.getItem('planoFacil_projects')||'[]');
+  projects=projects.filter(p=>p.id!==id);
+  localStorage.setItem('planoFacil_projects',JSON.stringify(projects));
+  renderProjectList();
+}
+
+function renderProjectList() {
+  const projects=JSON.parse(localStorage.getItem('planoFacil_projects')||'[]');
+  const list=document.getElementById('projList');
+  if(!projects.length){list.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">No hay proyectos guardados</div>';return;}
+  list.innerHTML=projects.map(p=>`<div class="proj-item" onclick="loadProject('${p.id}')">
+    <span class="proj-item-name">${p.name}</span><span class="proj-item-date">${p.date}</span>
+    <button class="proj-del" onclick="event.stopPropagation();deleteProject('${p.id}')">&times;</button></div>`).join('');
+}
+
+function closeProjModal() { document.getElementById('projModal').classList.remove('visible'); document.getElementById('projSaveBtn').style.display='block'; }
+
+// =====================================================================
+// EXPORTAR
+// =====================================================================
+function exportPNG() {
+  const ts=[...state.selected]; state.selected=[]; drawAll();
+  const link=document.createElement('a');
+  link.download=(state.projectName||'plano')+'.png';
+  link.href=canvas.toDataURL('image/png'); link.click();
+  state.selected=ts; drawAll(); showToast('PNG descargado');
+}
+
+function exportPDF() {
+  const ts=[...state.selected]; state.selected=[]; drawAll();
+  const url=canvas.toDataURL('image/png');
+  state.selected=ts; drawAll();
+  const w=window.open('','_blank');
+  if(!w){showToast('Permite ventanas emergentes para PDF');return;}
+  w.document.write(`<!DOCTYPE html><html><head><title>${state.projectName||'Plano'}</title>
+  <style>@page{margin:10mm}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff}
+  img{max-width:100%;height:auto;}</style></head><body><img src="${url}">
+  <script>setTimeout(function(){window.print();},600)<\/script></body></html>`);
+  showToast('Guarda como PDF desde la ventana de impresion');
+}
+
+// =====================================================================
+// MATERIALES
+// =====================================================================
+function showMaterials() {
+  let twl=0,tfa=0,dc=0,wc=0,dl=0,wl=0;
+  state.elements.forEach(el=>{
+    if(el.type==='wall')twl+=el.len||0;
+    if(el.type==='room')tfa+=(el.w||0)*(el.h||0);
+    if(el.type==='door'){dc++;dl+=el.w||0;}
+    if(el.type==='window'){wc++;wl+=el.w||0;}
+  });
+  const nwl=Math.max(0,twl-dl-wl), ph=2.6, pa=nwl*ph, pl=(pa/6).toFixed(1), fm=(tfa*1.1).toFixed(2);
+  document.getElementById('matsContent').innerHTML=`<table>
+    <tr><th>Concepto</th><th>Cantidad</th></tr>
+    <tr><td>Longitud total muros</td><td>${twl.toFixed(2)} m</td></tr>
+    <tr><td>Longitud neta</td><td>${nwl.toFixed(2)} m</td></tr>
+    <tr><td>Area de piso</td><td>${tfa.toFixed(2)} m2</td></tr>
+    <tr><td>Puertas</td><td>${dc} uds</td></tr>
+    <tr><td>Ventanas</td><td>${wc} uds</td></tr>
+    <tr><td>Area pintura muros (h=${ph}m)</td><td>${pa.toFixed(2)} m2</td></tr>
+    <tr><td>Pintura estimada</td><td>${pl} L</td></tr>
+    <tr><td>Pisos (con 10% desperdicio)</td><td>${fm} m2</td></tr>
+  </table>`;
+  document.getElementById('matsPanel').classList.add('visible');
+}
+
+function closeMaterials() { document.getElementById('matsPanel').classList.remove('visible'); }
+
+// =====================================================================
+// IA (parser local)
+// =====================================================================
+function openAI() { document.getElementById('aiPanel').classList.add('visible'); }
+function closeAI() { document.getElementById('aiPanel').classList.remove('visible'); }
+
+function generateWithAI() {
+  const text=document.getElementById('aiPrompt').value;
+  if(!text.trim()){showToast('Escribe una descripcion');return;}
+  const lower=text.toLowerCase();
+  const rooms=[];
+  const patterns=[/(\w+)\s+(?:de\s+)?(\d+\.?\d*)\s*[x\u00d7]\s*(\d+\.?\d*)\s*m/gi, /(\w+)\s+(\d+\.?\d*)\s*[x\u00d7]\s*(\d+\.?\d*)/gi];
+  for(const pat of patterns){
+    pat.lastIndex=0; let m;
+    while((m=pat.exec(lower))!==null){
+      const name=m[1].charAt(0).toUpperCase()+m[1].slice(1);
+      const known=ROOM_TYPES.find(t=>t.toLowerCase()===m[1])||name;
+      rooms.push({name:known,w:parseFloat(m[2]),h:parseFloat(m[3])});
+    }
+    if(rooms.length)break;
+  }
+  if(!rooms.length){showToast('Usa formato: "Nombre ANCHOxALTO m"');return;}
+  pushHistory();
+  let cx=0;
+  rooms.forEach(r=>{
+    state.elements.push(makeEl('room',{name:r.name,x:cx,y:0,w:r.w,h:r.h,thick:0.15,layer:'room',color:ROOM_COLORS[r.name]||'rgba(245,235,210,0.5)'}));
+    cx+=r.w;
+  });
+  closeAI(); resetView(); drawAll();
+  showToast(rooms.length+' espacios generados');
+}
+
+// =====================================================================
+// UTILIDADES
+// =====================================================================
+let toastTimeout=null;
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function rgbToHex(color) {
+  if(!color)return'#cccccc';
+  if(color.startsWith('#')){
+    if(color.length===4)return'#'+color[1]+color[1]+color[2]+color[2]+color[3]+color[3];
+    return color;
+  }
+  const m=color.match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/);
+  if(m){
+    const r=parseInt(m[1]).toString(16).padStart(2,'0');
+    const g=parseInt(m[2]).toString(16).padStart(2,'0');
+    const b=parseInt(m[3]).toString(16).padStart(2,'0');
+    return'#'+r+g+b;
+  }
+  return'#cccccc';
+}
+
+// =====================================================================
+// ATAJOS DE TECLADO
+// =====================================================================
+document.addEventListener('keydown', e => {
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.key==='Escape'){
+    if(wallPoints.length>0)finalizeWalls();
+    if(drawing){drawing=false;drawStart=null;drawCurrent=null;drawAll();}
+    if(measurePoints.length>0){measurePoints=[];drawCurrent=null;drawAll();}
+    document.querySelectorAll('.panel.visible,#aiPanel.visible,#matsPanel.visible,#furnPanel.visible,#projModal.visible,#roomModal.visible').forEach(p=>p.classList.remove('visible'));
+  }
+  if(e.key==='Delete'||e.key==='Backspace')deleteSelected();
+  if(e.ctrlKey&&e.key==='z'){e.preventDefault();undo();}
+  if(e.ctrlKey&&e.key==='y'){e.preventDefault();redo();}
+  if(e.ctrlKey&&e.key==='a'){e.preventDefault();selectAll();}
+  if(e.ctrlKey&&e.key==='s'){e.preventDefault();saveProject();}
+  if(!e.ctrlKey&&!e.altKey){
+    if(e.key==='v')setTool('select');
+    if(e.key==='w')setTool('wall');
+    if(e.key==='r')setTool('room');
+    if(e.key==='d')setTool('door');
+    if(e.key==='m')setTool('measure');
+    if(e.key==='t')setTool('text');
+  }
+});
+</script>
+</body>
+</html>

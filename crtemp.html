@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente de Tueste - Vinza Café</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --accent-color: #ff9800;
+            --box-bg: #1e1e1e;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
+            --info-color: #2196f3;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2, h3 {
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        #setup-screen { display: block; }
+
+        .panel {
+            background-color: var(--box-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .form-group { margin-bottom: 15px; }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background-color: #2c2c2c;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 180px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            margin-bottom: 10px;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-primary { background-color: var(--success-color); color: white; }
+        .btn-secondary { background-color: #555; color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-info { background-color: var(--info-color); color: white; }
+        .btn-warning { background-color: var(--accent-color); color: white; }
+
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-box {
+            background-color: var(--box-bg);
+            padding: 20px;
+            border-radius: 16px;
+            border-left: 12px solid;
+            text-align: center;
+            position: relative;
+        }
+
+        #box-actual { border-color: var(--success-color); background-color: #152516; }
+        #box-next { border-color: var(--accent-color); }
+
+        .box-title {
+            font-size: 1.5rem;
+            color: #bbb;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .box-data {
+            font-size: 3.2rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #box-next .box-data { color: #ddd; }
+
+        #ror-display {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #888;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .action-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        #btn-hito { flex: 2; font-size: 1.5rem; }
+        #btn-stop { flex: 1; }
+
+        canvas {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            width: 100%;
+            height: 250px;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin: 10px 0;
+        }
+
+        #analysis-text {
+            font-size: 0.95rem;
+            color: #ccc;
+            margin: 15px auto;
+            max-width: 95%;
+            line-height: 1.5;
+            background-color: #2a2a2a;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            text-align: left;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        .summary-grid div { background: #2a2a2a; padding: 10px; border-radius: 6px; }
+        .summary-grid strong { color: #aaa; display: block; font-size: 0.9rem; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        th { background-color: #2a2a2a; color: var(--accent-color); }
+        tr:hover { background-color: #2a2a2a; }
+        
+        .row-controls { display: flex; gap: 10px; }
+
+        #stats-table-container {
+            margin-top: 15px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        #stats-table {
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+        #stats-table th {
+            color: var(--info-color);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        #comparative-table-container {
+            margin-top: 15px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        #comp-table {
+            margin-bottom: 15px;
+            font-size: 0.90rem; 
+        }
+        #comp-table th, #comp-table td {
+            padding: 8px 2px; 
+            text-align: center;
+        }
+        #comp-table th {
+            color: #ddd;
+            font-size: 0.80rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #comp-analysis-text {
+            font-size: 0.9rem;
+            color: #ccc;
+            line-height: 1.5;
+            background-color: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--info-color);
+            text-align: left;
+        }
+
+        .btn-delete, .btn-edit {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s;
+        }
+        .btn-delete { color: var(--danger-color); }
+        .btn-edit { color: var(--info-color); }
+        .btn-delete:hover, .btn-edit:hover { transform: scale(1.2); }
+
+        .edit-select {
+            width: 100%;
+            padding: 5px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen" class="screen panel">
+        <h1>Configuración de Tueste</h1>
+        
+        <div class="form-group">
+            <label for="tostador">Tostador:</label>
+            <select id="tostador">
+                <option value="Edgar">Edgar</option>
+                <option value="Adrián">Adrián</option>
+                <option value="Javier">Javier</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="variedad">Variedad:</label>
+            <select id="variedad">
+                <option value="Sidra Honey">Sidra Honey</option>
+                <option value="Sidra Lavado">Sidra Lavado</option>
+                <option value="Blend">Blend</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="perfil">Perfil:</label>
+            <select id="perfil">
+                <option value="Genérico">Genérico</option>
+                <option value="Predeterminado">Predeterminado</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="secuencia">Secuencia (Min:Seg | Temp | F):</label>
+            <textarea id="secuencia">
+0:00 | 32°C | C
+0:30 | 95°C | S
+1:00 | 105°C | S
+1:30 | 114°C | S
+2:00 | 122°C | S
+2:30 | 130°C | S
+3:00 | 138°C | S
+3:30 | 145°C | S
+4:00 | 151°C | S
+4:30 | 156°C | M
+5:00 | 161°C | M
+5:30 | 167°C | M
+6:00 | 173°C | M
+6:30 | 178°C | M
+7:00 | 184°C | M
+7:30 | 189°C | M
+8:00 | 193°C | M
+8:30 | 196°C | M
+8:45 | 197°C | 1
+9:00 | 199°C | 1
+9:30 | 202°C | D
+10:00 | 203°C | D
+10:30 | 204°C | D
+11:00 | 205°C | D</textarea>
+        </div>
+
+        <button id="btn-start" class="btn-primary">Iniciar Tueste</button>
+        
+        <div class="row-controls">
+            <button id="btn-view-history" class="btn-secondary">Ver Historial</button>
+            <button id="btn-trigger-load" class="btn-info">Cargar JSON</button>
+            <input type="file" id="file-loader" accept=".json" style="display: none;">
+        </div>
+    </div>
+
+    <div id="roast-screen" class="screen">
+        <div class="status-container">
+            <div class="status-box" id="box-actual">
+                <div class="box-title">Actual</div>
+                <div class="box-data">
+                    <span id="actual-time">00:00</span>
+                    <span id="actual-temp">--°C</span>
+                </div>
+                <div id="ror-display">RoR: -- °C/min</div>
+            </div>
+
+            <div class="status-box" id="box-next">
+                <div class="box-title">Siguiente Hito</div>
+                <div class="box-data">
+                    <span id="next-time">--:--</span>
+                    <span id="next-temp">--°C</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-controls">
+            <button id="btn-hito" class="btn-primary">Hito OK</button>
+            <button id="btn-stop" class="btn-danger">Terminar</button>
+        </div>
+
+        <canvas id="live-chart"></canvas>
+    </div>
+
+    <div id="result-screen" class="screen panel">
+        <div class="result-header">
+            <h2>Análisis del Tueste</h2>
+            <div class="score-display" id="final-score">0%</div>
+            <p style="margin:0; color:#aaa;">Calidad de Ejecución Global</p>
+            <div id="analysis-text"></div>
+        </div>
+
+        <div class="summary-grid">
+            <div><strong>Fecha:</strong> <span id="res-fecha"></span></div>
+            <div><strong>Tostador:</strong> <span id="res-tostador"></span></div>
+            <div><strong>Variedad:</strong> <span id="res-variedad"></span></div>
+            <div><strong>Perfil:</strong> <span id="res-perfil"></span></div>
+        </div>
+        
+        <div id="stats-table-container">
+            <h3 style="color: var(--info-color); margin-top: 0; font-size: 1.1rem;">Estadísticas Térmicas (RoR EMA)</h3>
+            <table id="stats-table">
+                <thead>
+                    <tr>
+                        <th>Fase</th>
+                        <th>Promedio</th>
+                        <th>Estabilidad (σ)</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-body">
+                </tbody>
+            </table>
+        </div>
+
+        <canvas id="result-chart"></canvas>
+
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 5px;">
+            <button id="btn-download-json" class="btn-primary">Descargar JSON</button>
+            <button id="btn-back-home" class="btn-secondary">Volver al Inicio</button>
+            <button id="btn-toggle-comp" class="btn-warning">Datos Comparativos</button>
+        </div>
+
+        <div id="comparative-table-container" style="display: none;">
+            <table id="comp-table">
+                <thead>
+                    <tr>
+                        <th>Temp</th>
+                        <th>Teó</th>
+                        <th>Real</th>
+                        <th>Dif</th>
+                        <th>F</th>
+                        <th>RoR</th>
+                    </tr>
+                </thead>
+                <tbody id="comp-body">
+                </tbody>
+            </table>
+            <div id="comp-analysis-text"></div>
+        </div>
+    </div>
+
+    <div id="history-screen" class="screen panel">
+        <h2>Historial de Tuestes</h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tostador</th>
+                        <th>Variedad</th>
+                        <th>Score</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="history-body">
+                </tbody>
+            </table>
+        </div>
+        <button id="btn-history-back" class="btn-secondary">Volver al Inicio</button>
+    </div>
+
+    <script>
+        let timerInterval;
+        let startTime;
+        let sequenceData = [];
+        let actualData = [];
+        let expectedHitoIndex = 1; 
+        let wakeLock = null;
+        let currentRoastScore = 0;
+        let currentRoastExportData = null; 
+        const alphaEMA = 0.25; 
+
+        const screens = {
+            setup: document.getElementById('setup-screen'),
+            roast: document.getElementById('roast-screen'),
+            result: document.getElementById('result-screen'),
+            history: document.getElementById('history-screen')
+        };
+
+        const liveCanvas = document.getElementById('live-chart');
+        const liveCtx = liveCanvas.getContext('2d');
+        const resultCanvas = document.getElementById('result-chart');
+        const resultCtx = resultCanvas.getContext('2d');
+        const rorDisplayEl = document.getElementById('ror-display');
+
+        function showScreen(screenName) {
+            Object.values(screens).forEach(s => s.style.display = 'none');
+            screens[screenName].style.display = 'block';
+        }
+
+        async function activarMantenerPantalla() {
+            if ('wakeLock' in navigator) {
+                try { wakeLock = await navigator.wakeLock.request('screen'); } 
+                catch (err) {}
+            }
+        }
+
+        function desactivarMantenerPantalla() {
+            if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); }
+        }
+
+        function formatTime(totalSeconds) {
+            let m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            let s = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function parseSequence(text) {
+            const lines = text.trim().split('\n');
+            const data = [];
+            const linesLimpio = lines.filter(l => l.includes('|') && !l.toLowerCase().includes('tiempo'));
+
+            for (let line of linesLimpio) {
+                let parts = line.split('|');
+                let timeParts = parts[0].trim().split(':');
+                if (timeParts.length === 2) {
+                    let totalSeconds = (parseInt(timeParts[0]) * 60) + parseInt(timeParts[1]);
+                    let tempValue = parseFloat(parts[1].replace(/[^0-9.]/g, ''));
+                    let faseLetra = parts.length > 2 ? parts[2].trim().toUpperCase() : ""; 
+
+                    data.push({ 
+                        seconds: totalSeconds, 
+                        timeLabel: parts[0].trim(), 
+                        tempValue: tempValue,
+                        faseLetra: faseLetra 
+                    });
+                }
+            }
+            return data.sort((a, b) => a.seconds - b.seconds);
+        }
+
+        function calcularPrecision(seqData, actData) {
+            if (actData.length <= 1) return { total: 0, shape: 0, energy: 0, dev: 0, time: 0, r: 0 };
+
+            let n = 0;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+            let timeScores = [];
+            let flicks = 0;
+            let crashes = 0;
+
+            for (let i = 1; i < actData.length; i++) {
+                if (i < seqData.length) {
+                    let teoSec = seqData[i].seconds;
+                    let actSec = actData[i].seconds;
+
+                    n++;
+                    sumX += teoSec;
+                    sumY += actSec;
+                    sumXY += teoSec * actSec;
+                    sumX2 += teoSec * teoSec;
+                    sumY2 += actSec * actSec;
+
+                    let diff = Math.abs(teoSec - actSec);
+                    if (diff <= 10) timeScores.push(1);
+                    else if (diff <= 40) timeScores.push(Math.pow((40 - diff) / 30, 2));
+                    else timeScores.push(0);
+                }
+
+                if (!actData[i].isInit && actData[i].ror !== "-") {
+                    if (i > 1 && actData[i-1] && !actData[i-1].isInit && actData[i-1].ror !== "-") {
+                        let prevRoR = actData[i-1].ror;
+                        let currRoR = actData[i].ror;
+                        if (currRoR <= 3) crashes++;
+                        else if (currRoR > prevRoR) flicks++;
+                    }
+                }
+            }
+
+            // 1. Forma (40%) - Correlación de Pearson
+            let r = 0;
+            if (n > 1) {
+                let denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                if (denominator !== 0) r = (n * sumXY - sumX * sumY) / denominator;
+            } else { r = 1; }
+            let scoreShape = Math.max(0, r) * 40;
+
+            // 2. Energía (30%) - Penalizaciones por Flicks y Crashes
+            // Castigamos severamente (8 pts) cada alteración del RoR descendente.
+            let rorPenalty = (flicks * 8) + (crashes * 8);
+            let scoreEnergy = Math.max(0, 30 - rorPenalty);
+
+            // 3. Desviación de Tolerancia (20%)
+            let avgDev = timeScores.length > 0 ? timeScores.reduce((a,b)=>a+b,0)/timeScores.length : 0;
+            let scoreDev = avgDev * 20;
+
+            // 4. Tiempo Total (10%)
+            let scoreTime = 0;
+            let lastMatched = Math.min(actData.length - 1, seqData.length - 1);
+            if (lastMatched > 0) {
+                let lastTeo = seqData[lastMatched].seconds; 
+                let lastAct = actData[lastMatched].seconds;
+                let totalDiff = Math.abs(lastTeo - lastAct);
+                let ratio = lastTeo > 0 ? totalDiff / lastTeo : 0;
+                scoreTime = Math.max(0, (1 - (ratio / 0.2))) * 10;
+            }
+
+            let totalScore = Math.min(100, Math.max(0, Math.round(scoreShape + scoreEnergy + scoreDev + scoreTime)));
+            
+            return {
+                total: totalScore,
+                shape: scoreShape,
+                energy: scoreEnergy,
+                dev: scoreDev,
+                time: scoreTime,
+                r: r
+            };
+        }
+
+        function generarAnalisis(details, actData) {
+            if (actData.length <= 1) return "Tueste incompleto o sin datos suficientes para analizar.";
+            
+            let html = `<div style="margin-bottom: 10px; text-align: center; font-weight: bold;">Desglose Termodinámico:</div>`;
+            html += `<ul style="padding-left: 20px; margin-top: 5px; margin-bottom: 0;">`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.r >= 0.98) ? 'Excelente correlación con la tendencia del perfil.' : 'Se detectaron distorsiones en la progresión.'}</span></li>`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por cambios bruscos o exceso de oscilación.'}</span></li>`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Tolerancia de Hitos (20%):</strong> Obtenido ${Math.round(details.dev)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.dev >= 16) ? 'Tiempos muy ajustados a la curva ideal.' : 'Desfasajes de tiempo fuera del margen de gracia.'}</span></li>`;
+            
+            html += `<li><strong>Cierre de Tiempo (10%):</strong> Obtenido ${Math.round(details.time)} pts.</li>`;
+            
+            html += `</ul>`;
+            return html;
+        }
+
+        function generarEstadisticasRoR(actData) {
+            let fases = {
+                'S': { name: 'Secado', values: [] },
+                'M': { name: 'Maillard', values: [] },
+                'D': { name: 'Desarrollo', values: [] }
+            };
+            let allValues = [];
+
+            for (let i = 1; i < actData.length; i++) {
+                let pt = actData[i];
+                if (pt.rorEma !== null && pt.rorEma !== undefined && !pt.isInit) {
+                    let f = pt.fase;
+                    if (f === '1' || f === 'C') f = f === '1' ? 'D' : 'S'; 
+                    if (fases[f]) {
+                        fases[f].values.push(pt.rorEma);
+                    }
+                    allValues.push(pt.rorEma);
+                }
+            }
+
+            function calcStats(arr) {
+                if(arr.length === 0) return { mean: 0, std: 0 };
+                let sum = arr.reduce((a, b) => a + b, 0);
+                let mean = sum / arr.length;
+                let variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length;
+                return { mean: mean, std: Math.sqrt(variance) };
+            }
+
+            let statsHtml = '';
+            ['S', 'M', 'D'].forEach(key => {
+                let st = calcStats(fases[key].values);
+                let badge = '';
+                if(fases[key].values.length > 0) {
+                    if (st.std < 1.5) badge = '🟢';
+                    else if (st.std < 3.0) badge = '🟡';
+                    else badge = '🔴';
+                    
+                    statsHtml += `<tr>
+                        <td><strong>${fases[key].name}</strong></td>
+                        <td>${st.mean.toFixed(1)} °C/m</td>
+                        <td>± ${st.std.toFixed(2)} ${badge}</td>
+                    </tr>`;
+                }
+            });
+            
+            if (allValues.length > 0) {
+                let totalSt = calcStats(allValues);
+                statsHtml += `<tr style="background-color: #2a2a2a; color: var(--accent-color);">
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>${totalSt.mean.toFixed(1)} °C/m</strong></td>
+                    <td><strong>± ${totalSt.std.toFixed(2)}</strong></td>
+                </tr>`;
+            } else {
+                statsHtml = '<tr><td colspan="3" style="text-align:center;">Sin datos suficientes</td></tr>';
+            }
+
+            document.getElementById('stats-body').innerHTML = statsHtml;
+        }
+
+        function poblarTablaComparativa(seqData, actData) {
+            const tbody = document.getElementById('comp-body');
+            tbody.innerHTML = '';
+            let countAdelanto = 0, countAtraso = 0, countFlicks = 0, countCrashes = 0;
+
+            for (let i = 1; i < actData.length; i++) {
+                if (i < seqData.length) {
+                    let temp = seqData[i].tempValue;
+                    let teoStr = seqData[i].timeLabel;
+                    let realStr = actData[i].timeLabel;
+                    let faseLetra = actData[i].fase || "-"; 
+                    let rorValue = actData[i].ror !== undefined ? actData[i].ror : "-";
+                    let dif = actData[i].seconds - seqData[i].seconds;
+                    
+                    let difStr, difColor;
+                    if (dif === 0) { difStr = "0"; difColor = "var(--success-color)"; } 
+                    else if (dif > 0) { difStr = "+" + dif; difColor = "#ff5722"; countAtraso++; } 
+                    else { difStr = dif; difColor = "var(--info-color)"; countAdelanto++; }
+
+                    let rorColor = "#ddd"; 
+                    if (!actData[i].isInit && actData[i].ror !== "-") {
+                        let prevRoR = actData[i - 1].ror;
+                        if (rorValue <= 3) { rorColor = "var(--info-color)"; countCrashes++; } 
+                        else if (rorValue > prevRoR) { rorColor = "var(--danger-color)"; countFlicks++; } 
+                        else { rorColor = "var(--success-color)"; }
+                    }
+
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${temp}°</td>
+                        <td>${teoStr}</td>
+                        <td>${realStr}</td>
+                        <td style="color: ${difColor}; font-weight: bold;">${difStr}</td>
+                        <td style="color: #aaa; font-weight: bold;">${faseLetra}</td>
+                        <td style="color: ${rorColor}; font-weight: bold;">${rorValue}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            }
+
+            let analisisRitmo = "bastante equilibrado.";
+            if (countAdelanto > countAtraso + 2) analisisRitmo = "más rápido (adelantado) en general.";
+            else if (countAtraso > countAdelanto + 2) analisisRitmo = "más lento (atrasado) en general.";
+
+            let textoAnalisisComp = `<strong>Resumen Técnico:</strong> El ritmo del tueste fue ${analisisRitmo}<br>`;
+            textoAnalisisComp += `Flicks detectados: <strong>${countFlicks}</strong> | Crashes detectados: <strong>${countCrashes}</strong>.`;
+            document.getElementById('comp-analysis-text').innerHTML = textoAnalisisComp;
+        }
+
+        document.getElementById('btn-toggle-comp').addEventListener('click', () => {
+            const tableContainer = document.getElementById('comparative-table-container');
+            tableContainer.style.display = tableContainer.style.display === 'none' ? 'block' : 'none';
+        });
+
+        function drawChart(canvas, ctx, seqData, actData, showAxes = false) {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = showAxes ? 300 : 250;
+
+            const paddingX = showAxes ? 40 : 15;
+            const paddingY = showAxes ? 30 : 15;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+            if (seqData.length === 0) return;
+
+            const maxSec = seqData[seqData.length - 1].seconds;
+            const minTemp = seqData[0].tempValue;
+            const maxTemp = seqData[seqData.length - 1].tempValue;
+
+            const getX = (sec) => paddingX + (sec / maxSec) * (width - paddingX - 15);
+            const getY = (temp) => height - paddingY - ((temp - minTemp) / (maxTemp - minTemp)) * (height - paddingY - 20);
+
+            if (showAxes) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 1;
+                ctx.moveTo(paddingX, 20);
+                ctx.lineTo(paddingX, height - paddingY);
+                ctx.lineTo(width - 15, height - paddingY);
+                ctx.stroke();
+
+                ctx.fillStyle = '#aaa';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(maxTemp + "°", paddingX - 5, 25);
+                ctx.fillText(minTemp + "°", paddingX - 5, height - paddingY);
+                
+                ctx.textAlign = 'center';
+                ctx.fillText("0:00", paddingX, height - paddingY + 15);
+                ctx.fillText(formatTime(maxSec), width - 15, height - paddingY + 15);
+            }
+
+            if (actData.length > 0) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#ff9800';
+                ctx.lineWidth = 4;
+                actData.forEach((pt, i) => {
+                    if (i === 0) ctx.moveTo(getX(pt.seconds), getY(pt.tempValue));
+                    else ctx.lineTo(getX(pt.seconds), getY(pt.tempValue));
+                });
+                ctx.stroke();
+                
+                ctx.fillStyle = '#ff9800';
+                actData.forEach(pt => {
+                    ctx.beginPath();
+                    ctx.arc(getX(pt.seconds), getY(pt.tempValue), 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            seqData.forEach((pt, i) => {
+                if (i === 0) ctx.moveTo(getX(pt.seconds), getY(pt.tempValue));
+                else ctx.lineTo(getX(pt.seconds), getY(pt.tempValue));
+            });
+            ctx.stroke();
+            ctx.setLineDash([]); 
+            
+            ctx.fillStyle = '#ffffff';
+            seqData.forEach(pt => {
+                ctx.beginPath();
+                ctx.arc(getX(pt.seconds), getY(pt.tempValue), 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function updateDisplay() {
+            let now = Date.now();
+            let elapsedSeconds = Math.floor((now - startTime) / 1000);
+            
+            document.getElementById('actual-time').textContent = formatTime(elapsedSeconds);
+
+            let currentIndex = 0;
+            for (let i = 0; i < sequenceData.length; i++) {
+                if (elapsedSeconds >= sequenceData[i].seconds) currentIndex = i;
+                else break;
+            }
+
+            let nextTimeIndex = currentIndex + 1;
+            if (nextTimeIndex < sequenceData.length) {
+                let current = sequenceData[currentIndex];
+                let next = sequenceData[nextTimeIndex];
+                let progreso = Math.min((elapsedSeconds - current.seconds) / (next.seconds - current.seconds), 1);
+                let tempInterpolada = current.tempValue + ((next.tempValue - current.tempValue) * progreso);
+                document.getElementById('actual-temp').textContent = Math.round(tempInterpolada) + "°C";
+            } else {
+                document.getElementById('actual-temp').textContent = sequenceData[sequenceData.length - 1].tempValue + "°C";
+            }
+
+            if (expectedHitoIndex < sequenceData.length) {
+                document.getElementById('next-time').textContent = sequenceData[expectedHitoIndex].timeLabel;
+                document.getElementById('next-temp').textContent = sequenceData[expectedHitoIndex].tempValue + "°C";
+            } else {
+                document.getElementById('next-time').textContent = "FIN";
+                document.getElementById('next-temp').textContent = "---";
+                document.getElementById('btn-hito').disabled = true;
+            }
+        }
+
+        document.getElementById('btn-start').addEventListener('click', async () => {
+            const tostador = document.getElementById('tostador').value;
+            sequenceData = parseSequence(document.getElementById('secuencia').value);
+            
+            if (sequenceData.length === 0) return alert("Verifica el formato de la secuencia.");
+
+            rorDisplayEl.innerHTML = "RoR: -- °C/min";
+            rorDisplayEl.style.color = "#888";
+
+            showScreen('roast');
+            document.getElementById('btn-hito').disabled = false;
+            await activarMantenerPantalla();
+
+            startTime = Date.now();
+            expectedHitoIndex = 1; 
+            
+            actualData = [{ 
+                timeLabel: "0:00", 
+                seconds: 0, 
+                tempValue: sequenceData[0].tempValue, 
+                ror: "-", 
+                rorEma: null,
+                fase: sequenceData[0].faseLetra || 'C',
+                isInit: true 
+            }];
+            
+            setTimeout(() => drawChart(liveCanvas, liveCtx, sequenceData, actualData, false), 100); 
+            updateDisplay();
+            timerInterval = setInterval(updateDisplay, 1000);
+        });
+
+        document.getElementById('btn-hito').addEventListener('click', () => {
+            if (expectedHitoIndex < sequenceData.length) {
+                let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                let targetTemp = sequenceData[expectedHitoIndex].tempValue;
+                let phaseLetra = sequenceData[expectedHitoIndex].faseLetra || "S";
+                
+                let n = actualData.length;
+                let rawRoR = 0;
+                let currentEma = null;
+                let isInit = false;
+                
+                if (n === 1) {
+                    isInit = true;
+                    currentEma = null;
+                } else if (n === 2) {
+                    let refPoint = actualData[1];
+                    let deltaSec = elapsedSeconds - refPoint.seconds;
+                    let deltaTemp = targetTemp - refPoint.tempValue;
+                    if (deltaSec > 0) rawRoR = (deltaTemp / deltaSec) * 60;
+                    currentEma = rawRoR;
+                    isInit = true;
+                } else if (n >= 3) {
+                    let refPoint = actualData[n - 2];
+                    let deltaSec = elapsedSeconds - refPoint.seconds;
+                    let deltaTemp = targetTemp - refPoint.tempValue;
+                    if (deltaSec > 0) rawRoR = (deltaTemp / deltaSec) * 60;
+                    
+                    let prevEma = actualData[n - 1].rorEma;
+                    if (prevEma === null || prevEma === undefined) prevEma = rawRoR;
+                    
+                    currentEma = (alphaEMA * rawRoR) + ((1 - alphaEMA) * prevEma);
+                    isInit = false;
+                }
+
+                actualData.push({
+                    timeLabel: formatTime(elapsedSeconds),
+                    seconds: elapsedSeconds,
+                    tempValue: targetTemp,
+                    ror: currentEma !== null ? Math.round(currentEma) : "-",
+                    rorEma: currentEma,
+                    fase: phaseLetra,
+                    isInit: isInit
+                });
+
+                if (n === 1) {
+                    rorDisplayEl.innerHTML = `RoR: Inicializando...`;
+                    rorDisplayEl.style.color = "#888";
+                } else if (n === 2) {
+                    rorDisplayEl.innerHTML = `RoR: Estabilizando...`;
+                    rorDisplayEl.style.color = "var(--info-color)";
+                } else {
+                    let rorRounded = Math.round(currentEma);
+                    let prevPoint = actualData[n - 1];
+                    let prevRoR = prevPoint.ror !== "-" ? prevPoint.ror : rorRounded;
+                    
+                    if (rorRounded <= 3) {
+                        rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min ❄️`;
+                        rorDisplayEl.style.color = "var(--info-color)";
+                    } else if (rorRounded > prevRoR) {
+                        rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min ⬆️`;
+                        rorDisplayEl.style.color = "var(--danger-color)";
+                    } else {
+                        rorDisplayEl.innerHTML = `RoR: ${rorRounded}°C/min ⬇️`;
+                        rorDisplayEl.style.color = "var(--success-color)";
+                    }
+                }
+
+                expectedHitoIndex++;
+                drawChart(liveCanvas, liveCtx, sequenceData, actualData, false);
+                updateDisplay();
+            }
+        });
+
+        document.getElementById('btn-stop').addEventListener('click', () => {
+            clearInterval(timerInterval);
+            desactivarMantenerPantalla();
+            
+            const tostador = document.getElementById('tostador').value;
+            const variedad = document.getElementById('variedad').value;
+            const perfil = document.getElementById('perfil').value;
+            const fecha = new Date().toLocaleString();
+            
+            const precis = calcularPrecision(sequenceData, actualData);
+            currentRoastScore = precis.total;
+            const textoAnalisis = generarAnalisis(precis, actualData);
+
+            currentRoastExportData = {
+                fecha: fecha,
+                tostador: tostador,
+                variedad: variedad,
+                perfil: perfil,
+                score: currentRoastScore,
+                analisis: textoAnalisis,
+                secuencia_teorica: sequenceData,
+                puntos_reales: actualData,
+                desglose_calificacion: precis
+            };
+
+            let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+            historial.push({
+                fecha: fecha,
+                tostador: tostador,
+                variedad: variedad,
+                score: currentRoastScore
+            });
+            localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+
+            mostrarPantallaResultados(currentRoastExportData);
+        });
+
+        function mostrarPantallaResultados(dataObj) {
+            document.getElementById('res-fecha').textContent = dataObj.fecha;
+            document.getElementById('res-tostador').textContent = dataObj.tostador;
+            document.getElementById('res-variedad').textContent = dataObj.variedad;
+            document.getElementById('res-perfil').textContent = dataObj.perfil;
+            
+            const scoreEl = document.getElementById('final-score');
+            scoreEl.textContent = dataObj.score + "%";
+            if(dataObj.score >= 90) scoreEl.style.color = "var(--success-color)";
+            else if(dataObj.score >= 70) scoreEl.style.color = "var(--accent-color)";
+            else scoreEl.style.color = "var(--danger-color)";
+
+            document.getElementById('analysis-text').innerHTML = dataObj.analisis || "Análisis no disponible para este archivo.";
+
+            generarEstadisticasRoR(dataObj.puntos_reales);
+            poblarTablaComparativa(dataObj.secuencia_teorica, dataObj.puntos_reales);
+            document.getElementById('comparative-table-container').style.display = 'none';
+
+            showScreen('result');
+            
+            setTimeout(() => drawChart(resultCanvas, resultCtx, dataObj.secuencia_teorica, dataObj.puntos_reales, true), 100);
+        }
+
+        document.getElementById('btn-download-json').addEventListener('click', () => {
+            if (!currentRoastExportData) return;
+            const dataStr = JSON.stringify(currentRoastExportData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            let nomArchivo = `Tueste_${currentRoastExportData.variedad.replace(/\s+/g, '')}_${currentRoastExportData.score}pct.json`;
+            a.download = nomArchivo;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('btn-view-history').addEventListener('click', () => {
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+            
+            let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+            
+            if (historial.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay tuestes registrados aún.</td></tr>';
+            } else {
+                historial.forEach((t, index) => {
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${t.fecha.split(',')[0]}</td>
+                        <td class="cell-tostador">${t.tostador}</td>
+                        <td class="cell-variedad">${t.variedad}</td>
+                        <td><strong>${t.score}%</strong></td>
+                        <td style="text-align: center; min-width: 80px;">
+                            <button class="btn-edit" data-index="${index}" title="Editar tueste">✏️</button>
+                            <button class="btn-delete" data-index="${index}" title="Eliminar tueste">🗑️</button>
+                        </td>
+                    `;
+                    tbody.prepend(tr);
+                });
+
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = this.getAttribute('data-index');
+                        if (confirm('¿Estás seguro de que deseas eliminar este tueste del historial?')) {
+                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                            currentHistorial.splice(idx, 1);
+                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                            document.getElementById('btn-view-history').click(); 
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.btn-edit').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = this.getAttribute('data-index');
+                        const row = this.closest('tr');
+                        const isEditing = row.classList.contains('editing');
+                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                        let registro = currentHistorial[idx];
+
+                        if (!isEditing) {
+                            row.classList.add('editing');
+                            this.textContent = '💾';
+                            this.title = 'Guardar cambios';
+
+                            const cellTostador = row.querySelector('.cell-tostador');
+                            const cellVariedad = row.querySelector('.cell-variedad');
+
+                            const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
+                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Blend'];
+
+                            cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+                            cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                        } else {
+                            const nuevoTostador = row.querySelector('.select-tostador').value;
+                            const nuevaVariedad = row.querySelector('.select-variedad').value;
+
+                            currentHistorial[idx].tostador = nuevoTostador;
+                            currentHistorial[idx].variedad = nuevaVariedad;
+                            
+                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                            document.getElementById('btn-view-history').click(); 
+                        }
+                    });
+                });
+            }
+            showScreen('history');
+        });
+
+        document.getElementById('btn-trigger-load').addEventListener('click', () => {
+            document.getElementById('file-loader').click();
+        });
+
+        document.getElementById('file-loader').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    
+                    if (loadedData.puntos_reales && loadedData.puntos_reales.length > 0) {
+                        for (let i = 1; i < loadedData.puntos_reales.length; i++) {
+                            let pt = loadedData.puntos_reales[i];
+                            
+                            if (i === 1) {
+                                pt.isInit = true;
+                                pt.rorEma = null;
+                                pt.ror = "-";
+                            } else if (i === 2) {
+                                pt.isInit = true;
+                                let ref = loadedData.puntos_reales[1];
+                                let dSec = pt.seconds - ref.seconds;
+                                let dTemp = pt.tempValue - ref.tempValue;
+                                pt.rorEma = (dSec > 0) ? (dTemp / dSec) * 60 : 0;
+                                pt.ror = Math.round(pt.rorEma);
+                            } else {
+                                pt.isInit = false;
+                                let ref = loadedData.puntos_reales[i - 2];
+                                let dSec = pt.seconds - ref.seconds;
+                                let dTemp = pt.tempValue - ref.tempValue;
+                                let raw = (dSec > 0) ? (dTemp / dSec) * 60 : 0;
+                                let prev = loadedData.puntos_reales[i - 1].rorEma;
+                                if(prev === null || prev === undefined) prev = raw;
+                                pt.rorEma = (alphaEMA * raw) + ((1 - alphaEMA) * prev);
+                                pt.ror = Math.round(pt.rorEma);
+                            }
+
+                            if (!pt.fase && loadedData.secuencia_teorica[i]) {
+                                pt.fase = loadedData.secuencia_teorica[i].faseLetra;
+                            }
+                        }
+                    }
+
+                    if (loadedData.secuencia_teorica) {
+                        loadedData.secuencia_teorica.forEach(pto => {
+                            if (!pto.faseLetra) {
+                                if (pto.tempValue <= 150) pto.faseLetra = "S";
+                                else if (pto.tempValue <= 195) pto.faseLetra = "M";
+                                else pto.faseLetra = "D";
+                            }
+                        });
+                    }
+
+                    let tempSeq = sequenceData;
+                    let tempAct = actualData;
+                    
+                    sequenceData = loadedData.secuencia_teorica;
+                    actualData = loadedData.puntos_reales;
+                    
+                    const precis = calcularPrecision(sequenceData, actualData);
+                    loadedData.score = precis.total;
+                    loadedData.analisis = generarAnalisis(precis, actualData);
+                    loadedData.desglose_calificacion = precis;
+                    
+                    sequenceData = tempSeq;
+                    actualData = tempAct;
+
+                    let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                    let actualizado = false;
+                    for (let i = 0; i < historial.length; i++) {
+                        if (historial[i].fecha === loadedData.fecha) {
+                            historial[i].score = precis.total; 
+                            actualizado = true;
+                            break;
+                        }
+                    }
+                    if (actualizado) {
+                        localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+                    }
+
+                    currentRoastExportData = loadedData;
+                    mostrarPantallaResultados(loadedData);
+                } catch (error) {
+                    alert("Error al leer el archivo JSON.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; 
+        });
+
+        document.getElementById('btn-back-home').addEventListener('click', () => showScreen('setup'));
+        document.getElementById('btn-history-back').addEventListener('click', () => showScreen('setup'));
+
+        window.addEventListener('resize', () => {
+            if (screens.roast.style.display === 'block') drawChart(liveCanvas, liveCtx, sequenceData, actualData, false);
+            if (screens.result.style.display === 'block') drawChart(resultCanvas, resultCtx, currentRoastExportData.secuencia_teorica, currentRoastExportData.puntos_reales, true);
+        });
+    </script>
+</body>
+</html>

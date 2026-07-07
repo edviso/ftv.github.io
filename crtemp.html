@@ -1322,7 +1322,7 @@
                             const cellVariedad = row.querySelector('.cell-variedad');
 
                             const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
-                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Bourbon Rosado', 'Blend'];
+                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Simulación', 'Blend'];
 
                             cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
                             cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;

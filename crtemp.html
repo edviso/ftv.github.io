@@ -557,27 +557,23 @@
             return data.sort((a, b) => a.seconds - b.seconds);
         }
 
+        // --- NUEVA FUNCIÓN DE CALIFICACIÓN CORREGIDA ---
         function calcularPrecision(seqData, actData) {
-            if (actData.length <= 1) return { total: 0, shape: 0, energy: 0, dev: 0, time: 0, r: 0 };
+            if (actData.length <= 1) return { total: 0, shape: 0, energy: 0, dev: 0, time: 0, repuntes: 0 };
 
-            let n = 0;
-            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
             let timeScores = [];
             let flicks = 0;
             let crashes = 0;
+            let rorValues = [];
+            
+            let rorDiffs = [];
+            let sumBumps = 0;
+            let repuntesCount = 0;
 
             for (let i = 1; i < actData.length; i++) {
                 if (i < seqData.length) {
                     let teoSec = seqData[i].seconds;
                     let actSec = actData[i].seconds;
-
-                    n++;
-                    sumX += teoSec;
-                    sumY += actSec;
-                    sumXY += teoSec * actSec;
-                    sumX2 += teoSec * teoSec;
-                    sumY2 += actSec * actSec;
-
                     let diff = Math.abs(teoSec - actSec);
                     if (diff <= 10) timeScores.push(1);
                     else if (diff <= 40) timeScores.push(Math.pow((40 - diff) / 30, 2));
@@ -585,28 +581,46 @@
                 }
 
                 if (!actData[i].isInit && actData[i].ror !== "-") {
-                    if (i > 1 && actData[i-1] && !actData[i-1].isInit && actData[i-1].ror !== "-") {
-                        let prevRoR = actData[i-1].ror;
-                        let currRoR = actData[i].ror;
-                        if (currRoR <= 3) crashes++;
-                        else if (currRoR > prevRoR) flicks++;
+                    let currRoR = actData[i].rorEma;
+                    rorValues.push(currRoR);
+                    
+                    if (rorValues.length > 1) {
+                        let prevRoR = rorValues[rorValues.length - 2];
+                        let delta = currRoR - prevRoR;
+                        rorDiffs.push(delta);
+
+                        if (delta > 0) {
+                            sumBumps += delta;
+                            repuntesCount++;
+                        }
+                        
+                        let prevRoRInt = actData[i-1].ror;
+                        let currRoRInt = actData[i].ror;
+                        if (currRoRInt <= 3) crashes++;
+                        else if (currRoRInt > prevRoRInt) flicks++;
                     }
                 }
             }
 
-            let r = 0;
-            if (n > 1) {
-                let denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                if (denominator !== 0) r = (n * sumXY - sumX * sumY) / denominator;
-            } else { r = 1; }
-            let scoreShape = Math.max(0, r) * 40;
+            // 1. Forma/Ritmo (40%) 
+            let scoreShape = Math.max(0, 40 - (sumBumps * 2.5)); 
 
-            let rorPenalty = (flicks * 8) + (crashes * 8);
-            let scoreEnergy = Math.max(0, 30 - rorPenalty);
+            // 2. Energía (30%) 
+            let rorPenalty = (flicks * 5) + (crashes * 3);
+            let stdDevDiff = 0;
+            if (rorDiffs.length > 0) {
+                let meanDiff = rorDiffs.reduce((a, b) => a + b, 0) / rorDiffs.length;
+                let varDiff = rorDiffs.reduce((a, b) => a + Math.pow(b - meanDiff, 2), 0) / rorDiffs.length;
+                stdDevDiff = Math.sqrt(varDiff);
+            }
+            let stdPenalty = stdDevDiff > 4.0 ? (stdDevDiff - 4.0) * 2 : 0;
+            let scoreEnergy = Math.max(0, 30 - rorPenalty - stdPenalty);
 
+            // 3. Desviación de Tolerancia (20%)
             let avgDev = timeScores.length > 0 ? timeScores.reduce((a,b)=>a+b,0)/timeScores.length : 0;
             let scoreDev = avgDev * 20;
 
+            // 4. Tiempo Total (10%)
             let scoreTime = 0;
             let lastMatched = Math.min(actData.length - 1, seqData.length - 1);
             if (lastMatched > 0) {
@@ -625,19 +639,25 @@
                 energy: scoreEnergy,
                 dev: scoreDev,
                 time: scoreTime,
-                r: r
+                repuntes: repuntesCount
             };
         }
 
+        // --- NUEVA FUNCIÓN DE ANÁLISIS TEXTUAL CORREGIDA ---
         function generarAnalisis(details, actData) {
             if (actData.length <= 1) return "Tueste incompleto o sin datos suficientes para analizar.";
             
             let html = `<div style="margin-bottom: 10px; text-align: center; font-weight: bold;">Desglose Termodinámico:</div>`;
             html += `<ul style="padding-left: 20px; margin-top: 5px; margin-bottom: 0;">`;
-            html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.r >= 0.98) ? 'Excelente correlación con la tendencia del perfil.' : 'Se detectaron distorsiones en la progresión.'}</span></li>`;
-            html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por cambios bruscos o exceso de oscilación.'}</span></li>`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.shape >= 35) ? 'Excelente consistencia en la desaceleración del RoR.' : `Se detectaron ${details.repuntes} repuntes en la progresión térmica.`}</span></li>`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por variabilidad brusca o exceso de oscilación local.'}</span></li>`;
+            
             html += `<li style="margin-bottom: 8px;"><strong>Tolerancia de Hitos (20%):</strong> Obtenido ${Math.round(details.dev)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.dev >= 16) ? 'Tiempos muy ajustados a la curva ideal.' : 'Desfasajes de tiempo fuera del margen de gracia.'}</span></li>`;
+            
             html += `<li><strong>Cierre de Tiempo (10%):</strong> Obtenido ${Math.round(details.time)} pts.</li>`;
+            
             html += `</ul>`;
             return html;
         }
@@ -1191,10 +1211,7 @@
             };
 
             let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-            
-            // --- CORRECCIÓN: Aquí ahora se guarda el objeto completo en lugar de solo el resumen ---
             historial.push(currentRoastExportData); 
-            
             localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
 
             mostrarPantallaResultados(currentRoastExportData);
@@ -1253,7 +1270,6 @@
                         <td class="cell-variedad">${t.variedad}</td>
                         <td><strong>${t.score}%</strong></td>
                         <td class="actions-cell">
-                            <!-- CORRECCIÓN: Se agregó el botón de Ver Gráfico -->
                             <button class="btn-view" data-index="${index}" title="Ver gráfico">📈</button>
                             <button class="btn-edit" data-index="${index}" title="Editar tueste">✏️</button>
                             <button class="btn-delete" data-index="${index}" title="Eliminar tueste">🗑️</button>
@@ -1262,7 +1278,6 @@
                     tbody.prepend(tr);
                 });
 
-                // Funcionalidad del nuevo botón "Ver gráfico"
                 document.querySelectorAll('.btn-view').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const idx = this.getAttribute('data-index');
@@ -1429,4 +1444,4 @@
         });
     </script>
 </body>
-</html>
+</html

@@ -93,6 +93,7 @@
         .btn-danger { background-color: var(--danger-color); color: white; }
         .btn-info { background-color: var(--info-color); color: white; }
         .btn-warning { background-color: var(--accent-color); color: white; }
+        .btn-excel { background-color: #207245; color: white; } 
 
         .status-container {
             display: flex;
@@ -157,6 +158,21 @@
             height: 250px;
             display: block;
             margin-top: 10px;
+        }
+        
+        .phase-chart-container {
+            width: 100%;
+            overflow-x: auto; 
+            margin-top: 20px;
+            margin-bottom: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+        }
+
+        #phase-canvas {
+            background-color: #ffffff;
+            height: 350px; 
+            min-width: 600px;
         }
 
         .result-header {
@@ -258,7 +274,7 @@
             text-align: left;
         }
 
-        .btn-delete, .btn-edit {
+        .btn-delete, .btn-edit, .btn-view {
             background: transparent;
             border: none;
             font-size: 1.2rem;
@@ -268,7 +284,14 @@
         }
         .btn-delete { color: var(--danger-color); }
         .btn-edit { color: var(--info-color); }
-        .btn-delete:hover, .btn-edit:hover { transform: scale(1.2); }
+        .btn-view { color: var(--success-color); }
+        .btn-delete:hover, .btn-edit:hover, .btn-view:hover { transform: scale(1.2); }
+
+        .actions-cell {
+            text-align: center;
+            white-space: nowrap; 
+            width: 1%; 
+        }
 
         .edit-select {
             width: 100%;
@@ -300,6 +323,8 @@
             <select id="variedad">
                 <option value="Sidra Honey">Sidra Honey</option>
                 <option value="Sidra Lavado">Sidra Lavado</option>
+                <option value="Typica Lavado">Typica Lavado</option>
+                <option value="Bourbon Rosado">Bourbon Rosado</option>
                 <option value="Blend">Blend</option>
             </select>
         </div>
@@ -408,12 +433,19 @@
             </table>
         </div>
 
-        <canvas id="result-chart"></canvas>
+        <canvas id="result-chart" style="display:none;"></canvas>
+
+        <div class="phase-chart-container">
+            <canvas id="phase-canvas"></canvas>
+        </div>
 
         <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 5px;">
             <button id="btn-download-json" class="btn-primary">Descargar JSON</button>
             <button id="btn-back-home" class="btn-secondary">Volver al Inicio</button>
-            <button id="btn-toggle-comp" class="btn-warning">Datos Comparativos</button>
+            <div class="row-controls">
+                <button id="btn-toggle-comp" class="btn-warning">Tabla de Datos</button>
+                <button id="btn-copy-excel" class="btn-excel">📋 Copiar Datos (Excel)</button>
+            </div>
         </div>
 
         <div id="comparative-table-container" style="display: none;">
@@ -475,8 +507,8 @@
 
         const liveCanvas = document.getElementById('live-chart');
         const liveCtx = liveCanvas.getContext('2d');
-        const resultCanvas = document.getElementById('result-chart');
-        const resultCtx = resultCanvas.getContext('2d');
+        const phaseCanvas = document.getElementById('phase-canvas');
+        const phaseCtx = phaseCanvas.getContext('2d');
         const rorDisplayEl = document.getElementById('ror-display');
 
         function showScreen(screenName) {
@@ -562,7 +594,6 @@
                 }
             }
 
-            // 1. Forma (40%) - Correlación de Pearson
             let r = 0;
             if (n > 1) {
                 let denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
@@ -570,16 +601,12 @@
             } else { r = 1; }
             let scoreShape = Math.max(0, r) * 40;
 
-            // 2. Energía (30%) - Penalizaciones por Flicks y Crashes
-            // Castigamos severamente (8 pts) cada alteración del RoR descendente.
             let rorPenalty = (flicks * 8) + (crashes * 8);
             let scoreEnergy = Math.max(0, 30 - rorPenalty);
 
-            // 3. Desviación de Tolerancia (20%)
             let avgDev = timeScores.length > 0 ? timeScores.reduce((a,b)=>a+b,0)/timeScores.length : 0;
             let scoreDev = avgDev * 20;
 
-            // 4. Tiempo Total (10%)
             let scoreTime = 0;
             let lastMatched = Math.min(actData.length - 1, seqData.length - 1);
             if (lastMatched > 0) {
@@ -607,24 +634,19 @@
             
             let html = `<div style="margin-bottom: 10px; text-align: center; font-weight: bold;">Desglose Termodinámico:</div>`;
             html += `<ul style="padding-left: 20px; margin-top: 5px; margin-bottom: 0;">`;
-            
             html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.r >= 0.98) ? 'Excelente correlación con la tendencia del perfil.' : 'Se detectaron distorsiones en la progresión.'}</span></li>`;
-            
             html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por cambios bruscos o exceso de oscilación.'}</span></li>`;
-            
             html += `<li style="margin-bottom: 8px;"><strong>Tolerancia de Hitos (20%):</strong> Obtenido ${Math.round(details.dev)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.dev >= 16) ? 'Tiempos muy ajustados a la curva ideal.' : 'Desfasajes de tiempo fuera del margen de gracia.'}</span></li>`;
-            
             html += `<li><strong>Cierre de Tiempo (10%):</strong> Obtenido ${Math.round(details.time)} pts.</li>`;
-            
             html += `</ul>`;
             return html;
         }
 
         function generarEstadisticasRoR(actData) {
             let fases = {
-                'S': { name: 'Secado', values: [] },
-                'M': { name: 'Maillard', values: [] },
-                'D': { name: 'Desarrollo', values: [] }
+                'S': { name: 'Secado', values: [], fallos: 0 },
+                'M': { name: 'Maillard', values: [], fallos: 0 },
+                'D': { name: 'Desarrollo', values: [], fallos: 0 }
             };
             let allValues = [];
 
@@ -633,8 +655,16 @@
                 if (pt.rorEma !== null && pt.rorEma !== undefined && !pt.isInit) {
                     let f = pt.fase;
                     if (f === '1' || f === 'C') f = f === '1' ? 'D' : 'S'; 
+                    
                     if (fases[f]) {
                         fases[f].values.push(pt.rorEma);
+                        if (i > 1 && actData[i-1] && !actData[i-1].isInit && actData[i-1].ror !== "-") {
+                            let prevRoR = actData[i-1].ror;
+                            let currRoR = pt.ror;
+                            if (currRoR <= 3 || currRoR > prevRoR) {
+                                fases[f].fallos++;
+                            }
+                        }
                     }
                     allValues.push(pt.rorEma);
                 }
@@ -653,8 +683,8 @@
                 let st = calcStats(fases[key].values);
                 let badge = '';
                 if(fases[key].values.length > 0) {
-                    if (st.std < 1.5) badge = '🟢';
-                    else if (st.std < 3.0) badge = '🟡';
+                    if (fases[key].fallos === 0) badge = '🟢';
+                    else if (fases[key].fallos === 1) badge = '🟡';
                     else badge = '🔴';
                     
                     statsHtml += `<tr>
@@ -728,18 +758,44 @@
             document.getElementById('comp-analysis-text').innerHTML = textoAnalisisComp;
         }
 
+        document.getElementById('btn-copy-excel').addEventListener('click', () => {
+            const seqData = currentRoastExportData.secuencia_teorica;
+            const actData = currentRoastExportData.puntos_reales;
+            
+            let tsv = "Temp (°C)\tTeórico\tReal\tDiferencia (s)\tFase\tRoR\n";
+            
+            for (let i = 1; i < actData.length; i++) {
+                if (i < seqData.length) {
+                    let temp = seqData[i].tempValue;
+                    let teoStr = seqData[i].timeLabel;
+                    let realStr = actData[i].timeLabel;
+                    let dif = actData[i].seconds - seqData[i].seconds;
+                    let faseLetra = actData[i].fase || "-"; 
+                    let rorValue = actData[i].ror !== undefined ? actData[i].ror : "-";
+                    
+                    tsv += `${temp}\t${teoStr}\t${realStr}\t${dif}\t${faseLetra}\t${rorValue}\n`;
+                }
+            }
+
+            navigator.clipboard.writeText(tsv).then(() => {
+                alert("¡Datos copiados! Ahora puedes presionar 'Pegar' (Ctrl+V) en Excel o Google Sheets.");
+            }).catch(err => {
+                alert("Hubo un error al copiar los datos. Tu navegador podría no tener permisos.");
+            });
+        });
+
         document.getElementById('btn-toggle-comp').addEventListener('click', () => {
             const tableContainer = document.getElementById('comparative-table-container');
             tableContainer.style.display = tableContainer.style.display === 'none' ? 'block' : 'none';
         });
 
-        function drawChart(canvas, ctx, seqData, actData, showAxes = false) {
+        function drawChart(canvas, ctx, seqData, actData) {
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width;
-            canvas.height = showAxes ? 300 : 250;
+            canvas.height = 250;
 
-            const paddingX = showAxes ? 40 : 15;
-            const paddingY = showAxes ? 30 : 15;
+            const paddingX = 15;
+            const paddingY = 15;
             const width = canvas.width;
             const height = canvas.height;
 
@@ -752,26 +808,6 @@
 
             const getX = (sec) => paddingX + (sec / maxSec) * (width - paddingX - 15);
             const getY = (temp) => height - paddingY - ((temp - minTemp) / (maxTemp - minTemp)) * (height - paddingY - 20);
-
-            if (showAxes) {
-                ctx.beginPath();
-                ctx.strokeStyle = '#666';
-                ctx.lineWidth = 1;
-                ctx.moveTo(paddingX, 20);
-                ctx.lineTo(paddingX, height - paddingY);
-                ctx.lineTo(width - 15, height - paddingY);
-                ctx.stroke();
-
-                ctx.fillStyle = '#aaa';
-                ctx.font = '12px sans-serif';
-                ctx.textAlign = 'right';
-                ctx.fillText(maxTemp + "°", paddingX - 5, 25);
-                ctx.fillText(minTemp + "°", paddingX - 5, height - paddingY);
-                
-                ctx.textAlign = 'center';
-                ctx.fillText("0:00", paddingX, height - paddingY + 15);
-                ctx.fillText(formatTime(maxSec), width - 15, height - paddingY + 15);
-            }
 
             if (actData.length > 0) {
                 ctx.beginPath();
@@ -808,6 +844,188 @@
                 ctx.arc(getX(pt.seconds), getY(pt.tempValue), 2, 0, Math.PI * 2);
                 ctx.fill();
             });
+        }
+
+        function drawPhaseChart(canvas, ctx, seqData, actData) {
+            if (!seqData || seqData.length === 0) return;
+            
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 380; 
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+
+            const padLeft = 40;
+            const padRight = 30;
+            const padTop = 30;
+            const barAreaH = 70; 
+            const padBottom = barAreaH + 20; 
+            
+            const chartW = w - padLeft - padRight;
+            const chartH = h - padTop - padBottom;
+
+            const phaseColors = {
+                'C': '#cce0ff', 
+                'S': '#a8e6cf', 
+                'M': '#ffe8b3', 
+                '1': '#ffccaa', 
+                'D': '#ffb3b3'  
+            };
+
+            const phaseNames = {
+                'C': 'Carga', 'S': 'S (Secado)', 'M': 'M (Maillard)', 
+                '1': '1 (Primer crack)', 'D': 'D (Desarrollo)'
+            };
+
+            let maxSecSeq = seqData[seqData.length - 1].seconds;
+            let maxSecAct = actData.length > 0 ? actData[actData.length - 1].seconds : 0;
+            let maxSec = Math.max(maxSecSeq, maxSecAct);
+            maxSec = Math.ceil(maxSec / 60) * 60;
+
+            const minTemp = 20;
+            const maxTemp = 220;
+
+            const getX = (sec) => padLeft + (sec / maxSec) * chartW;
+            const getY = (temp) => padTop + chartH - ((temp - minTemp) / (maxTemp - minTemp)) * chartH;
+
+            ctx.lineWidth = 1;
+            ctx.font = '11px Arial';
+            
+            ctx.textAlign = 'center';
+            for (let s = 0; s <= maxSec; s += 30) {
+                let x = getX(s);
+                ctx.beginPath();
+                ctx.strokeStyle = '#f0f0f0';
+                ctx.moveTo(x, padTop);
+                ctx.lineTo(x, padTop + chartH);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#333333';
+                let txtTime = `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
+                ctx.fillText(txtTime, x, padTop + chartH + 15);
+            }
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let t = 20; t <= maxTemp; t += 20) {
+                let y = getY(t);
+                ctx.beginPath();
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.moveTo(padLeft, y);
+                ctx.lineTo(padLeft + chartW, y);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#333333';
+                ctx.fillText(t, padLeft - 5, y);
+            }
+
+            function drawPhaseBars(data, yOffset, label, labelColor) {
+                ctx.fillStyle = labelColor;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 11px Arial';
+                ctx.fillText(label, padLeft - 5, yOffset + 12);
+
+                if(data.length === 0) return;
+                let phases = [];
+                let currFase = data[0].fase || data[0].faseLetra || 'C';
+                let currStart = data[0].seconds;
+                
+                for(let i = 1; i < data.length; i++) {
+                    let f = data[i].fase || data[i].faseLetra;
+                    if(f !== currFase) {
+                        phases.push({ f: currFase, start: currStart, end: data[i].seconds });
+                        currFase = f;
+                        currStart = data[i].seconds;
+                    }
+                }
+                phases.push({ f: currFase, start: currStart, end: data[data.length-1].seconds });
+
+                phases.forEach(p => {
+                    let startX = getX(p.start);
+                    let endX = getX(p.end);
+                    let width = endX - startX;
+                    
+                    ctx.fillStyle = phaseColors[p.f] || '#cccccc';
+                    ctx.fillRect(startX, yOffset, width, 24);
+                    
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(startX, yOffset, width, 24);
+
+                    let text = phaseNames[p.f] || p.f;
+                    ctx.fillStyle = '#000000';
+                    ctx.textAlign = 'center';
+                    ctx.font = '11px Arial';
+                    
+                    let textWidth = ctx.measureText(text).width;
+                    if (width > textWidth + 10) {
+                        ctx.fillText(text, startX + width/2, yOffset + 12);
+                    } else if (width > 15) {
+                        ctx.fillText(p.f, startX + width/2, yOffset + 12); 
+                    }
+                });
+            }
+
+            let barStartY = padTop + chartH + 30;
+            drawPhaseBars(seqData, barStartY, "Teórica", "#0033cc");
+            if (actData.length > 0) drawPhaseBars(actData, barStartY + 25, "Real", "#cc0000");
+
+            function plotLine(data, lineColor, isDashed) {
+                if(data.length === 0) return;
+                
+                ctx.beginPath();
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = 2;
+                if(isDashed) ctx.setLineDash([6, 4]);
+                else ctx.setLineDash([]);
+                
+                ctx.moveTo(getX(data[0].seconds), getY(data[0].tempValue));
+                for(let i = 1; i < data.length; i++) {
+                    ctx.lineTo(getX(data[i].seconds), getY(data[i].tempValue));
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.textAlign = 'center';
+                ctx.font = '10px Arial';
+                data.forEach((pt) => {
+                    let x = getX(pt.seconds);
+                    let y = getY(pt.tempValue);
+                    
+                    ctx.fillStyle = lineColor;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    let textOffset = isDashed ? 14 : -8; 
+                    ctx.fillText(pt.tempValue, x, y + textOffset);
+                });
+            }
+
+            plotLine(seqData, '#0055ff', false); 
+            plotLine(actData, '#ff2222', false); 
+
+            let crackPt = actData.find(d => d.fase === '1');
+            if (crackPt) {
+                let cx = getX(crackPt.seconds);
+                ctx.beginPath();
+                ctx.strokeStyle = '#ff2222';
+                ctx.setLineDash([4, 4]);
+                ctx.moveTo(cx, padTop);
+                ctx.lineTo(cx, barStartY + 25);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = '#ff2222';
+                ctx.textAlign = 'center';
+                ctx.font = '11px Arial';
+                ctx.fillText("1er crack", cx, padTop - 12);
+                ctx.fillText(`(${crackPt.timeLabel})`, cx, padTop);
+            }
         }
 
         function updateDisplay() {
@@ -869,7 +1087,7 @@
                 isInit: true 
             }];
             
-            setTimeout(() => drawChart(liveCanvas, liveCtx, sequenceData, actualData, false), 100); 
+            setTimeout(() => drawChart(liveCanvas, liveCtx, sequenceData, actualData), 100); 
             updateDisplay();
             timerInterval = setInterval(updateDisplay, 1000);
         });
@@ -942,7 +1160,7 @@
                 }
 
                 expectedHitoIndex++;
-                drawChart(liveCanvas, liveCtx, sequenceData, actualData, false);
+                drawChart(liveCanvas, liveCtx, sequenceData, actualData);
                 updateDisplay();
             }
         });
@@ -973,12 +1191,10 @@
             };
 
             let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-            historial.push({
-                fecha: fecha,
-                tostador: tostador,
-                variedad: variedad,
-                score: currentRoastScore
-            });
+            
+            // --- CORRECCIÓN: Aquí ahora se guarda el objeto completo en lugar de solo el resumen ---
+            historial.push(currentRoastExportData); 
+            
             localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
 
             mostrarPantallaResultados(currentRoastExportData);
@@ -1004,7 +1220,7 @@
 
             showScreen('result');
             
-            setTimeout(() => drawChart(resultCanvas, resultCtx, dataObj.secuencia_teorica, dataObj.puntos_reales, true), 100);
+            setTimeout(() => drawPhaseChart(phaseCanvas, phaseCtx, dataObj.secuencia_teorica, dataObj.puntos_reales), 100);
         }
 
         document.getElementById('btn-download-json').addEventListener('click', () => {
@@ -1036,12 +1252,30 @@
                         <td class="cell-tostador">${t.tostador}</td>
                         <td class="cell-variedad">${t.variedad}</td>
                         <td><strong>${t.score}%</strong></td>
-                        <td style="text-align: center; min-width: 80px;">
+                        <td class="actions-cell">
+                            <!-- CORRECCIÓN: Se agregó el botón de Ver Gráfico -->
+                            <button class="btn-view" data-index="${index}" title="Ver gráfico">📈</button>
                             <button class="btn-edit" data-index="${index}" title="Editar tueste">✏️</button>
                             <button class="btn-delete" data-index="${index}" title="Eliminar tueste">🗑️</button>
                         </td>
                     `;
                     tbody.prepend(tr);
+                });
+
+                // Funcionalidad del nuevo botón "Ver gráfico"
+                document.querySelectorAll('.btn-view').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = this.getAttribute('data-index');
+                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                        let registroCompleto = currentHistorial[idx];
+                        
+                        if (registroCompleto.puntos_reales) {
+                            currentRoastExportData = registroCompleto;
+                            mostrarPantallaResultados(registroCompleto);
+                        } else {
+                            alert("Este registro es antiguo y no contiene los datos de la curva. Solo los nuevos registros tendrán el gráfico disponible.");
+                        }
+                    });
                 });
 
                 document.querySelectorAll('.btn-delete').forEach(btn => {
@@ -1073,7 +1307,7 @@
                             const cellVariedad = row.querySelector('.cell-variedad');
 
                             const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
-                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Blend'];
+                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Bourbon Rosado', 'Blend'];
 
                             cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
                             cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
@@ -1190,8 +1424,8 @@
         document.getElementById('btn-history-back').addEventListener('click', () => showScreen('setup'));
 
         window.addEventListener('resize', () => {
-            if (screens.roast.style.display === 'block') drawChart(liveCanvas, liveCtx, sequenceData, actualData, false);
-            if (screens.result.style.display === 'block') drawChart(resultCanvas, resultCtx, currentRoastExportData.secuencia_teorica, currentRoastExportData.puntos_reales, true);
+            if (screens.roast.style.display === 'block') drawChart(liveCanvas, liveCtx, sequenceData, actualData);
+            if (screens.result.style.display === 'block') drawPhaseChart(phaseCanvas, phaseCtx, currentRoastExportData.secuencia_teorica, currentRoastExportData.puntos_reales);
         });
     </script>
 </body>

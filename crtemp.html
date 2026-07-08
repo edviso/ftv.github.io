@@ -530,7 +530,7 @@
         }
 
         function desactivarMantenerPantalla() {
-            if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); }
+            if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }).catch(()=>{}); }
         }
 
         function formatTime(totalSeconds) {
@@ -956,6 +956,7 @@
             let maxSecSeq = seqData[seqData.length - 1].seconds;
             let maxSecAct = actData.length > 0 ? actData[actData.length - 1].seconds : 0;
             let maxSec = Math.max(maxSecSeq, maxSecAct);
+            if (isNaN(maxSec)) maxSec = 660; // Protección extra
             maxSec = Math.ceil(maxSec / 60) * 60;
 
             const minTemp = 20;
@@ -1265,9 +1266,22 @@
                 desglose_calificacion: precis
             };
 
-            let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-            historial.push(currentRoastExportData); 
-            localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+            // BLOQUE DE SEGURIDAD NUEVO: Evitar que el navegador congele la App
+            try {
+                let historial = [];
+                try {
+                    let datosGuardados = localStorage.getItem('vinzaHistorial');
+                    if (datosGuardados) historial = JSON.parse(datosGuardados);
+                } catch (e) {
+                    console.warn("Historial previo corrupto, se iniciará uno nuevo.");
+                }
+                
+                historial.push(currentRoastExportData); 
+                localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+            } catch (error) {
+                console.error("Error guardando en historial:", error);
+                alert("Aviso: No se pudo guardar el tueste en el historial interno de tu navegador (es probable que la memoria asignada esté llena). Sin embargo, procesaremos tus resultados para que los veas y puedas descargar el archivo JSON.");
+            }
 
             mostrarPantallaResultados(currentRoastExportData);
         });
@@ -1317,7 +1331,11 @@
             const tbody = document.getElementById('history-body');
             tbody.innerHTML = '';
             
-            let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+            let historial = [];
+            try {
+                let datosGuardados = localStorage.getItem('vinzaHistorial');
+                if (datosGuardados) historial = JSON.parse(datosGuardados);
+            } catch(e) {}
             
             if (historial.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay tuestes registrados aún.</td></tr>';
@@ -1341,14 +1359,17 @@
                 document.querySelectorAll('.btn-view').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const idx = this.getAttribute('data-index');
-                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                        let registroCompleto = currentHistorial[idx];
-                        
-                        if (registroCompleto.puntos_reales) {
-                            currentRoastExportData = registroCompleto;
-                            mostrarPantallaResultados(registroCompleto);
-                        } else {
-                            alert("Este registro es antiguo y no contiene los datos de la curva. Solo los nuevos registros tendrán el gráfico disponible.");
+                        try {
+                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                            let registroCompleto = currentHistorial[idx];
+                            if (registroCompleto && registroCompleto.puntos_reales) {
+                                currentRoastExportData = registroCompleto;
+                                mostrarPantallaResultados(registroCompleto);
+                            } else {
+                                alert("Este registro es antiguo y no contiene los datos de la curva. Solo los nuevos registros tendrán el gráfico disponible.");
+                            }
+                        } catch(e) {
+                            alert("Error al leer el registro.");
                         }
                     });
                 });
@@ -1357,10 +1378,14 @@
                     btn.addEventListener('click', function() {
                         const idx = this.getAttribute('data-index');
                         if (confirm('¿Estás seguro de que deseas eliminar este tueste del historial?')) {
-                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                            currentHistorial.splice(idx, 1);
-                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
-                            document.getElementById('btn-view-history').click(); 
+                            try {
+                                let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                                currentHistorial.splice(idx, 1);
+                                localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                                document.getElementById('btn-view-history').click(); 
+                            } catch (e) {
+                                alert("Error al actualizar el historial.");
+                            }
                         }
                     });
                 });
@@ -1370,31 +1395,36 @@
                         const idx = this.getAttribute('data-index');
                         const row = this.closest('tr');
                         const isEditing = row.classList.contains('editing');
-                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                        let registro = currentHistorial[idx];
+                        
+                        try {
+                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                            let registro = currentHistorial[idx];
 
-                        if (!isEditing) {
-                            row.classList.add('editing');
-                            this.textContent = '💾';
-                            this.title = 'Guardar cambios';
+                            if (!isEditing) {
+                                row.classList.add('editing');
+                                this.textContent = '💾';
+                                this.title = 'Guardar cambios';
 
-                            const cellTostador = row.querySelector('.cell-tostador');
-                            const cellVariedad = row.querySelector('.cell-variedad');
+                                const cellTostador = row.querySelector('.cell-tostador');
+                                const cellVariedad = row.querySelector('.cell-variedad');
 
-                            const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
-                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Bourbon Rosado', 'Blend'];
+                                const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
+                                const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Bourbon Rosado', 'Blend'];
 
-                            cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
-                            cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
-                        } else {
-                            const nuevoTostador = row.querySelector('.select-tostador').value;
-                            const nuevaVariedad = row.querySelector('.select-variedad').value;
+                                cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+                                cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                            } else {
+                                const nuevoTostador = row.querySelector('.select-tostador').value;
+                                const nuevaVariedad = row.querySelector('.select-variedad').value;
 
-                            currentHistorial[idx].tostador = nuevoTostador;
-                            currentHistorial[idx].variedad = nuevaVariedad;
-                            
-                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
-                            document.getElementById('btn-view-history').click(); 
+                                currentHistorial[idx].tostador = nuevoTostador;
+                                currentHistorial[idx].variedad = nuevaVariedad;
+                                
+                                localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                                document.getElementById('btn-view-history').click(); 
+                            }
+                        } catch (e) {
+                            alert("Error al editar el registro.");
                         }
                     });
                 });
@@ -1473,18 +1503,20 @@
                     sequenceData = tempSeq;
                     actualData = tempAct;
 
-                    let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
                     let actualizado = false;
-                    for (let i = 0; i < historial.length; i++) {
-                        if (historial[i].fecha === loadedData.fecha) {
-                            historial[i].score = precis.total; 
-                            actualizado = true;
-                            break;
+                    try {
+                        let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                        for (let i = 0; i < historial.length; i++) {
+                            if (historial[i].fecha === loadedData.fecha) {
+                                historial[i].score = precis.total; 
+                                actualizado = true;
+                                break;
+                            }
                         }
-                    }
-                    if (actualizado) {
-                        localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
-                    }
+                        if (actualizado) {
+                            localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+                        }
+                    } catch(e) {}
 
                     currentRoastExportData = loadedData;
                     mostrarPantallaResultados(loadedData);
@@ -1506,4 +1538,3 @@
     </script>
 </body>
 </html>
-

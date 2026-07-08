@@ -324,7 +324,7 @@
                 <option value="Sidra Honey">Sidra Honey</option>
                 <option value="Sidra Lavado">Sidra Lavado</option>
                 <option value="Typica Lavado">Typica Lavado</option>
-                <option value="Simulación">Simulación</option>
+                <option value="Bourbon Rosado">Bourbon Rosado</option>
                 <option value="Blend">Blend</option>
             </select>
         </div>
@@ -431,6 +431,12 @@
                 <tbody id="stats-body">
                 </tbody>
             </table>
+        </div>
+
+        <!-- NUEVO: Predicción de Perfil en Taza -->
+        <div id="prediccion-sabor-container" style="margin-top: 20px; background-color: #2a2a2a; border-radius: 8px; padding: 15px; border-left: 4px solid #ab47bc;">
+            <h3 style="color: #ab47bc; margin-top: 0; font-size: 1.1rem;">Predicción de Perfil en Taza (estimado)</h3>
+            <div id="prediccion-texto" style="font-size: 0.95rem; color: #ccc; line-height: 1.5;"></div>
         </div>
 
         <canvas id="result-chart" style="display:none;"></canvas>
@@ -557,7 +563,6 @@
             return data.sort((a, b) => a.seconds - b.seconds);
         }
 
-        // --- NUEVA FUNCIÓN DE CALIFICACIÓN CORREGIDA ---
         function calcularPrecision(seqData, actData) {
             if (actData.length <= 1) return { total: 0, shape: 0, energy: 0, dev: 0, time: 0, repuntes: 0 };
 
@@ -602,10 +607,8 @@
                 }
             }
 
-            // 1. Forma/Ritmo (40%) 
             let scoreShape = Math.max(0, 40 - (sumBumps * 2.5)); 
 
-            // 2. Energía (30%) 
             let rorPenalty = (flicks * 5) + (crashes * 3);
             let stdDevDiff = 0;
             if (rorDiffs.length > 0) {
@@ -616,11 +619,9 @@
             let stdPenalty = stdDevDiff > 4.0 ? (stdDevDiff - 4.0) * 2 : 0;
             let scoreEnergy = Math.max(0, 30 - rorPenalty - stdPenalty);
 
-            // 3. Desviación de Tolerancia (20%)
             let avgDev = timeScores.length > 0 ? timeScores.reduce((a,b)=>a+b,0)/timeScores.length : 0;
             let scoreDev = avgDev * 20;
 
-            // 4. Tiempo Total (10%)
             let scoreTime = 0;
             let lastMatched = Math.min(actData.length - 1, seqData.length - 1);
             if (lastMatched > 0) {
@@ -643,22 +644,74 @@
             };
         }
 
-        // --- NUEVA FUNCIÓN DE ANÁLISIS TEXTUAL CORREGIDA ---
         function generarAnalisis(details, actData) {
             if (actData.length <= 1) return "Tueste incompleto o sin datos suficientes para analizar.";
             
             let html = `<div style="margin-bottom: 10px; text-align: center; font-weight: bold;">Desglose Termodinámico:</div>`;
             html += `<ul style="padding-left: 20px; margin-top: 5px; margin-bottom: 0;">`;
-            
             html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.shape >= 35) ? 'Excelente consistencia en la desaceleración del RoR.' : `Se detectaron ${details.repuntes} repuntes en la progresión térmica.`}</span></li>`;
-            
             html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por variabilidad brusca o exceso de oscilación local.'}</span></li>`;
-            
             html += `<li style="margin-bottom: 8px;"><strong>Tolerancia de Hitos (20%):</strong> Obtenido ${Math.round(details.dev)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.dev >= 16) ? 'Tiempos muy ajustados a la curva ideal.' : 'Desfasajes de tiempo fuera del margen de gracia.'}</span></li>`;
-            
             html += `<li><strong>Cierre de Tiempo (10%):</strong> Obtenido ${Math.round(details.time)} pts.</li>`;
-            
             html += `</ul>`;
+            return html;
+        }
+
+        function generarPrediccionSabor(actData) {
+            if (!actData || actData.length <= 1) return "<p>Datos insuficientes.</p>";
+
+            let puntoCrack = actData.find(pt => pt.fase === "1");
+
+            if (!puntoCrack) {
+                return "<p style='color: var(--accent-color);'><em>Falta el hito de primer crack (fase '1') en el registro para poder generar la predicción de perfil en taza.</em></p>";
+            }
+
+            let tiempoCrack = puntoCrack.seconds;
+            let tiempoTotal = actData[actData.length - 1].seconds;
+            let tempFinal = actData[actData.length - 1].tempValue;
+
+            if (tiempoTotal <= 0) return "<p>Tiempo total inválido.</p>";
+
+            let ratioDesarrollo = (tiempoTotal - tiempoCrack) / tiempoTotal;
+            let ratioPct = ratioDesarrollo * 100;
+
+            let textoDTR = "";
+            if (ratioPct < 15) {
+                textoDTR = "Acidez muy viva y punzante, dulzor bajo, cuerpo ligero. Riesgo de subdesarrollo o notas verdes/astringentes.";
+            } else if (ratioPct >= 15 && ratioPct < 18) {
+                textoDTR = "Acidez brillante y notoria, dulzor moderado, cuerpo ligero a medio.";
+            } else if (ratioPct >= 18 && ratioPct < 23) {
+                textoDTR = "Buen balance ácido-dulce, cuerpo medio. Zona favorable para resaltar notas frutales o florales de origen.";
+            } else if (ratioPct >= 23 && ratioPct < 28) {
+                textoDTR = "Acidez más domesticada, dulzor pronunciado tipo caramelo, cuerpo redondo.";
+            } else {
+                textoDTR = "Acidez reducida, dulzor tipo caramelo/tostado domina, riesgo de perder notas frutales de origen.";
+            }
+
+            let textoTemp = "";
+            if (tempFinal < 195) {
+                textoTemp = "Tueste claro. Notas de origen muy presentes, acidez alta, amargor prácticamente ausente.";
+            } else if (tempFinal >= 195 && tempFinal < 202) {
+                textoTemp = "Tueste medio-claro. Buen equilibrio para resaltar variedad, amargor mínimo.";
+            } else if (tempFinal >= 202 && tempFinal < 208) {
+                textoTemp = "Tueste medio. Empiezan a asomar notas de caramelo/nuez sobre las de origen, leve amargor posible.";
+            } else if (tempFinal >= 208 && tempFinal < 215) {
+                textoTemp = "Tueste medio-oscuro. Dulzor tipo caramelo/chocolate más presente, acidez se reduce, leve a moderado amargor.";
+            } else {
+                textoTemp = "Tueste oscuro. Amargor más presente, acidez casi ausente, notas de origen muy reducidas.";
+            }
+
+            let html = `
+                <div style="margin-bottom: 12px; display: flex; gap: 15px; font-family: monospace; color: var(--info-color);">
+                    <span>DTR: <strong>${ratioPct.toFixed(1)}%</strong></span>
+                    <span>T.Final: <strong>${tempFinal}°C</strong></span>
+                </div>
+                <p style="margin-bottom: 8px;"><strong>Por Desarrollo:</strong> ${textoDTR}</p>
+                <p style="margin-bottom: 15px;"><strong>Por Nivel de Tueste:</strong> ${textoTemp}</p>
+                <div style="font-size: 0.8rem; color: #777; border-top: 1px solid #444; padding-top: 8px;">
+                    <em>Esta predicción es una estimación basada solo en la curva térmica del tueste. El resultado real en taza depende también de la variedad, el café verde, la merma y el método de extracción.</em>
+                </div>
+            `;
             return html;
         }
 
@@ -1197,6 +1250,7 @@
             const precis = calcularPrecision(sequenceData, actualData);
             currentRoastScore = precis.total;
             const textoAnalisis = generarAnalisis(precis, actualData);
+            const prediccionSabor = generarPrediccionSabor(actualData);
 
             currentRoastExportData = {
                 fecha: fecha,
@@ -1205,6 +1259,7 @@
                 perfil: perfil,
                 score: currentRoastScore,
                 analisis: textoAnalisis,
+                prediccion: prediccionSabor,
                 secuencia_teorica: sequenceData,
                 puntos_reales: actualData,
                 desglose_calificacion: precis
@@ -1230,6 +1285,11 @@
             else scoreEl.style.color = "var(--danger-color)";
 
             document.getElementById('analysis-text').innerHTML = dataObj.analisis || "Análisis no disponible para este archivo.";
+            
+            const contenedorPred = document.getElementById('prediccion-texto');
+            if (contenedorPred) {
+                contenedorPred.innerHTML = dataObj.prediccion || generarPrediccionSabor(dataObj.puntos_reales);
+            }
 
             generarEstadisticasRoR(dataObj.puntos_reales);
             poblarTablaComparativa(dataObj.secuencia_teorica, dataObj.puntos_reales);
@@ -1322,7 +1382,7 @@
                             const cellVariedad = row.querySelector('.cell-variedad');
 
                             const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
-                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Simulación', 'Blend'];
+                            const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Bourbon Rosado', 'Blend'];
 
                             cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
                             cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
@@ -1408,6 +1468,7 @@
                     loadedData.score = precis.total;
                     loadedData.analisis = generarAnalisis(precis, actualData);
                     loadedData.desglose_calificacion = precis;
+                    loadedData.prediccion = generarPrediccionSabor(actualData);
                     
                     sequenceData = tempSeq;
                     actualData = tempAct;
@@ -1444,6 +1505,4 @@
         });
     </script>
 </body>
-</html
-
-
+</html>

@@ -185,7 +185,7 @@
         .btn-save { background-color: #6d4c41; color: white; }
         .btn-load { background-color: #e0e0e0; color: #333; }
         #fileInput { display: none; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
 
         /* --- ESTILOS MÓDULO ANÁLISIS DE TUESTE Y CAROUSELES --- */
         .module-section-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
@@ -393,56 +393,69 @@
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
             <div style="font-size: 0.95rem; font-weight: bold; color: #4a3b32; margin-bottom: 12px; display: flex; align-items: center; gap: 5px;">🔥 Perfil de Tueste</div>
             
-            <!-- NUEVA FILA: Máquina y Merma -->
-            <div class="row">
-                <div class="input-group">
-                    <label>Máquina:</label>
-                    <select id="maquina" name="maquina">
-                        <option value="Tostadora" selected>Tostadora</option>
-                        <option value="Canguilera">Canguilera</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>% Merma:</label>
-                    <input type="number" id="merma" name="merma" step="0.01" value="13.60">
-                </div>
+            <div class="input-group">
+                <label>Tostador:</label>
+                <select id="tostador" name="tostador" onchange="gestionarCamposTueste()">
+                    <option value="Vinza" selected>Vinza</option>
+                    <option value="Externo">Externo</option>
+                </select>
             </div>
 
-            <!-- FILA ACTUALIZADA: Temperatura y Tiempo -->
-            <div class="row">
-                <div class="input-group">
-                    <label>Temp (°C):</label>
-                    <input type="number" id="temp_tueste" name="temp_tueste" value="224">
-                </div>
-                <div class="input-group">
-                    <label>T. Total:</label>
-                    <input type="text" id="tiempo_tueste" name="tiempo_tueste" value="11:00">
-                </div>
+            <div id="divExterno" class="input-group hidden">
+                <label>Nombre de la Tostadora:</label>
+                <input type="text" id="nombre_tostadora" name="nombre_tostadora" placeholder="Ej. Sweet Bloom">
             </div>
 
-            <div style="background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0;">
-                <div style="display: flex; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 8px; text-align: center;">
-                    <div style="flex: 1.2; text-align: left;">Fase</div>
-                    <div style="flex: 1;">Tiempo</div>
-                    <div style="flex: 1;">Veloc.</div>
+            <div id="divVinza">
+                <div class="row">
+                    <div class="input-group">
+                        <label>Máquina:</label>
+                        <select id="maquina" name="maquina">
+                            <option value="Tostadora" selected>Tostadora</option>
+                            <option value="Canguilera">Canguilera</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>% Merma:</label>
+                        <input type="number" id="merma" name="merma" step="0.01" value="13.60">
+                    </div>
                 </div>
-                
-                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Secado:</div>
-                    <div style="flex: 1;"><input type="text" id="secado_tiempo" name="secado_tiempo" value="03:30" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                    <div style="flex: 1;"><input type="text" id="secado_vel" name="secado_vel" value="V3" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+
+                <div class="row">
+                    <div class="input-group">
+                        <label>Temp (°C):</label>
+                        <input type="number" id="temp_tueste" name="temp_tueste" value="224">
+                    </div>
+                    <div class="input-group">
+                        <label>T. Total:</label>
+                        <input type="text" id="tiempo_tueste" name="tiempo_tueste" value="11:00">
+                    </div>
                 </div>
-                
-                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Maillard:</div>
-                    <div style="flex: 1;"><input type="text" id="maillard_tiempo" name="maillard_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                    <div style="flex: 1;"><input type="text" id="maillard_vel" name="maillard_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                </div>
-                
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Desarrollo:</div>
-                    <div style="flex: 1;"><input type="text" id="desarrollo_tiempo" name="desarrollo_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
-                    <div style="flex: 1;"><input type="text" id="desarrollo_vel" name="desarrollo_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+
+                <div style="background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0;">
+                    <div style="display: flex; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 8px; text-align: center;">
+                        <div style="flex: 1.2; text-align: left;">Fase</div>
+                        <div style="flex: 1;">Tiempo</div>
+                        <div style="flex: 1;">Veloc.</div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                        <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Secado:</div>
+                        <div style="flex: 1;"><input type="text" id="secado_tiempo" name="secado_tiempo" value="03:30" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                        <div style="flex: 1;"><input type="text" id="secado_vel" name="secado_vel" value="V3" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                        <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Maillard:</div>
+                        <div style="flex: 1;"><input type="text" id="maillard_tiempo" name="maillard_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                        <div style="flex: 1;"><input type="text" id="maillard_vel" name="maillard_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Desarrollo:</div>
+                        <div style="flex: 1;"><input type="text" id="desarrollo_tiempo" name="desarrollo_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                        <div style="flex: 1;"><input type="text" id="desarrollo_vel" name="desarrollo_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -788,6 +801,7 @@
 
     <script>
         const logHistorial = [
+            { fecha: "09-JUL-2026", resumen: "Perfil de Tueste: Implementación de lógica dual (Vinza vs Externo). Ajuste en diccionario de variedades para incluir SIL (Sidra Lavado) y forzado de ventana onload para completar fechas automáticamente al abrir." },
             { fecha: "09-JUL-2026", resumen: "Perfil de Tueste: Se añadió el selector 'Máquina' (Tostadora / Canguilera). El dato se guarda en JSON, aparece en el resumen interpretativo final y se incluye en la ficha izquierda de los gráficos descargables." },
             { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico, con fondo claro y alto contraste en exportación a JPG." },
             { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
@@ -826,7 +840,8 @@
             'GES': 'Geisha-Sidra',
             'CAT': 'Caturra',
             'TYM': 'Typica Mejorado',
-            'CTI': 'Catuaí'
+            'CTI': 'Catuaí',
+            'SIL': 'Sidra Lavado'
         };
 
         // --- VARIABLE GLOBAL DUAL PARA ANÁLISIS DE DESARROLLO ---
@@ -839,7 +854,21 @@
         let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
         let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
         let currentFilterType = '';
-        let sortByScoreDesc = false; // Variable global para el botón de ordenar
+        let sortByScoreDesc = false;
+
+        function gestionarCamposTueste() {
+            const tostador = document.getElementById('tostador').value;
+            const divVinza = document.getElementById('divVinza');
+            const divExterno = document.getElementById('divExterno');
+
+            if (tostador === 'Vinza') {
+                divVinza.classList.remove('hidden');
+                divExterno.classList.add('hidden');
+            } else {
+                divVinza.classList.add('hidden');
+                divExterno.classList.remove('hidden');
+            }
+        }
 
         function calcularDiasDesdeCodigoYFecha(codigo, fechaStr) {
             if (!codigo || !fechaStr) return null;
@@ -1701,8 +1730,11 @@
         generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens'); generarGridHTML(paramNotas, 'notasSensoriales', 'nota'); generarGlobalHTML();
         
         window.onload = () => { 
-            document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
+            if (!document.getElementById('fecha_hora').value) {
+                document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
+            }
             sanearHistorial();
+            gestionarCamposTueste();
             analizarCodigo(); 
             actualizarDispositivos(); 
             calcularAguaTotal(); 
@@ -1727,7 +1759,13 @@
             
             parrafo += `El retrogusto es ${fmt(retro,'retro')}. ` + (vol ? `Disposición a volver a tomarlo: ${fmt(vol, 'fem')}. ` : '') + `Evaluación global: ${globalOutput}${fd.get('observaciones') ? ', notas adicionales: ' + fd.get('observaciones').trim() : '.'}`;
             
-            let textoFinal = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'} [${fd.get('maquina') || 'Tostadora'}]`;
+            let textoFinal = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'}`;
+            if (fd.get('tostador') === 'Vinza') {
+                textoFinal += ` [${fd.get('maquina') || 'Tostadora'}] - ${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}`;
+            } else {
+                textoFinal += ` [Tostador Externo: ${fd.get('nombre_tostadora') || 'No especificado'}]`;
+            }
+
             let dReposo = fd.get('dias_tueste'); if (dReposo && !isNaN(dReposo)) textoFinal += ` (${dReposo} días post-tueste)`;
             
             let gr = parseFloat(fd.get('gramos_cafe')), ml_total_real = parseFloat(fd.get('agua_total'));
@@ -1794,6 +1832,7 @@
                 registro: document.getElementById('fecha_hora').value, 
                 datos_cafe: { 
                     variedad: fd.get('variedad'), codigo: fd.get('codigo'), fecha_hora: fd.get('fecha_hora'), dias_tueste: fd.get('dias_tueste'),
+                    tostador: fd.get('tostador'), nombre_tostadora: fd.get('nombre_tostadora'),
                     maquina: fd.get('maquina'), merma: fd.get('merma'), temp_tueste: fd.get('temp_tueste'), tiempo_tueste: fd.get('tiempo_tueste'),
                     fases: { secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') }, maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') }, desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') } }
                 }, 
@@ -1824,9 +1863,11 @@
                     document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
                     const dc = d.datos_cafe || d; const ext = d.extraccion || d; const sens = d.sensorial || d; const nots = d.notas || d;
 
-                    ['variedad', 'codigo', 'fecha_hora', 'maquina', 'merma', 'temp_tueste', 'tiempo_tueste'].forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = dc[k] || d[k] || document.getElementById(k).value; });
+                    ['variedad', 'codigo', 'fecha_hora', 'tostador', 'nombre_tostadora', 'maquina', 'merma', 'temp_tueste', 'tiempo_tueste'].forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = dc[k] || d[k] || document.getElementById(k).value; });
                     if(dc.fases) { document.getElementById('secado_tiempo').value = dc.fases.secado?.tiempo || ""; document.getElementById('secado_vel').value = dc.fases.secado?.vel || ""; document.getElementById('maillard_tiempo').value = dc.fases.maillard?.tiempo || ""; document.getElementById('maillard_vel').value = dc.fases.maillard?.vel || ""; document.getElementById('desarrollo_tiempo').value = dc.fases.desarrollo?.tiempo || ""; document.getElementById('desarrollo_vel').value = dc.fases.desarrollo?.vel || ""; }
                     
+                    gestionarCamposTueste();
+
                     let met = ext.metodo === "Filtrado (Pour Over / Goteo)" ? "Filtrado" : ext.metodo;
                     setSelectValue('metodo', met); actualizarDispositivos(); setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
                     let fil = ext.filtro === "Filtro fondo plano/papel" ? "Fondo plano/papel" : (ext.filtro === "Filtro cónico/papel" ? "Cónico/papel" : ext.filtro); setSelectValue('filtro', fil);
@@ -2099,8 +2140,6 @@
             let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
 
-            let velSec = (fd.get('secado_vel')||'').toLowerCase(), velMai = (fd.get('maillard_vel')||'').toLowerCase(), velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-            
             let t_B = fd.get('temp_blooming') || '90';
             let t_1V = fd.get('temp_v1') || '90';
             let tempStr = `[B(${t_B}), 1V(${t_1V})`;
@@ -2117,13 +2156,34 @@
             let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
             let nivelTuesteTxt = pMolido ? `${pMolido.label} (${pMolido.sub})` : '[-]';
 
+            let tuesteTxt = '';
+            let fasesTxt = '';
+            let velTxt = '';
+            let mermaTxt = '';
+
+            if (fd.get('tostador') === 'Vinza') {
+                tuesteTxt = `[${fd.get('maquina') || '-'}] ${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}`;
+                mermaTxt = `[${fd.get('merma') || '-'} %]`;
+                fasesTxt = `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}`;
+                
+                let velSec = (fd.get('secado_vel')||'').toLowerCase(); 
+                let velMai = (fd.get('maillard_vel')||'').toLowerCase(); 
+                let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+                velTxt = `S(${velSec})M(${velMai})D(${velDes})`;
+            } else {
+                tuesteTxt = `[Externo] ${fd.get('nombre_tostadora') || 'N/A'}`;
+                mermaTxt = '[-]';
+                fasesTxt = '[-]';
+                velTxt = '[-]';
+            }
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
-                { l: 'Tueste:', v: `[${fd.get('maquina') || '-'}] ${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
-                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
-                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desrollo_tiempo')||'-'}` }, 
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Tueste:', v: tuesteTxt }, 
+                { l: 'Merma:', v: mermaTxt }, 
+                { l: 'Fases (S | M | D):', v: fasesTxt }, 
+                { l: 'Vel:', v: velTxt },
                 { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
                 { l: 'Nivel de tueste:', v: nivelTuesteTxt }
             ];
@@ -2196,8 +2256,6 @@
             let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
             let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
             
-            let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
-            
             let t_B = fd.get('temp_blooming') || '90';
             let t_1V = fd.get('temp_v1') || '90';
             let tempStr = `[B(${t_B}), 1V(${t_1V})`;
@@ -2214,13 +2272,34 @@
             let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
             let nivelTuesteTxt = pMolido ? `${pMolido.label} (${pMolido.sub})` : '[-]';
 
+            let tuesteTxt = '';
+            let fasesTxt = '';
+            let velTxt = '';
+            let mermaTxt = '';
+
+            if (fd.get('tostador') === 'Vinza') {
+                tuesteTxt = `[${fd.get('maquina') || '-'}] ${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}`;
+                mermaTxt = `[${fd.get('merma') || '-'} %]`;
+                fasesTxt = `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}`;
+                
+                let velSec = (fd.get('secado_vel')||'').toLowerCase(); 
+                let velMai = (fd.get('maillard_vel')||'').toLowerCase(); 
+                let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+                velTxt = `S(${velSec})M(${velMai})D(${velDes})`;
+            } else {
+                tuesteTxt = `[Externo] ${fd.get('nombre_tostadora') || 'N/A'}`;
+                mermaTxt = '[-]';
+                fasesTxt = '[-]';
+                velTxt = '[-]';
+            }
+
             const colIzq = [
                 { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
                 { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
-                { l: 'Tueste:', v: `[${fd.get('maquina') || '-'}] ${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
-                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
-                { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
-                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Tueste:', v: tuesteTxt }, 
+                { l: 'Merma:', v: mermaTxt }, 
+                { l: 'Fases (S|M|D):', v: fasesTxt }, 
+                { l: 'Vel:', v: velTxt },
                 { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
                 { l: 'Nivel de tueste:', v: nivelTuesteTxt }
             ]; 

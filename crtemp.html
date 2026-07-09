@@ -302,9 +302,38 @@
             border-radius: 4px;
             font-size: 0.9rem;
         }
+
+        /* ESTILOS DEL MODAL PERSONALIZADO (Reemplazo de alert/confirm) */
+        .modal-overlay {
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10000; 
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+        .modal-content {
+            background: var(--box-bg); padding: 25px; border-radius: 12px;
+            width: 90%; max-width: 400px; text-align: center; 
+            border-top: 5px solid var(--accent-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .modal-actions { display: flex; gap: 15px; margin-top: 25px; }
+        .modal-actions button { margin-bottom: 0; padding: 12px; }
     </style>
 </head>
 <body>
+
+    <!-- SISTEMA DE MODAL PERSONALIZADO -->
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title" style="margin-top: 0; color: #fff;">Aviso</h3>
+            <p id="modal-msg" style="color: #ccc; font-size: 1.05rem; line-height: 1.5;"></p>
+            <div class="modal-actions">
+                <button id="modal-btn-cancel" class="btn-secondary" style="display: none;">Cancelar</button>
+                <button id="modal-btn-ok" class="btn-primary">Aceptar</button>
+            </div>
+        </div>
+    </div>
 
     <div id="setup-screen" class="screen panel">
         <h1>Configuración de Tueste</h1>
@@ -326,7 +355,6 @@
                 <option value="Typica Lavado">Typica Lavado</option>
                 <option value="Bourbon Rosado">Bourbon Rosado</option>
                 <option value="Blend">Blend</option>
-                <option value="Simulación">Simulación</option>
             </select>
         </div>
 
@@ -504,6 +532,42 @@
         let currentRoastExportData = null; 
         const alphaEMA = 0.25; 
 
+        // --- SISTEMA DE MODALES (Reemplazo de alert y confirm) ---
+        function mostrarAlerta(mensaje, colorBorde = "var(--accent-color)") {
+            const overlay = document.getElementById('custom-modal');
+            const content = overlay.querySelector('.modal-content');
+            content.style.borderTopColor = colorBorde;
+            document.getElementById('modal-title').textContent = "Aviso";
+            document.getElementById('modal-msg').innerHTML = mensaje;
+            document.getElementById('modal-btn-cancel').style.display = 'none';
+            const btnOk = document.getElementById('modal-btn-ok');
+            btnOk.className = 'btn-primary';
+            
+            overlay.style.display = 'flex';
+            btnOk.onclick = () => { overlay.style.display = 'none'; };
+        }
+
+        function mostrarConfirmacion(mensaje, callbackOK) {
+            const overlay = document.getElementById('custom-modal');
+            const content = overlay.querySelector('.modal-content');
+            content.style.borderTopColor = "var(--danger-color)";
+            document.getElementById('modal-title').textContent = "Confirmar acción";
+            document.getElementById('modal-msg').innerHTML = mensaje;
+            const btnCancel = document.getElementById('modal-btn-cancel');
+            const btnOk = document.getElementById('modal-btn-ok');
+            btnOk.className = 'btn-danger';
+            
+            btnCancel.style.display = 'block';
+            overlay.style.display = 'flex';
+            
+            btnCancel.onclick = () => { overlay.style.display = 'none'; };
+            btnOk.onclick = () => { 
+                overlay.style.display = 'none'; 
+                callbackOK(); 
+            };
+        }
+        // ---------------------------------------------------------
+
         const screens = {
             setup: document.getElementById('setup-screen'),
             roast: document.getElementById('roast-screen'),
@@ -530,7 +594,7 @@
         }
 
         function desactivarMantenerPantalla() {
-            if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); }
+            if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }).catch(()=>{}); }
         }
 
         function formatTime(totalSeconds) {
@@ -832,7 +896,6 @@
         }
 
         document.getElementById('btn-copy-excel').addEventListener('click', () => {
-            if (!currentRoastExportData) return;
             const seqData = currentRoastExportData.secuencia_teorica;
             const actData = currentRoastExportData.puntos_reales;
             
@@ -852,9 +915,9 @@
             }
 
             navigator.clipboard.writeText(tsv).then(() => {
-                alert("¡Datos copiados! Ahora puedes presionar 'Pegar' (Ctrl+V) en Excel o Google Sheets.");
+                mostrarAlerta("¡Datos copiados! Ahora puedes presionar 'Pegar' (Ctrl+V) en Excel.", "var(--success-color)");
             }).catch(err => {
-                alert("Hubo un error al copiar los datos.");
+                mostrarAlerta("Hubo un error al copiar los datos. Tu navegador no tiene permisos.", "var(--danger-color)");
             });
         });
 
@@ -957,6 +1020,7 @@
             let maxSecSeq = seqData[seqData.length - 1].seconds;
             let maxSecAct = actData.length > 0 ? actData[actData.length - 1].seconds : 0;
             let maxSec = Math.max(maxSecSeq, maxSecAct);
+            if (isNaN(maxSec)) maxSec = 660; 
             maxSec = Math.ceil(maxSec / 60) * 60;
 
             const minTemp = 20;
@@ -1136,8 +1200,13 @@
         }
 
         document.getElementById('btn-start').addEventListener('click', async () => {
+            const tostador = document.getElementById('tostador').value;
             sequenceData = parseSequence(document.getElementById('secuencia').value);
-            if (sequenceData.length === 0) return alert("Verifica el formato de la secuencia.");
+            
+            if (sequenceData.length === 0) {
+                mostrarAlerta("Verifica el formato de la secuencia.", "var(--danger-color)");
+                return;
+            }
 
             rorDisplayEl.innerHTML = "RoR: -- °C/min";
             rorDisplayEl.style.color = "#888";
@@ -1179,12 +1248,12 @@
                     isInit = true;
                     currentEma = null;
                 } else if (n === 2) {
-                    isInit = true;
                     let refPoint = actualData[1];
                     let deltaSec = elapsedSeconds - refPoint.seconds;
                     let deltaTemp = targetTemp - refPoint.tempValue;
                     if (deltaSec > 0) rawRoR = (deltaTemp / deltaSec) * 60;
                     currentEma = rawRoR;
+                    isInit = true;
                 } else if (n >= 3) {
                     let refPoint = actualData[n - 2];
                     let deltaSec = elapsedSeconds - refPoint.seconds;
@@ -1264,9 +1333,24 @@
                 desglose_calificacion: precis
             };
 
-            let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-            historial.push(currentRoastExportData); 
-            localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+            // ESTRATEGIA DE COMPRESIÓN: Solo guardar los datos esenciales en memoria local
+            try {
+                let historial = [];
+                try {
+                    let datosGuardados = localStorage.getItem('vinzaHistorial');
+                    if (datosGuardados) historial = JSON.parse(datosGuardados);
+                } catch (e) { }
+                
+                let registroLigero = {
+                    fecha: fecha, tostador: tostador, variedad: variedad, perfil: perfil, score: currentRoastScore,
+                    secuencia_teorica: sequenceData, puntos_reales: actualData
+                };
+                
+                historial.push(registroLigero); 
+                localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+            } catch (error) {
+                mostrarAlerta("La memoria de tu visor está llena. Los datos no se guardaron en el historial rápido, pero puedes verlos y descargar tu JSON ahora mismo.", "var(--danger-color)");
+            }
 
             mostrarPantallaResultados(currentRoastExportData);
         });
@@ -1283,7 +1367,7 @@
             else if(dataObj.score >= 70) scoreEl.style.color = "var(--accent-color)";
             else scoreEl.style.color = "var(--danger-color)";
 
-            document.getElementById('analysis-text').innerHTML = dataObj.analisis || "Análisis no disponible para este archivo.";
+            document.getElementById('analysis-text').innerHTML = dataObj.analisis || "Análisis generado dinámicamente.";
             
             const contenedorPred = document.getElementById('prediccion-texto');
             if (contenedorPred) {
@@ -1316,7 +1400,11 @@
             const tbody = document.getElementById('history-body');
             tbody.innerHTML = '';
             
-            let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+            let historial = [];
+            try {
+                let datosGuardados = localStorage.getItem('vinzaHistorial');
+                if (datosGuardados) historial = JSON.parse(datosGuardados);
+            } catch(e) {}
             
             if (historial.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay tuestes registrados aún.</td></tr>';
@@ -1340,22 +1428,37 @@
                 document.querySelectorAll('.btn-view').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const idx = this.getAttribute('data-index');
-                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                        let registroCompleto = currentHistorial[idx];
-                        currentRoastExportData = registroCompleto;
-                        mostrarPantallaResultados(registroCompleto);
+                        try {
+                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                            let reg = currentHistorial[idx];
+                            if (reg && reg.puntos_reales) {
+                                // Re-generar dinámicamente los textos HTML para no ocupar memoria local
+                                if (!reg.analisis) {
+                                    let precis = calcularPrecision(reg.secuencia_teorica, reg.puntos_reales);
+                                    reg.analisis = generarAnalisis(precis, reg.puntos_reales);
+                                    reg.prediccion = generarPrediccionSabor(reg.puntos_reales);
+                                    reg.desglose_calificacion = precis;
+                                }
+                                currentRoastExportData = reg;
+                                mostrarPantallaResultados(reg);
+                            } else {
+                                mostrarAlerta("Este registro es antiguo y no contiene los datos de la curva.");
+                            }
+                        } catch(e) { mostrarAlerta("Error al leer el registro."); }
                     });
                 });
 
                 document.querySelectorAll('.btn-delete').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const idx = this.getAttribute('data-index');
-                        if (confirm('¿Eliminar este tueste?')) {
-                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                            currentHistorial.splice(idx, 1);
-                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
-                            document.getElementById('btn-view-history').click(); 
-                        }
+                        mostrarConfirmacion('¿Estás seguro de que deseas eliminar este tueste del historial?', () => {
+                            try {
+                                let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                                currentHistorial.splice(idx, 1);
+                                localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                                document.getElementById('btn-view-history').click(); 
+                            } catch (e) { mostrarAlerta("Error al actualizar el historial."); }
+                        });
                     });
                 });
 
@@ -1364,50 +1467,144 @@
                         const idx = this.getAttribute('data-index');
                         const row = this.closest('tr');
                         const isEditing = row.classList.contains('editing');
-                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                        let registro = currentHistorial[idx];
+                        
+                        try {
+                            let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                            let registro = currentHistorial[idx];
 
-                        if (!isEditing) {
-                            row.classList.add('editing');
-                            this.textContent = '💾';
-                            const cellTostador = row.querySelector('.cell-tostador');
-                            const cellVariedad = row.querySelector('.cell-variedad');
+                            if (!isEditing) {
+                                row.classList.add('editing');
+                                this.textContent = '💾';
+                                this.title = 'Guardar cambios';
 
-                            const opTostador = ['Edgar', 'Adrián', 'Javier'];
-                            const opVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Bourbon Rosado', 'Blend', 'Simulación'];
+                                const cellTostador = row.querySelector('.cell-tostador');
+                                const cellVariedad = row.querySelector('.cell-variedad');
 
-                            cellTostador.innerHTML = `<select class="edit-select select-tostador">${opTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
-                            cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
-                        } else {
-                            currentHistorial[idx].tostador = row.querySelector('.select-tostador').value;
-                            currentHistorial[idx].variedad = row.querySelector('.select-variedad').value;
-                            localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
-                            document.getElementById('btn-view-history').click(); 
-                        }
+                                const opcionesTostador = ['Edgar', 'Adrián', 'Javier'];
+                                const opcionesVariedad = ['Sidra Honey', 'Sidra Lavado', 'Typica Lavado', 'Bourbon Rosado', 'Blend'];
+
+                                cellTostador.innerHTML = `<select class="edit-select select-tostador">${opcionesTostador.map(t => `<option value="${t}" ${t === registro.tostador ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+                                cellVariedad.innerHTML = `<select class="edit-select select-variedad">${opcionesVariedad.map(v => `<option value="${v}" ${v === registro.variedad ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                            } else {
+                                const nuevoTostador = row.querySelector('.select-tostador').value;
+                                const nuevaVariedad = row.querySelector('.select-variedad').value;
+
+                                currentHistorial[idx].tostador = nuevoTostador;
+                                currentHistorial[idx].variedad = nuevaVariedad;
+                                
+                                localStorage.setItem('vinzaHistorial', JSON.stringify(currentHistorial));
+                                document.getElementById('btn-view-history').click(); 
+                            }
+                        } catch (e) { mostrarAlerta("Error al editar el registro."); }
                     });
                 });
             }
             showScreen('history');
         });
 
-        document.getElementById('btn-trigger-load').addEventListener('click', () => document.getElementById('file-loader').click());
+        document.getElementById('btn-trigger-load').addEventListener('click', () => {
+            document.getElementById('file-loader').click();
+        });
+
         document.getElementById('file-loader').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const loadedData = JSON.parse(e.target.result);
+                    
+                    if (loadedData.puntos_reales && loadedData.puntos_reales.length > 0) {
+                        for (let i = 1; i < loadedData.puntos_reales.length; i++) {
+                            let pt = loadedData.puntos_reales[i];
+                            
+                            if (i === 1) {
+                                pt.isInit = true;
+                                pt.rorEma = null;
+                                pt.ror = "-";
+                            } else if (i === 2) {
+                                pt.isInit = true;
+                                let ref = loadedData.puntos_reales[1];
+                                let dSec = pt.seconds - ref.seconds;
+                                let dTemp = pt.tempValue - ref.tempValue;
+                                pt.rorEma = (dSec > 0) ? (dTemp / dSec) * 60 : 0;
+                                pt.ror = Math.round(pt.rorEma);
+                            } else {
+                                pt.isInit = false;
+                                let ref = loadedData.puntos_reales[i - 2];
+                                let dSec = pt.seconds - ref.seconds;
+                                let dTemp = pt.tempValue - ref.tempValue;
+                                let raw = (dSec > 0) ? (dTemp / dSec) * 60 : 0;
+                                let prev = loadedData.puntos_reales[i - 1].rorEma;
+                                if(prev === null || prev === undefined) prev = raw;
+                                pt.rorEma = (alphaEMA * raw) + ((1 - alphaEMA) * prev);
+                                pt.ror = Math.round(pt.rorEma);
+                            }
+
+                            if (!pt.fase && loadedData.secuencia_teorica[i]) {
+                                pt.fase = loadedData.secuencia_teorica[i].faseLetra;
+                            }
+                        }
+                    }
+
+                    if (loadedData.secuencia_teorica) {
+                        loadedData.secuencia_teorica.forEach(pto => {
+                            if (!pto.faseLetra) {
+                                if (pto.tempValue <= 150) pto.faseLetra = "S";
+                                else if (pto.tempValue <= 195) pto.faseLetra = "M";
+                                else pto.faseLetra = "D";
+                            }
+                        });
+                    }
+
+                    let tempSeq = sequenceData;
+                    let tempAct = actualData;
+                    
+                    sequenceData = loadedData.secuencia_teorica;
+                    actualData = loadedData.puntos_reales;
+                    
+                    const precis = calcularPrecision(sequenceData, actualData);
+                    loadedData.score = precis.total;
+                    loadedData.analisis = generarAnalisis(precis, actualData);
+                    loadedData.desglose_calificacion = precis;
+                    loadedData.prediccion = generarPrediccionSabor(actualData);
+                    
+                    sequenceData = tempSeq;
+                    actualData = tempAct;
+
+                    let actualizado = false;
+                    try {
+                        let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
+                        for (let i = 0; i < historial.length; i++) {
+                            if (historial[i].fecha === loadedData.fecha) {
+                                historial[i].score = precis.total; 
+                                actualizado = true;
+                                break;
+                            }
+                        }
+                        if (actualizado) {
+                            localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
+                        }
+                    } catch(e) {}
+
                     currentRoastExportData = loadedData;
                     mostrarPantallaResultados(loadedData);
-                } catch(err) { alert("Error al cargar JSON"); }
+                } catch (error) {
+                    mostrarAlerta("Error al leer el archivo JSON.", "var(--danger-color)");
+                }
             };
             reader.readAsText(file);
+            event.target.value = ''; 
         });
 
         document.getElementById('btn-back-home').addEventListener('click', () => showScreen('setup'));
         document.getElementById('btn-history-back').addEventListener('click', () => showScreen('setup'));
+
+        window.addEventListener('resize', () => {
+            if (screens.roast.style.display === 'block') drawChart(liveCanvas, liveCtx, sequenceData, actualData);
+            if (screens.result.style.display === 'block') drawPhaseChart(phaseCanvas, phaseCtx, currentRoastExportData.secuencia_teorica, currentRoastExportData.puntos_reales);
+        });
     </script>
 </body>
 </html>
-

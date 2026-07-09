@@ -9,125 +9,2305 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 10px; padding-bottom: 90px; }
-        h1 { text-align: center; font-size: 1.5rem; color: #4a3b32; margin: -10px -10px 20px -10px; padding: 15px 10px; background-color: #f0f2f5; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px -6px rgba(0,0,0,0.2); }
-        #btnLog { position: fixed; top: 12px; right: 10px; background-color: #8d6e63; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; z-index: 101; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            padding-bottom: 90px;
+            position: relative;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #4a3b32;
+            margin: -10px -10px 20px -10px;
+            padding: 15px 10px;
+            background-color: #f0f2f5;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -6px rgba(0,0,0,0.2);
+        }
+        
+        #btnLog {
+            position: fixed;
+            top: 12px;
+            right: 10px;
+            background-color: #8d6e63;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 101;
+        }
+
+        .auto-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .auto-btn:hover { background-color: #388e3c; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .log-title {
+            font-size: 1.1rem;
+            color: #4a3b32;
+            margin-bottom: 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            flex-shrink: 0;
+            padding-right: 20px;
+        }
+        #logContainer, #infoBody {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 5px;
+            flex: 1;
+            min-height: 0;
+        }
+        .log-entry { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
+        .log-date { font-size: 0.8rem; color: #ff9800; font-weight: bold; margin-bottom: 5px; }
+        .log-text { font-size: 0.85rem; color: #444; line-height: 1.4; }
+
+        #chartModal .modal-content {
+            background-color: #121212;
+            color: #e0e0e0;
+            max-width: 500px;
+            max-height: 90vh;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        .chart-header { padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background-color: #1a1a1a; }
+        .chart-header h2 { margin: 0; font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px;}
+        .chart-header .date { font-size: 0.8rem; color: #aaa; font-weight: normal;}
+        .badge-global { background-color: #ffb74d; color: #000; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; text-align: center; }
+        .chart-body { overflow-y: auto; padding: 15px; }
+        .chart-section { background-color: #1e1e1e; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid #2c2c2c; }
+        .chart-section-title { text-align: center; font-size: 0.9rem; font-weight: bold; color: #ffb74d; margin-bottom: 15px; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        
+        .radar-container { width: 100%; display: flex; justify-content: center; align-items: center; position: relative; }
+        canvas { max-width: 100%; height: auto; }
+
+        .bar-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.8rem; }
+        .bar-label { width: 120px; display: flex; align-items: center; gap: 6px; color: #ccc;}
+        .bar-track { flex: 1; background-color: #333; height: 12px; border-radius: 6px; overflow: hidden; margin: 0 10px; position: relative; }
+        .bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+        .bar-value { width: 20px; text-align: right; font-weight: bold; }
+        .val-3 { color: #81c784; } .val-2 { color: #ffb74d; } .val-1 { color: #e57373; } .val-0 { color: #666; font-size: 0.7rem; }
+        
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.8rem; color: #aaa; }
+        .details-grid div strong { color: #e0e0e0; font-weight: normal; display:block;}
+        .details-grid div span { color: #ffb74d; display: block; margin-top: 2px;}
+        .obs-box { font-size: 0.85rem; color: #ccc; line-height: 1.4; }
+
+        .help-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; background-color: #8d6e63; color: white; border-radius: 50%; font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-left: 5px; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .help-icon:hover { background-color: #6d4c41; }
+
         .card { background-color: #ffffff; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-title { font-size: 1.1rem; font-weight: bold; color: #4a3b32; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        .card-title { font-size: 1.1rem; font-weight: bold; color: #4a3b32; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
         .input-group { margin-bottom: 12px; }
         .row { display: flex; gap: 10px; margin-bottom: 10px; }
         .row > div { flex: 1; }
         label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 500; color: #555; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        button.main-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .button-group { display: flex; gap: 10px; position: fixed; bottom: 0; left: 0; width: 100%; padding: 15px; background: rgba(255,255,255,0.95); box-sizing: border-box; border-top: 1px solid #eee; z-index: 100; }
+        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; font-family: inherit; background-color: #fff; }
+        input[readonly] { background-color: #f5f5f5; color: #555; outline: none; }
+        #evaluacion_final { min-height: 450px; line-height: 1.5; font-size: 0.95rem; }
+        .stepper { display: flex; align-items: center; gap: 5px; }
+        .stepper button { width: 35px; height: 35px; border-radius: 8px; border: 1px solid #ccc; background: #f8f9fa; font-size: 1.2rem; font-weight: bold; color: #4a3b32; flex: none; cursor: pointer;}
+        .stepper input { text-align: center; padding: 5px; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .grid-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; text-align: center; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 10px; }
+        .grid-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.9rem; }
+        
+        button.main-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
+        .btn-gen { background-color: #ff9800; color: white; margin-bottom: 15px; width: 100%; }
+        .btn-copy { background-color: #2196F3; color: white; margin-top: 10px; width: 100%; }
+        .btn-chart { background-color: #333; color: #ff9800; margin-top: 10px; width: 100%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .btn-chart:hover { background-color: #ff9800; color: #333; }
+        
+        .button-group { 
+            display: flex; gap: 10px; position: fixed; bottom: 0; left: 0; width: 100%; 
+            background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px);
+            padding: 15px 15px max(15px, env(safe-area-inset-bottom)); box-sizing: border-box; 
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 100; margin: 0; border-top: 1px solid #eee;
+        }
+        
+        .btn-save { background-color: #6d4c41; color: white; }
+        .btn-load { background-color: #e0e0e0; color: #333; }
+        #fileInput { display: none; }
         .hidden { display: none; }
+
+        /* --- ESTILOS MÓDULO ANÁLISIS DE TUESTE Y CAROUSELES --- */
+        .module-section-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .module-section-title.exterior { color: #8d6e63; }
+        .module-section-title.interior { color: #a1887f; margin-top: 15px; }
+        
+        .upload-buttons { display: flex; gap: 12px; margin-bottom: 5px; }
+        .upload-section { flex: 1; border: 2px dashed #d7ccc8; padding: 12px 10px; border-radius: 12px; background: #fafafa; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; }
+        .upload-section:hover { border-color: #bf360c; background: #fff; transform: translateY(-2px); }
+        .upload-icon { font-size: 1.4em; margin: 0; }
+        .upload-hint { text-align: center; font-size: 0.75rem; color: #888; margin-top: 5px; margin-bottom: 15px; }
+        
+        #results-wrapper { display: none; margin-top: 15px; animation: slideUp 0.4s ease-out; }
+        .swipe-hint { text-align: center; font-size: 0.75rem; color: #bf360c; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .carousel-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 10px; scrollbar-width: none; -ms-overflow-style: none; align-items: stretch; }
+        .carousel-container::-webkit-scrollbar { display: none; }
+        .carousel-card { min-width: 100%; scroll-snap-align: center; background: #fff; border: 1px solid #efebe9; border-radius: 15px; padding: 15px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; }
+        .carousel-card.flat-card { border-radius: 8px; padding: 12px; border: 1px solid #f0f0f0; box-shadow: none; }
+        
+        .preview-img { width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); object-fit: cover; aspect-ratio: 1 / 1; display: none; }
+        
+        .color-display { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .color-circle { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.12); flex-shrink: 0; }
+        .tech-badge { background-color: #f8f9fa; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8rem; color: #5d4037; margin-top: 5px; display: inline-block; border: 1px solid #e9ecef; }
+        .card-type-badge { background-color: #efebe9; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; color: #5d4037; text-transform: uppercase; align-self: flex-start; margin-bottom: 10px; letter-spacing: 1px; }
+
+        .agtron-container { margin-top: auto; padding: 12px; background: #fdfbf9; border-radius: 10px; border: 1px solid #efebe9; }
+        .agtron-title { text-align: center; font-size: 0.7rem; font-weight: bold; color: #8d6e63; letter-spacing: 1.5px; margin-bottom: 8px; }
+        .agtron-labels { display: flex; text-align: center; font-weight: bold; font-size: 0.7rem; color: #555; margin-bottom: 4px; }
+        .agtron-labels div { flex: 1; }
+        .agtron-bar { display: flex; height: 25px; position: relative; }
+        .agtron-bar .segment { flex: 1; }
+        .seg-1 { background-color: #C59A6F; border-radius: 4px 0 0 4px; } .seg-2 { background-color: #A87A4F; } .seg-3 { background-color: #8F5E36; } .seg-4 { background-color: #734322; } .seg-5 { background-color: #593116; } .seg-6 { background-color: #42220E; } .seg-7 { background-color: #2E1508; } .seg-8 { background-color: #1C0A03; } .seg-9 { background-color: #0F0401; } .seg-10 { background-color: #050100; border-radius: 0 4px 4px 0; }
+        .agtron-marker { position: absolute; z-index: 10; transition: left 0.6s cubic-bezier(0.25, 1, 0.5, 1); transform: translateX(-50%); }
+        .agtron-marker::before { content: ''; position: absolute; top: -8px; border-style: solid; border-width: 7px 5px 0 5px; border-color: #bf360c transparent transparent transparent; left: 50%; transform: translateX(-50%); }
+        
+        .profile-section { text-align: left; padding: 5px; }
+        .profile-item { margin-bottom: 18px; }
+        .profile-label { font-weight: bold; color: #bf360c; display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; border-bottom: 1px solid #fbe9e7; padding-bottom: 2px; }
+        .profile-text { font-size: 0.9rem; color: #4e342e; line-height: 1.5; display: block; width: 100%; }
+        .dynamic-nuance { background-color: #fff3e0; padding: 12px; border-left: 4px solid #bf360c; border-radius: 4px; margin-top: 10px; font-style: italic; box-sizing: border-box; }
+        
+        .btn-action { background: #bf360c; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
+        .btn-cancel { background: #9e9e9e; margin-top: 10px; }
+        
+        .img-container-crop { max-height: 50vh; margin-bottom: 15px; background: #000; display: flex; justify-content: center; }
+        .img-container-crop img { display: block; max-width: 100%; }
+        
+        .delta-box { text-align: center; padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .delta-value { font-size: 3rem; font-weight: bold; margin: 10px 0; font-family: monospace; }
+        .delta-status { font-size: 1.1rem; font-weight: bold; color: #4a3b32; margin-bottom: 5px; }
+        .delta-desc { font-size: 0.9rem; color: #333; line-height: 1.5; }
+        .delta-error { font-size: 1.1rem; color: #c62828; line-height: 1.5; padding: 10px;}
+        
+        .ref-ml { color: #bf360c; font-weight: bold; }
+        
+        /* --- ESTILOS HISTORIAL Y BÚSQUEDA --- */
+        .historial-item { border-bottom: 1px solid #e0e0e0; padding-bottom: 12px; margin-bottom: 12px; font-size: 0.9rem; position: relative; }
+        .historial-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .hist-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .hist-label { font-weight: bold; color: #6d4c41; }
+        .hist-val { color: #333; font-family: monospace; }
+        .hist-punt { color: #bf360c; font-weight: bold; }
+        .btn-delete-hist { position: absolute; right: 0; bottom: 10px; background: none; border: none; color: #d32f2f; cursor: pointer; font-size: 0.8rem; padding: 5px; }
+        
+        .filters-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 10px; padding-bottom: 5px; scrollbar-width: none; -ms-overflow-style: none; }
+        .filters-container::-webkit-scrollbar { display: none; }
+        .filter-chip { background: #efebe9; border: 1px solid #d7ccc8; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; color: #5d4037; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.2s ease; }
+        .filter-chip:active { transform: scale(0.95); }
+        .filter-chip.active { background: #bf360c; color: white; border-color: #bf360c; font-weight: bold; }
+        
+        /* Estilo específico para el botón Top Catas */
+        .filter-chip-sort { background: #fff8e1; border: 1px solid #ffc107; color: #ff8f00; }
+        .filter-chip-sort.active { background: #ffb300; border-color: #ffb300; color: white; }
+
+        .filter-chip-clear { background: #f5f5f5; color: #d32f2f; border: 1px solid #e0e0e0; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; font-weight: bold; display: none; transition: all 0.2s ease; }
+        .filter-chip-clear:active { transform: scale(0.95); }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <button id="btnLog" onclick="abrirLog()">📋 Log</button>
+
+    <div id="logModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarLog()">&times;</span>
+            <div class="log-title">📜 Registro de Cambios</div>
+            <div id="logContainer"></div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarInfo()">&times;</span>
+            <div id="infoTitle" class="log-title"></div>
+            <div id="infoBody" class="log-text" style="font-size: 0.95rem; line-height: 1.5; text-align: justify;"></div>
+        </div>
+    </div>
+
+    <div id="filtroModal" class="modal">
+        <div class="modal-content" style="max-width: 320px;">
+            <span class="close-btn" onclick="cerrarFiltro()">&times;</span>
+            <div class="log-title" id="filtroTitulo">Filtrar</div>
+            <div id="filtroBody" style="margin-bottom: 10px;"></div>
+            <button type="button" class="btn-action" onclick="aplicarFiltro()">Aplicar Filtro</button>
+        </div>
+    </div>
+
+    <div id="crop-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px; padding: 15px;">
+            <div class="log-title" style="text-align: center; border-bottom: none; margin-bottom: 10px;" id="crop-modal-title">✂️ Aislar Granos</div>
+            <div class="img-container-crop">
+                <img id="image-to-crop">
+            </div>
+            <div style="display:flex; gap:10px; width: 100%;">
+                <button type="button" class="btn-action" onclick="confirmCrop()">Analizar</button>
+                <button type="button" class="btn-action btn-cancel" onclick="cancelCrop()" style="margin-top:0;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nuevo Modal para Curva de Lote -->
+    <div id="curvaModal" class="modal">
+        <div class="modal-content" style="max-width: 600px; background-color: #ffffff; padding:0; border: 1px solid #eee;">
+            <span class="close-btn" style="color:#666; top: 18px; z-index: 10;" onclick="cerrarCurvaLote()">&times;</span>
+            <div style="padding: 20px; overflow-x: auto;">
+                <canvas id="curvaCanvas" width="720" height="500" style="max-width: 100%; height: auto; border-radius: 8px;"></canvas>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #eee; background-color: #f9f9f9;">
+                <button type="button" class="main-btn" style="background-color: #4CAF50; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarCurvaJPG()">📥 Descargar Gráfico JPG</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" style="color:#aaa; top: 18px;" onclick="cerrarGrafico()">&times;</span>
+            <div class="chart-header">
+                <div>
+                    <h2>☕ CATA DE CAFÉ</h2>
+                    <div class="date" id="chartDate"></div>
+                </div>
+                <div class="badge-global" id="chartGlobal" style="font-size: 0.8rem; padding: 6px 12px;"></div>
+            </div>
+            
+            <div class="chart-body">
+                <div class="chart-section">
+                    <div class="chart-section-title">⬡ PERFIL SENSORIAL</div>
+                    <div class="radar-container">
+                        <canvas id="radarCanvas" width="400" height="350"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-section-title">🍃 NOTAS AROMÁTICAS</div>
+                    <div id="barsContainer"></div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-section-title">☕ DETALLES DEL CAFÉ</div>
+                    <div class="details-grid" id="chartDetails"></div>
+                </div>
+
+                <div class="chart-section" style="margin-bottom: 0;">
+                    <div class="chart-section-title" style="justify-content: flex-start;">💬 OBSERVACIONES</div>
+                    <div class="obs-box" id="chartObs"></div>
+                </div>
+            </div>
+            
+            <div style="padding: 15px; border-top: 1px solid #333; background-color: #1a1a1a;">
+                <button type="button" class="main-btn" style="background-color: #ff9800; color: #121212; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin: 0;" onclick="descargarGraficoJPG()">📥 Descargar Imagen (9:16)</button>
+            </div>
+        </div>
+    </div>
+
     <h1>☕ Registro de Cata de café</h1>
 
     <form id="cataForm">
-        <!-- Datos del Café -->
         <div class="card">
-            <div class="card-title">📍 Datos del Café</div>
+            <div class="card-title"><div>📍 Datos del Café</div></div>
             <div class="row">
                 <div class="input-group">
                     <label>Variedad:</label>
-                    <input type="text" id="variedad" name="variedad" required readonly>
+                    <input type="text" id="variedad" name="variedad" required readonly placeholder="Auto-calculado al ingresar código">
                 </div>
                 <div class="input-group">
                     <label>Código:</label>
-                    <input type="text" id="codigo" name="codigo" required oninput="analizarCodigo()">
+                    <input type="text" id="codigo" name="codigo" required placeholder="Ej. GES-L01-18ABR-T01" oninput="analizarCodigo()">
                 </div>
             </div>
             <div class="row">
                 <div class="input-group">
-                    <label>Fecha y Hora:</label>
+                    <label>Fecha y Hora (Ecuador):</label>
                     <input type="text" id="fecha_hora" name="fecha_hora" readonly>
                 </div>
                 <div class="input-group">
-                    <label>Días reposo:</label>
-                    <input type="text" id="dias_tueste" name="dias_tueste" readonly>
+                    <label>Días desde el tueste:</label>
+                    <input type="text" id="dias_tueste" name="dias_tueste" readonly placeholder="Auto-calculado">
                 </div>
             </div>
-        </div>
-
-        <!-- Perfil de Tueste (Condicional) -->
-        <div class="card" id="cardTueste">
-            <div class="card-title">🔥 Perfil de Tueste</div>
-            <div class="input-group">
-                <label>Tostador:</label>
-                <select id="tostador" name="tostador" onchange="gestionarCamposTueste()">
-                    <option value="Vinza" selected>Vinza</option>
-                    <option value="Externo">Externo</option>
-                </select>
-            </div>
-
-            <!-- Campos solo para Externo -->
-            <div id="divExterno" class="input-group hidden">
-                <label>Nombre de la Tostadora:</label>
-                <input type="text" id="nombre_tostadora" name="nombre_tostadora" placeholder="Ej. Sweet Bloom">
-            </div>
-
-            <!-- Campos solo para Vinza -->
-            <div id="divVinza">
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+            <div style="font-size: 0.95rem; font-weight: bold; color: #4a3b32; margin-bottom: 12px; display: flex; align-items: center; gap: 5px;">🔥 Perfil de Tueste</div>
+            
+            <!-- NUEVA FILA: Máquina y Merma -->
+            <div class="row">
                 <div class="input-group">
                     <label>Máquina:</label>
                     <select id="maquina" name="maquina">
-                        <option value="Tostadora">Tostadora</option>
+                        <option value="Tostadora" selected>Tostadora</option>
                         <option value="Canguilera">Canguilera</option>
                     </select>
                 </div>
-                <div class="row">
-                    <div class="input-group"><label>% Merma:</label><input type="number" id="merma" name="merma" value="13.60"></div>
-                    <div class="input-group"><label>Temp (°C):</label><input type="number" id="temp_tueste" name="temp_tueste" value="224"></div>
-                    <div class="input-group"><label>T. Total:</label><input type="text" id="tiempo_tueste" name="tiempo_tueste" value="11:00"></div>
+                <div class="input-group">
+                    <label>% Merma:</label>
+                    <input type="number" id="merma" name="merma" step="0.01" value="13.60">
                 </div>
-                <!-- Aquí irían las fases, etc. (se pueden ocultar con .hidden al igual que arriba) -->
+            </div>
+
+            <!-- FILA ACTUALIZADA: Temperatura y Tiempo -->
+            <div class="row">
+                <div class="input-group">
+                    <label>Temp (°C):</label>
+                    <input type="number" id="temp_tueste" name="temp_tueste" value="224">
+                </div>
+                <div class="input-group">
+                    <label>T. Total:</label>
+                    <input type="text" id="tiempo_tueste" name="tiempo_tueste" value="11:00">
+                </div>
+            </div>
+
+            <div style="background: #fcfaf8; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0;">
+                <div style="display: flex; font-size: 0.8rem; font-weight: bold; color: #666; margin-bottom: 8px; text-align: center;">
+                    <div style="flex: 1.2; text-align: left;">Fase</div>
+                    <div style="flex: 1;">Tiempo</div>
+                    <div style="flex: 1;">Veloc.</div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Secado:</div>
+                    <div style="flex: 1;"><input type="text" id="secado_tiempo" name="secado_tiempo" value="03:30" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    <div style="flex: 1;"><input type="text" id="secado_vel" name="secado_vel" value="V3" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Maillard:</div>
+                    <div style="flex: 1;"><input type="text" id="maillard_tiempo" name="maillard_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    <div style="flex: 1;"><input type="text" id="maillard_vel" name="maillard_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div style="flex: 1.2; font-size: 0.85rem; color: #555;">Desarrollo:</div>
+                    <div style="flex: 1;"><input type="text" id="desarrollo_tiempo" name="desarrollo_tiempo" value="03:45" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                    <div style="flex: 1;"><input type="text" id="desarrollo_vel" name="desarrollo_vel" value="V2" style="padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box;"></div>
+                </div>
             </div>
         </div>
 
-        <!-- Botones de Acción -->
+        <div class="card">
+            <div class="card-title"><div>🔍 Análisis de Desarrollo (Color)</div></div>
+            
+            <div class="module-section-title exterior">🫘 Café en Grano (Exterior)</div>
+            <div class="upload-buttons">
+                <div class="upload-section" onclick="triggerUpload('grano', 'camera')">
+                    <span class="upload-icon">📸</span><strong>Cámara</strong>
+                </div>
+                <div class="upload-section" onclick="triggerUpload('grano', 'file')">
+                    <span class="upload-icon">📁</span><strong>Archivo</strong>
+                </div>
+            </div>
+
+            <div class="module-section-title interior">🤎 Café Molido (Interior)</div>
+            <div class="upload-buttons">
+                <div class="upload-section" onclick="triggerUpload('molido', 'camera')">
+                    <span class="upload-icon">📸</span><strong>Cámara</strong>
+                </div>
+                <div class="upload-section" onclick="triggerUpload('molido', 'file')">
+                    <span class="upload-icon">📁</span><strong>Archivo</strong>
+                </div>
+            </div>
+
+            <input type="file" id="upload-input" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+            <canvas id="canvas-roast" style="display:none;"></canvas>
+            
+            <div id="results-wrapper">
+                <p class="swipe-hint">Desliza para ver análisis completo ↔️</p>
+                <div class="carousel-container" id="carousel-cards-container">
+                    </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><div>⚖️ Preparación y Extracción</div></div>
+            <div class="row">
+                <div class="input-group">
+                    <label>Método:</label>
+                    <select id="metodo" name="metodo" onchange="actualizarDispositivos()">
+                        <option value="Filtrado" selected>Filtrado</option>
+                        <option value="Inmersión">Inmersión</option>
+                        <option value="Presión (Espresso)">Presión (Espresso)</option>
+                        <option value="Percolación">Percolación</option>
+                        <option value="Infusión en frío (Cold Brew)">Infusión en frío (Cold Brew)</option>
+                        <option value="Híbrido">Híbrido</option>
+                        <option value="Ebullición">Ebullición</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Dispositivo:</label>
+                    <select id="dispositivo" name="dispositivo" onchange="actualizarFiltros()">
+                        </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-group">
+                    <label>Filtro:</label>
+                    <select id="filtro" name="filtro">
+                        </select>
+                </div>
+                <div class="input-group">
+                    <label>Clics:</label>
+                    <div class="stepper">
+                        <button type="button" onclick="step('clics', -1)">-</button>
+                        <input type="number" id="clics" name="clics" value="35">
+                        <button type="button" onclick="step('clics', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-group">
+                    <label>Café (g):</label>
+                    <div class="stepper">
+                        <button type="button" onclick="step('gramos_cafe', -0.5)">-</button>
+                        <input type="number" id="gramos_cafe" name="gramos_cafe" step="0.5" value="15.0" placeholder="0.0" oninput="calcularAguaTotal()" style="width: 100%;">
+                        <button type="button" onclick="step('gramos_cafe', 0.5)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Agua Total (ml):</label>
+                    <input type="number" id="agua_total" name="agua_total" value="" placeholder="0" oninput="calcularVertidos()">
+                </div>
+            </div>
+            <div class="checkbox-group">
+                <div class="checkbox-item" style="margin-right: 15px;">
+                    <input type="checkbox" id="usa_ducha" name="usa_ducha">
+                    <label for="usa_ducha">Ducha</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="bola_fria" name="bola_fria">
+                    <label for="bola_fria">Bola Fría</label>
+                </div>
+                <div style="width: 100%; display: flex; gap: 15px; margin-top: 5px; align-items: flex-end;">
+                    <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Hielo en jarra (ml):</label>
+                        <div class="stepper">
+                            <button type="button" onclick="step('hielo_ml', -5)">-</button>
+                            <input type="number" id="hielo_ml" name="hielo_ml" value="20" placeholder="0" oninput="calcularAguaTotal()" style="width: 100%;">
+                            <button type="button" onclick="step('hielo_ml', 5)">+</button>
+                        </div>
+                    </div>
+                    <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                        <label style="color: #6d4c41;">Bebida en taza (ml):</label>
+                        <input type="text" id="bebida_taza" name="bebida_taza" readonly placeholder="Auto" style="text-align: center; font-weight: bold; font-size: 1.1rem; color: #5d4037; background-color: #efebe9; border: 1px solid #d7ccc8; padding: 10px;">
+                    </div>
+                </div>
+            </div>
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+            
+            <div class="checkbox-item" style="margin-bottom:10px">
+                <input type="checkbox" id="un_solo_vertido" name="un_solo_vertido" onchange="toggleVertidos(true)">
+                <label for="un_solo_vertido"><b>Hacer un solo vertido</b></label>
+            </div>
+            
+            <p class="swipe-hint" style="margin-top: 15px; margin-bottom: 5px; font-size: 0.7rem; color: #666;">Desliza para Perfil Térmico ↔️</p>
+            <div class="carousel-container" style="padding-bottom: 5px;">
+                
+                <div class="carousel-card flat-card">
+                    <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #5d4037;">💧 Volumen y Tiempo</div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Blooming (ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('blooming', -5)">-</button>
+                                <input type="number" id="blooming" name="blooming" value="45" style="width: 100%;" oninput="calcularVertidos()">
+                                <button type="button" onclick="step('blooming', 5)">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Tiempo:</label>
+                            <div class="stepper">
+                                <button type="button" onclick="stepTime('t_blooming', -5)">-</button>
+                                <input type="text" id="t_blooming" name="t_blooming" value="00:40" style="width: 100%;">
+                                <button type="button" onclick="stepTime('t_blooming', 5)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>1er Vertido (ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('v1', -10)">-</button>
+                                <input type="number" id="v1" name="v1" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                <button type="button" onclick="step('v1', 10)">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label>Tiempo:</label>
+                            <div class="stepper">
+                                <button type="button" onclick="stepTime('t_v1', -5)">-</button>
+                                <input type="text" id="t_v1" name="t_v1" value="01:15" style="width: 100%;">
+                                <button type="button" onclick="stepTime('t_v1', 5)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="vertidos_extras">
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>2do Vertido (ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('v2', -10)">-</button>
+                                    <input type="number" id="v2" name="v2" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                    <button type="button" onclick="step('v2', 10)">+</button>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Tiempo:</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="stepTime('t_v2', -5)">-</button>
+                                    <input type="text" id="t_v2" name="t_v2" value="01:50" style="width: 100%;">
+                                    <button type="button" onclick="stepTime('t_v2', 5)">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>3er Vertido (ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('v3', -10)">-</button>
+                                    <input type="number" id="v3" name="v3" value="" style="width: 100%;" oninput="actualizarReferenciasTermicas()">
+                                    <button type="button" onclick="step('v3', 10)">+</button>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Tiempo:</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="stepTime('t_v3', -5)">-</button>
+                                    <input type="text" id="t_v3" name="t_v3" value="02:30" style="width: 100%;">
+                                    <button type="button" onclick="stepTime('t_v3', 5)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="carousel-card flat-card">
+                    <div class="module-section-title" style="margin-bottom: 15px; justify-content: center; color: #bf360c;">🌡️ Perfil Térmico (°C)</div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label style="font-size: 0.8rem; color: #555;">Blooming (<span id="ref_blooming_ml" class="ref-ml">45</span> ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('temp_blooming', -1)">-</button>
+                                <input type="number" id="temp_blooming" name="temp_blooming" value="90" style="width: 100%;">
+                                <button type="button" onclick="step('temp_blooming', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                            <label style="font-size: 0.8rem; color: #555;">1er Vertido (<span id="ref_v1_ml" class="ref-ml">0</span> ml):</label>
+                            <div class="stepper">
+                                <button type="button" onclick="step('temp_v1', -1)">-</button>
+                                <input type="number" id="temp_v1" name="temp_v1" value="90" style="width: 100%;">
+                                <button type="button" onclick="step('temp_v1', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="vertidos_extras_temp">
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label style="font-size: 0.8rem; color: #555;">2do Vertido (<span id="ref_v2_ml" class="ref-ml">0</span> ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('temp_v2', -1)">-</button>
+                                    <input type="number" id="temp_v2" name="temp_v2" value="90" style="width: 100%;">
+                                    <button type="button" onclick="step('temp_v2', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 0; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label style="font-size: 0.8rem; color: #555;">3er Vertido (<span id="ref_v3_ml" class="ref-ml">0</span> ml):</label>
+                                <div class="stepper">
+                                    <button type="button" onclick="step('temp_v3', -1)">-</button>
+                                    <input type="number" id="temp_v3" name="temp_v3" value="90" style="width: 100%;">
+                                    <button type="button" onclick="step('temp_v3', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><div>☕ EVALUACIÓN SENSORIAL</div></div>
+            <div class="grid-header">
+                <div style="text-align: left;">Parámetro</div>
+                <div>Alta</div><div>Media</div><div>Baja</div>
+            </div>
+            <div id="evaluacionSensorial"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><div>🌸 NOTAS SENSORIALES</div></div>
+            <div class="grid-header">
+                <div style="text-align: left;">Nota</div>
+                <div>Alta</div><div>Media</div><div>Baja</div>
+            </div>
+            <div id="notasSensoriales"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <div style="display:flex; align-items:center; gap:8px;">✅ EVALUACIÓN GLOBAL</div>
+                <button type="button" class="auto-btn" onclick="autoGenerarGlobal()">🪄 Auto-generar</button>
+            </div>
+            <div id="evaluacionGlobal"></div>
+            
+            <div id="puntajeDisplay" style="text-align: center; font-size: 1.8rem; font-weight: bold; color: #4a3b32; margin: 15px 0; display: none;">
+                <span id="puntajeValor"></span> <span style="font-size: 1rem; color: #888;">pts</span>
+            </div>
+            <input type="hidden" id="puntaje_num" name="puntaje_num" value="">
+            
+            <div class="input-group" style="margin-top:15px">
+                <label>Observaciones:</label>
+                <textarea id="observaciones" name="observaciones" placeholder="Detalles finales..."></textarea>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><div>🧠 EVALUACIÓN FINAL</div></div>
+            <button type="button" class="main-btn btn-gen" onclick="dispararGeneracion()">✨ Generar Resumen Interpretativo</button>
+            <div class="input-group">
+                <textarea id="evaluacion_final" name="evaluacion_final" placeholder="Presiona el botón superior para generar el resumen..."></textarea>
+            </div>
+            <button type="button" class="main-btn btn-copy" id="btnCopiar" onclick="copiarTexto()">📋 Copiar Texto</button>
+            
+            <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
+                <button type="button" class="main-btn" style="background-color: #333; color: #4db6ac; margin: 0;" onclick="descargarEvaluacionJPG('oscuro')">📥 Descargar (Oscuro)</button>
+                <button type="button" class="main-btn" style="background-color: #f0f2f5; color: #4db6ac; border: 1px solid #4db6ac; margin: 0;" onclick="descargarEvaluacionJPG('claro')">📥 Descargar (Claro)</button>
+            </div>
+
+            <button type="button" class="main-btn btn-chart" onclick="abrirGrafico()">📊 Ver Gráfico de Cata</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><div>📜 Registro de Puntuaciones</div></div>
+            
+            <div class="filters-container" id="historialFilters">
+                <div class="filter-chip filter-chip-sort" id="chip-sort-puntaje" onclick="toggleSortPuntaje()">🏆 Top Catas</div>
+                <div class="filter-chip" id="chip-codigo" onclick="abrirFiltro('codigo')">🏷️ Código</div>
+                <div class="filter-chip" id="chip-puntaje" onclick="abrirFiltro('puntaje')">🎯 Puntaje</div>
+                <div class="filter-chip" id="chip-calif" onclick="abrirFiltro('calif')">⭐ Calif.</div>
+                <div class="filter-chip" id="chip-variedad" onclick="abrirFiltro('variedad')">🌱 Variedad</div>
+                <div class="filter-chip" id="chip-tueste" onclick="abrirFiltro('tueste')">🔥 Nivel/Tueste</div>
+                <div class="filter-chip" id="chip-merma" onclick="abrirFiltro('merma')">📉 Merma</div>
+                <div class="filter-chip-clear" id="chip-clear" onclick="limpiarFiltros()">❌ Limpiar</div>
+            </div>
+
+            <div id="historialContainer" style="background: #fcfaf8; padding: 12px; border-radius: 8px; border: 1px solid #f0f0f0; max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
+                </div>
+            
+            <button type="button" class="main-btn" style="background-color: #8d6e63; color: white; width: 100%; margin-bottom: 12px; padding: 12px; font-size: 0.95rem;" onclick="registrarCataActual()">➕ Añadir cata actual al historial</button>
+            
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button type="button" class="main-btn" style="background-color: #e0e0e0; color: #333; padding: 10px; font-size: 0.8rem; margin:0;" onclick="document.getElementById('importarHistorial').click()">📥 Importar JSON</button>
+                <button type="button" class="main-btn" style="background-color: #e0e0e0; color: #333; padding: 10px; font-size: 0.8rem; margin:0;" onclick="exportarHistorial()">💾 Exportar JSON</button>
+                <input type="file" id="importarHistorial" accept=".json" style="display:none" onchange="cargarHistorialRespaldo(event)">
+            </div>
+            
+            <button type="button" class="main-btn" style="background-color: #333; color: #ffb74d; width: 100%; margin-top: 10px; padding: 10px; font-size: 0.9rem; border: 1px solid #ffb74d;" onclick="abrirCurvaLote()">📈 Curva de lote</button>
+        </div>
+
         <div class="button-group">
-            <button type="button" class="main-btn" style="background:#6d4c41; color:white;" onclick="guardarJSON()">💾 Grabar</button>
+            <button type="button" class="main-btn btn-save" onclick="guardarJSON()">💾 Grabar Cata</button>
+            <button type="button" class="main-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Cata</button>
+            <input type="file" id="fileInput" accept=".json" onchange="cargarJSON(event)">
         </div>
     </form>
 
     <script>
-        function gestionarCamposTueste() {
-            const tostador = document.getElementById('tostador').value;
-            const divVinza = document.getElementById('divVinza');
-            const divExterno = document.getElementById('divExterno');
+        const logHistorial = [
+            { fecha: "09-JUL-2026", resumen: "Perfil de Tueste: Se añadió el selector 'Máquina' (Tostadora / Canguilera). El dato se guarda en JSON, aparece en el resumen interpretativo final y se incluye en la ficha izquierda de los gráficos descargables." },
+            { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico, con fondo claro y alto contraste en exportación a JPG." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
+            { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },
+            { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
+            { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
+            { fecha: "29-MAY-2026", resumen: "Actualización de Dispositivos: Se añadió la opción de 'Fondo plano/papel' al método Hario V60 para permitir experimentación con diferentes perfiles de extracción." },
+            { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA (Specialty Coffee Association), con visualización en gráficos y resúmenes." },
+            { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento y Gráficos: Integración del campo 'Nivel de tueste' en la columna izquierda de los Detalles del Café, extrayendo dinámicamente el perfil del análisis de imagen del café molido (ej. City+ Tueste Medio)." },
+            { fecha: "26-MAY-2026", resumen: "Módulo de Descarga: Implementación de descarga de la Evaluación Final en dos variantes (tema Claro y Oscuro) para mayor flexibilidad visual y legibilidad en impresiones." },
+            { fecha: "26-MAY-2026", resumen: "Corrección de Bug: Se modificó la lógica de 'toggleVertidos' para evitar que sobrescriba los tiempos de extracción registrados en el archivo JSON al momento de cargarlo." },
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Inclusión del campo autocalculado 'Bebida en taza (ml)' al final de la columna derecha de detalles de extracción." },
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se reordenó la columna derecha para mostrar una secuencia más lógica: Dispositivo, Filtro, Ratio, Temperaturas, Extracción y Tiempo de Extracción." },
+            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se redistribuyó la información en la tarjeta de Detalles del Café, moviendo el tiempo de reposo (Post-tueste) a la columna izquierda y añadiendo un desglose térmico detallado y dinámico por cada vertido en la columna derecha." },
+            { fecha: "26-MAY-2026", resumen: "Módulo de Perfil Térmico: Carrusel integrado en sección de extracción para registrar independientemente la temperatura de cada vertido, con sincronización en tiempo real de volúmenes." },
+            { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento: Se incorporó el campo autocalculado 'Bebida en taza (ml)', que calcula el volumen final descontando la retención de agua en la cama de café (peso * 2.2) y sumando el volumen de hielo. Además, se agregaron controles de ajuste rápido al campo de hielo." },
+            { fecha: "25-MAY-2026", resumen: "Mejora de UX: Incorporación de botones incrementales (+/-) en el campo 'Café (g)' con variaciones de 0.5g para un ajuste rápido y preciso, adaptando la lógica base para soportar números decimales." },
+            { fecha: "25-MAY-2026", resumen: "Actualización de valor por defecto: El campo 'Hielo en jarra' ahora inicia con 20 ml predeterminados, recalculando automáticamente el Agua Total al abrir la aplicación." },
+            { fecha: "25-MAY-2026", resumen: "Distribución dinámica de vertidos: Cálculo automático y proporcional de los volúmenes de vertido (escala acumulada de balanza) en base al Agua Total calculada y el Blooming, ajustándose en tiempo real para recetas de uno o múltiples vertidos." },
+            { fecha: "25-MAY-2026", resumen: "Automatización de Ratio: El campo 'Agua Total' ahora se autocalcula usando un ratio estándar de 1:16 en base a los gramos de café ingresados, restando dinámicamente el volumen de 'Hielo en jarra' si aplica." },
+            { fecha: "25-MAY-2026", resumen: "Reorganización de Detalles del Café: Agrupamiento lógico de datos de tueste (izquierda) y extracción (derecha), incorporando dinámicamente el Tiempo de Extracción total." },
+            { fecha: "25-MAY-2026", resumen: "Mejora de UX: Implementación de botones incrementales (+/-) para ajustar los tiempos de vertido (formato MM:SS) y se equilibró visualmente el espacio con los selectores de volumen." },
+            { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
+            { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
+            { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior." },
+            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." }
+        ];
 
-            if (tostador === 'Vinza') {
-                divVinza.classList.remove('hidden');
-                divExterno.classList.add('hidden');
-            } else {
-                divVinza.classList.add('hidden');
-                divExterno.classList.remove('hidden');
+        // --- DICCIONARIO GLOBAL DE VARIEDADES ---
+        const DICCIONARIO_VARIEDADES = {
+            'BOR': 'Borbón Rosado',
+            'SIH': 'Sidra Honey',
+            'TIL': 'Típica Lavado',
+            'GES': 'Geisha-Sidra',
+            'CAT': 'Caturra',
+            'TYM': 'Typica Mejorado',
+            'CTI': 'Catuaí'
+        };
+
+        // --- VARIABLE GLOBAL DUAL PARA ANÁLISIS DE DESARROLLO ---
+        let currentRoastData = {
+            grano: { r: null, g: null, b: null, lum: null, img: null },
+            molido: { r: null, g: null, b: null, lum: null, img: null }
+        };
+
+        // --- MEMORIA LOCAL Y FILTROS (HISTORIAL DE CATAS) ---
+        let historialCatas = JSON.parse(localStorage.getItem('bitacoraHistorial')) || [];
+        let activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
+        let currentFilterType = '';
+        let sortByScoreDesc = false; // Variable global para el botón de ordenar
+
+        function calcularDiasDesdeCodigoYFecha(codigo, fechaStr) {
+            if (!codigo || !fechaStr) return null;
+            const ref = obtenerFechaDesdeInput(fechaStr); ref.setHours(0,0,0,0);
+            const matchN = codigo.match(/(\d{2})([A-Z]{3})/); 
+            const matchA = codigo.match(/(\d{2})[-/.]?(\d{2})[-/.]?(\d{4}|\d{2})/);
+            const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 };
+            
+            let ft = null; 
+            if (matchN && mesesStr[matchN[2]] !== undefined) { 
+                ft = new Date(ref.getFullYear(), mesesStr[matchN[2]], parseInt(matchN[1], 10)); 
+                if (ft > ref) ft.setFullYear(ref.getFullYear() - 1); 
+            } else if (matchA) { 
+                let y = parseInt(matchA[3], 10); 
+                ft = new Date(y < 100 ? y + 2000 : y, parseInt(matchA[2], 10) - 1, parseInt(matchA[1], 10)); 
+            }
+            
+            if (ft) { 
+                ft.setHours(0,0,0,0); 
+                const diff = Math.round((ref.getTime() - ft.getTime()) / 86400000); 
+                return diff >= 0 ? diff : null; 
+            } 
+            return null;
+        }
+
+        function sanearHistorial() {
+            let modificado = false;
+            historialCatas.forEach(cata => {
+                if (cata.codigo) {
+                    const prefijo = cata.codigo.substring(0, 3).toUpperCase();
+                    if (DICCIONARIO_VARIEDADES[prefijo] && cata.variedad !== DICCIONARIO_VARIEDADES[prefijo]) {
+                        cata.variedad = DICCIONARIO_VARIEDADES[prefijo];
+                        modificado = true;
+                    }
+                    if (cata.dias_tueste === undefined && cata.fechaExacta) {
+                        const diff = calcularDiasDesdeCodigoYFecha(cata.codigo, cata.fechaExacta);
+                        if (diff !== null) {
+                            cata.dias_tueste = diff;
+                            modificado = true;
+                        }
+                    }
+                }
+            });
+            if (modificado) {
+                localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
             }
         }
 
-        // --- MANTENEMOS TU LÓGICA DE GENERACIÓN ---
+        function toggleSortPuntaje() {
+            sortByScoreDesc = !sortByScoreDesc;
+            const btn = document.getElementById('chip-sort-puntaje');
+            if (sortByScoreDesc) {
+                btn.classList.add('active');
+                btn.innerHTML = '🏆 Orden: Mayor Puntuación';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '🏆 Top Catas';
+            }
+            renderHistorial();
+        }
+
+        function abrirFiltro(tipo) {
+            currentFilterType = tipo;
+            const titulos = { puntaje: '🎯 Filtrar por Puntaje', calif: '⭐ Filtrar por Calificación', variedad: '🌱 Filtrar por Variedad', tueste: '🔥 Filtrar por Nivel de Tueste', merma: '📉 Filtrar por % Merma', codigo: '🏷️ Filtrar por Código' };
+            document.getElementById('filtroTitulo').innerText = titulos[tipo];
+            
+            let html = '';
+            let val = activeFilters[tipo] || '';
+            
+            if(tipo === 'calif') {
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
+                    <option value="">Todas</option>
+                    <option value="Excelente" ${val==='Excelente'?'selected':''}>Excelente</option>
+                    <option value="Muy bueno" ${val==='Muy bueno'?'selected':''}>Muy bueno</option>
+                    <option value="Bueno" ${val==='Bueno'?'selected':''}>Bueno</option>
+                    <option value="Aceptable" ${val==='Aceptable'?'selected':''}>Aceptable</option>
+                    <option value="Regular" ${val==='Regular'?'selected':''}>Regular</option>
+                    <option value="Deficiente" ${val==='Deficiente'?'selected':''}>Deficiente</option>
+                </select>`;
+            } else if(tipo === 'tueste') {
+                 html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
+                    <option value="">Todos</option>
+                    <option value="Cinnamon" ${val==='Cinnamon'?'selected':''}>Cinnamon</option>
+                    <option value="New England" ${val==='New England'?'selected':''}>New England</option>
+                    <option value="City" ${val==='City'?'selected':''}>City</option>
+                    <option value="City+" ${val==='City+'?'selected':''}>City+</option>
+                    <option value="Full City" ${val==='Full City'?'selected':''}>Full City</option>
+                    <option value="Full City+" ${val==='Full City+'?'selected':''}>Full City+</option>
+                    <option value="French" ${val==='French'?'selected':''}>French</option>
+                </select>`;
+            } else if(tipo === 'puntaje') {
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
+                    <option value="">Todos</option>
+                    <option value="<70" ${val==='<70'?'selected':''}>Menos de 70</option>
+                    <option value="70-72" ${val==='70-72'?'selected':''}>70 - 71.9</option>
+                    <option value="72-74" ${val==='72-74'?'selected':''}>72 - 73.9</option>
+                    <option value="74-76" ${val==='74-76'?'selected':''}>74 - 75.9</option>
+                    <option value="76-78" ${val==='76-78'?'selected':''}>76 - 77.9</option>
+                    <option value="78-80" ${val==='78-80'?'selected':''}>78 - 79.9</option>
+                    <option value="80-82" ${val==='80-82'?'selected':''}>80 - 81.9</option>
+                    <option value="82-84" ${val==='82-84'?'selected':''}>82 - 83.9</option>
+                    <option value="84-86" ${val==='84-86'?'selected':''}>84 - 85.9</option>
+                    <option value="86-88" ${val==='86-88'?'selected':''}>86 - 87.9</option>
+                    <option value="88-90" ${val==='88-90'?'selected':''}>88 - 89.9</option>
+                    <option value="90-100" ${val==='90-100'?'selected':''}>90 o más</option>
+                </select>`;
+            } else if (tipo === 'merma') {
+                let options = '<option value="">Todas</option>';
+                for(let i=6; i<=16; i++) {
+                    let range = `${i}-${i+1}`;
+                    options += `<option value="${range}" ${val===range?'selected':''}>${i} - ${i+1}%</option>`;
+                }
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
+            } else if (tipo === 'variedad') {
+                let defaultVars = Object.values(DICCIONARIO_VARIEDADES);
+                let historyVars = historialCatas.map(c => c.variedad).filter(v => v);
+                let uniqueVars = [...new Set([...defaultVars, ...historyVars])].sort();
+
+                let options = '<option value="">Todas</option>';
+                uniqueVars.forEach(v => {
+                    options += `<option value="${v}" ${val===v?'selected':''}>${v}</option>`;
+                });
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
+            } else if (tipo === 'codigo') {
+                let historyCodes = historialCatas;
+                // Filtrar los códigos mostrados si ya hay una variedad seleccionada
+                if (activeFilters.variedad) {
+                    historyCodes = historyCodes.filter(c => c.variedad && c.variedad.toLowerCase() === activeFilters.variedad.toLowerCase());
+                }
+                let uniqueCodes = [...new Set(historyCodes.map(c => c.codigo).filter(v => v))].sort();
+
+                let options = '<option value="">Todos</option>';
+                uniqueCodes.forEach(c => {
+                    options += `<option value="${c}" ${val===c?'selected':''}>${c}</option>`;
+                });
+                html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
+            }
+            
+            document.getElementById('filtroBody').innerHTML = html;
+            document.getElementById('filtroModal').style.display = 'flex';
+        }
+
+        function cerrarFiltro() { document.getElementById('filtroModal').style.display = 'none'; }
+
+        function aplicarFiltro() {
+            let val = document.getElementById('filtroInput').value.trim();
+            activeFilters[currentFilterType] = val;
+            
+            const chip = document.getElementById(`chip-${currentFilterType}`);
+            const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Tueste', merma: '📉 Merma', codigo: '🏷️ Código' };
+            
+            if(val !== '') {
+                chip.classList.add('active');
+                let displayVal = val;
+                if(currentFilterType === 'variedad' && val.length > 8) displayVal = val.substring(0,8) + '..';
+                else if(currentFilterType === 'codigo' && val.length > 8) displayVal = val.substring(0,8) + '..';
+                else if (currentFilterType === 'merma') displayVal = val + '%';
+                chip.innerHTML = `${chipLabels[currentFilterType]}: ${displayVal}`;
+            } else {
+                chip.classList.remove('active');
+                chip.innerHTML = chipLabels[currentFilterType];
+            }
+            
+            cerrarFiltro();
+            renderHistorial();
+        }
+
+        function limpiarFiltros() {
+            activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
+            
+            // Limpiar los chips normales
+            ['puntaje', 'calif', 'variedad', 'tueste', 'merma', 'codigo'].forEach(tipo => {
+                const chip = document.getElementById(`chip-${tipo}`);
+                chip.classList.remove('active');
+                const chipLabels = { puntaje: '🎯 Puntaje', calif: '⭐ Calif.', variedad: '🌱 Variedad', tueste: '🔥 Nivel/Tueste', merma: '📉 Merma', codigo: '🏷️ Código' };
+                chip.innerHTML = chipLabels[tipo];
+            });
+
+            // Apagar también el botón de Top Catas
+            sortByScoreDesc = false;
+            const sortChip = document.getElementById('chip-sort-puntaje');
+            sortChip.classList.remove('active');
+            sortChip.innerHTML = '🏆 Top Catas';
+
+            renderHistorial();
+        }
+
+        function renderHistorial() {
+            const container = document.getElementById('historialContainer');
+            container.innerHTML = '';
+            
+            if (historialCatas.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#888; font-size:0.85rem; padding:10px;">Aún no hay puntuaciones en el historial. Carga una cata y presiona "+" para empezar.</div>';
+                document.getElementById('chip-clear').style.display = 'none';
+                return;
+            }
+
+            let filtrosActivos = Object.values(activeFilters).some(v => v !== '') || sortByScoreDesc;
+            document.getElementById('chip-clear').style.display = filtrosActivos ? 'inline-flex' : 'none';
+            
+            let displayList = [];
+            let catasPorCodigo = {};
+            
+            historialCatas.forEach(cata => {
+                if(!catasPorCodigo[cata.codigo]) catasPorCodigo[cata.codigo] = 0;
+                catasPorCodigo[cata.codigo]++;
+                displayList.push({ ...cata, numero: catasPorCodigo[cata.codigo] });
+            });
+            
+            // Aplicar Filtros primero
+            if(Object.values(activeFilters).some(v => v !== '')) {
+                displayList = displayList.filter(c => {
+                    let pasa = true;
+                    
+                    if(activeFilters.puntaje) {
+                        let p = parseFloat(c.puntaje);
+                        if (isNaN(p)) pasa = false;
+                        else if (activeFilters.puntaje === '<70' && p >= 70) pasa = false;
+                        else if (activeFilters.puntaje === '90-100' && p < 90) pasa = false;
+                        else if (activeFilters.puntaje.includes('-') && activeFilters.puntaje !== '90-100') {
+                            let [min, max] = activeFilters.puntaje.split('-').map(Number);
+                            if (p < min || p >= max) pasa = false;
+                        }
+                    }
+                    
+                    if(activeFilters.merma) {
+                        let m = parseFloat(c.merma);
+                        if (isNaN(m)) pasa = false;
+                        else {
+                            let [min, max] = activeFilters.merma.split('-').map(Number);
+                            if (m < min || m >= max) pasa = false;
+                        }
+                    }
+
+                    if(activeFilters.variedad && (!c.variedad || c.variedad.toLowerCase() !== activeFilters.variedad.toLowerCase())) pasa = false;
+                    if(activeFilters.codigo && (!c.codigo || c.codigo.toLowerCase() !== activeFilters.codigo.toLowerCase())) pasa = false;
+                    if(activeFilters.calif && c.calificacion !== activeFilters.calif) pasa = false;
+                    if(activeFilters.tueste && c.tueste !== activeFilters.tueste) pasa = false;
+
+                    return pasa;
+                });
+            }
+
+            // Aplicar Ordenamiento (Top Catas o Cronológico)
+            if (sortByScoreDesc) {
+                displayList.sort((a, b) => {
+                    let pA = parseFloat(a.puntaje) || 0;
+                    let pB = parseFloat(b.puntaje) || 0;
+                    if (pB !== pA) return pB - pA;
+                    return b.id - a.id; // En caso de empate, el más nuevo arriba
+                });
+            } else {
+                displayList.reverse(); // Orden por defecto: los más recientes primero
+            }
+            
+            if (displayList.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#888; font-size:0.85rem; padding:10px;">No se encontraron resultados con estos filtros.</div>';
+                return;
+            }
+            
+            let html = '';
+            displayList.forEach((cata, index) => {
+                let numStr = String(cata.numero).padStart(2, '0');
+                
+                let extraInfo = [];
+                if(cata.variedad) extraInfo.push(cata.variedad);
+                if(cata.tueste) extraInfo.push(cata.tueste);
+                if(cata.merma) extraInfo.push(cata.merma + '%');
+                
+                let baseExtra = extraInfo.join(' • ');
+                if (cata.dias_tueste !== undefined && cata.dias_tueste !== '' && !isNaN(parseInt(cata.dias_tueste))) {
+                    baseExtra += ` - ${parseInt(cata.dias_tueste)} días`;
+                }
+                
+                let extraStr = baseExtra ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${baseExtra}</div>` : '';
+
+                // Si estamos en modo ranking, añadimos una pequeña medalla a los 3 primeros
+                let medalla = '';
+                if (sortByScoreDesc) {
+                    if (index === 0) medalla = ' 🥇';
+                    else if (index === 1) medalla = ' 🥈';
+                    else if (index === 2) medalla = ' 🥉';
+                }
+
+                html += `
+                <div class="historial-item">
+                    <div class="hist-row"><span class="hist-label">TUESTE:</span> <span class="hist-val">${cata.codigo}</span></div>
+                    <div class="hist-row"><span class="hist-label">CATA:</span> <span class="hist-val">${numStr} - ${cata.fechaCorta}</span></div>
+                    <div class="hist-row"><span class="hist-label" style="color: #bf360c;">PUNT/CALIF.:</span> <span class="hist-punt">${cata.puntaje}${medalla} / ${cata.calificacion}</span></div>
+                    ${extraStr}
+                    <button type="button" class="btn-delete-hist" onclick="eliminarDelHistorial(${cata.id})">🗑️</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function registrarCataActual() {
+            const codigo = document.getElementById('codigo').value;
+            const fechaStr = document.getElementById('fecha_hora').value; 
+            const puntaje = document.getElementById('puntaje_num').value;
+            const calif = document.querySelector('input[name="global_eval"]:checked')?.value;
+            
+            const variedad = document.getElementById('variedad').value || '';
+            const merma = document.getElementById('merma').value || '';
+            const diasTueste = document.getElementById('dias_tueste').value || '';
+            
+            let tueste = '';
+            if (currentRoastData.molido.lum !== null) {
+                tueste = getRoastProfile(currentRoastData.molido.lum).label;
+            } else if (currentRoastData.grano.lum !== null) {
+                tueste = getRoastProfile(currentRoastData.grano.lum).label;
+            }
+            
+            if (!codigo) { alert("⚠️ Faltan datos: Por favor, asegúrate de ingresar el Código de Tueste."); return; }
+            if (!puntaje || !calif) { alert("⚠️ Faltan datos: Asegúrate de haber presionado '🪄 Auto-generar' para calcular el puntaje."); return; }
+            
+            let fechaCorta = "XX-XXX";
+            try {
+                let partes = fechaStr.split('-');
+                if(partes.length >= 2) fechaCorta = partes[0] + partes[1].toUpperCase();
+            } catch(e){}
+            
+            let existe = historialCatas.find(c => c.codigo === codigo && c.fechaExacta === fechaStr && c.puntaje === puntaje);
+            if(existe) { alert("ℹ️ Esta cata ya está registrada en el historial."); return; }
+            
+            const nuevaCata = { 
+                id: Date.now(), 
+                codigo: codigo, 
+                fechaCorta: fechaCorta, 
+                fechaExacta: fechaStr, 
+                puntaje: puntaje, 
+                calificacion: calif,
+                variedad: variedad,
+                tueste: tueste,
+                merma: merma,
+                dias_tueste: diasTueste
+            };
+            
+            historialCatas.push(nuevaCata);
+            localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
+            renderHistorial();
+            alert("✅ Cata añadida al historial exitosamente.");
+        }
+
+        function eliminarDelHistorial(id) {
+            if(confirm("¿Estás seguro de que deseas borrar este registro del historial?")) {
+                historialCatas = historialCatas.filter(c => c.id !== id);
+                localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
+                renderHistorial();
+            }
+        }
+
+        function exportarHistorial() {
+            if(historialCatas.length === 0) { alert("El historial está vacío."); return; }
+            const blob = new Blob([JSON.stringify(historialCatas, null, 2)], { type: "application/json" }); 
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+            a.download = `Respaldo_Puntuaciones_${new Date().getTime()}.json`; a.click();
+        }
+        
+        function cargarHistorialRespaldo(e) {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if(Array.isArray(data)) {
+                        historialCatas = data;
+                        localStorage.setItem('bitacoraHistorial', JSON.stringify(historialCatas));
+                        limpiarFiltros(); 
+                        alert("Historial de puntuaciones importado correctamente.");
+                    } else {
+                        alert("Error: El archivo no es un historial válido.");
+                    }
+                } catch(err) { console.error(err); alert("Error al cargar JSON de historial."); } 
+                e.target.value = ''; 
+            }; 
+            reader.readAsText(file);
+        }
+
+        function abrirLog() {
+            const contenedor = document.getElementById('logContainer');
+            contenedor.innerHTML = '';
+            logHistorial.forEach(item => { contenedor.innerHTML += `<div class="log-entry"><div class="log-date">${item.fecha}</div><div class="log-text">${item.resumen}</div></div>`; });
+            document.getElementById('logModal').style.display = 'flex';
+        }
+        function cerrarLog() { document.getElementById('logModal').style.display = 'none'; }
+
+        // --- FUNCIONES CURVA DE LOTE ---
+        function abrirCurvaLote() {
+            if (!activeFilters.codigo) {
+                alert("⚠️ Requisito previo: Por favor, selecciona un 'Código' en los filtros del historial primero.");
+                return;
+            }
+
+            const codigo = activeFilters.codigo;
+            
+            // Asignar el consecutivo real según el orden cronológico original de almacenamiento
+            let catasConNumero = [];
+            let contador = 1;
+            historialCatas.forEach(c => {
+                if (c.codigo === codigo) {
+                    catasConNumero.push({ ...c, consecutivo: contador });
+                    contador++;
+                }
+            });
+
+            if (catasConNumero.length === 0) {
+                alert("No hay catas registradas para este código.");
+                return;
+            }
+
+            const info = catasConNumero[catasConNumero.length - 1]; // Extraemos los metadatos de la última cata
+            const variedad = info.variedad || "Variedad N/D";
+            const tueste = info.tueste || "Tueste N/D";
+            const merma = info.merma ? info.merma + "%" : "Merma N/D";
+
+            dibujarCurvaCanvas(codigo, variedad, tueste, merma, catasConNumero);
+            document.getElementById('curvaModal').style.display = 'flex';
+        }
+
+        function cerrarCurvaLote() {
+            document.getElementById('curvaModal').style.display = 'none';
+        }
+
+        function dibujarCurvaCanvas(codigo, variedad, tueste, merma, catas) {
+            const canvas = document.getElementById('curvaCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Fondo Blanco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+
+            // Títulos
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#4a3b32';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('Evolución de cata', w / 2, 40);
+
+            ctx.fillStyle = '#333333';
+            ctx.font = 'bold 20px monospace';
+            ctx.fillText(codigo, w / 2, 70);
+
+            ctx.fillStyle = '#666666';
+            ctx.font = 'italic 16px sans-serif';
+            ctx.fillText(`(${variedad} • ${tueste} • ${merma})`, w / 2, 95);
+
+            // Márgenes del gráfico
+            const padT = 130;
+            const padB = 80;
+            const padL = 60;
+            const padR = 40;
+            const chartW = w - padL - padR;
+            const chartH = h - padT - padB;
+
+            if (catas.length === 0) return;
+
+            // Rangos para Y (Puntaje)
+            let puntajes = catas.map(c => parseFloat(c.puntaje) || 0);
+            let minP = Math.floor(Math.min(...puntajes));
+            let maxP = Math.ceil(Math.max(...puntajes));
+
+            if (maxP === minP) { minP -= 1; maxP += 1; }
+            let yMin = minP - 1;
+            let yMax = maxP + 1;
+            let yRango = yMax - yMin;
+
+            // Dibujar Eje Y (Rejilla)
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.font = '14px sans-serif';
+
+            for (let i = yMin; i <= yMax; i += 0.5) {
+                let y = padT + chartH - ((i - yMin) / yRango) * chartH;
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(w - padR, y);
+                ctx.stroke();
+
+                if (i % 1 === 0 || i % 0.5 === 0) {
+                    ctx.fillStyle = '#666666';
+                    ctx.fillText(i.toFixed(1), padL - 10, y);
+                }
+            }
+
+            // Preparar Puntos (Eje X dinámico)
+            let puntos = catas.map((c, i) => {
+                let px = catas.length === 1 ? padL + chartW / 2 : padL + (i / (catas.length - 1)) * chartW;
+                let py = padT + chartH - ((parseFloat(c.puntaje) || 0) - yMin) / yRango * chartH;
+                return { x: px, y: py, p: parseFloat(c.puntaje).toFixed(1), num: c.consecutivo, dias: c.dias_tueste };
+            });
+
+            // Dibujar Línea conector
+            if (puntos.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(puntos[0].x, puntos[0].y);
+                for (let i = 1; i < puntos.length; i++) {
+                    ctx.lineTo(puntos[i].x, puntos[i].y);
+                }
+                ctx.strokeStyle = '#388e3c'; // Verde más oscuro para destacar en fondo claro
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // Dibujar Nodos e Info de Eje X
+            ctx.textAlign = 'center';
+            puntos.forEach(pt => {
+                // Círculo
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#388e3c';
+                ctx.stroke();
+
+                // Etiqueta del puntaje
+                ctx.fillStyle = '#333333';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText(pt.p, pt.x, pt.y - 15);
+
+                // Etiquetas del Eje X (Número de cata y días)
+                ctx.fillStyle = '#bf360c';
+                ctx.font = 'bold 14px sans-serif';
+                let numStr = String(pt.num).padStart(2, '0');
+                ctx.fillText(`Cata ${numStr}`, pt.x, h - padB + 25);
+
+                let diasTxt = (pt.dias !== undefined && pt.dias !== null && pt.dias !== '') ? `${pt.dias} días` : '-';
+                ctx.fillStyle = '#666666';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(diasTxt, pt.x, h - padB + 45);
+            });
+
+            // Leyenda del Eje Y
+            ctx.save();
+            ctx.translate(20, padT + chartH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#8d6e63';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('Puntaje (SCA)', 0, 0);
+            ctx.restore();
+        }
+
+        function descargarCurvaJPG() {
+            const canvas = document.getElementById('curvaCanvas');
+            const link = document.createElement('a');
+            let code = activeFilters.codigo || 'Lote';
+            link.download = `Evolucion_${code}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 1.0);
+            link.click();
+        }
+
+        const mapDispositivos = {
+            "Filtrado": ["Origami Dripper", "Hario V60", "Chemex", "Kalita Wave"],
+            "Inmersión": ["French Press", "Clever Dripper"],
+            "Presión (Espresso)": ["Espresso Machine", "Flair Espresso Maker"],
+            "Percolación": ["Moka Pot", "Percoladora"],
+            "Infusión en frío (Cold Brew)": ["Cold Brew Maker"],
+            "Híbrido": ["AeroPress"],
+            "Ebullición": ["Cezve"]
+        };
+
+        const mapFiltros = {
+            "Origami Dripper": ["Fondo plano/papel", "Cónico/papel"],
+            "Hario V60": ["Cónico/papel", "Fondo plano/papel"],
+            "Chemex": ["Filtro de papel grueso"],
+            "Kalita Wave": ["Fondo plano/papel"],
+            "French Press": ["Filtro metálico"],
+            "Clever Dripper": ["Cónico/papel"],
+            "Espresso Machine": ["Filtro metálico"],
+            "Flair Espresso Maker": ["Filtro metálico"],
+            "Moka Pot": ["Filtro metálico"],
+            "Percoladora": ["Filtro metálico"],
+            "Cold Brew Maker": ["Filtro metálico", "Filtro de tela", "Filtro de papel grueso"],
+            "AeroPress": ["Cónico/papel", "Filtro metálico", "Filtro de tela"],
+            "Cezve": ["Sin filtro"]
+        };
+
+        function actualizarDispositivos() {
+            const metodoSelect = document.getElementById('metodo');
+            const dispSelect = document.getElementById('dispositivo');
+            dispSelect.innerHTML = '';
+            const dispositivos = mapDispositivos[metodoSelect.value] || [];
+            dispositivos.forEach(disp => { const opt = document.createElement('option'); opt.value = disp; opt.text = disp; dispSelect.add(opt); });
+            actualizarFiltros();
+        }
+
+        function actualizarFiltros() {
+            const dispSelect = document.getElementById('dispositivo');
+            const filtroSelect = document.getElementById('filtro');
+            filtroSelect.innerHTML = '';
+            const filtros = mapFiltros[dispSelect.value] || [];
+            filtros.forEach(f => { const opt = document.createElement('option'); opt.value = f; opt.text = f; filtroSelect.add(opt); });
+        }
+
+        const conceptosGlosario = {
+            "Fragancia (en seco)": { "General": "Olor de los granos de café recién molidos.", "Alta": "Muy intensa y compleja.", "Media": "Intensidad moderada.", "Baja": "Aroma débil o rancio." },
+            "Aroma (en húmedo)": { "General": "Olor que desprende el café al añadir agua.", "Alta": "Explosiva y envolvente.", "Media": "Agradable y clara.", "Baja": "Aroma tenue." },
+            "Sabor": { "General": "Combinación principal de lengua y nariz.", "Alta": "Multidimensional y rico.", "Media": "Sabor sólido y predecible.", "Baja": "Sabor simple." },
+            "Acidez": { "General": "Vivacidad del café.", "Alta": "Cítrica, brillante.", "Media": "Suave y balanceada.", "Baja": "Plana." },
+            "Dulzor": { "General": "Intensidad de azúcares.", "Alta": "Melosa o almibarada.", "Media": "Dulzor moderado.", "Baja": "Sensación seca." },
+            "Amargor": { "General": "Sensación punzante.", "Alta": "Muy intense.", "Media": "Amargor limpio.", "Baja": "Casi imperceptible." },
+            "Cuerpo": { "General": "Sensación táctil y peso.", "Alta": "Pesada, cremosa.", "Media": "Textura sedosa.", "Baja": "Acuosa, ligera." },
+            "Balance": { "General": "Armonía entre atributos.", "Alta": "Perfecta armonía.", "Media": "Buen equilibrio.", "Baja": "Café descompensado." },
+            "Retrogusto": { "General": "Experiencia que permanece.", "Alta": "Persistencia larga.", "Media": "Persistencia moderada.", "Baja": "Corta o fugaz." },
+            "Limpieza de taza": { "General": "Ausencia de defectos.", "Alta": "Transparencia total.", "Media": "Sabor consistente.", "Baja": "Defectos claros." },
+            "Floral": { "General": "Recuerdan a flores.", "Alta": "Dominante.", "Media": "Sutil.", "Baja": "Imperceptible." },
+            "Frutal": { "General": "Notas de frutas.", "Alta": "Vibrante.", "Media": "Frescura.", "Baja": "Lineal." },
+            "Chocolate/Cacao": { "General": "Chocolate o cacao.", "Alta": "Intensa.", "Media": "Presente.", "Baja": "Tenue." },
+            "Caramelo/Dulce": { "General": "Azúcar, miel.", "Alta": "Meloso.", "Media": "Agradable.", "Baja": "Seco." },
+            "Especiado": { "General": "Canela, clavo.", "Alta": "Marcada.", "Media": "Leve.", "Baja": "Ausente." },
+            "Tostado": { "General": "Influencia del fuego.", "Alta": "Fuerte.", "Media": "Equilibrio.", "Baja": "Ligero." },
+            "Herbal/Vegetal": { "General": "Pasto, té.", "Alta": "Verde marcado.", "Media": "Matices.", "Baja": "Sin rasgos." },
+            "Evaluación Global": { "Excelente": "86.0 - 100 pts. Café de especialidad sobresaliente.", "Muy bueno": "80.0 - 85.9 pts. Café de Especialidad estándar.", "Bueno": "75.0 - 79.9 pts. Café Premium / comercial alto.", "Aceptable": "70.0 - 74.9 pts. Café comercial promedio.", "Regular": "60.0 - 69.9 pts. Taza desbalanceada o con defectos menores.", "Deficiente": "< 60.0 pts. Taza con defectos graves." }
+        };
+
+        function mostrarInfo(parametro, nivel) {
+            let titulo = nivel === "General" ? `📖 ${parametro}` : `📖 ${parametro}: ${nivel}`;
+            document.getElementById('infoTitle').innerText = titulo; document.getElementById('infoBody').innerText = conceptosGlosario[parametro]?.[nivel] || "Información general";
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+        function cerrarInfo() { document.getElementById('infoModal').style.display = 'none'; }
+
+        const paramSensoriales = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Uniformidad", "Volver a tomar"];
+        const paramNotas = ["Floral", "Frutal", "Chocolate/Cacao", "Caramelo/Dulce", "Especiado", "Tostado", "Herbal/Vegetal"];
+        const paramGlobal = ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Regular", "Deficiente"];
+
+        function actualizarReferenciasTermicas() {
+            document.getElementById('ref_blooming_ml').innerText = document.getElementById('blooming').value || "0";
+            document.getElementById('ref_v1_ml').innerText = document.getElementById('v1').value || "0";
+            document.getElementById('ref_v2_ml').innerText = document.getElementById('v2').value || "0";
+            document.getElementById('ref_v3_ml').innerText = document.getElementById('v3').value || "0";
+        }
+
+        function calcularVertidos() {
+            let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
+            let blooming = parseFloat(document.getElementById('blooming').value) || 0;
+            let unSoloVertido = document.getElementById('un_solo_vertido').checked;
+
+            if (aguaTotal <= 0) {
+                document.getElementById('bebida_taza').value = "";
+                actualizarReferenciasTermicas();
+                return;
+            }
+
+            if (unSoloVertido) {
+                document.getElementById('v1').value = Math.round(aguaTotal);
+            } else {
+                let remanente = aguaTotal - blooming;
+                if (remanente > 0) {
+                    let step = remanente / 3;
+                    document.getElementById('v1').value = Math.round(blooming + step);
+                    document.getElementById('v2').value = Math.round(blooming + step * 2);
+                    document.getElementById('v3').value = Math.round(aguaTotal);
+                } else {
+                    document.getElementById('v1').value = Math.round(aguaTotal);
+                    document.getElementById('v2').value = Math.round(aguaTotal);
+                    document.getElementById('v3').value = Math.round(aguaTotal);
+                }
+            }
+            
+            calcularRendimiento();
+            actualizarReferenciasTermicas();
+        }
+
+        function calcularAguaTotal() {
+            let gramos = parseFloat(document.getElementById('gramos_cafe').value) || 0;
+            let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
+            
+            if (gramos > 0) {
+                let aguaTotal = (gramos * 16) - hielo;
+                document.getElementById('agua_total').value = Math.max(0, aguaTotal);
+                calcularVertidos();
+            } else {
+                document.getElementById('agua_total').value = "";
+                document.getElementById('bebida_taza').value = "";
+            }
+        }
+        
+        function calcularRendimiento() {
+            let gramos = parseFloat(document.getElementById('gramos_cafe').value) || 0;
+            let aguaTotal = parseFloat(document.getElementById('agua_total').value) || 0;
+            let hielo = parseFloat(document.getElementById('hielo_ml').value) || 0;
+            
+            if (gramos > 0 && aguaTotal > 0) {
+                let retencion = gramos * 2.2;
+                let bebida = (aguaTotal - retencion) + hielo;
+                document.getElementById('bebida_taza').value = Math.max(0, Math.round(bebida));
+            } else {
+                document.getElementById('bebida_taza').value = "";
+            }
+        }
+
+        function step(id, delta) { 
+            const input = document.getElementById(id); 
+            let val = parseFloat(input.value) || 0;
+            let newValue = Math.round((val + delta) * 10) / 10;
+            
+            if (newValue < 0) newValue = 0; 
+            
+            input.value = newValue; 
+            
+            if (id === 'gramos_cafe' || id === 'hielo_ml') {
+                calcularAguaTotal();
+            } else if (id === 'blooming' || id === 'agua_total') {
+                calcularVertidos();
+            } else if (['v1', 'v2', 'v3'].includes(id)) {
+                actualizarReferenciasTermicas();
+            }
+        }
+        
+        function stepTime(id, deltaSeconds) {
+            const input = document.getElementById(id);
+            if (!input.value) return;
+            
+            let parts = input.value.split(':');
+            if (parts.length !== 2) return;
+            
+            let minutes = parseInt(parts[0], 10);
+            let seconds = parseInt(parts[1], 10);
+            
+            let totalSeconds = (minutes * 60) + seconds + deltaSeconds;
+            if (totalSeconds < 0) totalSeconds = 0;
+            
+            let newMinutes = Math.floor(totalSeconds / 60);
+            let newSeconds = totalSeconds % 60;
+            
+            input.value = String(newMinutes).padStart(2, '0') + ':' + String(newSeconds).padStart(2, '0');
+        }
+        
+        function toggleVertidos(fromUser = false) { 
+            const isChecked = document.getElementById('un_solo_vertido').checked;
+            document.getElementById('vertidos_extras').classList.toggle('hidden', isChecked);
+            document.getElementById('vertidos_extras_temp').classList.toggle('hidden', isChecked);
+            
+            if (fromUser) {
+                if (isChecked) {
+                    document.getElementById('t_v1').value = "02:30";
+                } else {
+                    document.getElementById('t_v1').value = "01:15";
+                    document.getElementById('t_v2').value = "01:50";
+                    document.getElementById('t_v3').value = "02:30";
+                }
+            }
+            calcularVertidos();
+        }
+
+        function generarGridHTML(items, contenedorId, prefijo) {
+            const contenedor = document.getElementById(contenedorId);
+            items.forEach((item, index) => {
+                const row = document.createElement('div'); row.className = 'grid-row';
+                if (conceptosGlosario[item]) {
+                    row.innerHTML = `<div style="display:flex; align-items:center;">${item} <span class="help-icon" onclick="mostrarInfo('${item}', 'General')">?</span></div>
+                        <div style="text-align:center; display:flex; justify-content:center; gap:3px;"><input type="radio" name="${prefijo}_${index}" value="Alta"><span class="help-icon" onclick="mostrarInfo('${item}', 'Alta')">?</span></div>
+                        <div style="text-align:center; display:flex; justify-content:center; gap:3px;"><input type="radio" name="${prefijo}_${index}" value="Media"><span class="help-icon" onclick="mostrarInfo('${item}', 'Media')">?</span></div>
+                        <div style="text-align:center; display:flex; justify-content:center; gap:3px;"><input type="radio" name="${prefijo}_${index}" value="Baja"><span class="help-icon" onclick="mostrarInfo('${item}', 'Baja')">?</span></div>`;
+                } else {
+                    row.innerHTML = `<div>${item}</div><div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Alta"></div><div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Media"></div><div style="text-align:center"><input type="radio" name="${prefijo}_${index}" value="Baja"></div>`;
+                }
+                contenedor.appendChild(row);
+            });
+        }
+
+        function generarGlobalHTML() {
+            const contenedor = document.getElementById('evaluacionGlobal');
+            paramGlobal.forEach((item, index) => { contenedor.innerHTML += `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px"><input type="radio" name="global_eval" id="g_${index}" value="${item}"><label for="g_${index}" style="margin:0">${item}</label><span class="help-icon" onclick="mostrarInfo('Evaluación Global', '${item}')">?</span></div>`; });
+        }
+
+        function autoGenerarGlobal() {
+            const fd = new FormData(document.getElementById('cataForm'));
+            let totalPuntos = 0; let conteoValidos = 0; let limpieza = "Media";
+            
+            paramSensoriales.forEach((item, i) => {
+                if (i > 10) return; let val = fd.get(`sens_${i}`); if (!val) return;
+                let p = (val === "Alta" ? 3 : (val === "Media" ? 2 : 1));
+                if (item === "Sabor" || item === "Balance") p *= 1.5;
+                if (item === "Limpieza de taza") { p *= 2; limpieza = val; }
+                totalPuntos += p; conteoValidos++;
+            });
+            
+            paramNotas.forEach((item, i) => {
+                let val = fd.get(`nota_${i}`); if (!val) return;
+                totalPuntos += (val === "Alta" ? 1.5 : (val === "Media" ? 1 : 0.5)); conteoValidos++;
+            });
+            
+            if (conteoValidos === 0) { alert("Por favor, marca algunos parámetros primero."); return; }
+            
+            let ratio = totalPuntos / conteoValidos;
+            let score = 0;
+            
+            if (ratio >= 2.6) score = 86 + ((ratio - 2.6) / 0.15) * 14;
+            else if (ratio >= 2.2) score = 80 + ((ratio - 2.2) / 0.4) * 5.9;
+            else if (ratio >= 1.7) score = 75 + ((ratio - 1.7) / 0.5) * 4.9;
+            else if (ratio >= 1.3) score = 70 + ((ratio - 1.3) / 0.4) * 4.9;
+            else score = 60 + ((ratio - 0.9) / 0.4) * 9.9;
+            
+            if (limpieza === "Baja" && score > 69.9) score = 69.9;
+            else if (limpieza === "Media" && score >= 86) score = 85.9;
+            
+            score = Math.min(100, Math.max(0, score));
+            let scoreStr = score.toFixed(1);
+
+            let r = "";
+            if (score >= 86) r = "Excelente";
+            else if (score >= 80) r = "Muy bueno";
+            else if (score >= 75) r = "Bueno";
+            else if (score >= 70) r = "Aceptable";
+            else if (score >= 60) r = "Regular";
+            else r = "Deficiente";
+
+            const radioInput = document.querySelector(`input[name="global_eval"][value="${r}"]`); 
+            if (radioInput) radioInput.checked = true;
+            
+            document.getElementById('puntaje_num').value = scoreStr;
+            document.getElementById('puntajeValor').innerText = scoreStr;
+            document.getElementById('puntajeDisplay').style.display = 'block';
+        }
+
+        function obtenerFechaHoraActualFormateada() {
+            const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" }));
+            const dia = String(d.getDate()).padStart(2, '0'); const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+            return `${dia}-${meses[d.getMonth()]}-${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}H:${String(d.getMinutes()).padStart(2, '0')}m`;
+        }
+
+        function obtenerFechaActualEcuador() { const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guayaquil" })); d.setHours(0, 0, 0, 0); return d; }
+
+        function obtenerFechaDesdeInput(fechaStr) {
+            const hoyDefault = obtenerFechaActualEcuador(); if (!fechaStr) return hoyDefault;
+            try {
+                if (fechaStr.includes('/')) { const p = fechaStr.split(',')[0].trim().split('/'); return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10)); }
+                else if (fechaStr.includes('-')) { const p = fechaStr.split(' ')[0].trim().split('-'); const mesesStr = { 'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11 }; return new Date(parseInt(p[2], 10), mesesStr[p[1].toUpperCase()], parseInt(p[0], 10)); }
+            } catch(e) {} return hoyDefault;
+        }
+
+        function analizarCodigo() {
+            const codigo = document.getElementById('codigo').value.toUpperCase(); 
+            const inputDias = document.getElementById('dias_tueste'); 
+            const inputVariedad = document.getElementById('variedad');
+            
+            const prefijo = codigo.substring(0, 3); 
+            if (DICCIONARIO_VARIEDADES[prefijo]) {
+                inputVariedad.value = DICCIONARIO_VARIEDADES[prefijo];
+            } else {
+                inputVariedad.value = "";
+            }
+            
+            const fechaStr = document.getElementById('fecha_hora').value;
+            const diff = calcularDiasDesdeCodigoYFecha(codigo, fechaStr);
+            if (diff !== null) {
+                inputDias.value = diff;
+            } else {
+                inputDias.value = "Sin fecha detectada";
+            }
+        }
+
+        generarGridHTML(paramSensoriales, 'evaluacionSensorial', 'sens'); generarGridHTML(paramNotas, 'notasSensoriales', 'nota'); generarGlobalHTML();
+        
+        window.onload = () => { 
+            document.getElementById('fecha_hora').value = obtenerFechaHoraActualFormateada(); 
+            sanearHistorial();
+            analizarCodigo(); 
+            actualizarDispositivos(); 
+            calcularAguaTotal(); 
+            actualizarReferenciasTermicas();
+            renderHistorial();
+        };
+
         function dispararGeneracion() {
             const fd = new FormData(document.getElementById('cataForm'));
-            let textoFinal = `Código: ${fd.get('codigo')}`;
+            const getS = (p) => fd.get(`sens_${paramSensoriales.indexOf(p)}`); const getN = (p) => fd.get(`nota_${paramNotas.indexOf(p)}`);
+            let nL = []; paramNotas.forEach(n => { if(getN(n)==='Alta'||getN(n)==='Media') nL.push(n.toLowerCase()); });
             
-            if (fd.get('tostador') === 'Vinza') {
-                textoFinal += ` [Máquina: ${fd.get('maquina')}] - ${fd.get('temp_tueste')}°C | ${fd.get('tiempo_tueste')}`;
-            } else {
-                textoFinal += ` [Tostador Externo: ${fd.get('nombre_tostadora') || 'No especificado'}]`;
+            const fmt = (v, t) => { if(!v) return 'no definido'; const l = v.toLowerCase(); if(t==='fem') return l; if(t==='masc') return l==='alta'?'alto':l==='media'?'medio':'bajo'; return l==='alta'?'prolongado':l==='media'?'medio':'corto'; };
+            let sabor = getS('Sabor'), acidez = getS('Acidez'), dulzor = getS('Dulzor'), amargor = getS('Amargor'), cuerpo = getS('Cuerpo'), balance = getS('Balance'), retro = getS('Retrogusto'), vol = getS('Volver a tomar');
+            
+            let parrafo = `Este ${fd.get('variedad') || 'café'} preparado en ${fd.get('dispositivo') || 'filtro'} (${fd.get('metodo') || 'extracción'}) presenta un perfil con sabor ${fmt(sabor,'masc')}, acidez ${fmt(acidez,'fem')}, dulzor ${fmt(dulzor,'masc')} y amargor ${fmt(amargor,'masc')}. `;
+            parrafo += nL.length > 0 ? `Muestra notas ${nL.join(', ').replace(/, ([^,]*)$/, ' y $1')} integradas, con un cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. ` : `Se percibe con cuerpo ${fmt(cuerpo,'masc')} y balance ${fmt(balance,'masc')}. `;
+            
+            let score = fd.get('puntaje_num');
+            let globalText = fd.get('global_eval') || 'sin calificar';
+            let globalOutput = score ? `"${globalText}" (${score} pts)` : `"${globalText}"`;
+            
+            parrafo += `El retrogusto es ${fmt(retro,'retro')}. ` + (vol ? `Disposición a volver a tomarlo: ${fmt(vol, 'fem')}. ` : '') + `Evaluación global: ${globalOutput}${fd.get('observaciones') ? ', notas adicionales: ' + fd.get('observaciones').trim() : '.'}`;
+            
+            let textoFinal = `Código del tueste: ${fd.get('codigo') || 'Sin especificar'} [${fd.get('maquina') || 'Tostadora'}]`;
+            let dReposo = fd.get('dias_tueste'); if (dReposo && !isNaN(dReposo)) textoFinal += ` (${dReposo} días post-tueste)`;
+            
+            let gr = parseFloat(fd.get('gramos_cafe')), ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            let ml_para_ratio = ml_total_real + hielo; 
+            
+            if (!isNaN(gr) && gr>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) {
+                textoFinal += ` - ${gr}g / ${ml_total_real}ml (Ratio 1:${(ml_para_ratio/gr).toFixed(1).replace('.0','')})`;
+                let bebida = document.getElementById('bebida_taza').value;
+                if (bebida && bebida !== "") textoFinal += ` - Rendimiento: ~${bebida}ml`;
             }
-            
-            document.getElementById('evaluacion_final').value = textoFinal;
+
+            let pGrano = currentRoastData.grano.lum !== null ? getRoastProfile(currentRoastData.grano.lum) : null;
+            let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
+
+            if (pGrano) {
+                textoFinal += `\n\n🫘 Grano (Ext): ${pGrano.label} (${currentRoastData.grano.lum.toFixed(1)} Agtron)`;
+            }
+            if (pMolido) {
+                textoFinal += `\n🤎 Molido (Int): ${pMolido.label} (${currentRoastData.molido.lum.toFixed(1)} Agtron)`;
+            }
+
+            let pReferencia = pMolido || pGrano;
+            if (pReferencia) {
+                textoFinal += `\n💡 Método recomendado: ${pReferencia.metodos}`;
+            }
+
+            if (pGrano && pMolido) {
+                if (currentRoastData.grano.lum > currentRoastData.molido.lum) {
+                    textoFinal += `\n\n⚠️ Anomalía detectada (Delta): Falla en la captura fotográfica (ilusión óptica) o inversión térmica.`;
+                } else {
+                    let delta = Math.abs(currentRoastData.molido.lum - currentRoastData.grano.lum);
+                    let nivelStr = "";
+                    let recStr = "";
+
+                    if (delta <= 4) { 
+                        nivelStr = "Desarrollo Óptimo / Homogéneo"; 
+                    } else if (delta <= 9) { 
+                        nivelStr = "Desarrollo Estándar / Ideal para Filtro"; 
+                    } else if (delta <= 13) { 
+                        nivelStr = "Alerta / Riesgo de Subdesarrollo"; 
+                        recStr = "\n   - Temp: Disminuir ligeramente al entrar a Maillard.\n   - Tiempo: Alargar Maillard 30 a 45 seg.\n   - Vent: Mantener V3 hasta el 45% o 50% del tueste.";
+                    } else { 
+                        nivelStr = "Crítico / Arrebatamiento"; 
+                        recStr = "\n   - Temp: Bajar significativamente temp. de carga o pico inicial.\n   - Tiempo: Incrementar tiempo total entre 1 y 2 min.\n   - Vent: V3 en secado y casi todo Maillard. Bajar a V2 solo antes del crack (volver a V3 si hay inercia térmica).";
+                    }
+                    textoFinal += `\n\n⚖️ Delta de Desarrollo: ${delta.toFixed(1)} pts (${nivelStr}).${recStr}`;
+                }
+            }
+
+            textoFinal += `\n\n${parrafo}`; document.getElementById('evaluacion_final').value = textoFinal;
         }
 
-        // ... resto de tus funciones existentes (guardarJSON, etc.) ...
-        
-        window.onload = () => { gestionarCamposTueste(); };
+        function copiarTexto() {
+            const ta = document.getElementById("evaluacion_final"); if (!ta.value.trim()) return;
+            ta.select(); navigator.clipboard.writeText(ta.value).then(() => {
+                const b = document.getElementById("btnCopiar"); b.innerHTML = "✅ ¡Copiado!"; b.style.backgroundColor = "#4CAF50"; setTimeout(() => { b.innerHTML = "📋 Copiar Texto"; b.style.backgroundColor = "#2196F3"; }, 2000);
+            });
+        }
+
+        function guardarJSON() {
+            const fd = new FormData(document.getElementById('cataForm'));
+            const data = { 
+                registro: document.getElementById('fecha_hora').value, 
+                datos_cafe: { 
+                    variedad: fd.get('variedad'), codigo: fd.get('codigo'), fecha_hora: fd.get('fecha_hora'), dias_tueste: fd.get('dias_tueste'),
+                    maquina: fd.get('maquina'), merma: fd.get('merma'), temp_tueste: fd.get('temp_tueste'), tiempo_tueste: fd.get('tiempo_tueste'),
+                    fases: { secado: { tiempo: fd.get('secado_tiempo'), vel: fd.get('secado_vel') }, maillard: { tiempo: fd.get('maillard_tiempo'), vel: fd.get('maillard_vel') }, desarrollo: { tiempo: fd.get('desarrollo_tiempo'), vel: fd.get('desarrollo_vel') } }
+                }, 
+                extraccion: { 
+                    metodo: fd.get('metodo'), dispositivo: fd.get('dispositivo'), clics: fd.get('clics'), filtro: fd.get('filtro'), gramos: fd.get('gramos_cafe'), agua_total: fd.get('agua_total'), ducha: fd.get('usa_ducha') === 'on', bola_fria: fd.get('bola_fria') === 'on', hielo_jarra: fd.get('hielo_ml'), bebida_taza: document.getElementById('bebida_taza').value, un_solo_vertido: fd.get('un_solo_vertido') === 'on', 
+                    blooming: fd.get('blooming'), t_blooming: fd.get('t_blooming'), temp_blooming: fd.get('temp_blooming'),
+                    v1: fd.get('v1'), t_v1: fd.get('t_v1'), temp_v1: fd.get('temp_v1'),
+                    v2: fd.get('v2'), t_v2: fd.get('t_v2'), temp_v2: fd.get('temp_v2'),
+                    v3: fd.get('v3'), t_v3: fd.get('t_v3'), temp_v3: fd.get('temp_v3')
+                }, 
+                sensorial: {}, notas: {}, global: fd.get('global_eval'), puntaje: fd.get('puntaje_num'), observaciones: fd.get('observaciones'), evaluacion_final: fd.get('evaluacion_final'),
+                analisis_imagen: currentRoastData
+            };
+            paramSensoriales.forEach((it, i) => data.sensorial[it] = fd.get(`sens_${i}`)); paramNotas.forEach((it, i) => data.notas[it] = fd.get(`nota_${i}`));
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Cata_${data.datos_cafe.codigo || 'sin_nombre'}.json`; a.click();
+        }
+
+        function setSelectValue(id, value) {
+            const sel = document.getElementById(id); if(!value) return;
+            let exists = Array.from(sel.options).some(opt => opt.value === value); if(exists) sel.value = value;
+        }
+
+        function cargarJSON(e) {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const d = JSON.parse(evt.target.result); document.getElementById('cataForm').reset();
+                    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+                    const dc = d.datos_cafe || d; const ext = d.extraccion || d; const sens = d.sensorial || d; const nots = d.notas || d;
+
+                    ['variedad', 'codigo', 'fecha_hora', 'maquina', 'merma', 'temp_tueste', 'tiempo_tueste'].forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = dc[k] || d[k] || document.getElementById(k).value; });
+                    if(dc.fases) { document.getElementById('secado_tiempo').value = dc.fases.secado?.tiempo || ""; document.getElementById('secado_vel').value = dc.fases.secado?.vel || ""; document.getElementById('maillard_tiempo').value = dc.fases.maillard?.tiempo || ""; document.getElementById('maillard_vel').value = dc.fases.maillard?.vel || ""; document.getElementById('desarrollo_tiempo').value = dc.fases.desarrollo?.tiempo || ""; document.getElementById('desarrollo_vel').value = dc.fases.desarrollo?.vel || ""; }
+                    
+                    let met = ext.metodo === "Filtrado (Pour Over / Goteo)" ? "Filtrado" : ext.metodo;
+                    setSelectValue('metodo', met); actualizarDispositivos(); setSelectValue('dispositivo', ext.dispositivo); actualizarFiltros();
+                    let fil = ext.filtro === "Filtro fondo plano/papel" ? "Fondo plano/papel" : (ext.filtro === "Filtro cónico/papel" ? "Cónico/papel" : ext.filtro); setSelectValue('filtro', fil);
+                    
+                    ['clics', 'agua_total', 'hielo_ml', 'blooming', 't_blooming', 'v1', 't_v1', 'v2', 't_v2', 'v3', 't_v3', 'temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(ext[k]) { let el = document.getElementById(k); if(el) el.value = ext[k]; } });
+                    
+                    ['temp_blooming', 'temp_v1', 'temp_v2', 'temp_v3'].forEach(k => { if(!ext[k]) document.getElementById(k).value = 90; });
+
+                    document.getElementById('gramos_cafe').value = ext.gramos || ext.gramos_cafe || 12.5;
+                    document.getElementById('usa_ducha').checked = !!ext.ducha || !!ext.usa_ducha; document.getElementById('bola_fria').checked = !!ext.bola_fria; document.getElementById('un_solo_vertido').checked = !!ext.un_solo_vertido;
+                    
+                    paramSensoriales.forEach((it, i) => { if(sens[it]) { let r = document.querySelector(`input[name="sens_${i}"][value="${sens[it]}"]`); if(r) r.checked=true; }});
+                    paramNotas.forEach((it, i) => { if(nots[it]) { let r = document.querySelector(`input[name="nota_${i}"][value="${nots[it]}"]`); if(r) r.checked=true; }});
+                    
+                    if(d.global) { let r = document.querySelector(`input[name="global_eval"][value="${d.global}"]`); if(r) r.checked = true; }
+                    
+                    if(d.puntaje) {
+                        document.getElementById('puntaje_num').value = d.puntaje;
+                        document.getElementById('puntajeValor').innerText = d.puntaje;
+                        document.getElementById('puntajeDisplay').style.display = 'block';
+                    } else {
+                        document.getElementById('puntaje_num').value = '';
+                        document.getElementById('puntajeDisplay').style.display = 'none';
+                    }
+
+                    document.getElementById('observaciones').value = d.observaciones || ""; document.getElementById('evaluacion_final').value = d.evaluacion_final || "";
+
+                    if (d.analisis_imagen) {
+                        if (d.analisis_imagen.grano) {
+                            currentRoastData = d.analisis_imagen;
+                        } else if (d.analisis_imagen.img) {
+                            currentRoastData = { grano: { ...d.analisis_imagen }, molido: { r: null, g: null, b: null, lum: null, img: null } };
+                        }
+                        renderCarouselCards();
+                    } else {
+                        currentRoastData = { grano: { r:null, g:null, b:null, lum:null, img:null }, molido: { r:null, g:null, b:null, lum:null, img:null } };
+                        document.getElementById('results-wrapper').style.display = 'none';
+                    }
+
+                    toggleVertidos(false); 
+                    analizarCodigo(); 
+                    calcularAguaTotal(); 
+                    alert("Cata cargada exitosamente. Para añadirla al registro global, ve al final y presiona 'Añadir cata actual al historial'.");
+                } catch(err) { console.error(err); alert("Error al cargar JSON."); } e.target.value = ''; 
+            }; reader.readAsText(file);
+        }
+
+        const ROAST_PROFILES = { 
+            cinnamon: { label: "Cinnamon", sub: "Tueste Muy Claro", hito: "Retirado justo al inicio del primer crack.", quimica: "Nivel máximo de ácidos clorogénicos. Degradación incompleta.", sensorial: (lum) => "Perfil delicadamente silvestre y vibrante, notas herbales y dulzor tenue. Acidez protagonista y brillante.", metodos: "Inmersión prolongada o Filtrado fino (ej. V60)" }, 
+            newEngland: { label: "New England", sub: "Tueste Claro", hito: "Final del primer crack. Superficie mate y rugosa.", quimica: "Máxima complejidad enzimática. Volátiles intactos.", sensorial: (lum) => "Altísima expresión aromática, acidez cítrica elegante. Notas florales definidas y textura ligera.", metodos: "Filtrado cónico (Origami, V60) o Chemex" }, 
+            city: { label: "City", sub: "Tueste Medio-Claro", hito: "Desarrollo post-crack. Grano comienza a alisarse.", quimica: "Maillard avanzada. Caramelización incipiente.", sensorial: (lum) => "Perfil brillante, frutas rojas maduras con acidez jugosa. Excelente claridad y textura sedosa.", metodos: "Filtrado cónico (Origami, V60) o Aeropress" }, 
+            cityPlus: { label: "City+", sub: "Tueste Medio", hito: "Pleno desarrollo. Superficie lisa.", quimica: "Caramelización de azúcares complejos. Balance óptimo.", sensorial: (lum) => "Armónico y completo, acidez redonda integrada con notas a chocolate de leche y caramelo.", metodos: "Filtrado (V60), Aeropress o Espresso moderno" }, 
+            fullCity: { label: "Full City", sub: "Tueste Medio-Oscuro", hito: "Segundos antes del segundo crack.", quimica: "Inicio de la pirólisis. Desarrollo amargo deseable.", sensorial: (lum) => "Densidad sensorial, chocolate semi-amargo, azúcar caramelizada. Acidez estructural, cuerpo pesado.", metodos: "Espresso tradicional, Moka o Prensa Francesa" }, 
+            fullCityPlus: { label: "Full City+", sub: "Tueste Oscuro", hito: "Segundo crack en curso. Capa de aceite ligera.", quimica: "Carbonización de fibra. Tueste domina origen.", sensorial: (lum) => "Perfil intenso, cacao puro y matices ahumados dulces. Acidez desaparece casi por completo.", metodos: "Espresso intenso, Cold Brew o base láctea" }, 
+            french: { label: "French", sub: "Tueste Muy Oscuro", hito: "Final del segundo crack. Muy brillante/aceitoso.", quimica: "Degradación total. Sabor por combustión.", sensorial: (lum) => "Perfil extremo dominado por carbón dulce y madera tostada. Amargor pronunciado.", metodos: "Cold Brew diluido o mezclas lácteas (baja temperatura)" } 
+        };
+
+        function getRoastProfile(lum) {
+            if (lum > 105) return ROAST_PROFILES.cinnamon; if (lum > 85) return ROAST_PROFILES.newEngland; if (lum > 70) return ROAST_PROFILES.city;
+            if (lum > 55) return ROAST_PROFILES.cityPlus; if (lum > 42) return ROAST_PROFILES.fullCity; if (lum > 30) return ROAST_PROFILES.fullCityPlus; return ROAST_PROFILES.french;
+        }
+
+        let uploadTarget = ''; 
+        let roastCropper = null; 
+
+        function triggerUpload(target, source) {
+            uploadTarget = target;
+            const input = document.getElementById('upload-input');
+            document.getElementById('crop-modal-title').innerText = target === 'grano' ? "✂️ Aislar Grano (Exterior)" : "✂️ Aislar Molido (Interior)";
+            if (source === 'camera') input.setAttribute('capture', 'environment'); else input.removeAttribute('capture');
+            input.click();
+        }
+
+        const handleImageUpload = (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = document.getElementById('image-to-crop'); img.src = ev.target.result;
+                document.getElementById('crop-modal').style.display = 'flex';
+                if (roastCropper) roastCropper.destroy();
+                roastCropper = new Cropper(img, { viewMode: 1, autoCropArea: 0.8, background: false });
+            }; reader.readAsDataURL(file); e.target.value = ''; 
+        };
+
+        function confirmCrop() {
+            if (!roastCropper) return;
+            const croppedCanvas = roastCropper.getCroppedCanvas();
+            const resultImgData = croppedCanvas.toDataURL('image/jpeg');
+            document.getElementById('crop-modal').style.display = 'none'; roastCropper.destroy(); roastCropper = null;
+            
+            let tempImg = new Image();
+            tempImg.onload = () => { analyzeRoast(tempImg, resultImgData); };
+            tempImg.src = resultImgData;
+        }
+        function cancelCrop() { document.getElementById('crop-modal').style.display = 'none'; if(roastCropper) roastCropper.destroy(); }
+
+        function analyzeRoast(imgElement, srcData) {
+            const canvas = document.getElementById('canvas-roast'); const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            canvas.width = imgElement.naturalWidth; canvas.height = imgElement.naturalHeight;
+            ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < imgData.length; i += 16) { r += imgData[i]; g += imgData[i+1]; b += imgData[i+2]; count++; }
+            r = Math.floor(r/count); g = Math.floor(g/count); b = Math.floor(b/count);
+            const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b);
+            
+            currentRoastData[uploadTarget] = { r, g, b, lum, img: srcData };
+            renderCarouselCards();
+        }
+
+        function getAgtronDisplayColor(lumValue) {
+            const scale = [ { l: 95, r: 197, g: 154, b: 111 }, { l: 85, r: 168, g: 122, b: 79 }, { l: 75, r: 143, g: 94, b: 54 }, { l: 65, r: 115, g: 67, b: 34 }, { l: 55, r: 89, g: 49, b: 22 }, { l: 45, r: 66, g: 34, b: 14 }, { l: 35, r: 46, g: 21, b: 8 }, { l: 25, r: 28, g: 10, b: 3 }, { l: 15, r: 15, g: 4, b: 1 }, { l: 5, r: 5, g: 1, b: 0 } ];
+            if (lumValue >= 95) return `rgb(197,154,111)`; if (lumValue <= 5) return `rgb(5,1,0)`;
+            for (let i=0; i<scale.length-1; i++) {
+                if (lumValue <= scale[i].l && lumValue > scale[i+1].l) {
+                    let f = (lumValue - scale[i+1].l) / (scale[i].l - scale[i+1].l);
+                    return `rgb(${Math.round(scale[i+1].r+f*(scale[i].r-scale[i+1].r))},${Math.round(scale[i+1].g+f*(scale[i].g-scale[i+1].g))},${Math.round(scale[i+1].b+f*(scale[i].b-scale[i+1].b))})`;
+                }
+            } return `rgb(0,0,0)`;
+        }
+
+        function generateCardColorHTML(title, data, badgeClass, badgeText) {
+            if(data.lum === null) return '';
+            let p = getRoastProfile(data.lum); let bg = getAgtronDisplayColor(data.lum); let pos = Math.max(0, Math.min(100, 100 - data.lum));
+            return `
+            <div class="carousel-card">
+                <div class="card-type-badge">${badgeText}</div>
+                <img src="${data.img}" class="preview-img" style="display:block;">
+                <div class="color-display">
+                    <div class="color-circle" style="background-color: ${bg};"></div>
+                    <div style="display: flex; flex-direction: column;">
+                        <h2 style="margin:0; color: #4a3b32; font-size: 1.4em;">${p.label}</h2>
+                        <span style="color: #bf360c; font-weight: 700; font-size: 0.9em;">${p.sub}</span>
+                        <div class="tech-badge">Lum: ${data.lum.toFixed(1)}</div>
+                    </div>
+                </div>
+                <div class="agtron-container">
+                    <div class="agtron-title">ESCALA DE MEDICIÓN</div>
+                    <div class="agtron-labels"><div>95+</div><div>85</div><div>75</div><div>65</div><div>55</div><div>45</div><div>35</div><div>25</div><div>15</div><div>5</div></div>
+                    <div class="agtron-bar">
+                        <div class="segment seg-1"></div><div class="segment seg-2"></div><div class="segment seg-3"></div><div class="segment seg-4"></div><div class="segment seg-5"></div><div class="segment seg-6"></div><div class="segment seg-7"></div><div class="segment seg-8"></div><div class="segment seg-9"></div><div class="segment seg-10"></div>
+                        <div class="agtron-marker" style="left: ${pos}%;"></div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function generateCardProfileHTML(data, badgeText) {
+            if(data.lum === null) return '';
+            let p = getRoastProfile(data.lum);
+            return `
+            <div class="carousel-card">
+                <div class="card-type-badge">${badgeText}</div>
+                <div class="profile-section">
+                    <div class="profile-item"><span class="profile-label">Hito Técnico</span><span class="profile-text">${p.hito}</span></div>
+                    <div class="profile-item"><span class="profile-label">Química (Estándar)</span><span class="profile-text">${p.quimica}</span></div>
+                    <div class="profile-item"><span class="profile-label">Perfil Sensorial</span><span class="profile-text dynamic-nuance">${p.sensorial(data.lum)}</span></div>
+                    <div class="profile-item"><span class="profile-label">💡 Método Recomendado</span><span class="profile-text" style="font-weight: bold; color: #8d6e63;">${p.metodos}</span></div>
+                </div>
+            </div>`;
+        }
+
+        function renderCarouselCards() {
+            const container = document.getElementById('carousel-cards-container'); container.innerHTML = '';
+            const g = currentRoastData.grano; const m = currentRoastData.molido;
+            let cards = '';
+            
+            if (g.lum !== null) { cards += generateCardColorHTML('🫘 Grano', g, 'exterior', '🫘 EXTERIOR (GRANO)'); cards += generateCardProfileHTML(g, '🫘 EXTERIOR (GRANO)'); }
+            if (m.lum !== null) { cards += generateCardColorHTML('🤎 Molido', m, 'interior', '🤎 INTERIOR (MOLIDO)'); cards += generateCardProfileHTML(m, '🤎 INTERIOR (MOLIDO)'); }
+            
+            if (g.lum !== null && m.lum !== null) {
+                let deltaHTML = '';
+                
+                if (g.lum > m.lum) {
+                    deltaHTML = `
+                    <div class="carousel-card" style="border-color: #f44336; justify-content: center;">
+                        <div class="card-type-badge" style="background-color: #ffebee; color: #f44336;">⚠️ ANÁLISIS DELTA</div>
+                        <div class="delta-box">
+                            <div class="delta-error" style="text-align: center;">
+                                <strong style="font-size: 1.2rem;">Anomalía detectada</strong><br><br>
+                                Falla en la captura fotográfica (ilusión óptica) o inversión térmica.
+                            </div>
+                        </div>
+                    </div>`;
+                } else {
+                    let delta = Math.abs(m.lum - g.lum);
+                    let nivelDesarrollo = "";
+                    let descDesarrollo = "";
+                    
+                    if (delta >= 0 && delta <= 4) {
+                        nivelDesarrollo = "Desarrollo Óptimo / Homogéneo";
+                        descDesarrollo = "Excelente penetración térmica.";
+                    } else if (delta > 4 && delta <= 9) {
+                        nivelDesarrollo = "Desarrollo Estándar / Ideal para Filtro";
+                        descDesarrollo = "Desarrollo adecuado para métodos de filtrado.";
+                    } else if (delta > 9 && delta <= 13) {
+                        nivelDesarrollo = "Alerta / Riesgo de Subdesarrollo";
+                        descDesarrollo = `
+                        <ul style="text-align: left; padding-left: 20px; font-size: 0.85rem; color: #555; margin-top: 10px;">
+                            <li style="margin-bottom: 6px;"><strong>Temperatura:</strong> Disminuir ligeramente la temperatura al entrar en la fase de Maillard.</li>
+                            <li style="margin-bottom: 6px;"><strong>Tiempo:</strong> Alargar la duración de la fase de Maillard entre 30 y 45 segundos.</li>
+                            <li><strong>Ventilación:</strong> Mantener la velocidad del ventilador en V3 hasta el 45% o 50% del tiempo total del tueste (en lugar del 33%), antes de bajar a V2.</li>
+                        </ul>`;
+                    } else {
+                        nivelDesarrollo = "Crítico / Arrebatamiento";
+                        descDesarrollo = `
+                        <ul style="text-align: left; padding-left: 20px; font-size: 0.85rem; color: #555; margin-top: 10px;">
+                            <li style="margin-bottom: 6px;"><strong>Temperatura:</strong> Bajar significativamente la temperatura de carga inicial o el pico de calor de los primeros minutos para evitar sellar el grano.</li>
+                            <li style="margin-bottom: 6px;"><strong>Tiempo:</strong> Incrementar el tiempo total del tueste entre 1 y 2 minutos adicionales.</li>
+                            <li><strong>Ventilación:</strong> Mantener V3 durante todo el secado and casi todo Maillard. Bajar a V2 únicamente justo antes de escuchar el primer crack. Si hay mucha inercia térmica, subir nuevamente a V3 durante el primer crack para despejar calor.</li>
+                        </ul>`;
+                    }
+
+                    let colorBadge = (delta <= 9) ? '#e8f5e9' : (delta <= 13 ? '#fff3e0' : '#ffebee');
+                    let colorText = (delta <= 9) ? '#2e7d32' : (delta <= 13 ? '#e65100' : '#c62828');
+
+                    deltaHTML = `
+                    <div class="carousel-card">
+                        <div class="card-type-badge" style="background-color: ${colorBadge}; color: ${colorText};">⚖️ ANÁLISIS DELTA</div>
+                        <div class="delta-box" style="padding: 10px 0;">
+                            <div class="delta-status">Diferencial Térmico</div>
+                            <div class="delta-value" style="color: ${colorText};">Δ ${delta.toFixed(1)}</div>
+                            <div style="font-weight: bold; color: #4a3b32; margin-bottom: 5px;">${nivelDesarrollo}</div>
+                            <div class="delta-desc">${descDesarrollo}</div>
+                        </div>
+                    </div>`;
+                }
+                cards += deltaHTML;
+            }
+            
+            if (cards !== '') { container.innerHTML = cards; document.getElementById('results-wrapper').style.display = 'block'; }
+            else { document.getElementById('results-wrapper').style.display = 'none'; }
+        }
+
+        const mapVal = (v) => v === 'Alta' ? 3 : (v === 'Media' ? 2 : (v === 'Baja' ? 1 : 0));
+        function cerrarGrafico() { document.getElementById('chartModal').style.display = 'none'; }
+
+        function abrirGrafico() {
+            const fd = new FormData(document.getElementById('cataForm')); document.getElementById('chartDate').innerText = fd.get('fecha_hora') || '';
+            const gEval = fd.get('global_eval'); 
+            const gScore = fd.get('puntaje_num');
+            const badge = document.getElementById('chartGlobal');
+            
+            let evalText = gEval ? (gScore ? `☆ ${gEval.toUpperCase()} (${gScore})` : `☆ ${gEval.toUpperCase()}`) : "SIN EVALUAR";
+            badge.innerText = evalText;
+            badge.style.backgroundColor = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
+
+            const radarLabels = ["Fragancia\nen seco", "Aroma\nen húmedo", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza\nde taza", "Volver a\ntomar"];
+            const radarInternalNames = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Volver a tomar"];
+            const radarVals = radarInternalNames.map(name => mapVal(fd.get(`sens_${paramSensoriales.indexOf(name)}`)));
+
+            const canvas = document.getElementById('radarCanvas'); const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height);
+            dibujarRadarCore(ctx, canvas.width/2, canvas.height/2 + 10, 100, radarLabels, radarVals);
+
+            const coloresNotas = ['#f48fb1', '#ffb74d', '#d84315', '#81c784', '#ce93d8', '#8d6e63', '#aed581']; const barsContainer = document.getElementById('barsContainer'); barsContainer.innerHTML = '';
+            const iconos = ['🌸', '🍊', '🍫', '🍬', '💥', '🪵', '🍃'];
+            paramNotas.forEach((nota, idx) => {
+                let valNum = mapVal(fd.get(`nota_${idx}`)); let w = valNum === 3 ? 100 : (valNum === 2 ? 66 : (valNum === 1 ? 33 : 0));
+                barsContainer.innerHTML += `<div class="bar-row"><div class="bar-label">${iconos[idx]} ${nota.split('/')[0]}</div><div class="bar-track"><div class="bar-fill" style="width: ${w}%; background-color: ${valNum > 0 ? coloresNotas[idx] : 'transparent'};"></div></div><div class="bar-value val-${valNum}">${valNum === 0 ? "N/E" : valNum}</div></div>`;
+            });
+
+            let g = parseFloat(fd.get('gramos_cafe')); 
+            let ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            let ml_para_ratio = ml_total_real + hielo;
+
+            let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
+            
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; 
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
+
+            let velSec = (fd.get('secado_vel')||'').toLowerCase(), velMai = (fd.get('maillard_vel')||'').toLowerCase(), velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+            
+            let t_B = fd.get('temp_blooming') || '90';
+            let t_1V = fd.get('temp_v1') || '90';
+            let tempStr = `[B(${t_B}), 1V(${t_1V})`;
+            if (!v_unSolo) {
+                let t_2V = fd.get('temp_v2') || '90';
+                let t_3V = fd.get('temp_v3') || '90';
+                tempStr += `, 2V(${t_2V}), 3V(${t_3V})`;
+            }
+            tempStr += `]`;
+
+            let bebida = fd.get('bebida_taza') || document.getElementById('bebida_taza').value;
+            let bebidaTxt = bebida ? `[~${bebida} ml]` : '[-]';
+
+            let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
+            let nivelTuesteTxt = pMolido ? `${pMolido.label} (${pMolido.sub})` : '[-]';
+
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
+                { l: 'Tueste:', v: `[${fd.get('maquina') || '-'}] ${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
+                { l: 'Fases (S | M | D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desrollo_tiempo')||'-'}` }, 
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
+                { l: 'Nivel de tueste:', v: nivelTuesteTxt }
+            ];
+            
+            const colDer = [
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Temperaturas °C:', v: tempStr },
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Bebida en taza:', v: bebidaTxt }
+            ];
+
+            document.getElementById('chartDetails').innerHTML = `<div style="display:flex; flex-direction:column;">${colIzq.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div><div style="display:flex; flex-direction:column;">${colDer.map(d => `<div style="margin-bottom:12px"><strong>${d.l}</strong><span>${d.v}</span></div>`).join('')}</div>`;
+            document.getElementById('chartObs').innerText = fd.get('observaciones') || 'Sin observaciones registradas.'; document.getElementById('chartModal').style.display = 'flex';
+        }
+
+        function dibujarRadarCore(ctx, cx, cy, radius, labels, values) {
+            const levels = 3; ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+            for (let j = 1; j <= levels; j++) { ctx.beginPath(); for (let i = 0; i < labels.length; i++) { let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2; let x = cx + radius * (j / levels) * Math.cos(ang); let y = cy + radius * (j / levels) * Math.sin(ang); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.closePath(); ctx.stroke(); }
+            for (let i = 0; i < labels.length; i++) { let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + radius * Math.cos(ang), cy + radius * Math.sin(ang)); ctx.stroke(); }
+            ctx.beginPath(); let hasData = false;
+            for (let i = 0; i < labels.length; i++) { let val = values[i] || 0; if (val > 0) hasData = true; let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2; let x = cx + radius * (val / levels) * Math.cos(ang); let y = cy + radius * (val / levels) * Math.sin(ang); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+            ctx.closePath(); if (hasData) { ctx.fillStyle = 'rgba(255, 152, 0, 0.3)'; ctx.fill(); ctx.strokeStyle = '#ffb74d'; ctx.lineWidth = 2; ctx.stroke(); }
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            for (let i = 0; i < labels.length; i++) {
+                let val = values[i] || 0; let ang = (Math.PI * 2 * i / labels.length) - Math.PI / 2; let px = cx + radius * (val / levels) * Math.cos(ang); let py = cy + radius * (val / levels) * Math.sin(ang);
+                if(val > 0) { ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fillStyle = '#ffb74d'; ctx.fill(); }
+                let tx = cx + (radius + 35) * Math.cos(ang); let ty = cy + (radius + 35) * Math.sin(ang); let textLines = labels[i].split('\n'); ctx.fillStyle = '#ddd'; ctx.font = '11px sans-serif';
+                textLines.forEach((line, idx) => { ctx.fillText(line, tx, ty + (idx * 14) - 10); }); ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = val === 3 ? '#81c784' : (val === 2 ? '#ffb74d' : (val === 1 ? '#e57373' : '#666')); ctx.fillText(val === 0 ? '-' : val, tx, ty + (textLines.length * 14) - 10);
+            }
+        }
+
+        function roundRectSafe(ctx, x, y, width, height, radius) { ctx.beginPath(); ctx.moveTo(x + radius, y); ctx.lineTo(x + width - radius, y); ctx.quadraticCurveTo(x + width, y, x + width, y + radius); ctx.lineTo(x + width, y + height - radius); ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height); ctx.lineTo(x + radius, y + height); ctx.quadraticCurveTo(x, y + height, x, y + height - radius); ctx.lineTo(x, y + radius); ctx.quadraticCurveTo(x, y, x + radius, y); ctx.closePath(); }
+
+        function descargarGraficoJPG(tema = 'oscuro') {
+            const fd = new FormData(document.getElementById('cataForm')); const c = document.createElement('canvas'); c.width = 720; c.height = 1280; const ctx = c.getContext('2d');
+            ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, 720, 1280); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('☕ CATA DE CAFÉ', 40, 50); ctx.fillStyle = '#aaaaaa'; ctx.font = '18px sans-serif'; ctx.fillText(fd.get('fecha_hora') || '', 40, 85);
+            
+            const gEval = fd.get('global_eval') || 'SIN EVALUAR'; 
+            const gScore = fd.get('puntaje_num');
+            const colorEval = gEval === 'Excelente' ? '#81c784' : (gEval === 'Muy bueno' || gEval === 'Bueno') ? '#ffb74d' : '#e57373';
+            
+            ctx.fillStyle = colorEval; roundRectSafe(ctx, 450, 45, 230, 40, 20); ctx.fill(); 
+            ctx.fillStyle = '#121212'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
+            let evalTextBadge = gScore ? `☆ ${gEval.toUpperCase()} (${gScore})` : `☆ ${gEval.toUpperCase()}`;
+            ctx.fillText(evalTextBadge, 565, 65);
+            
+            ctx.strokeStyle = '#333333'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(40, 120); ctx.lineTo(680, 120); ctx.stroke();
+            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('⬡ PERFIL SENSORIAL', 360, 160);
+            
+            const radarLabels = ["Fragancia\nen seco", "Aroma\nen húmedo", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza\nde taza", "Volver a\ntomar"]; const radarInternalNames = ["Fragancia (en seco)", "Aroma (en húmedo)", "Sabor", "Acidez", "Dulzor", "Amargor", "Cuerpo", "Balance", "Retrogusto", "Limpieza de taza", "Volver a tomar"]; const radarVals = radarInternalNames.map(name => mapVal(fd.get(`sens_${paramSensoriales.indexOf(name)}`)));
+            ctx.save(); ctx.translate(360, 360); ctx.scale(1.4, 1.4); dibujarRadarCore(ctx, 0, 0, 100, radarLabels, radarVals); ctx.restore();
+            
+            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('🍃 NOTAS AROMÁTICAS', 360, 580); ctx.textAlign = 'left';
+            const coloresNotas = ['#f48fb1', '#ffb74d', '#d84315', '#81c784', '#ce93d8', '#8d6e63', '#aed581']; const iconos = ['🌸', '🍊', '🍫', '🍬', '💥', '🪵', '🍃'];
+            paramNotas.forEach((nota, idx) => { let valNum = mapVal(fd.get(`nota_${idx}`)); let y = 630 + (idx * 36); let w = valNum === 3 ? 300 : (valNum === 2 ? 200 : (valNum === 1 ? 100 : 0)); ctx.fillStyle = '#cccccc'; ctx.font = '18px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(iconos[idx] + ' ' + nota.split('/')[0], 50, y); ctx.fillStyle = '#333333'; roundRectSafe(ctx, 220, y - 10, 300, 20, 10); ctx.fill(); if (valNum > 0) { ctx.fillStyle = coloresNotas[idx]; roundRectSafe(ctx, 220, y - 10, w, 20, 10); ctx.fill(); } ctx.fillStyle = valNum === 3 ? '#81c784' : (valNum === 2 ? '#ffb74d' : (valNum === 1 ? '#e57373' : '#666666')); ctx.font = 'bold 18px sans-serif'; ctx.fillText(valNum === 0 ? "N/E" : valNum, 540, y); });
+            
+            ctx.textAlign = 'center'; ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('☕ DETALLES DEL CAFÉ', 360, 910); 
+            
+            let g = parseFloat(fd.get('gramos_cafe')); 
+            let ml_total_real = parseFloat(fd.get('agua_total'));
+            let hielo = parseFloat(fd.get('hielo_ml')) || 0;
+            let ml_para_ratio = ml_total_real + hielo;
+
+            let ratioTxt = (!isNaN(g) && g>0 && !isNaN(ml_para_ratio) && ml_para_ratio>0) ? `${g}g / ${ml_total_real}ml (1:${(ml_para_ratio/g).toFixed(1).replace('.0','')})` : '-';
+            
+            let v_unSolo = fd.get('un_solo_vertido') === 'on'; 
+            let extTxt = v_unSolo ? `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml` : `Blm ${fd.get('blooming')}ml | V1:${fd.get('v1')}ml | V2:${fd.get('v2')}ml | V3:${fd.get('v3')}ml`;
+            let tExtTxt = v_unSolo ? (fd.get('t_v1') || '-') : (fd.get('t_v3') || '-');
+            
+            let velSec = (fd.get('secado_vel')||'').toLowerCase(); let velMai = (fd.get('maillard_vel')||'').toLowerCase(); let velDes = (fd.get('desarrollo_vel')||'').toLowerCase();
+            
+            let t_B = fd.get('temp_blooming') || '90';
+            let t_1V = fd.get('temp_v1') || '90';
+            let tempStr = `[B(${t_B}), 1V(${t_1V})`;
+            if (!v_unSolo) {
+                let t_2V = fd.get('temp_v2') || '90';
+                let t_3V = fd.get('temp_v3') || '90';
+                tempStr += `, 2V(${t_2V}), 3V(${t_3V})`;
+            }
+            tempStr += `]`;
+
+            let bebida = fd.get('bebida_taza') || document.getElementById('bebida_taza').value;
+            let bebidaTxt = bebida ? `[~${bebida} ml]` : '[-]';
+
+            let pMolido = currentRoastData.molido.lum !== null ? getRoastProfile(currentRoastData.molido.lum) : null;
+            let nivelTuesteTxt = pMolido ? `${pMolido.label} (${pMolido.sub})` : '[-]';
+
+            const colIzq = [
+                { l: 'Variedad:', v: `[${fd.get('variedad') || '-'}]` }, 
+                { l: 'Código:', v: `[${fd.get('codigo') || '-'}]` }, 
+                { l: 'Tueste:', v: `[${fd.get('maquina') || '-'}] ${fd.get('temp_tueste') || '-'}°C | ${fd.get('tiempo_tueste') || '-'}` }, 
+                { l: 'Merma:', v: `[${fd.get('merma') || '-'} %]` }, 
+                { l: 'Fases (S|M|D):', v: `${fd.get('secado_tiempo')||'-'} | ${fd.get('maillard_tiempo')||'-'} | ${fd.get('desarrollo_tiempo')||'-'}` }, 
+                { l: 'Vel:', v: `S(${velSec})M(${velMai})D(${velDes})` },
+                { l: 'Post-tueste:', v: `[${fd.get('dias_tueste') || '-'} días]` },
+                { l: 'Nivel de tueste:', v: nivelTuesteTxt }
+            ]; 
+            
+            const colDer = [
+                { l: 'Dispositivo:', v: `[${fd.get('dispositivo') || '-'}]` }, 
+                { l: 'Filtro:', v: `[${fd.get('filtro') || '-'}]` },
+                { l: 'Ratio:', v: `[${ratioTxt}]` }, 
+                { l: 'Temperaturas °C:', v: tempStr },
+                { l: 'Extracción:', v: extTxt }, 
+                { l: 'Tiempo Extracción:', v: `[${tExtTxt}]` },
+                { l: 'Bebida en taza:', v: bebidaTxt }
+            ];
+
+            ctx.textAlign = 'left'; let startY = 925; 
+            colIzq.forEach((d, i) => { let y = startY + (i * 32); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 50, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; ctx.fillText(d.v, 50, y + 16); }); 
+            colDer.forEach((d, i) => { let y = startY + (i * 32); ctx.fillStyle = '#aaaaaa'; ctx.font = '16px sans-serif'; ctx.fillText(d.l, 380, y); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 18px sans-serif'; let val = d.v; if (val.length > 35) val = val.substring(0, 33) + '...]'; ctx.fillText(val, 380, y + 16); });
+            
+            ctx.fillStyle = '#ffb74d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('💬 OBSERVACIONES', 50, 1190); ctx.fillStyle = '#cccccc'; ctx.font = '16px sans-serif'; ctx.textBaseline = 'top'; const obs = fd.get('observaciones') || 'Sin observaciones registradas.'; let words = obs.split(' '); let line = ''; let yText = 1215; let linesDrawn = 0; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; if (ctx.measureText(testLine).width > 620 && n > 0) { ctx.fillText(line, 50, yText); line = words[n] + ' '; yText += 22; linesDrawn++; if (linesDrawn >= 3) { line += '...'; break; } } else { line = testLine; } } if (linesDrawn < 3) ctx.fillText(line, 50, yText);
+            const link = document.createElement('a'); link.download = `Cata_${fd.get('codigo') || 'Cafe'}_IG.jpg`; link.href = c.toDataURL('image/jpeg', 0.95); link.click();
+        }
+
+        function descargarEvaluacionJPG(tema = 'claro') {
+            const text = document.getElementById("evaluacion_final").value; 
+            if (!text.trim()) { alert("Por favor, genera primero el resumen interpretativo."); return; }
+            
+            const fd = new FormData(document.getElementById('cataForm')); 
+            const c = document.createElement('canvas'); 
+            c.width = 720; c.height = 1280; 
+            const ctx = c.getContext('2d');
+            
+            const isClaro = tema === 'claro';
+            
+            const bgCanvas = isClaro ? '#f0f2f5' : '#121212';
+            const bgCard = isClaro ? '#ffffff' : '#1e1e1e';
+            const borderCard = isClaro ? '#d7ccc8' : '#2c2c2c';
+            const titleColor = isClaro ? '#4a3b32' : '#ffb74d';
+            const dateColor = isClaro ? '#888888' : '#aaaaaa';
+            const lineColor = isClaro ? '#eeeeee' : '#333333';
+            const textColor = isClaro ? '#444444' : '#e0e0e0';
+            const ratioColor = isClaro ? '#388e3c' : '#81c784';
+            const accentColor = isClaro ? '#bf360c' : '#ff9800';
+            const footerColor = isClaro ? '#999999' : '#666666';
+
+            ctx.fillStyle = bgCanvas; ctx.fillRect(0, 0, 720, 1280); 
+            ctx.fillStyle = bgCard; roundRectSafe(ctx, 40, 140, 640, 1000, 20); ctx.fill(); 
+            ctx.strokeStyle = borderCard; ctx.lineWidth = 2; ctx.stroke();
+            
+            ctx.fillStyle = titleColor; ctx.font = 'bold 36px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('📝 RESUMEN DE CATA', 360, 50); 
+            ctx.fillStyle = dateColor; ctx.font = '20px sans-serif'; ctx.fillText(fd.get('fecha_hora') || '', 360, 95);
+            
+            ctx.strokeStyle = lineColor; ctx.beginPath(); ctx.moveTo(80, 210); ctx.lineTo(640, 210); ctx.stroke(); 
+            
+            ctx.textAlign = 'left';
+            const maxWidth = 560; const x = 80; let y = 250; const lineHeight = 38; const paragraphs = text.split('\n');
+            
+            for (let i = 0; i < paragraphs.length; i++) {
+                const p = paragraphs[i]; if (p.trim() === '') { y += lineHeight; continue; }
+                
+                if (i === 0 && p.includes('Ratio')) { 
+                    ctx.fillStyle = ratioColor; ctx.font = 'bold 24px sans-serif'; 
+                } else if (p.includes('🫘') || p.includes('🤎') || p.includes('⚠️') || p.includes('⚖️') || p.includes('💡')) { 
+                    ctx.fillStyle = accentColor; ctx.font = 'italic 22px sans-serif'; 
+                } else { 
+                    ctx.fillStyle = textColor; ctx.font = '24px sans-serif'; 
+                }
+                
+                const words = p.split(' '); let line = '';
+                for (let n = 0; n < words.length; n++) { 
+                    const testLine = line + words[n] + ' '; 
+                    if (ctx.measureText(testLine).width > maxWidth && n > 0) { 
+                        ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; 
+                    } else { 
+                        line = testLine; 
+                    } 
+                } 
+                ctx.fillText(line, x, y); y += lineHeight + 15; 
+            }
+            
+            ctx.fillStyle = footerColor; ctx.font = 'italic 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Generado desde Bitácora de Café', 360, 1180);
+            
+            const suffix = isClaro ? '_Claro' : '_Oscuro';
+            const link = document.createElement('a'); 
+            link.download = `Resumen_${fd.get('codigo') || 'Cafe'}${suffix}.jpg`; 
+            link.href = c.toDataURL('image/jpeg', 0.95); 
+            link.click();
+        }
     </script>
 </body>
-</html> 
+</html>

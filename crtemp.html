@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistente de Tueste - Vinza Café</title>
@@ -94,6 +94,7 @@
         .btn-info { background-color: var(--info-color); color: white; }
         .btn-warning { background-color: var(--accent-color); color: white; }
         .btn-excel { background-color: #207245; color: white; } 
+        .btn-test { background-color: #9c27b0; color: white; }
 
         .status-container {
             display: flex;
@@ -395,6 +396,7 @@
         </div>
 
         <button id="btn-start" class="btn-primary">Iniciar Tueste</button>
+        <button id="btn-test-vib" class="btn-test">Prueba de Vibración 📳</button>
         
         <div class="row-controls">
             <button id="btn-view-history" class="btn-secondary">Ver Historial</button>
@@ -564,6 +566,18 @@
                 callbackOK(); 
             };
         }
+
+        // FUNCION DE TEST DE VIBRACION
+        document.getElementById('btn-test-vib').addEventListener('click', () => {
+            if ('vibrate' in navigator) {
+                let success = navigator.vibrate(200);
+                if (!success) {
+                    mostrarAlerta("El navegador o el sistema bloqueó la vibración. <b>Consejo:</b> Asegúrate de abrir el archivo usando Google Chrome y comprueba que el Ahorro de Batería de tu teléfono esté apagado.", "var(--danger-color)");
+                }
+            } else {
+                mostrarAlerta("Tu navegador actual no soporta la función de vibración.", "var(--danger-color)");
+            }
+        });
 
         const screens = {
             setup: document.getElementById('setup-screen'),
@@ -1231,8 +1245,10 @@
         });
 
         document.getElementById('btn-hito').addEventListener('click', () => {
-            // VIBRACIÓN CORTA para confirmar el toque sin mirar la pantalla
-            if ('vibrate' in navigator) navigator.vibrate(50);
+            // INTENTO DE VIBRACIÓN
+            if ('vibrate' in navigator) {
+                navigator.vibrate(50);
+            }
 
             if (expectedHitoIndex < sequenceData.length) {
                 let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
@@ -1307,8 +1323,10 @@
         });
 
         document.getElementById('btn-stop').addEventListener('click', () => {
-            // VIBRACIÓN DOBLE para confirmar cierre definitivo
-            if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+            // INTENTO DE VIBRACIÓN
+            if ('vibrate' in navigator) {
+                navigator.vibrate([100, 50, 100]);
+            }
 
             clearInterval(timerInterval);
             desactivarMantenerPantalla();

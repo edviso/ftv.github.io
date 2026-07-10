@@ -801,35 +801,17 @@
 
     <script>
         const logHistorial = [
-            { fecha: "09-JUL-2026", resumen: "Perfil de Tueste: Implementación de lógica dual (Vinza vs Externo). Ajuste en diccionario de variedades para incluir SIL (Sidra Lavado) y forzado de ventana onload para completar fechas automáticamente al abrir." },
-            { fecha: "09-JUL-2026", resumen: "Perfil de Tueste: Se añadió el selector 'Máquina' (Tostadora / Canguilera). El dato se guarda en JSON, aparece en el resumen interpretativo final y se incluye en la ficha izquierda de los gráficos descargables." },
-            { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico, con fondo claro y alto contraste en exportación a JPG." },
-            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se ajustó la altura máxima del contenedor de registro de catas para evitar cortes visuales en la tercera tarjeta tras la inclusión del dato de días de reposo." },
-            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Se añadió el indicador de días de reposo (post-tueste) a las tarjetas de resumen. Se incluyó un script retroactivo para calcular y completar este dato en historiales antiguos." },
-            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad' para facilitar el seguimiento y trazabilidad de lotes específicos." },
-            { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación. Este botón es apilable con los demás filtros (ej. Top Catas + Filtro Geisha)." },
-            { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades (BOR, SIH, TIL, GES, CAT, TYM, CTI). El campo 'Variedad' ahora es de solo lectura y se autocompleta. Se añadió una función de auto-saneamiento que corrige retroactivamente el historial almacenado para unificar los filtros." },
-            { fecha: "29-MAY-2026", resumen: "Módulo Historial de Puntuaciones: Implementación de menús desplegables lógicos para filtros. Rangos matemáticos para Puntajes (escalas SCA de 2 puntos) y Merma. Autocompletado dinámico para Variedades basado en el historial guardado." },
-            { fecha: "29-MAY-2026", resumen: "Actualización de Dispositivos: Se añadió la opción de 'Fondo plano/papel' al método Hario V60 para permitir experimentación con diferentes perfiles de extracción." },
-            { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA (Specialty Coffee Association), con visualización en gráficos y resúmenes." },
-            { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento y Gráficos: Integración del campo 'Nivel de tueste' en la columna izquierda de los Detalles del Café, extrayendo dinámicamente el perfil del análisis de imagen del café molido (ej. City+ Tueste Medio)." },
-            { fecha: "26-MAY-2026", resumen: "Módulo de Descarga: Implementación de descarga de la Evaluación Final en dos variantes (tema Claro y Oscuro) para mayor flexibilidad visual y legibilidad en impresiones." },
-            { fecha: "26-MAY-2026", resumen: "Corrección de Bug: Se modificó la lógica de 'toggleVertidos' para evitar que sobrescriba los tiempos de extracción registrados en el archivo JSON al momento de cargarlo." },
-            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Inclusión del campo autocalculado 'Bebida en taza (ml)' al final de la columna derecha de detalles de extracción." },
-            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se reordenó la columna derecha para mostrar una secuencia más lógica: Dispositivo, Filtro, Ratio, Temperaturas, Extracción y Tiempo de Extracción." },
-            { fecha: "26-MAY-2026", resumen: "Mejora en Gráfico: Se redistribuyó la información en la tarjeta de Detalles del Café, moviendo el tiempo de reposo (Post-tueste) a la columna izquierda y añadiendo un desglose térmico detallado y dinámico por cada vertido en la columna derecha." },
-            { fecha: "26-MAY-2026", resumen: "Módulo de Perfil Térmico: Carrusel integrado en sección de extracción para registrar independientemente la temperatura de cada vertido, con sincronización en tiempo real de volúmenes." },
-            { fecha: "26-MAY-2026", resumen: "Módulo de Rendimiento: Se incorporó el campo autocalculado 'Bebida en taza (ml)', que calcula el volumen final descontando la retención de agua en la cama de café (peso * 2.2) y sumando el volumen de hielo. Además, se agregaron controles de ajuste rápido al campo de hielo." },
-            { fecha: "25-MAY-2026", resumen: "Mejora de UX: Incorporación de botones incrementales (+/-) en el campo 'Café (g)' con variaciones de 0.5g para un ajuste rápido y preciso, adaptando la lógica base para soportar números decimales." },
-            { fecha: "25-MAY-2026", resumen: "Actualización de valor por defecto: El campo 'Hielo en jarra' ahora inicia con 20 ml predeterminados, recalculando automáticamente el Agua Total al abrir la aplicación." },
-            { fecha: "25-MAY-2026", resumen: "Distribución dinámica de vertidos: Cálculo automático y proporcional de los volúmenes de vertido (escala acumulada de balanza) en base al Agua Total calculada y el Blooming, ajustándose en tiempo real para recetas de uno o múltiples vertidos." },
-            { fecha: "25-MAY-2026", resumen: "Automatización de Ratio: El campo 'Agua Total' ahora se autocalcula usando un ratio estándar de 1:16 en base a los gramos de café ingresados, restando dinámicamente el volumen de 'Hielo en jarra' si aplica." },
-            { fecha: "25-MAY-2026", resumen: "Reorganización de Detalles del Café: Agrupamiento lógico de datos de tueste (izquierda) y extracción (derecha), incorporando dinámicamente el Tiempo de Extracción total." },
-            { fecha: "25-MAY-2026", resumen: "Mejora de UX: Implementación de botones incrementales (+/-) para ajustar los tiempos de vertido (formato MM:SS) y se equilibró visualmente el espacio con los selectores de volumen." },
-            { fecha: "23-MAY-2026", resumen: "Actualización de lógica Delta: Se incorporaron reglas termodinámicas con umbrales específicos (0-4, 5-9, 10-13, >13) y recomendaciones automatizadas de modulación de temperatura, tiempo y ventilación." },
-            { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior). Se incorporó el análisis Delta que cruza ambas lecturas evaluando la lógica física natural de penetración térmica." },
-            { fecha: "20-MAY-2026", resumen: "Mejora de UX: Se anclaron los botones 'Grabar Cata' y 'Cargar Cata' en una barra fija en la parte inferior." },
-            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de tueste por imagen." }
+            { fecha: "09-JUL-2026", resumen: "Módulo de Historial: Se incorporó la inicial de la máquina/origen de tueste (- T, - C, - E) al final de la línea descriptiva en el registro de puntuaciones." },
+            { fecha: "09-JUL-2026", resumen: "Perfil de Tueste: Implementación de lógica dual (Vinza vs Externo). Ajuste en diccionario de variedades para incluir SIL (Sidra Lavado) y forzado de ventana onload." },
+            { fecha: "09-JUL-2026", resumen: "Perfil de Tueste: Se añadió el selector 'Máquina' (Tostadora / Canguilera). El dato se guarda en JSON, aparece en el resumen interpretativo y en gráficos." },
+            { fecha: "21-JUN-2026", resumen: "Módulo de Historial: Se añadió la herramienta 'Curva de lote' para visualizar la evolución temporal del puntaje de un tueste específico." },
+            { fecha: "14-JUN-2026", resumen: "Módulo de Historial: Nuevo filtro por 'Código' de tueste, con capacidad de apilarse con el filtro de 'Variedad'." },
+            { fecha: "29-MAY-2026", resumen: "Integración de función Top Catas: Botón de ordenamiento rápido para organizar el historial de mayor a menor puntuación." },
+            { fecha: "29-MAY-2026", resumen: "Módulo de Automatización: Se consolidó el diccionario central de variedades. El campo 'Variedad' ahora es de solo lectura y se autocompleta." },
+            { fecha: "27-MAY-2026", resumen: "Módulo de Calificación Cuantitativa: Algoritmo de puntuación sobre 100 puntos integrado a la evaluación global, basado en la escala SCA." },
+            { fecha: "26-MAY-2026", resumen: "Módulo de Perfil Térmico: Carrusel integrado en sección de extracción para registrar independientemente la temperatura de cada vertido." },
+            { fecha: "23-MAY-2026", resumen: "Módulo Dual de Desarrollo: Se rediseñó la tarjeta de análisis por imagen para soportar lecturas independientes del Grano (Exterior) y Molido (Interior) e incluye análisis Delta." },
+            { fecha: "17-MAY-2026", resumen: "Módulo de Tueste Inteligente: Integración de la herramienta de análisis de color por imagen." }
         ];
 
         // --- DICCIONARIO GLOBAL DE VARIEDADES ---
@@ -994,7 +976,6 @@
                 html = `<select id="filtroInput" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">${options}</select>`;
             } else if (tipo === 'codigo') {
                 let historyCodes = historialCatas;
-                // Filtrar los códigos mostrados si ya hay una variedad seleccionada
                 if (activeFilters.variedad) {
                     historyCodes = historyCodes.filter(c => c.variedad && c.variedad.toLowerCase() === activeFilters.variedad.toLowerCase());
                 }
@@ -1038,8 +1019,6 @@
 
         function limpiarFiltros() {
             activeFilters = { puntaje: '', calif: '', variedad: '', tueste: '', merma: '', codigo: '' };
-            
-            // Limpiar los chips normales
             ['puntaje', 'calif', 'variedad', 'tueste', 'merma', 'codigo'].forEach(tipo => {
                 const chip = document.getElementById(`chip-${tipo}`);
                 chip.classList.remove('active');
@@ -1047,7 +1026,6 @@
                 chip.innerHTML = chipLabels[tipo];
             });
 
-            // Apagar también el botón de Top Catas
             sortByScoreDesc = false;
             const sortChip = document.getElementById('chip-sort-puntaje');
             sortChip.classList.remove('active');
@@ -1078,11 +1056,9 @@
                 displayList.push({ ...cata, numero: catasPorCodigo[cata.codigo] });
             });
             
-            // Aplicar Filtros primero
             if(Object.values(activeFilters).some(v => v !== '')) {
                 displayList = displayList.filter(c => {
                     let pasa = true;
-                    
                     if(activeFilters.puntaje) {
                         let p = parseFloat(c.puntaje);
                         if (isNaN(p)) pasa = false;
@@ -1093,7 +1069,6 @@
                             if (p < min || p >= max) pasa = false;
                         }
                     }
-                    
                     if(activeFilters.merma) {
                         let m = parseFloat(c.merma);
                         if (isNaN(m)) pasa = false;
@@ -1102,7 +1077,6 @@
                             if (m < min || m >= max) pasa = false;
                         }
                     }
-
                     if(activeFilters.variedad && (!c.variedad || c.variedad.toLowerCase() !== activeFilters.variedad.toLowerCase())) pasa = false;
                     if(activeFilters.codigo && (!c.codigo || c.codigo.toLowerCase() !== activeFilters.codigo.toLowerCase())) pasa = false;
                     if(activeFilters.calif && c.calificacion !== activeFilters.calif) pasa = false;
@@ -1112,16 +1086,15 @@
                 });
             }
 
-            // Aplicar Ordenamiento (Top Catas o Cronológico)
             if (sortByScoreDesc) {
                 displayList.sort((a, b) => {
                     let pA = parseFloat(a.puntaje) || 0;
                     let pB = parseFloat(b.puntaje) || 0;
                     if (pB !== pA) return pB - pA;
-                    return b.id - a.id; // En caso de empate, el más nuevo arriba
+                    return b.id - a.id; 
                 });
             } else {
-                displayList.reverse(); // Orden por defecto: los más recientes primero
+                displayList.reverse(); 
             }
             
             if (displayList.length === 0) {
@@ -1143,9 +1116,13 @@
                     baseExtra += ` - ${parseInt(cata.dias_tueste)} días`;
                 }
                 
+                // NUEVO: Agrega la letra identificadora de la máquina/origen
+                if (cata.indicador_tueste) {
+                    baseExtra += ` - ${cata.indicador_tueste}`;
+                }
+                
                 let extraStr = baseExtra ? `<div style="font-size: 0.75rem; color: #888; margin-top: 5px;">${baseExtra}</div>` : '';
 
-                // Si estamos en modo ranking, añadimos una pequeña medalla a los 3 primeros
                 let medalla = '';
                 if (sortByScoreDesc) {
                     if (index === 0) medalla = ' 🥇';
@@ -1174,6 +1151,14 @@
             const variedad = document.getElementById('variedad').value || '';
             const merma = document.getElementById('merma').value || '';
             const diasTueste = document.getElementById('dias_tueste').value || '';
+            
+            // Lógica para capturar la máquina de tueste (T, C, E)
+            const tostador = document.getElementById('tostador').value;
+            let indTueste = 'E'; // Por defecto Externo
+            if (tostador === 'Vinza') {
+                const maquina = document.getElementById('maquina').value;
+                indTueste = maquina === 'Tostadora' ? 'T' : 'C';
+            }
             
             let tueste = '';
             if (currentRoastData.molido.lum !== null) {
@@ -1204,7 +1189,8 @@
                 variedad: variedad,
                 tueste: tueste,
                 merma: merma,
-                dias_tueste: diasTueste
+                dias_tueste: diasTueste,
+                indicador_tueste: indTueste // Nuevo campo para guardar la letra (T/C/E)
             };
             
             historialCatas.push(nuevaCata);
@@ -1264,7 +1250,6 @@
 
             const codigo = activeFilters.codigo;
             
-            // Asignar el consecutivo real según el orden cronológico original de almacenamiento
             let catasConNumero = [];
             let contador = 1;
             historialCatas.forEach(c => {
@@ -1279,7 +1264,7 @@
                 return;
             }
 
-            const info = catasConNumero[catasConNumero.length - 1]; // Extraemos los metadatos de la última cata
+            const info = catasConNumero[catasConNumero.length - 1];
             const variedad = info.variedad || "Variedad N/D";
             const tueste = info.tueste || "Tueste N/D";
             const merma = info.merma ? info.merma + "%" : "Merma N/D";
@@ -1298,11 +1283,9 @@
             const w = canvas.width;
             const h = canvas.height;
 
-            // Fondo Blanco
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, w, h);
 
-            // Títulos
             ctx.textAlign = 'center';
             ctx.fillStyle = '#4a3b32';
             ctx.font = 'bold 24px sans-serif';
@@ -1316,7 +1299,6 @@
             ctx.font = 'italic 16px sans-serif';
             ctx.fillText(`(${variedad} • ${tueste} • ${merma})`, w / 2, 95);
 
-            // Márgenes del gráfico
             const padT = 130;
             const padB = 80;
             const padL = 60;
@@ -1326,7 +1308,6 @@
 
             if (catas.length === 0) return;
 
-            // Rangos para Y (Puntaje)
             let puntajes = catas.map(c => parseFloat(c.puntaje) || 0);
             let minP = Math.floor(Math.min(...puntajes));
             let maxP = Math.ceil(Math.max(...puntajes));
@@ -1336,7 +1317,6 @@
             let yMax = maxP + 1;
             let yRango = yMax - yMin;
 
-            // Dibujar Eje Y (Rejilla)
             ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 1;
             ctx.textAlign = 'right';
@@ -1356,29 +1336,25 @@
                 }
             }
 
-            // Preparar Puntos (Eje X dinámico)
             let puntos = catas.map((c, i) => {
                 let px = catas.length === 1 ? padL + chartW / 2 : padL + (i / (catas.length - 1)) * chartW;
                 let py = padT + chartH - ((parseFloat(c.puntaje) || 0) - yMin) / yRango * chartH;
                 return { x: px, y: py, p: parseFloat(c.puntaje).toFixed(1), num: c.consecutivo, dias: c.dias_tueste };
             });
 
-            // Dibujar Línea conector
             if (puntos.length > 1) {
                 ctx.beginPath();
                 ctx.moveTo(puntos[0].x, puntos[0].y);
                 for (let i = 1; i < puntos.length; i++) {
                     ctx.lineTo(puntos[i].x, puntos[i].y);
                 }
-                ctx.strokeStyle = '#388e3c'; // Verde más oscuro para destacar en fondo claro
+                ctx.strokeStyle = '#388e3c'; 
                 ctx.lineWidth = 3;
                 ctx.stroke();
             }
 
-            // Dibujar Nodos e Info de Eje X
             ctx.textAlign = 'center';
             puntos.forEach(pt => {
-                // Círculo
                 ctx.beginPath();
                 ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
                 ctx.fillStyle = '#ffffff';
@@ -1387,12 +1363,10 @@
                 ctx.strokeStyle = '#388e3c';
                 ctx.stroke();
 
-                // Etiqueta del puntaje
                 ctx.fillStyle = '#333333';
                 ctx.font = 'bold 14px sans-serif';
                 ctx.fillText(pt.p, pt.x, pt.y - 15);
 
-                // Etiquetas del Eje X (Número de cata y días)
                 ctx.fillStyle = '#bf360c';
                 ctx.font = 'bold 14px sans-serif';
                 let numStr = String(pt.num).padStart(2, '0');
@@ -1404,7 +1378,6 @@
                 ctx.fillText(diasTxt, pt.x, h - padB + 45);
             });
 
-            // Leyenda del Eje Y
             ctx.save();
             ctx.translate(20, padT + chartH / 2);
             ctx.rotate(-Math.PI / 2);

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistente de Tueste - Vinza Café</title>
@@ -93,7 +93,7 @@
         .btn-danger { background-color: var(--danger-color); color: white; }
         .btn-info { background-color: var(--info-color); color: white; }
         .btn-warning { background-color: var(--accent-color); color: white; }
-        .btn-excel { background-color: #207245; color: white; } 
+        .btn-excel { background-color: #207245; color: white; } /* Color estilo Excel */
 
         .status-container {
             display: flex;
@@ -165,13 +165,13 @@
             overflow-x: auto; 
             margin-top: 20px;
             margin-bottom: 20px;
-            background-color: #ffffff;
+            background-color: #ffffff; /* Fondo claro como la imagen */
             border-radius: 8px;
         }
 
         #phase-canvas {
             background-color: #ffffff;
-            height: 350px; 
+            height: 350px; /* Más alto para acomodar las barras inferiores */
             min-width: 600px;
         }
 
@@ -274,7 +274,7 @@
             text-align: left;
         }
 
-        .btn-delete, .btn-edit, .btn-view {
+        .btn-delete, .btn-edit {
             background: transparent;
             border: none;
             font-size: 1.2rem;
@@ -284,13 +284,12 @@
         }
         .btn-delete { color: var(--danger-color); }
         .btn-edit { color: var(--info-color); }
-        .btn-view { color: var(--success-color); }
-        .btn-delete:hover, .btn-edit:hover, .btn-view:hover { transform: scale(1.2); }
+        .btn-delete:hover, .btn-edit:hover { transform: scale(1.2); }
 
         .actions-cell {
             text-align: center;
-            white-space: nowrap; 
-            width: 1%; 
+            white-space: nowrap; /* Fuerza a los botones a estar en la misma línea */
+            width: 1%; /* Evita que la columna se expanda más de lo necesario */
         }
 
         .edit-select {
@@ -433,14 +432,10 @@
             </table>
         </div>
 
-        <!-- NUEVO: Predicción de Perfil en Taza -->
-        <div id="prediccion-sabor-container" style="margin-top: 20px; background-color: #2a2a2a; border-radius: 8px; padding: 15px; border-left: 4px solid #ab47bc;">
-            <h3 style="color: #ab47bc; margin-top: 0; font-size: 1.1rem;">Predicción de Perfil en Taza (estimado)</h3>
-            <div id="prediccion-texto" style="font-size: 0.95rem; color: #ccc; line-height: 1.5;"></div>
-        </div>
-
+        <!-- Gráfico dinámico antiguo -->
         <canvas id="result-chart" style="display:none;"></canvas>
 
+        <!-- NUEVO Gráfico comparativo de Fases estilo Imagen -->
         <div class="phase-chart-container">
             <canvas id="phase-canvas"></canvas>
         </div>
@@ -564,21 +559,26 @@
         }
 
         function calcularPrecision(seqData, actData) {
-            if (actData.length <= 1) return { total: 0, shape: 0, energy: 0, dev: 0, time: 0, repuntes: 0 };
+            if (actData.length <= 1) return { total: 0, shape: 0, energy: 0, dev: 0, time: 0, r: 0 };
 
+            let n = 0;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
             let timeScores = [];
             let flicks = 0;
             let crashes = 0;
-            let rorValues = [];
-            
-            let rorDiffs = [];
-            let sumBumps = 0;
-            let repuntesCount = 0;
 
             for (let i = 1; i < actData.length; i++) {
                 if (i < seqData.length) {
                     let teoSec = seqData[i].seconds;
                     let actSec = actData[i].seconds;
+
+                    n++;
+                    sumX += teoSec;
+                    sumY += actSec;
+                    sumXY += teoSec * actSec;
+                    sumX2 += teoSec * teoSec;
+                    sumY2 += actSec * actSec;
+
                     let diff = Math.abs(teoSec - actSec);
                     if (diff <= 10) timeScores.push(1);
                     else if (diff <= 40) timeScores.push(Math.pow((40 - diff) / 30, 2));
@@ -586,38 +586,24 @@
                 }
 
                 if (!actData[i].isInit && actData[i].ror !== "-") {
-                    let currRoR = actData[i].rorEma;
-                    rorValues.push(currRoR);
-                    
-                    if (rorValues.length > 1) {
-                        let prevRoR = rorValues[rorValues.length - 2];
-                        let delta = currRoR - prevRoR;
-                        rorDiffs.push(delta);
-
-                        if (delta > 0) {
-                            sumBumps += delta;
-                            repuntesCount++;
-                        }
-                        
-                        let prevRoRInt = actData[i-1].ror;
-                        let currRoRInt = actData[i].ror;
-                        if (currRoRInt <= 3) crashes++;
-                        else if (currRoRInt > prevRoRInt) flicks++;
+                    if (i > 1 && actData[i-1] && !actData[i-1].isInit && actData[i-1].ror !== "-") {
+                        let prevRoR = actData[i-1].ror;
+                        let currRoR = actData[i].ror;
+                        if (currRoR <= 3) crashes++;
+                        else if (currRoR > prevRoR) flicks++;
                     }
                 }
             }
 
-            let scoreShape = Math.max(0, 40 - (sumBumps * 2.5)); 
+            let r = 0;
+            if (n > 1) {
+                let denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                if (denominator !== 0) r = (n * sumXY - sumX * sumY) / denominator;
+            } else { r = 1; }
+            let scoreShape = Math.max(0, r) * 40;
 
-            let rorPenalty = (flicks * 5) + (crashes * 3);
-            let stdDevDiff = 0;
-            if (rorDiffs.length > 0) {
-                let meanDiff = rorDiffs.reduce((a, b) => a + b, 0) / rorDiffs.length;
-                let varDiff = rorDiffs.reduce((a, b) => a + Math.pow(b - meanDiff, 2), 0) / rorDiffs.length;
-                stdDevDiff = Math.sqrt(varDiff);
-            }
-            let stdPenalty = stdDevDiff > 4.0 ? (stdDevDiff - 4.0) * 2 : 0;
-            let scoreEnergy = Math.max(0, 30 - rorPenalty - stdPenalty);
+            let rorPenalty = (flicks * 8) + (crashes * 8);
+            let scoreEnergy = Math.max(0, 30 - rorPenalty);
 
             let avgDev = timeScores.length > 0 ? timeScores.reduce((a,b)=>a+b,0)/timeScores.length : 0;
             let scoreDev = avgDev * 20;
@@ -640,7 +626,7 @@
                 energy: scoreEnergy,
                 dev: scoreDev,
                 time: scoreTime,
-                repuntes: repuntesCount
+                r: r
             };
         }
 
@@ -649,69 +635,16 @@
             
             let html = `<div style="margin-bottom: 10px; text-align: center; font-weight: bold;">Desglose Termodinámico:</div>`;
             html += `<ul style="padding-left: 20px; margin-top: 5px; margin-bottom: 0;">`;
-            html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.shape >= 35) ? 'Excelente consistencia en la desaceleración del RoR.' : `Se detectaron ${details.repuntes} repuntes en la progresión térmica.`}</span></li>`;
-            html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por variabilidad brusca o exceso de oscilación local.'}</span></li>`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Forma de Curva (40%):</strong> Obtenido ${Math.round(details.shape)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.r >= 0.98) ? 'Excelente correlación con la tendencia del perfil.' : 'Se detectaron distorsiones en la progresión.'}</span></li>`;
+            
+            html += `<li style="margin-bottom: 8px;"><strong>Estabilidad de Energía (30%):</strong> Obtenido ${Math.round(details.energy)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.energy >= 25) ? 'Transición térmica muy suave, desarrollo uniforme.' : 'Castigado por cambios bruscos o exceso de oscilación.'}</span></li>`;
+            
             html += `<li style="margin-bottom: 8px;"><strong>Tolerancia de Hitos (20%):</strong> Obtenido ${Math.round(details.dev)} pts. <br><span style="color:#aaa; font-size:0.85rem;">${(details.dev >= 16) ? 'Tiempos muy ajustados a la curva ideal.' : 'Desfasajes de tiempo fuera del margen de gracia.'}</span></li>`;
+            
             html += `<li><strong>Cierre de Tiempo (10%):</strong> Obtenido ${Math.round(details.time)} pts.</li>`;
+            
             html += `</ul>`;
-            return html;
-        }
-
-        function generarPrediccionSabor(actData) {
-            if (!actData || actData.length <= 1) return "<p>Datos insuficientes.</p>";
-
-            let puntoCrack = actData.find(pt => pt.fase === "1");
-
-            if (!puntoCrack) {
-                return "<p style='color: var(--accent-color);'><em>Falta el hito de primer crack (fase '1') en el registro para poder generar la predicción de perfil en taza.</em></p>";
-            }
-
-            let tiempoCrack = puntoCrack.seconds;
-            let tiempoTotal = actData[actData.length - 1].seconds;
-            let tempFinal = actData[actData.length - 1].tempValue;
-
-            if (tiempoTotal <= 0) return "<p>Tiempo total inválido.</p>";
-
-            let ratioDesarrollo = (tiempoTotal - tiempoCrack) / tiempoTotal;
-            let ratioPct = ratioDesarrollo * 100;
-
-            let textoDTR = "";
-            if (ratioPct < 15) {
-                textoDTR = "Acidez muy viva y punzante, dulzor bajo, cuerpo ligero. Riesgo de subdesarrollo o notas verdes/astringentes.";
-            } else if (ratioPct >= 15 && ratioPct < 18) {
-                textoDTR = "Acidez brillante y notoria, dulzor moderado, cuerpo ligero a medio.";
-            } else if (ratioPct >= 18 && ratioPct < 23) {
-                textoDTR = "Buen balance ácido-dulce, cuerpo medio. Zona favorable para resaltar notas frutales o florales de origen.";
-            } else if (ratioPct >= 23 && ratioPct < 28) {
-                textoDTR = "Acidez más domesticada, dulzor pronunciado tipo caramelo, cuerpo redondo.";
-            } else {
-                textoDTR = "Acidez reducida, dulzor tipo caramelo/tostado domina, riesgo de perder notas frutales de origen.";
-            }
-
-            let textoTemp = "";
-            if (tempFinal < 195) {
-                textoTemp = "Tueste claro. Notas de origen muy presentes, acidez alta, amargor prácticamente ausente.";
-            } else if (tempFinal >= 195 && tempFinal < 202) {
-                textoTemp = "Tueste medio-claro. Buen equilibrio para resaltar variedad, amargor mínimo.";
-            } else if (tempFinal >= 202 && tempFinal < 208) {
-                textoTemp = "Tueste medio. Empiezan a asomar notas de caramelo/nuez sobre las de origen, leve amargor posible.";
-            } else if (tempFinal >= 208 && tempFinal < 215) {
-                textoTemp = "Tueste medio-oscuro. Dulzor tipo caramelo/chocolate más presente, acidez se reduce, leve a moderado amargor.";
-            } else {
-                textoTemp = "Tueste oscuro. Amargor más presente, acidez casi ausente, notas de origen muy reducidas.";
-            }
-
-            let html = `
-                <div style="margin-bottom: 12px; display: flex; gap: 15px; font-family: monospace; color: var(--info-color);">
-                    <span>DTR: <strong>${ratioPct.toFixed(1)}%</strong></span>
-                    <span>T.Final: <strong>${tempFinal}°C</strong></span>
-                </div>
-                <p style="margin-bottom: 8px;"><strong>Por Desarrollo:</strong> ${textoDTR}</p>
-                <p style="margin-bottom: 15px;"><strong>Por Nivel de Tueste:</strong> ${textoTemp}</p>
-                <div style="font-size: 0.8rem; color: #777; border-top: 1px solid #444; padding-top: 8px;">
-                    <em>Esta predicción es una estimación basada solo en la curva térmica del tueste. El resultado real en taza depende también de la variedad, el café verde, la merma y el método de extracción.</em>
-                </div>
-            `;
             return html;
         }
 
@@ -831,10 +764,12 @@
             document.getElementById('comp-analysis-text').innerHTML = textoAnalisisComp;
         }
 
+        // --- LÓGICA DE COPIADO A EXCEL ---
         document.getElementById('btn-copy-excel').addEventListener('click', () => {
             const seqData = currentRoastExportData.secuencia_teorica;
             const actData = currentRoastExportData.puntos_reales;
             
+            // Encabezados separados por tabulación
             let tsv = "Temp (°C)\tTeórico\tReal\tDiferencia (s)\tFase\tRoR\n";
             
             for (let i = 1; i < actData.length; i++) {
@@ -846,6 +781,7 @@
                     let faseLetra = actData[i].fase || "-"; 
                     let rorValue = actData[i].ror !== undefined ? actData[i].ror : "-";
                     
+                    // Añadir la fila con tabulaciones
                     tsv += `${temp}\t${teoStr}\t${realStr}\t${dif}\t${faseLetra}\t${rorValue}\n`;
                 }
             }
@@ -862,6 +798,7 @@
             tableContainer.style.display = tableContainer.style.display === 'none' ? 'block' : 'none';
         });
 
+        // Gráfico en vivo (Dark mode simple)
         function drawChart(canvas, ctx, seqData, actData) {
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width;
@@ -919,54 +856,66 @@
             });
         }
 
+        // --- NUEVO: GRÁFICO COMPARATIVO ESTILO IMAGEN (Fondo claro, Barras de Fase) ---
         function drawPhaseChart(canvas, ctx, seqData, actData) {
             if (!seqData || seqData.length === 0) return;
             
+            // Ajustar ancho al contenedor
             canvas.width = canvas.parentElement.clientWidth;
+            // Altura fija para mantener proporciones
             canvas.height = 380; 
             
             const w = canvas.width;
             const h = canvas.height;
             
+            // Fondo blanco
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, w, h);
 
+            // Márgenes
             const padLeft = 40;
             const padRight = 30;
             const padTop = 30;
-            const barAreaH = 70; 
+            const barAreaH = 70; // Espacio para las barras inferiores
             const padBottom = barAreaH + 20; 
             
             const chartW = w - padLeft - padRight;
             const chartH = h - padTop - padBottom;
 
+            // Paleta de colores de fases según imagen
             const phaseColors = {
-                'C': '#cce0ff', 
-                'S': '#a8e6cf', 
-                'M': '#ffe8b3', 
-                '1': '#ffccaa', 
-                'D': '#ffb3b3'  
+                'C': '#cce0ff', // Azul claro
+                'S': '#a8e6cf', // Verde claro
+                'M': '#ffe8b3', // Amarillo/Naranja claro
+                '1': '#ffccaa', // Naranja
+                'D': '#ffb3b3'  // Rojo/Rosa claro
             };
 
+            // Nombres largos para las barras
             const phaseNames = {
                 'C': 'Carga', 'S': 'S (Secado)', 'M': 'M (Maillard)', 
                 '1': '1 (Primer crack)', 'D': 'D (Desarrollo)'
             };
 
+            // Encontrar límites de tiempo y temperatura
             let maxSecSeq = seqData[seqData.length - 1].seconds;
             let maxSecAct = actData.length > 0 ? actData[actData.length - 1].seconds : 0;
             let maxSec = Math.max(maxSecSeq, maxSecAct);
+            // Redondear al minuto superior (múltiplo de 60)
             maxSec = Math.ceil(maxSec / 60) * 60;
 
             const minTemp = 20;
             const maxTemp = 220;
 
+            // Funciones de escala
             const getX = (sec) => padLeft + (sec / maxSec) * chartW;
             const getY = (temp) => padTop + chartH - ((temp - minTemp) / (maxTemp - minTemp)) * chartH;
 
+            // 1. Dibujar Cuadrícula
             ctx.lineWidth = 1;
             ctx.font = '11px Arial';
             
+            // Líneas Verticales (cada 30s)
             ctx.textAlign = 'center';
             for (let s = 0; s <= maxSec; s += 30) {
                 let x = getX(s);
@@ -976,11 +925,13 @@
                 ctx.lineTo(x, padTop + chartH);
                 ctx.stroke();
                 
+                // Etiquetas de tiempo (X)
                 ctx.fillStyle = '#333333';
                 let txtTime = `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
                 ctx.fillText(txtTime, x, padTop + chartH + 15);
             }
 
+            // Líneas Horizontales (cada 20°C)
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
             for (let t = 20; t <= maxTemp; t += 20) {
@@ -991,17 +942,21 @@
                 ctx.lineTo(padLeft + chartW, y);
                 ctx.stroke();
                 
+                // Etiquetas de temp (Y)
                 ctx.fillStyle = '#333333';
                 ctx.fillText(t, padLeft - 5, y);
             }
 
+            // 2. Función para dibujar las Barras Inferiores
             function drawPhaseBars(data, yOffset, label, labelColor) {
+                // Etiqueta lateral
                 ctx.fillStyle = labelColor;
                 ctx.textAlign = 'right';
                 ctx.textBaseline = 'middle';
                 ctx.font = 'bold 11px Arial';
                 ctx.fillText(label, padLeft - 5, yOffset + 12);
 
+                // Agrupar datos por fase
                 if(data.length === 0) return;
                 let phases = [];
                 let currFase = data[0].fase || data[0].faseLetra || 'C';
@@ -1017,6 +972,7 @@
                 }
                 phases.push({ f: currFase, start: currStart, end: data[data.length-1].seconds });
 
+                // Dibujar rectángulos
                 phases.forEach(p => {
                     let startX = getX(p.start);
                     let endX = getX(p.end);
@@ -1029,6 +985,7 @@
                     ctx.lineWidth = 1;
                     ctx.strokeRect(startX, yOffset, width, 24);
 
+                    // Texto de la fase (si cabe)
                     let text = phaseNames[p.f] || p.f;
                     ctx.fillStyle = '#000000';
                     ctx.textAlign = 'center';
@@ -1038,15 +995,17 @@
                     if (width > textWidth + 10) {
                         ctx.fillText(text, startX + width/2, yOffset + 12);
                     } else if (width > 15) {
-                        ctx.fillText(p.f, startX + width/2, yOffset + 12); 
+                        ctx.fillText(p.f, startX + width/2, yOffset + 12); // Solo la letra si es muy corto
                     }
                 });
             }
 
+            // Dibujar las dos filas de barras (Teórica arriba, Real abajo)
             let barStartY = padTop + chartH + 30;
             drawPhaseBars(seqData, barStartY, "Teórica", "#0033cc");
             if (actData.length > 0) drawPhaseBars(actData, barStartY + 25, "Real", "#cc0000");
 
+            // 3. Dibujar Líneas y Puntos
             function plotLine(data, lineColor, isDashed) {
                 if(data.length === 0) return;
                 
@@ -1063,6 +1022,7 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
 
+                // Puntos y Textos
                 ctx.textAlign = 'center';
                 ctx.font = '10px Arial';
                 data.forEach((pt) => {
@@ -1074,14 +1034,17 @@
                     ctx.arc(x, y, 4, 0, Math.PI * 2);
                     ctx.fill();
 
+                    // Escribir temp. Intercalar un poco si están muy juntos (simplificado: arriba teórica, abajo real)
                     let textOffset = isDashed ? 14 : -8; 
                     ctx.fillText(pt.tempValue, x, y + textOffset);
                 });
             }
 
+            // Teórica (Azul sólido), Real (Roja punteada o sólida según prefieras, usemos rojo sólido para seguir imagen)
             plotLine(seqData, '#0055ff', false); 
             plotLine(actData, '#ff2222', false); 
 
+            // 4. Marcar Línea del 1er Crack (Real)
             let crackPt = actData.find(d => d.fase === '1');
             if (crackPt) {
                 let cx = getX(crackPt.seconds);
@@ -1250,7 +1213,6 @@
             const precis = calcularPrecision(sequenceData, actualData);
             currentRoastScore = precis.total;
             const textoAnalisis = generarAnalisis(precis, actualData);
-            const prediccionSabor = generarPrediccionSabor(actualData);
 
             currentRoastExportData = {
                 fecha: fecha,
@@ -1259,14 +1221,18 @@
                 perfil: perfil,
                 score: currentRoastScore,
                 analisis: textoAnalisis,
-                prediccion: prediccionSabor,
                 secuencia_teorica: sequenceData,
                 puntos_reales: actualData,
                 desglose_calificacion: precis
             };
 
             let historial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-            historial.push(currentRoastExportData); 
+            historial.push({
+                fecha: fecha,
+                tostador: tostador,
+                variedad: variedad,
+                score: currentRoastScore
+            });
             localStorage.setItem('vinzaHistorial', JSON.stringify(historial));
 
             mostrarPantallaResultados(currentRoastExportData);
@@ -1285,11 +1251,6 @@
             else scoreEl.style.color = "var(--danger-color)";
 
             document.getElementById('analysis-text').innerHTML = dataObj.analisis || "Análisis no disponible para este archivo.";
-            
-            const contenedorPred = document.getElementById('prediccion-texto');
-            if (contenedorPred) {
-                contenedorPred.innerHTML = dataObj.prediccion || generarPrediccionSabor(dataObj.puntos_reales);
-            }
 
             generarEstadisticasRoR(dataObj.puntos_reales);
             poblarTablaComparativa(dataObj.secuencia_teorica, dataObj.puntos_reales);
@@ -1297,6 +1258,7 @@
 
             showScreen('result');
             
+            // Dibuja el nuevo gráfico en canvas
             setTimeout(() => drawPhaseChart(phaseCanvas, phaseCtx, dataObj.secuencia_teorica, dataObj.puntos_reales), 100);
         }
 
@@ -1330,27 +1292,11 @@
                         <td class="cell-variedad">${t.variedad}</td>
                         <td><strong>${t.score}%</strong></td>
                         <td class="actions-cell">
-                            <button class="btn-view" data-index="${index}" title="Ver gráfico">📈</button>
                             <button class="btn-edit" data-index="${index}" title="Editar tueste">✏️</button>
                             <button class="btn-delete" data-index="${index}" title="Eliminar tueste">🗑️</button>
                         </td>
                     `;
                     tbody.prepend(tr);
-                });
-
-                document.querySelectorAll('.btn-view').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const idx = this.getAttribute('data-index');
-                        let currentHistorial = JSON.parse(localStorage.getItem('vinzaHistorial')) || [];
-                        let registroCompleto = currentHistorial[idx];
-                        
-                        if (registroCompleto.puntos_reales) {
-                            currentRoastExportData = registroCompleto;
-                            mostrarPantallaResultados(registroCompleto);
-                        } else {
-                            alert("Este registro es antiguo y no contiene los datos de la curva. Solo los nuevos registros tendrán el gráfico disponible.");
-                        }
-                    });
                 });
 
                 document.querySelectorAll('.btn-delete').forEach(btn => {
@@ -1468,7 +1414,6 @@
                     loadedData.score = precis.total;
                     loadedData.analisis = generarAnalisis(precis, actualData);
                     loadedData.desglose_calificacion = precis;
-                    loadedData.prediccion = generarPrediccionSabor(actualData);
                     
                     sequenceData = tempSeq;
                     actualData = tempAct;

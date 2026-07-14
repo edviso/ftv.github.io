@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Actividades Diarias</title>
@@ -8,6 +8,7 @@
         :root {
             --primary: #4361ee;
             --success: #2ec4b6;
+            --accent: #f72585;
         }
 
         body {
@@ -49,7 +50,7 @@
 
         .task-list {
             flex-grow: 1;
-            overflow-y: auto; /* Solo la lista hace scroll */
+            overflow-y: auto;
             background: white;
             border-radius: 12px;
             padding: 5px 15px;
@@ -68,14 +69,15 @@
         .task-item input { width: 22px; height: 22px; margin-right: 12px; }
 
         .actions { 
-            flex-shrink: 0; /* Los botones nunca se comprimen ni desaparecen */
+            flex-shrink: 0;
             display: flex; 
-            gap: 10px; 
+            gap: 5px; /* Espacio reducido para tres botones */
         }
         
-        .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        .btn { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; font-weight: bold; font-size: 0.85rem; cursor: pointer; }
         .btn-save { background: var(--primary); color: white; }
         .btn-history { background: #e9ecef; }
+        .btn-refresh { background: var(--accent); color: white; }
         
         #jsonOutput {
             display: none; 
@@ -101,7 +103,9 @@
 
 <div class="actions">
     <button class="btn btn-save" onclick="saveDailyRecord()">Guardar</button>
-    <button class="btn btn-history" onclick="toggleHistory()">Ver JSON</button>
+    <button class="btn btn-history" onclick="toggleHistory()">JSON</button>
+    <!-- Botón de recarga forzada -->
+    <button class="btn btn-refresh" onclick="window.location.reload(true)">Recargar</button>
 </div>
 <pre id="jsonOutput"></pre>
 

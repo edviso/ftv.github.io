@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Actividades Diarias</title>
@@ -10,33 +10,27 @@
             --success: #2ec4b6;
         }
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            background-color: #f8f9fa;
-            font-family: sans-serif;
-        }
-
         body {
+            margin: 0;
+            padding: 10px;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
-            /* 100dvh se ajusta dinámicamente restando la barra del navegador */
-            height: 100dvh; 
-            padding: 10px;
             box-sizing: border-box;
-            overflow: hidden; /* Evita el scroll general */
+            font-family: sans-serif;
+            background-color: #f8f9fa;
         }
 
         .header {
+            flex-shrink: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 5px 15px;
+            padding: 10px 15px;
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-bottom: 10px;
-            flex-shrink: 0; /* Evita que el encabezado se aplaste */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         h1 { font-size: 1.1rem; margin: 0; }
@@ -51,63 +45,55 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 1.1rem;
         }
 
         .task-list {
-            flex: 1; /* Toma todo el espacio disponible en el medio */
-            overflow-y: auto; /* Permite scroll ÚNICAMENTE a la lista */
-            min-height: 0; /* Regla vital para que flexbox no rompa el contenedor */
+            flex-grow: 1;
+            overflow-y: auto; /* Solo la lista hace scroll */
             background: white;
-            border-radius: 10px;
-            padding: 0 10px;
+            border-radius: 12px;
+            padding: 5px 15px;
             margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .task-item {
             display: flex;
             align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
         }
 
-        .task-item:last-child {
-            border-bottom: none;
-        }
-
-        .task-item input { width: 22px; height: 22px; margin-right: 12px; accent-color: var(--primary); }
-        .task-item label { font-size: 0.95rem; }
+        .task-item:last-child { border-bottom: none; }
+        .task-item input { width: 22px; height: 22px; margin-right: 12px; }
 
         .actions { 
+            flex-shrink: 0; /* Los botones nunca se comprimen ni desaparecen */
             display: flex; 
             gap: 10px; 
-            flex-shrink: 0; /* Asegura que los botones NUNCA se oculten */
         }
         
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; }
         .btn-save { background: var(--primary); color: white; }
-        .btn-history { background: #e9ecef; color: #333; }
+        .btn-history { background: #e9ecef; }
         
         #jsonOutput {
             display: none; 
-            font-size: 11px; 
-            height: 100px; 
+            font-size: 10px; 
+            height: 80px; 
             overflow: auto; 
             background: #333; 
             color: #fff; 
             padding: 10px; 
             border-radius: 8px; 
-            margin-top: 10px; 
-            flex-shrink: 0;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div>
-        <h1 id="dateTitle">Hoy</h1>
-    </div>
+    <h1 id="dateTitle">Hoy</h1>
     <div class="score-circle" id="scoreDisplay">0</div>
 </div>
 
@@ -120,32 +106,15 @@
 <pre id="jsonOutput"></pre>
 
 <script>
-    const activities = [
-        "Levantarse 8am", "Hacer la cama", "Hacer gym 9 am", "Barrer gym", 
-        "Tomar sol", "Desayuno 11 am", "Limpieza del baño", "Almuerzo 2pm", 
-        "Robotina dormitorio", "Robotina comedor", "Barrer cocina", 
-        "Dejar mesón cocina limpio", "Ordenar casa", "Desechar cosas viejas casa", 
-        "Recoger hojas patio", "Ordenar patio", "Desechar cosas viejas patio", 
-        "Merienda 7pm", "Acostarse a las 12am"
-    ];
+    const activities = ["Levantarse 8am", "Hacer la cama", "Hacer gym 9 am", "Barrer gym", "Tomar sol", "Desayuno 11 am", "Limpieza del baño", "Almuerzo 2pm", "Robotina dormitorio", "Robotina comedor", "Barrer cocina", "Dejar mesón cocina limpio", "Ordenar casa", "Desechar cosas viejas casa", "Recoger hojas patio", "Ordenar patio", "Desechar cosas viejas patio", "Merienda 7pm", "Acostarse a las 12am"];
     
     const taskListDiv = document.getElementById('taskList');
     const today = new Date().toISOString().split('T')[0];
-    
-    // Formatear la fecha en la parte superior
-    const dateOptions = { weekday: 'long', month: 'short', day: 'numeric' };
-    let dateStr = new Date().toLocaleDateString('es-ES', dateOptions);
-    document.getElementById('dateTitle').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    document.getElementById('dateTitle').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
 
     function init() {
-        // Cargar estado de los checks del día actual
         const saved = JSON.parse(localStorage.getItem('actividades_estado_hoy') || '{}');
-        
-        // Si cambió de día, borrar checks
-        if (saved.date !== today) {
-            saved.date = today;
-            saved.checked = [];
-        }
+        if (saved.date !== today) { saved.date = today; saved.checked = []; }
 
         activities.forEach((task, i) => {
             const div = document.createElement('div');
@@ -157,62 +126,26 @@
     }
 
     function update() {
-        const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
         const checkedIndices = [];
-        
-        checkboxes.forEach((cb, index) => {
-            if (cb.checked) checkedIndices.push(index);
-        });
-
+        document.querySelectorAll('input:checked').forEach(el => checkedIndices.push(parseInt(el.id.substring(1))));
         const score = Math.round((checkedIndices.length / activities.length) * 100);
-        
-        // Actualizar visualmente el puntaje
         document.getElementById('scoreDisplay').textContent = score;
-        document.getElementById('scoreDisplay').style.background = score === 100 ? '#2ec4b6' : '#4361ee';
-
-        // Guardar estado temporal para no perder los checks si se recarga la página
-        localStorage.setItem('actividades_estado_hoy', JSON.stringify({
-            date: today,
-            checked: checkedIndices
-        }));
+        localStorage.setItem('actividades_estado_hoy', JSON.stringify({ date: today, checked: checkedIndices }));
     }
 
     function saveDailyRecord() {
         let history = JSON.parse(localStorage.getItem('actividades_historial') || '[]');
-        const score = document.getElementById('scoreDisplay').textContent;
-        
-        // Reemplazar registro si ya se guardó hoy
         history = history.filter(h => h.fecha !== today);
-        history.push({ fecha: today, puntaje: parseInt(score) });
-        
+        history.push({ fecha: today, puntaje: document.getElementById('scoreDisplay').textContent });
         localStorage.setItem('actividades_historial', JSON.stringify(history));
-        
-        // Confirmación visual en el botón
-        const btn = document.querySelector('.btn-save');
-        btn.textContent = "¡Guardado!";
-        btn.style.background = "var(--success)";
-        setTimeout(() => {
-            btn.textContent = "Guardar";
-            btn.style.background = "var(--primary)";
-        }, 1500);
-
-        if (document.getElementById('jsonOutput').style.display === 'block') {
-            document.getElementById('jsonOutput').textContent = JSON.stringify(history, null, 2);
-        }
+        alert("¡Registro guardado!");
     }
 
     function toggleHistory() {
         const div = document.getElementById('jsonOutput');
-        const history = JSON.parse(localStorage.getItem('actividades_historial') || '[]');
-        
-        if (div.style.display === 'none' || div.style.display === '') {
-            div.style.display = 'block';
-            div.textContent = JSON.stringify(history, null, 2);
-        } else {
-            div.style.display = 'none';
-        }
+        div.style.display = div.style.display === 'block' ? 'none' : 'block';
+        div.textContent = localStorage.getItem('actividades_historial') || "Sin historial";
     }
-    
     init();
 </script>
 </body>

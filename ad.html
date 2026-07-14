@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Actividades Diarias</title>
@@ -60,11 +60,10 @@
         }
         .task-item input { width: 22px; height: 22px; margin-right: 12px; }
 
-        /* Cuadrícula 2x2 para que quepan los 4 botones perfectamente */
         .footer-actions { 
             flex-shrink: 0;
             display: grid;
-            grid-template-columns: 1fr 1fr; /* Dos columnas */
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
             padding: 5px 0;
         }
@@ -79,12 +78,44 @@
         .btn-history { background: #ffbe0b; color: black; }
         .btn-refresh { background: var(--accent); color: white; }
         
-        #jsonOutput {
+        /* Estilos base para ambas cajas de salida */
+        .output-box {
             display: none; 
-            font-size: 10px; height: 80px; overflow: auto; 
-            background: #333; color: #fff; padding: 10px; 
-            border-radius: 8px; margin-top: 10px; flex-shrink: 0;
+            height: 90px; 
+            overflow-y: auto; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-top: 5px; 
+            flex-shrink: 0;
         }
+
+        /* Estilo específico para JSON */
+        #jsonOutput {
+            background: #333; 
+            color: #fff; 
+            font-family: monospace;
+            font-size: 10px;
+            white-space: pre-wrap;
+        }
+
+        /* Estilo específico para Historial Visual */
+        #historyOutput {
+            background: white; 
+            color: #333; 
+            font-size: 0.9rem;
+            border: 1px solid #ccc;
+        }
+
+        .hist-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .hist-row:last-child { border-bottom: none; }
+        .hist-date { font-weight: bold; }
+        .hist-score { color: var(--primary); font-weight: bold; }
+
     </style>
 </head>
 <body>
@@ -98,12 +129,14 @@
 
 <div class="footer-actions">
     <button class="btn btn-save" onclick="saveDailyRecord()">Guardar</button>
-    <button class="btn btn-json" onclick="toggleView('jsonOutput')">Ver JSON</button>
-    <button class="btn btn-history" onclick="toggleView('jsonOutput')">Historial</button>
+    <button class="btn btn-json" onclick="toggleJson()">Ver JSON</button>
+    <button class="btn btn-history" onclick="toggleHistory()">Historial</button>
     <button class="btn btn-refresh" onclick="window.location.reload(true)">Recargar</button>
 </div>
 
-<pre id="jsonOutput"></pre>
+<!-- Contenedores de salida separados -->
+<div id="jsonOutput" class="output-box"></div>
+<div id="historyOutput" class="output-box"></div>
 
 <script>
     const activities = [
@@ -146,14 +179,53 @@
         history = history.filter(h => h.fecha !== today);
         history.push({ fecha: today, puntaje: document.getElementById('scoreDisplay').textContent });
         localStorage.setItem('actividades_historial', JSON.stringify(history));
-        alert("Guardado");
+        alert("Guardado exitosamente");
+        
+        // Actualizar vistas si están abiertas
+        if (document.getElementById('jsonOutput').style.display === 'block') toggleJson(true);
+        if (document.getElementById('historyOutput').style.display === 'block') toggleHistory(true);
     }
 
-    function toggleView(id) {
-        const div = document.getElementById(id);
+    function toggleJson(forceRefresh = false) {
+        const div = document.getElementById('jsonOutput');
+        document.getElementById('historyOutput').style.display = 'none'; // Oculta la otra vista
+        
         const history = JSON.parse(localStorage.getItem('actividades_historial') || '[]');
-        div.style.display = (div.style.display === 'block') ? 'none' : 'block';
-        div.textContent = history.length > 0 ? JSON.stringify(history, null, 2) : "Sin historial";
+        
+        if (div.style.display === 'block' && !forceRefresh) {
+            div.style.display = 'none';
+        } else {
+            div.style.display = 'block';
+            div.textContent = history.length > 0 ? JSON.stringify(history, null, 2) : "Sin datos";
+        }
+    }
+
+    function toggleHistory(forceRefresh = false) {
+        const div = document.getElementById('historyOutput');
+        document.getElementById('jsonOutput').style.display = 'none'; // Oculta la otra vista
+        
+        const history = JSON.parse(localStorage.getItem('actividades_historial') || '[]');
+        
+        if (div.style.display === 'block' && !forceRefresh) {
+            div.style.display = 'none';
+        } else {
+            div.style.display = 'block';
+            if (history.length === 0) {
+                div.innerHTML = "<div style='text-align:center; color:#888; padding-top:10px;'>No hay registros aún</div>";
+            } else {
+                // Invertimos el array para que los días más recientes salgan arriba
+                let html = "";
+                history.slice().reverse().forEach(item => {
+                    html += `
+                        <div class="hist-row">
+                            <span class="hist-date">${item.fecha}</span>
+                            <span class="hist-score">${item.puntaje} / 100</span>
+                        </div>
+                    `;
+                });
+                div.innerHTML = html;
+            }
+        }
     }
     
     init();

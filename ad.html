@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Actividades Diarias</title>
@@ -9,6 +9,7 @@
             --primary: #4361ee;
             --success: #2ec4b6;
             --accent: #f72585;
+            --bg: #f8f9fa;
         }
 
         body {
@@ -19,7 +20,7 @@
             flex-direction: column;
             box-sizing: border-box;
             font-family: sans-serif;
-            background-color: #f8f9fa;
+            background-color: var(--bg);
         }
 
         .header {
@@ -37,14 +38,9 @@
         h1 { font-size: 1.1rem; margin: 0; }
 
         .score-circle {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 45px; height: 45px; border-radius: 50%;
+            background: var(--primary); color: white;
+            display: flex; align-items: center; justify-content: center;
             font-weight: bold;
         }
 
@@ -59,48 +55,35 @@
         }
 
         .task-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
+            display: flex; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #f0f0f0;
         }
-
-        .task-item:last-child { border-bottom: none; }
         .task-item input { width: 22px; height: 22px; margin-right: 12px; }
 
-        .actions { 
+        /* Cuadrícula 2x2 para que quepan los 4 botones perfectamente */
+        .footer-actions { 
             flex-shrink: 0;
-            display: flex; 
-            gap: 4px; 
-            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Dos columnas */
+            gap: 8px;
+            padding: 5px 0;
         }
         
         .btn { 
-            flex: 1; 
-            padding: 12px 2px; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            font-size: 0.75rem; 
-            cursor: pointer;
-            white-space: nowrap; 
+            padding: 12px; border: none; border-radius: 8px; 
+            font-weight: bold; font-size: 0.85rem; cursor: pointer;
         }
         
         .btn-save { background: var(--primary); color: white; }
-        .btn-history { background: #e9ecef; color: #333; }
+        .btn-json { background: #e9ecef; }
+        .btn-history { background: #ffbe0b; color: black; }
         .btn-refresh { background: var(--accent); color: white; }
         
         #jsonOutput {
             display: none; 
-            font-size: 10px; 
-            height: 80px; 
-            overflow: auto; 
-            background: #333; 
-            color: #fff; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-top: 10px;
-            flex-shrink: 0;
+            font-size: 10px; height: 80px; overflow: auto; 
+            background: #333; color: #fff; padding: 10px; 
+            border-radius: 8px; margin-top: 10px; flex-shrink: 0;
         }
     </style>
 </head>
@@ -113,11 +96,13 @@
 
 <div class="task-list" id="taskList"></div>
 
-<div class="actions">
+<div class="footer-actions">
     <button class="btn btn-save" onclick="saveDailyRecord()">Guardar</button>
-    <button class="btn btn-history" onclick="toggleHistory()">Ver JSON</button>
+    <button class="btn btn-json" onclick="toggleView('jsonOutput')">Ver JSON</button>
+    <button class="btn btn-history" onclick="toggleView('jsonOutput')">Historial</button>
     <button class="btn btn-refresh" onclick="window.location.reload(true)">Recargar</button>
 </div>
+
 <pre id="jsonOutput"></pre>
 
 <script>
@@ -151,10 +136,8 @@
         const checkedIndices = [];
         document.querySelectorAll('input:checked').forEach(el => checkedIndices.push(parseInt(el.id.substring(1))));
         const score = Math.round((checkedIndices.length / activities.length) * 100);
-        
         document.getElementById('scoreDisplay').textContent = score;
         document.getElementById('scoreDisplay').style.background = score === 100 ? 'var(--success)' : 'var(--primary)';
-        
         localStorage.setItem('actividades_estado_hoy', JSON.stringify({ date: today, checked: checkedIndices }));
     }
 
@@ -163,30 +146,14 @@
         history = history.filter(h => h.fecha !== today);
         history.push({ fecha: today, puntaje: document.getElementById('scoreDisplay').textContent });
         localStorage.setItem('actividades_historial', JSON.stringify(history));
-        
-        const btn = document.querySelector('.btn-save');
-        btn.textContent = "¡Guardado!";
-        btn.style.background = "var(--success)";
-        setTimeout(() => {
-            btn.textContent = "Guardar";
-            btn.style.background = "var(--primary)";
-        }, 1500);
-
-        if (document.getElementById('jsonOutput').style.display === 'block') {
-            document.getElementById('jsonOutput').textContent = JSON.stringify(history, null, 2);
-        }
+        alert("Guardado");
     }
 
-    function toggleHistory() {
-        const div = document.getElementById('jsonOutput');
+    function toggleView(id) {
+        const div = document.getElementById(id);
         const history = JSON.parse(localStorage.getItem('actividades_historial') || '[]');
-        
-        if (div.style.display === 'block') {
-            div.style.display = 'none';
-        } else {
-            div.style.display = 'block';
-            div.textContent = history.length > 0 ? JSON.stringify(history, null, 2) : "Sin historial todavía";
-        }
+        div.style.display = (div.style.display === 'block') ? 'none' : 'block';
+        div.textContent = history.length > 0 ? JSON.stringify(history, null, 2) : "Sin historial";
     }
     
     init();

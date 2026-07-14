@@ -1,318 +1,133 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Actividades Diarias</title>
     <style>
         :root {
-            --bg-color: #f8f9fa;
-            --text-color: #212529;
             --primary: #4361ee;
             --success: #2ec4b6;
-            --card-bg: #ffffff;
-            --border: #e9ecef;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: sans-serif;
+            background-color: #f8f9fa;
             margin: 0;
-            padding: 20px 15px;
+            padding: 5px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 400px;
+            height: 100vh;
+            overflow: hidden;
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 25px;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 15px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 5px;
         }
 
-        h1 {
-            font-size: 1.5rem;
-            margin: 0 0 5px 0;
-        }
-
-        .date {
-            color: #6c757d;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
-        }
+        h1 { font-size: 1rem; margin: 0; }
 
         .score-circle {
-            width: 80px;
-            height: 80px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: var(--primary);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
             font-weight: bold;
-            margin: 0 auto;
-            transition: background 0.3s ease;
-        }
-
-        .score-circle.perfect {
-            background: var(--success);
         }
 
         .task-list {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 10px 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            flex-grow: 1;
+            overflow-y: auto; /* Mínimo necesario si la pantalla es muy pequeña */
+            background: white;
+            border-radius: 10px;
+            padding: 0 10px;
         }
 
         .task-item {
             display: flex;
             align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid var(--border);
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
         }
 
-        .task-item:last-child {
-            border-bottom: none;
-        }
+        .task-item input { width: 20px; height: 20px; margin-right: 10px; }
+        .task-item label { font-size: 0.85rem; }
 
-        .task-item input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
-            margin-right: 15px;
-            accent-color: var(--primary);
-        }
-
-        .task-item label {
-            font-size: 1.05rem;
-            flex-grow: 1;
-            transition: color 0.2s ease;
-        }
-
-        .task-item input[type="checkbox"]:checked + label {
-            text-decoration: line-through;
-            color: #adb5bd;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 10px;
-            transition: opacity 0.2s;
-        }
-
-        .btn-save {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-history {
-            background: var(--card-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border);
-        }
-
-        #jsonOutput {
-            background: #2b2b2b;
-            color: #a9b7c6;
-            padding: 15px;
-            border-radius: 12px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            display: none;
-            margin-bottom: 20px;
-        }
+        .actions { display: flex; gap: 5px; margin-top: 5px; }
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        .btn-save { background: var(--primary); color: white; }
+        .btn-history { background: #eee; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>Actividades Diarias</h1>
-        <div class="date" id="currentDate"></div>
-        <div class="score-circle" id="scoreDisplay">0</div>
+<div class="header">
+    <div>
+        <h1 id="dateTitle">Hoy</h1>
     </div>
-
-    <div class="task-list" id="taskList">
-        <!-- Las tareas se generarán dinámicamente -->
-    </div>
-
-    <button class="btn btn-save" onclick="saveDailyRecord()">Guardar Registro Diario</button>
-    <button class="btn btn-history" onclick="toggleHistory()">Ver Historial (JSON)</button>
-    
-    <div id="jsonOutput"></div>
+    <div class="score-circle" id="scoreDisplay">0</div>
 </div>
 
+<div class="task-list" id="taskList"></div>
+
+<div class="actions">
+    <button class="btn btn-save" onclick="saveDailyRecord()">Guardar</button>
+    <button class="btn btn-history" onclick="toggleHistory()">JSON</button>
+</div>
+<pre id="jsonOutput" style="display:none; font-size: 10px; height: 100px; overflow: auto; background: #333; color: #fff; padding: 5px;"></pre>
+
 <script>
-    // Lista ordenada lógicamente
-    const activities = [
-        "Levantarse 8am",
-        "Hacer la cama",
-        "Hacer gym 9 am",
-        "Barrer gym",
-        "Tomar sol",
-        "Desayuno 11 am",
-        "Limpieza del baño",
-        "Almuerzo 2pm",
-        "Robotina dormitorio",
-        "Robotina comedor",
-        "Barrer cocina",
-        "Dejar mesón cocina limpio",
-        "Ordenar casa",
-        "Desechar cosas viejas casa",
-        "Recoger hojas patio",
-        "Ordenar patio",
-        "Desechar cosas viejas patio",
-        "Merienda 7pm",
-        "Acostarse a las 12am (Medianoche)"
-    ];
-
-    const taskListDiv = document.getElementById('taskList');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const dateDisplay = document.getElementById('currentDate');
-    const jsonOutput = document.getElementById('jsonOutput');
-
-    // Obtener fecha actual en formato local
-    const today = new Date();
-    const dateString = today.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const shortDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    const activities = ["Levantarse 8am", "Hacer la cama", "Hacer gym 9 am", "Barrer gym", "Tomar sol", "Desayuno 11 am", "Limpieza del baño", "Almuerzo 2pm", "Robotina dormitorio", "Robotina comedor", "Barrer cocina", "Dejar mesón cocina limpio", "Ordenar casa", "Desechar cosas viejas casa", "Recoger hojas patio", "Ordenar patio", "Desechar cosas viejas patio", "Merienda 7pm", "Acostarse a las 12am"];
     
-    dateDisplay.textContent = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+    const taskListDiv = document.getElementById('taskList');
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateTitle').textContent = new Date().toLocaleDateString('es-ES', {month: 'short', day: 'numeric'});
 
-    // Estado actual
-    let currentScore = 0;
-
-    // Inicializar la interfaz
-    function initApp() {
-        const savedState = JSON.parse(localStorage.getItem('actividades_estado_hoy')) || {};
-        
-        // Si es un día nuevo, resetear checkboxes
-        if (savedState.date !== shortDate) {
-            savedState.date = shortDate;
-            savedState.checked = [];
-        }
-
-        activities.forEach((task, index) => {
+    function init() {
+        const saved = JSON.parse(localStorage.getItem('data') || '{}');
+        activities.forEach((task, i) => {
             const div = document.createElement('div');
             div.className = 'task-item';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = 'task_' + index;
-            checkbox.checked = savedState.checked.includes(index);
-            checkbox.addEventListener('change', () => updateScore());
-
-            const label = document.createElement('label');
-            label.htmlFor = 'task_' + index;
-            label.textContent = task;
-
-            div.appendChild(checkbox);
-            div.appendChild(label);
+            div.innerHTML = `<input type="checkbox" id="t${i}" ${saved.checked?.includes(i) ? 'checked' : ''} onchange="update()"> <label for="t${i}">${task}</label>`;
             taskListDiv.appendChild(div);
         });
-
-        updateScore();
+        update();
     }
 
-    function updateScore() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        let checkedCount = 0;
-        let checkedIndices = [];
-
-        checkboxes.forEach((cb, index) => {
-            if (cb.checked) {
-                checkedCount++;
-                checkedIndices.push(index);
-            }
-        });
-
-        // Calcular puntaje sobre 100
-        currentScore = Math.round((checkedCount / activities.length) * 100);
-        scoreDisplay.textContent = currentScore;
-
-        if (currentScore === 100) {
-            scoreDisplay.classList.add('perfect');
-        } else {
-            scoreDisplay.classList.remove('perfect');
-        }
-
-        // Guardar estado actual de los checkboxes para no perderlos si se cierra la app
-        localStorage.setItem('actividades_estado_hoy', JSON.stringify({
-            date: shortDate,
-            checked: checkedIndices
-        }));
+    function update() {
+        const checked = Array.from(document.querySelectorAll('input:checked')).length;
+        const score = Math.round((checked / activities.length) * 100);
+        document.getElementById('scoreDisplay').textContent = score;
+        document.getElementById('scoreDisplay').style.background = score === 100 ? '#2ec4b6' : '#4361ee';
     }
 
     function saveDailyRecord() {
-        let history = JSON.parse(localStorage.getItem('actividades_historial')) || [];
+        let history = JSON.parse(localStorage.getItem('history') || '[]');
+        const checked = [];
+        document.querySelectorAll('input').forEach((el, i) => { if(el.checked) checked.push(i); });
         
-        // Buscar si ya existe un registro hoy para actualizarlo, si no, crearlo
-        const existingIndex = history.findIndex(record => record.fecha === shortDate);
-        
-        const record = {
-            fecha: shortDate,
-            puntaje_total: currentScore,
-            tareas_completadas: currentScore === 100 ? "Todas" : `${document.querySelectorAll('input[type="checkbox"]:checked').length}/${activities.length}`
-        };
-
-        if (existingIndex >= 0) {
-            history[existingIndex] = record;
-        } else {
-            history.push(record);
-        }
-
-        localStorage.setItem('actividades_historial', JSON.stringify(history));
-        
-        // Mostrar feedback visual
-        const btn = document.querySelector('.btn-save');
-        btn.textContent = "¡Guardado exitosamente!";
-        btn.style.background = "var(--success)";
-        setTimeout(() => {
-            btn.textContent = "Guardar Registro Diario";
-            btn.style.background = "var(--primary)";
-        }, 2000);
-
-        if (jsonOutput.style.display === 'block') {
-            showHistory();
-        }
+        history = history.filter(h => h.fecha !== today);
+        history.push({ fecha: today, puntaje: document.getElementById('scoreDisplay').textContent });
+        localStorage.setItem('history', JSON.stringify(history));
+        alert("Guardado");
     }
 
     function toggleHistory() {
-        if (jsonOutput.style.display === 'none' || jsonOutput.style.display === '') {
-            showHistory();
-            jsonOutput.style.display = 'block';
-        } else {
-            jsonOutput.style.display = 'none';
-        }
+        const div = document.getElementById('jsonOutput');
+        div.style.display = div.style.display === 'none' ? 'block' : 'none';
+        div.textContent = localStorage.getItem('history');
     }
-
-    function showHistory() {
-        const history = JSON.parse(localStorage.getItem('actividades_historial')) || [];
-        jsonOutput.textContent = JSON.stringify(history, null, 2);
-    }
-
-    // Arrancar la app
-    initApp();
+    init();
 </script>
-
 </body>
 </html>

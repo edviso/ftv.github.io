@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Actividades Diarias</title>
@@ -45,20 +45,25 @@
 <script>
     const activities = ["Levantarse 8am", "Hacer la cama", "Hacer gym 9 am", "Barrer gym", "Tomar sol", "Desayuno 11 am", "Limpieza del baño", "Almuerzo 2pm", "Robotina dormitorio", "Robotina comedor", "Barrer cocina", "Dejar mesón cocina limpio", "Ordenar casa", "Desechar cosas viejas casa", "Recoger hojas patio", "Ordenar patio", "Desechar cosas viejas patio", "Merienda 7pm", "Acostarse a las 12am"];
     
-    // Función para obtener fecha en Ecuador (UTC-5)
-    function getEcuadorDate() {
-        const now = new Date();
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const ecuadorDate = new Date(utc - (3600000 * 5));
-        return ecuadorDate.toISOString().split('T')[0];
+    // Nueva función que respeta la hora local del dispositivo sin saltos UTC
+    function getLocalYYYYMMDD() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
-    const today = getEcuadorDate();
+    const todayStr = getLocalYYYYMMDD();
 
     function init() {
         document.getElementById('dateTitle').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
         const saved = JSON.parse(localStorage.getItem('actividades_estado_hoy') || '{}');
-        if (saved.date !== today) { saved.date = today; saved.checked = []; }
+        
+        if (saved.date !== todayStr) { 
+            saved.date = todayStr; 
+            saved.checked = []; 
+        }
 
         activities.forEach((task, i) => {
             const div = document.createElement('div');
@@ -73,17 +78,23 @@
         const checkedIndices = [];
         document.querySelectorAll('input:checked').forEach(el => checkedIndices.push(parseInt(el.id.substring(1))));
         const score = Math.round((checkedIndices.length / activities.length) * 100);
+        
         document.getElementById('scoreDisplay').textContent = score;
         document.getElementById('scoreDisplay').style.background = score === 100 ? 'var(--success)' : 'var(--primary)';
-        localStorage.setItem('actividades_estado_hoy', JSON.stringify({ date: today, checked: checkedIndices }));
+        
+        // Guardar progreso con la fecha local correcta
+        localStorage.setItem('actividades_estado_hoy', JSON.stringify({ date: getLocalYYYYMMDD(), checked: checkedIndices }));
     }
 
     function saveDailyRecord() {
         let history = JSON.parse(localStorage.getItem('actividades_historial') || '[]');
-        history = history.filter(h => h.fecha !== today);
-        history.push({ fecha: today, puntaje: document.getElementById('scoreDisplay').textContent });
+        const currentDate = getLocalYYYYMMDD();
+        
+        history = history.filter(h => h.fecha !== currentDate);
+        history.push({ fecha: currentDate, puntaje: document.getElementById('scoreDisplay').textContent });
+        
         localStorage.setItem('actividades_historial', JSON.stringify(history));
-        alert("¡Registro del día " + today + " guardado!");
+        alert("¡Registro del día guardado con fecha: " + currentDate + "!");
     }
 
     function toggleHistory() {
@@ -125,7 +136,12 @@
         reader.readAsText(file);
     }
 
-    function clearAllData() { if(confirm("¿Borrar todo el historial?")) { localStorage.removeItem('actividades_historial'); toggleHistory(); } }
+    function clearAllData() { 
+        if(confirm("¿Borrar todo el historial?")) { 
+            localStorage.removeItem('actividades_historial'); 
+            toggleHistory(); toggleHistory(); 
+        } 
+    }
 
     init();
 </script>

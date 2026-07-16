@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="claro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Diario de Actividades</title>
+<style>
+/* ============================================================
+   CONTROL DIARIO DE ACTIVIDADES — Hoja de estilos
+   Diseño extremadamente minimalista, optimizado para Android.
+   Sin animaciones. Modo claro y modo oscuro por variables.
+   ============================================================ */
+
+/* ---------- Variables de color (tema claro por defecto) ---------- */
+:root {
+  --fondo: #ffffff;
+  --fondo-suave: #f4f4f5;
+  --texto: #18181b;
+  --texto-suave: #5b5b60;
+  --acento: #2563eb;
+  --borde: #dcdce0;
+  --barra-vacia: #e4e4e7;
+  --peligro: #c62828;
+}
+
+/* ---------- Variables de color (tema oscuro) ---------- */
+html[data-tema="oscuro"] {
+  --fondo: #121214;
+  --fondo-suave: #1e1e22;
+  --texto: #e9e9ec;
+  --texto-suave: #a3a3ab;
+  --acento: #5b8cff;
+  --borde: #3a3a40;
+  --barra-vacia: #2c2c31;
+  --peligro: #ef5350;
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+  font-size: 18px;
+  line-height: 1.5;
+}
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+h1 { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+h2 { font-size: 19px; font-weight: 700; margin: 28px 0 12px; }
+[hidden] { display: none !important; }
+
+/* ---------- Barra de progreso y marcador ---------- */
+.barra {
+  height: 26px;
+  background: var(--barra-vacia);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 18px 0 10px;
+}
+.barra-relleno {
+  height: 100%;
+  width: 0%;
+  background: var(--acento);
+}
+.marcador {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.marcador .porcentaje { color: var(--acento); }
+
+/* ---------- Filas de actividades (checkbox grandes) ---------- */
+.actividad {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 62px;
+  padding: 14px 12px;
+  margin-bottom: 12px;
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.actividad input[type="checkbox"] {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  accent-color: var(--acento);
+  cursor: pointer;
+}
+.actividad .nombre { flex: 1; font-size: 18px; }
+.actividad.hecha .nombre { text-decoration: line-through; opacity: 0.55; }
+.puntos {
+  flex: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--acento);
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+/* ---------- Botones (grandes, táctiles) ---------- */
+.boton {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--texto);
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+.boton:active { filter: brightness(0.92); }
+.boton-primario { background: var(--acento); border-color: var(--acento); color: #ffffff; }
+.boton-peligro { color: var(--peligro); }
+.boton-pequeno {
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--texto);
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.boton-pequeno:disabled { opacity: 0.35; cursor: default; }
+.menu { margin-top: 32px; }
+
+/* ---------- Administrar actividades ---------- */
+.fila-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+.fila-admin input[type="text"] { flex: 1 1 100%; }
+input[type="text"], select {
+  font-size: 17px;
+  font-family: inherit;
+  color: var(--texto);
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 12px;
+}
+.fila-admin select { flex: 1; }
+.tarjeta {
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+.tarjeta input[type="text"] { width: 100%; margin-bottom: 10px; }
+.tarjeta select { width: 100%; margin-bottom: 10px; }
+.tarjeta .boton { margin-top: 0; }
+
+/* ---------- Historial ---------- */
+.dia {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  margin-bottom: 12px;
+  font-size: 17px;
+  font-family: inherit;
+  color: var(--texto);
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* ---------- Detalle de día y estadísticas ---------- */
+.resumen-dia { text-align: center; }
+.resumen-dia .valor { font-size: 28px; font-weight: 700; }
+.resumen-dia .porcentaje { font-size: 20px; font-weight: 700; color: var(--acento); }
+.lista-simple { list-style: none; }
+.lista-simple li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  font-size: 17px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th, td {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+}
+th { color: var(--texto-suave); font-weight: 600; }
+ol.ranking { list-style: none; }
+ol.ranking li {
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  font-size: 17px;
+}
+.etiqueta { color: var(--texto-suave); font-size: 15px; margin-bottom: 4px; }
+.valor { font-size: 24px; font-weight: 700; }
+.texto-vacio { color: var(--texto-suave); font-size: 16px; padding: 8px 0; }
+.aviso {
+  font-size: 15px;
+  color: var(--texto-suave);
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ==================== VISTA PRINCIPAL ==================== -->
+  <section id="vistaPrincipal" class="vista">
+    <h1 id="fechaActual"></h1>
+
+    <div class="barra"><div id="barraRelleno" class="barra-relleno"></div></div>
+    <div class="marcador">
+      <span id="puntosDia">0 / 100 puntos</span>
+      <span id="porcentajeDia" class="porcentaje">0 %</span>
+    </div>
+
+    <h2>Actividades Prioritarias</h2>
+    <div id="listaPrioritarias"></div>
+
+    <h2>Actividades Secundarias</h2>
+    <div id="listaSecundarias"></div>
+
+    <div class="menu">
+      <button id="botonAdministrar" class="boton">Administrar actividades</button>
+      <button id="botonHistorial" class="boton">Historial</button>
+      <button id="botonEstadisticas" class="boton">Estadísticas</button>
+      <button id="botonExportar" class="boton">Exportar JSON</button>
+      <button id="botonImportar" class="boton">Importar JSON</button>
+      <button id="botonNuevoDia" class="boton boton-primario">Iniciar nuevo día</button>
+      <button id="botonTema" class="boton">Modo oscuro</button>
+    </div>
+  </section>
+
+  <!-- ==================== VISTA ADMINISTRAR ==================== -->
+  <section id="vistaAdministrar" class="vista" hidden>
+    <h1>Administrar actividades</h1>
+
+    <div class="tarjeta">
+      <input id="nuevaActividad" type="text" placeholder="Nombre de la nueva actividad" maxlength="80">
+      <select id="tipoNuevaActividad">
+        <option value="prioritaria">Prioritaria</option>
+        <option value="secundaria">Secundaria</option>
+      </select>
+      <button id="botonAgregar" class="boton boton-primario">Agregar actividad</button>
+    </div>
+
+    <h2>Actividades Prioritarias</h2>
+    <div id="adminPrioritarias"></div>
+
+    <h2>Actividades Secundarias</h2>
+    <div id="adminSecundarias"></div>
+
+    <button class="boton" data-volver>Volver</button>
+  </section>
+
+  <!-- ==================== VISTA HISTORIAL ==================== -->
+  <section id="vistaHistorial" class="vista" hidden>
+    <h1>Historial</h1>
+    <div id="listaHistorial"></div>
+    <button class="boton" data-volver>Volver</button>
+  </section>
+
+  <!-- ==================== VISTA DETALLE DE DÍA ==================== -->
+  <section id="vistaDetalle" class="vista" hidden>
+    <h1 id="detalleFecha"></h1>
+    <p class="aviso" id="detalleAvisoHoy" hidden>Este es el día de hoy. Los cambios que hagas aquí también se reflejan en la pantalla principal.</p>
+    <p class="aviso" id="detalleAvisoEditar">Puedes tocar cada actividad para corregir este día.</p>
+    <div class="tarjeta resumen-dia">
+      <div class="valor" id="detallePuntos"></div>
+      <div class="porcentaje" id="detallePorcentaje"></div>
+    </div>
+    <h2>Actividades Prioritarias</h2>
+    <div id="detallePrioritarias"></div>
+    <h2>Actividades Secundarias</h2>
+    <div id="detalleSecundarias"></div>
+    <button id="botonVolverDetalle" class="boton">Volver</button>
+  </section>
+
+  <!-- ==================== VISTA ESTADÍSTICAS ==================== -->
+  <section id="vistaEstadisticas" class="vista" hidden>
+    <h1>Estadísticas</h1>
+
+    <div class="tarjeta"><div class="etiqueta">Promedio semanal</div><div class="valor" id="estSemanal">—</div></div>
+    <div class="tarjeta"><div class="etiqueta">Promedio mensual</div><div class="valor" id="estMensual">—</div></div>
+    <div class="tarjeta"><div class="etiqueta">Promedio anual</div><div class="valor" id="estAnual">—</div></div>
+    <div class="tarjeta"><div class="etiqueta">Mejor día</div><div class="valor" id="estMejor">—</div></div>
+    <div class="tarjeta"><div class="etiqueta">Peor día</div><div class="valor" id="estPeor">—</div></div>
+    <div class="tarjeta"><div class="etiqueta">Actividades realizadas en total</div><div class="valor" id="estTotal">—</div></div>
+
+    <h2>Cumplimiento por actividad</h2>
+    <table>
+      <thead><tr><th>Actividad</th><th>Días</th><th>%</th></tr></thead>
+      <tbody id="estCumplimiento"></tbody>
+    </table>
+
+    <h2>Actividades más cumplidas</h2>
+    <ol id="estMas" class="ranking"></ol>
+
+    <h2>Actividades menos cumplidas</h2>
+    <ol id="estMenos" class="ranking"></ol>
+
+    <button class="boton" data-volver>Volver</button>
+  </section>
+
+</main>
+
+<!-- Selector de archivo oculto para Importar JSON -->
+<input type="file" id="selectorArchivo" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+
+/* ============================================================
+   CONTROL DIARIO DE ACTIVIDADES
+   ------------------------------------------------------------
+   Aplicación de un solo archivo, sin dependencias externas.
+   Funciona completamente sin conexión a Internet.
+
+   Estructura del código:
+     1. Constantes y actividades iniciales
+     2. Estado (carga y guardado en localStorage)
+     3. Fechas (zona horaria America/Guayaquil)
+     4. Sistema de puntuación
+     5. Registro diario (guardado automático e historial)
+     6. Renderizado de vistas
+     7. Acciones del usuario
+     8. Exportar / Importar JSON
+     9. Estadísticas
+    10. Tema claro / oscuro
+    11. Inicialización
+
+   PUNTOS DE EXTENSIÓN para futuras versiones:
+   - Toda la información pasa por el objeto "estado" y por
+     guardarEstado(): basta extender ese objeto para agregar
+     recordatorios, alarmas, notificaciones o perfiles.
+   - exportarJSON() / importarJSON() son el punto natural para
+     añadir sincronización con Google Drive o GitHub.
+   - El historial (estado.dias) guarda una "foto" completa de
+     cada día, lista para alimentar gráficos de evolución o
+     exportaciones a Excel / PDF.
+   ============================================================ */
+
+
+/* ============================================================
+   1. CONSTANTES Y ACTIVIDADES INICIALES
+   ============================================================ */
+
+// Clave única bajo la cual se guarda todo en localStorage.
+const CLAVE_STORAGE = 'controlDiarioActividades.v1';
+
+// Zona horaria oficial utilizada por toda la aplicación.
+const ZONA_HORARIA = 'America/Guayaquil';
+
+// La puntuación máxima diaria es siempre 100 puntos.
+const PUNTOS_TOTALES = 100;
+
+// Cada grupo (prioritarias y secundarias) vale exactamente
+// la mitad del total: 50 puntos por grupo.
+const PUNTOS_POR_GRUPO = 50;
+
+// Tipos válidos de actividad.
+const TIPO_PRIORITARIA = 'prioritaria';
+const TIPO_SECUNDARIA = 'secundaria';
+
+// Actividades que se crean la primera vez que se abre la app.
+const ACTIVIDADES_INICIALES = [
+  { nombre: 'Acostarse a las 12:00 AM',            tipo: TIPO_PRIORITARIA },
+  { nombre: 'Levantarse a las 8:00 AM',            tipo: TIPO_PRIORITARIA },
+  { nombre: 'Hacer gym 9:00 AM',                   tipo: TIPO_PRIORITARIA },
+  { nombre: 'Desayuno 11:00 AM',                   tipo: TIPO_PRIORITARIA },
+  { nombre: 'Almuerzo 2:00 PM',                    tipo: TIPO_PRIORITARIA },
+  { nombre: 'Merienda 7:00 PM',                    tipo: TIPO_PRIORITARIA },
+  { nombre: 'Recoger hojas del patio',             tipo: TIPO_SECUNDARIA },
+  { nombre: 'Ordenar patio',                       tipo: TIPO_SECUNDARIA },
+  { nombre: 'Robotina dormitorio',                 tipo: TIPO_SECUNDARIA },
+  { nombre: 'Robotina comedor',                    tipo: TIPO_SECUNDARIA },
+  { nombre: 'Barrer cocina',                       tipo: TIPO_SECUNDARIA },
+  { nombre: 'Ordenar casa',                        tipo: TIPO_SECUNDARIA },
+  { nombre: 'Desechar cosas viejas de la casa',    tipo: TIPO_SECUNDARIA },
+  { nombre: 'Desechar cosas viejas del patio',     tipo: TIPO_SECUNDARIA },
+  { nombre: 'Dejar mesón de la cocina limpio',     tipo: TIPO_SECUNDARIA },
+  { nombre: 'Barrer gym',                          tipo: TIPO_SECUNDARIA },
+  { nombre: 'Tomar sol',                           tipo: TIPO_SECUNDARIA },
+  { nombre: 'Limpieza del baño',                   tipo: TIPO_SECUNDARIA },
+  { nombre: 'Hacer la cama',                       tipo: TIPO_SECUNDARIA }
+];
+
+
+/* ============================================================
+   2. ESTADO — carga y guardado en localStorage
+   ------------------------------------------------------------
+   Forma del objeto "estado":
+   {
+     version:      número de versión del formato de datos,
+     tema:         'claro' | 'oscuro',
+     fechaActual:  'YYYY-MM-DD' del día en curso (Guayaquil),
+     actividades:  [ { id, nombre, tipo } ] en el orden visible,
+     marcas:       { idActividad: true } checks del día actual,
+     dias:         { 'YYYY-MM-DD': registroDiario } historial
+   }
+   Cada registroDiario guarda una "foto" del día:
+   { fecha, puntos, porcentaje,
+     items: [ { id, nombre, tipo, puntos, hecha } ] }
+   ============================================================ */
+
+let estado = cargarEstado();
+
+// Genera un identificador único y corto para cada actividad.
+function generarId() {
+  return 'act-' + Date.now().toString(36) + '-' +
+         Math.floor(Math.random() * 1e6).toString(36);
+}
+
+// Crea el estado inicial con las actividades por defecto.
+function crearEstadoInicial() {
+  return {
+    version: 1,
+    tema: 'claro',
+    fechaActual: obtenerFechaHoy(),
+    actividades: ACTIVIDADES_INICIALES.map(function (a) {
+      return { id: generarId(), nombre: a.nombre, tipo: a.tipo };
+    }),
+    marcas: {},
+    dias: {}
+  };
+}
+
+// Lee el estado desde localStorage; si no existe o está dañado,
+// crea uno nuevo. Rellena campos faltantes por robustez.
+function cargarEstado() {
+  try {
+    const crudo = localStorage.getItem(CLAVE_STORAGE);
+    if (!crudo) return crearEstadoInicial();
+    const datos = JSON.parse(crudo);
+    if (!datos || !Array.isArray(datos.actividades)) {
+      return crearEstadoInicial();
+    }
+    datos.tema = datos.tema === 'oscuro' ? 'oscuro' : 'claro';
+    datos.marcas = datos.marcas || {};
+    datos.dias = datos.dias || {};
+    datos.fechaActual = datos.fechaActual || obtenerFechaHoy();
+    return datos;
+  } catch (error) {
+    return crearEstadoInicial();
+  }
+}
+
+// Persiste el estado completo en localStorage.
+function guardarEstado() {
+  localStorage.setItem(CLAVE_STORAGE, JSON.stringify(estado));
+}
+
+
+/* ============================================================
+   3. FECHAS — siempre con la hora oficial de Ecuador
+   ============================================================ */
+
+// Devuelve la fecha de hoy en Guayaquil como 'YYYY-MM-DD'.
+function obtenerFechaHoy() {
+  const partes = {};
+  new Intl.DateTimeFormat('es-ES', {
+    timeZone: ZONA_HORARIA,
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date()).forEach(function (p) {
+    partes[p.type] = p.value;
+  });
+  return partes.year + '-' + partes.month + '-' + partes.day;
+}
+
+// Convierte un objeto Date en texto: "Miércoles 15 de julio de 2026".
+function formatearFechaTexto(fecha) {
+  const partes = {};
+  new Intl.DateTimeFormat('es-ES', {
+    timeZone: ZONA_HORARIA,
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  }).formatToParts(fecha).forEach(function (p) {
+    partes[p.type] = p.value;
+  });
+  const texto = partes.weekday + ' ' + partes.day + ' de ' +
+                partes.month + ' de ' + partes.year;
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+// Convierte 'YYYY-MM-DD' en texto completo.
+// Se usa mediodía UTC para que la fecha no se desplace (GMT-5).
+function formatearFechaISO(fechaISO) {
+  return formatearFechaTexto(new Date(fechaISO + 'T12:00:00Z'));
+}
+
+// Devuelve la fecha ISO de hace "n" días (para promedios).
+function fechaISOHaceDias(n) {
+  const fecha = new Date(obtenerFechaHoy() + 'T12:00:00Z');
+  fecha.setUTCDate(fecha.getUTCDate() - n);
+  return fecha.toISOString().slice(0, 10);
+}
+
+
+/* ============================================================
+   4. SISTEMA DE PUNTUACIÓN
+   ------------------------------------------------------------
+   El día vale exactamente 100 puntos.
+   Las prioritarias suman exactamente 50 y las secundarias 50.
+   Dentro de cada grupo todas las actividades valen lo mismo,
+   y el valor se recalcula solo al agregar o eliminar.
+   Caso especial: si un grupo queda vacío, el otro vale 100.
+   ============================================================ */
+
+// Cantidad de actividades de un tipo.
+function contarPorTipo(tipo) {
+  return estado.actividades.filter(function (a) {
+    return a.tipo === tipo;
+  }).length;
+}
+
+// Puntos que vale cada actividad de un tipo.
+function puntosDeActividad(tipo) {
+  const cantidad = contarPorTipo(tipo);
+  if (cantidad === 0) return 0;
+  const otroTipo = tipo === TIPO_PRIORITARIA ? TIPO_SECUNDARIA : TIPO_PRIORITARIA;
+  const totalGrupo = contarPorTipo(otroTipo) > 0 ? PUNTOS_POR_GRUPO : PUNTOS_TOTALES;
+  return totalGrupo / cantidad;
+}
+
+// Muestra los puntos sin decimales si son enteros (8 → "8", 8.33 → "8.3").
+function formatearPuntos(valor) {
+  return Number.isInteger(valor) ? String(valor) : valor.toFixed(1);
+}
+
+// Puntuación del día actual según los checks marcados.
+// Como el máximo es 100, los puntos equivalen al porcentaje.
+function calcularResumenActual() {
+  let puntos = 0;
+  estado.actividades.forEach(function (a) {
+    if (estado.marcas[a.id]) puntos += puntosDeActividad(a.tipo);
+  });
+  const redondeado = Math.round(puntos);
+  return { puntos: redondeado, porcentaje: redondeado };
+}
+
+
+/* ============================================================
+   5. REGISTRO DIARIO — guardado automático e historial
+   ============================================================ */
+
+// Quita del objeto "marcas" cualquier id que ya no corresponda
+// a una actividad existente (por ejemplo, tras eliminarla).
+function limpiarMarcasHuerfanas() {
+  Object.keys(estado.marcas).forEach(function (id) {
+    const existe = estado.actividades.some(function (a) { return a.id === id; });
+    if (!existe) delete estado.marcas[id];
+  });
+}
+
+// Recalcula puntos y porcentaje de un registro diario a partir
+// de sus "items". Es la ÚNICA fórmula de redondeo de la app:
+// se suman los puntos exactos de las actividades marcadas como
+// hechas y se redondea una sola vez, al final. Así la pantalla
+// principal y el historial nunca quedan desincronizados por
+// redondeos acumulados.
+function recalcularRegistro(registro) {
+  const suma = registro.items
+    .filter(function (i) { return i.hecha; })
+    .reduce(function (s, i) { return s + i.puntos; }, 0);
+  const redondeado = Math.round(suma);
+  registro.puntos = redondeado;
+  registro.porcentaje = redondeado;
+}
+
+// Guarda una "foto" del día actual dentro del historial.
+// Se llama en cada cambio, así el día siempre queda respaldado.
+function guardarDiaActual() {
+  limpiarMarcasHuerfanas();
+  const items = estado.actividades.map(function (a) {
+    return {
+      id: a.id,
+      nombre: a.nombre,
+      tipo: a.tipo,
+      puntos: puntosDeActividad(a.tipo),
+      hecha: !!estado.marcas[a.id]
+    };
+  });
+  const registro = { fecha: estado.fechaActual, items: items, puntos: 0, porcentaje: 0 };
+  recalcularRegistro(registro);
+  estado.dias[estado.fechaActual] = registro;
+  guardarEstado();
+}
+
+// Cierra el día en curso y abre uno nuevo con todo desmarcado.
+function iniciarNuevoDia() {
+  guardarDiaActual();                    // archiva el día que termina
+  estado.fechaActual = obtenerFechaHoy();
+  estado.marcas = {};                    // todas las casillas en blanco
+  guardarDiaActual();                    // crea el registro del nuevo día
+}
+
+// Si la fecha de Guayaquil cambió (pasó la medianoche),
+// inicia el nuevo día automáticamente.
+function verificarCambioDeDia() {
+  if (estado.fechaActual !== obtenerFechaHoy()) {
+    iniciarNuevoDia();
+    renderizarPrincipal();
+  }
+}
+</script>
+
+<script>
+'use strict';
+
+/* ============================================================
+   6. RENDERIZADO DE VISTAS
+   ============================================================ */
+
+// Atajo para localizar elementos por selector.
+function $(selector) {
+  return document.querySelector(selector);
+}
+
+// Muestra una sola vista y oculta las demás.
+function mostrarVista(idVista) {
+  document.querySelectorAll('.vista').forEach(function (vista) {
+    vista.hidden = vista.id !== idVista;
+  });
+  window.scrollTo(0, 0);
+}
+
+// Redibuja la pantalla principal: fecha, barra, puntos y listas.
+function renderizarPrincipal() {
+  const resumen = calcularResumenActual();
+  $('#fechaActual').textContent = formatearFechaTexto(new Date());
+  $('#barraRelleno').style.width = resumen.porcentaje + '%';
+  $('#puntosDia').textContent = resumen.puntos + ' / ' + PUNTOS_TOTALES + ' puntos';
+  $('#porcentajeDia').textContent = resumen.porcentaje + ' %';
+  renderListaActividades($('#listaPrioritarias'), TIPO_PRIORITARIA);
+  renderListaActividades($('#listaSecundarias'), TIPO_SECUNDARIA);
+}
+
+// Dibuja las actividades de un grupo con su checkbox y sus puntos.
+function renderListaActividades(contenedor, tipo) {
+  contenedor.innerHTML = '';
+  const grupo = estado.actividades.filter(function (a) { return a.tipo === tipo; });
+
+  if (grupo.length === 0) {
+    const vacio = document.createElement('p');
+    vacio.className = 'texto-vacio';
+    vacio.textContent = 'Sin actividades en este grupo.';
+    contenedor.appendChild(vacio);
+    return;
+  }
+
+  grupo.forEach(function (a) {
+    const hecha = !!estado.marcas[a.id];
+
+    const fila = document.createElement('label');
+    fila.className = 'actividad' + (hecha ? ' hecha' : '');
+
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = hecha;
+    check.addEventListener('change', function () { alternarActividad(a.id); });
+
+    const nombre = document.createElement('span');
+    nombre.className = 'nombre';
+    nombre.textContent = a.nombre;
+
+    const puntos = document.createElement('span');
+    puntos.className = 'puntos';
+    puntos.textContent = formatearPuntos(puntosDeActividad(tipo)) + ' pts';
+
+    fila.append(check, nombre, puntos);
+    contenedor.appendChild(fila);
+  });
+}
+
+// Redibuja la pantalla de administración (ambos grupos).
+function renderizarAdministrar() {
+  renderGrupoAdmin($('#adminPrioritarias'), TIPO_PRIORITARIA);
+  renderGrupoAdmin($('#adminSecundarias'), TIPO_SECUNDARIA);
+}
+
+// Dibuja las filas editables de un grupo en Administrar.
+function renderGrupoAdmin(contenedor, tipo) {
+  contenedor.innerHTML = '';
+  const grupo = estado.actividades.filter(function (a) { return a.tipo === tipo; });
+
+  if (grupo.length === 0) {
+    const vacio = document.createElement('p');
+    vacio.className = 'texto-vacio';
+    vacio.textContent = 'Sin actividades en este grupo.';
+    contenedor.appendChild(vacio);
+    return;
+  }
+
+  grupo.forEach(function (a, indice) {
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+
+    // Editar nombre directamente en el campo de texto.
+    const entrada = document.createElement('input');
+    entrada.type = 'text';
+    entrada.value = a.nombre;
+    entrada.maxLength = 80;
+    entrada.setAttribute('aria-label', 'Nombre de la actividad');
+    entrada.addEventListener('change', function () {
+      renombrarActividad(a.id, entrada.value);
+    });
+
+    // Cambiar entre Prioritaria y Secundaria.
+    const selector = document.createElement('select');
+    [[TIPO_PRIORITARIA, 'Prioritaria'], [TIPO_SECUNDARIA, 'Secundaria']]
+      .forEach(function (par) {
+        const opcion = document.createElement('option');
+        opcion.value = par[0];
+        opcion.textContent = par[1];
+        selector.appendChild(opcion);
+      });
+    selector.value = a.tipo;
+    selector.addEventListener('change', function () {
+      cambiarTipoActividad(a.id, selector.value);
+    });
+
+    // Reordenar con botones Subir / Bajar.
+    const subir = crearBotonPequeno('↑ Subir', function () {
+      moverActividad(a.id, -1);
+    }, indice === 0);
+    const bajar = crearBotonPequeno('↓ Bajar', function () {
+      moverActividad(a.id, 1);
+    }, indice === grupo.length - 1);
+    const eliminar = crearBotonPequeno('Eliminar', function () {
+      eliminarActividad(a.id);
+    }, false);
+    eliminar.classList.add('boton-peligro');
+
+    fila.append(entrada, selector, subir, bajar, eliminar);
+    contenedor.appendChild(fila);
+  });
+}
+
+// Crea un botón pequeño con su acción y estado deshabilitado.
+function crearBotonPequeno(texto, accion, deshabilitado) {
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'boton-pequeno';
+  boton.textContent = texto;
+  boton.disabled = !!deshabilitado;
+  boton.addEventListener('click', accion);
+  return boton;
+}
+
+// Devuelve los registros del historial, del más reciente al más antiguo.
+function obtenerRegistrosOrdenados() {
+  return Object.values(estado.dias).sort(function (a, b) {
+    return b.fecha.localeCompare(a.fecha);
+  });
+}
+
+// Dibuja la lista cronológica del historial.
+function renderizarHistorial() {
+  const contenedor = $('#listaHistorial');
+  contenedor.innerHTML = '';
+  const registros = obtenerRegistrosOrdenados();
+
+  if (registros.length === 0) {
+    const vacio = document.createElement('p');
+    vacio.className = 'texto-vacio';
+    vacio.textContent = 'Aún no hay días registrados.';
+    contenedor.appendChild(vacio);
+    return;
+  }
+
+  registros.forEach(function (registro) {
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'dia';
+
+    const fecha = document.createElement('span');
+    fecha.textContent = formatearFechaISO(registro.fecha) +
+      (registro.fecha === estado.fechaActual ? ' (hoy)' : '');
+
+    const porcentaje = document.createElement('span');
+    porcentaje.className = 'puntos';
+    porcentaje.textContent = registro.porcentaje + ' %';
+
+    boton.append(fecha, porcentaje);
+    boton.addEventListener('click', function () {
+      renderizarDetalle(registro.fecha);
+      mostrarVista('vistaDetalle');
+    });
+    contenedor.appendChild(boton);
+  });
+}
+
+// Fecha del día que se está viendo/editando en la vista de detalle.
+let fechaDetalleActual = null;
+
+// Dibuja el detalle de un día: puntuación y actividades editables.
+function renderizarDetalle(fechaISO) {
+  const registro = estado.dias[fechaISO];
+  if (!registro) return;
+  fechaDetalleActual = fechaISO;
+
+  $('#detalleFecha').textContent = formatearFechaISO(fechaISO);
+  $('#detallePuntos').textContent = registro.puntos + ' / ' + PUNTOS_TOTALES + ' puntos';
+  $('#detallePorcentaje').textContent = registro.porcentaje + ' %';
+  $('#detalleAvisoHoy').hidden = fechaISO !== estado.fechaActual;
+
+  renderDetalleGrupo($('#detallePrioritarias'), TIPO_PRIORITARIA, registro);
+  renderDetalleGrupo($('#detalleSecundarias'), TIPO_SECUNDARIA, registro);
+}
+
+// Dibuja un grupo (prioritarias o secundarias) de la vista de detalle,
+// con checkboxes editables para corregir el día.
+function renderDetalleGrupo(contenedor, tipo, registro) {
+  contenedor.innerHTML = '';
+  const grupo = registro.items.filter(function (i) { return i.tipo === tipo; });
+
+  if (grupo.length === 0) {
+    const vacio = document.createElement('p');
+    vacio.className = 'texto-vacio';
+    vacio.textContent = 'Sin actividades en este grupo.';
+    contenedor.appendChild(vacio);
+    return;
+  }
+
+  grupo.forEach(function (item) {
+    const fila = document.createElement('label');
+    fila.className = 'actividad' + (item.hecha ? ' hecha' : '');
+
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = item.hecha;
+    check.addEventListener('change', function () {
+      alternarActividadEnDia(registro.fecha, item.id);
+    });
+
+    const nombre = document.createElement('span');
+    nombre.className = 'nombre';
+    nombre.textContent = item.nombre;
+
+    const puntos = document.createElement('span');
+    puntos.className = 'puntos';
+    puntos.textContent = formatearPuntos(item.puntos) + ' pts';
+
+    fila.append(check, nombre, puntos);
+    contenedor.appendChild(fila);
+  });
+}
+
+
+/* ============================================================
+   7. ACCIONES DEL USUARIO
+   ============================================================ */
+
+// Marca o desmarca una actividad y guarda automáticamente.
+function alternarActividad(id) {
+  if (estado.marcas[id]) {
+    delete estado.marcas[id];
+  } else {
+    estado.marcas[id] = true;
+  }
+  guardarDiaActual();
+  renderizarPrincipal();
+}
+
+// Marca o desmarca una actividad dentro de un día del historial
+// (incluido el día de hoy, visto desde el Historial). Corrige ese
+// día sin afectar la estructura actual de actividades.
+function alternarActividadEnDia(fechaISO, itemId) {
+  const registro = estado.dias[fechaISO];
+  if (!registro) return;
+  const item = registro.items.find(function (i) { return i.id === itemId; });
+  if (!item) return;
+
+  item.hecha = !item.hecha;
+  recalcularRegistro(registro);
+
+  // Si se está corrigiendo el día de hoy, la pantalla principal
+  // debe quedar sincronizada con este cambio.
+  if (fechaISO === estado.fechaActual) {
+    if (item.hecha) {
+      estado.marcas[itemId] = true;
+    } else {
+      delete estado.marcas[itemId];
+    }
+  }
+
+  guardarEstado();
+  renderizarDetalle(fechaISO);
+}
+
+// Agrega una actividad nueva desde el formulario de Administrar.
+function agregarActividad() {
+  const entrada = $('#nuevaActividad');
+  const nombre = entrada.value.trim();
+  if (!nombre) { entrada.focus(); return; }
+  estado.actividades.push({
+    id: generarId(),
+    nombre: nombre,
+    tipo: $('#tipoNuevaActividad').value
+  });
+  entrada.value = '';
+  guardarDiaActual();          // recalcula las puntuaciones
+  renderizarAdministrar();
+  renderizarPrincipal();
+}
+
+// Renombra una actividad (ignora nombres vacíos).
+function renombrarActividad(id, nuevoNombre) {
+  const actividad = estado.actividades.find(function (a) { return a.id === id; });
+  const nombre = nuevoNombre.trim();
+  if (actividad && nombre) actividad.nombre = nombre;
+  guardarDiaActual();
+  renderizarAdministrar();
+  renderizarPrincipal();
+}
+
+// Elimina una actividad previa confirmación.
+function eliminarActividad(id) {
+  const actividad = estado.actividades.find(function (a) { return a.id === id; });
+  if (!actividad) return;
+  if (!confirm('¿Eliminar la actividad "' + actividad.nombre + '"?')) return;
+  estado.actividades = estado.actividades.filter(function (a) { return a.id !== id; });
+  delete estado.marcas[id];
+  guardarDiaActual();          // recalcula las puntuaciones
+  renderizarAdministrar();
+  renderizarPrincipal();
+}
+
+// Cambia una actividad entre Prioritaria y Secundaria.
+function cambiarTipoActividad(id, nuevoTipo) {
+  const actividad = estado.actividades.find(function (a) { return a.id === id; });
+  if (!actividad) return;
+  actividad.tipo = nuevoTipo;
+  guardarDiaActual();          // recalcula las puntuaciones
+  renderizarAdministrar();
+  renderizarPrincipal();
+}
+
+// Mueve una actividad una posición dentro de su grupo
+// (direccion: -1 subir, 1 bajar).
+function moverActividad(id, direccion) {
+  const actividad = estado.actividades.find(function (a) { return a.id === id; });
+  if (!actividad) return;
+  const grupo = estado.actividades.filter(function (a) { return a.tipo === actividad.tipo; });
+  const vecina = grupo[grupo.indexOf(actividad) + direccion];
+  if (!vecina) return;
+  const i1 = estado.actividades.indexOf(actividad);
+  const i2 = estado.actividades.indexOf(vecina);
+  estado.actividades[i1] = vecina;
+  estado.actividades[i2] = actividad;
+  guardarEstado();
+  renderizarAdministrar();
+  renderizarPrincipal();
+}
+
+// Botón "Iniciar nuevo día": confirma, archiva y reinicia.
+function confirmarNuevoDia() {
+  if (!confirm('¿Iniciar un nuevo día? Se guardará el día actual y todas las actividades quedarán desmarcadas.')) return;
+  iniciarNuevoDia();
+  renderizarPrincipal();
+  mostrarVista('vistaPrincipal');
+}
+
+
+/* ============================================================
+   8. EXPORTAR / IMPORTAR JSON
+   ============================================================ */
+
+// Descarga un único archivo JSON con actividades,
+// configuración e historial completo.
+function exportarJSON() {
+  guardarDiaActual();
+  const paquete = {
+    version: estado.version,
+    exportado: new Date().toISOString(),
+    tema: estado.tema,
+    fechaActual: estado.fechaActual,
+    actividades: estado.actividades,
+    marcas: estado.marcas,
+    dias: estado.dias
+  };
+  const blob = new Blob([JSON.stringify(paquete, null, 2)], { type: 'application/json' });
+  const enlace = document.createElement('a');
+  enlace.href = URL.createObjectURL(blob);
+  enlace.download = 'control-diario-' + estado.fechaActual + '.json';
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(enlace.href);
+}
+
+// Restaura completamente la aplicación desde un archivo JSON.
+// Pide confirmación explícita antes de reemplazar cualquier dato,
+// ya que esta acción sobreescribe actividades, marcas e historial.
+function importarJSON(archivo) {
+  const lector = new FileReader();
+  lector.onload = function () {
+    try {
+      const datos = JSON.parse(lector.result);
+      if (!datos || !Array.isArray(datos.actividades) ||
+          !datos.dias || typeof datos.dias !== 'object') {
+        throw new Error('Formato inválido');
+      }
+      if (!confirm('¿Importar este archivo? Se reemplazarán todas las actividades, marcas e historial actuales. Esta acción no se puede deshacer.')) {
+        return;
+      }
+      estado = {
+        version: 1,
+        tema: datos.tema === 'oscuro' ? 'oscuro' : 'claro',
+        fechaActual: typeof datos.fechaActual === 'string'
+          ? datos.fechaActual : obtenerFechaHoy(),
+        actividades: datos.actividades
+          .filter(function (a) {
+            return a && a.nombre &&
+              (a.tipo === TIPO_PRIORITARIA || a.tipo === TIPO_SECUNDARIA);
+          })
+          .map(function (a) {
+            return { id: a.id || generarId(), nombre: String(a.nombre), tipo: a.tipo };
+          }),
+        marcas: datos.marcas && typeof datos.marcas === 'object' ? datos.marcas : {},
+        dias: datos.dias
+      };
+      guardarEstado();
+      aplicarTema();
+      verificarCambioDeDia();
+      guardarDiaActual();
+      renderizarPrincipal();
+      mostrarVista('vistaPrincipal');
+      alert('Datos importados correctamente.');
+    } catch (error) {
+      alert('El archivo no es válido. No se importó nada.');
+    }
+  };
+  lector.readAsText(archivo);
+}
+</script>
+
+<script>
+'use strict';
+
+/* ============================================================
+   9. ESTADÍSTICAS
+   ============================================================ */
+
+// Promedio de porcentajes de un conjunto de registros (o null).
+function promedioRegistros(registros) {
+  if (registros.length === 0) return null;
+  const suma = registros.reduce(function (s, r) { return s + r.porcentaje; }, 0);
+  return Math.round(suma / registros.length);
+}
+
+// Escribe un valor en una tarjeta, o "Sin datos" si es null.
+function escribirValor(selector, valor, sufijo) {
+  $(selector).textContent = valor === null ? 'Sin datos' : valor + (sufijo || '');
+}
+
+// Redibuja toda la pantalla de estadísticas.
+function renderizarEstadisticas() {
+  const registros = Object.values(estado.dias);
+
+  // --- Promedios semanal, mensual y anual (días con registro) ---
+  const ultimos7 = registros.filter(function (r) { return r.fecha >= fechaISOHaceDias(6); });
+  const ultimos30 = registros.filter(function (r) { return r.fecha >= fechaISOHaceDias(29); });
+  const ultimos365 = registros.filter(function (r) { return r.fecha >= fechaISOHaceDias(364); });
+  escribirValor('#estSemanal', promedioRegistros(ultimos7), ' %');
+  escribirValor('#estMensual', promedioRegistros(ultimos30), ' %');
+  escribirValor('#estAnual', promedioRegistros(ultimos365), ' %');
+
+  // --- Mejor y peor día ---
+  let mejor = null;
+  let peor = null;
+  registros.forEach(function (r) {
+    if (!mejor || r.porcentaje > mejor.porcentaje) mejor = r;
+    if (!peor || r.porcentaje < peor.porcentaje) peor = r;
+  });
+  $('#estMejor').textContent = mejor
+    ? formatearFechaISO(mejor.fecha) + ' — ' + mejor.porcentaje + ' %'
+    : 'Sin datos';
+  $('#estPeor').textContent = peor
+    ? formatearFechaISO(peor.fecha) + ' — ' + peor.porcentaje + ' %'
+    : 'Sin datos';
+
+  // --- Cantidad total de actividades realizadas ---
+  const totalRealizadas = registros.reduce(function (s, r) {
+    return s + r.items.filter(function (i) { return i.hecha; }).length;
+  }, 0);
+  $('#estTotal').textContent = String(totalRealizadas);
+
+  // --- Cumplimiento por actividad ---
+  // Se agrupa por ID (no por nombre): así, si una actividad se
+  // renombra, su historial sigue unido; y si se elimina y luego
+  // se crea otra con el mismo nombre, sus datos NO se mezclan.
+  // El nombre mostrado es el más reciente registrado para ese id.
+  const registrosPorFecha = registros.slice().sort(function (a, b) {
+    return a.fecha.localeCompare(b.fecha);
+  });
+  const acumulado = {};
+  registrosPorFecha.forEach(function (r) {
+    r.items.forEach(function (i) {
+      if (!acumulado[i.id]) acumulado[i.id] = { nombre: i.nombre, hechas: 0, total: 0 };
+      acumulado[i.id].nombre = i.nombre; // se queda con el nombre más reciente
+      acumulado[i.id].total++;
+      if (i.hecha) acumulado[i.id].hechas++;
+    });
+  });
+  const cumplimiento = Object.keys(acumulado).map(function (id) {
+    const v = acumulado[id];
+    return {
+      nombre: v.nombre,
+      hechas: v.hechas,
+      total: v.total,
+      porcentaje: Math.round((v.hechas / v.total) * 100)
+    };
+  });
+
+  renderTablaCumplimiento(cumplimiento);
+  renderRankings(cumplimiento);
+}
+
+// Dibuja la tabla de porcentaje de cumplimiento de cada actividad.
+function renderTablaCumplimiento(cumplimiento) {
+  const cuerpo = $('#estCumplimiento');
+  cuerpo.innerHTML = '';
+  if (cumplimiento.length === 0) {
+    const fila = document.createElement('tr');
+    const celda = document.createElement('td');
+    celda.colSpan = 3;
+    celda.textContent = 'Sin datos todavía.';
+    fila.appendChild(celda);
+    cuerpo.appendChild(fila);
+    return;
+  }
+  cumplimiento
+    .sort(function (a, b) { return b.porcentaje - a.porcentaje; })
+    .forEach(function (c) {
+      const fila = document.createElement('tr');
+      [c.nombre, c.hechas + '/' + c.total, c.porcentaje + ' %'].forEach(function (texto) {
+        const celda = document.createElement('td');
+        celda.textContent = texto;
+        fila.appendChild(celda);
+      });
+      cuerpo.appendChild(fila);
+    });
+}
+
+// Dibuja los rankings de las más y menos cumplidas (top 5).
+function renderRankings(cumplimiento) {
+  const porNombre = function (a, b) { return a.nombre.localeCompare(b.nombre); };
+  const mas = cumplimiento.slice()
+    .sort(function (a, b) { return b.porcentaje - a.porcentaje || porNombre(a, b); })
+    .slice(0, 5);
+  const menos = cumplimiento.slice()
+    .sort(function (a, b) { return a.porcentaje - b.porcentaje || porNombre(a, b); })
+    .slice(0, 5);
+  llenarRanking($('#estMas'), mas);
+  llenarRanking($('#estMenos'), menos);
+}
+
+// Llena una lista de ranking con "Nombre — %".
+function llenarRanking(lista, items) {
+  lista.innerHTML = '';
+  if (items.length === 0) {
+    const vacio = document.createElement('p');
+    vacio.className = 'texto-vacio';
+    vacio.textContent = 'Sin datos todavía.';
+    lista.appendChild(vacio);
+    return;
+  }
+  items.forEach(function (c) {
+    const li = document.createElement('li');
+    li.textContent = c.nombre + ' — ' + c.porcentaje + ' %';
+    lista.appendChild(li);
+  });
+}
+
+
+/* ============================================================
+   10. TEMA CLARO / OSCURO
+   ============================================================ */
+
+// Aplica el tema guardado y ajusta el texto del botón.
+function aplicarTema() {
+  document.documentElement.dataset.tema = estado.tema;
+  $('#botonTema').textContent = estado.tema === 'oscuro' ? 'Modo claro' : 'Modo oscuro';
+}
+
+// Alterna entre modo claro y modo oscuro.
+function alternarTema() {
+  estado.tema = estado.tema === 'oscuro' ? 'claro' : 'oscuro';
+  guardarEstado();
+  aplicarTema();
+}
+
+
+/* ============================================================
+   11. INICIALIZACIÓN
+   ============================================================ */
+
+// Conecta todos los botones con sus acciones.
+function conectarEventos() {
+  $('#botonAdministrar').addEventListener('click', function () {
+    renderizarAdministrar();
+    mostrarVista('vistaAdministrar');
+  });
+  $('#botonHistorial').addEventListener('click', function () {
+    renderizarHistorial();
+    mostrarVista('vistaHistorial');
+  });
+  $('#botonEstadisticas').addEventListener('click', function () {
+    renderizarEstadisticas();
+    mostrarVista('vistaEstadisticas');
+  });
+  $('#botonExportar').addEventListener('click', exportarJSON);
+  $('#botonImportar').addEventListener('click', function () {
+    $('#selectorArchivo').click();
+  });
+  $('#selectorArchivo').addEventListener('change', function (evento) {
+    if (evento.target.files.length > 0) importarJSON(evento.target.files[0]);
+    evento.target.value = ''; // permite importar el mismo archivo otra vez
+  });
+  $('#botonNuevoDia').addEventListener('click', confirmarNuevoDia);
+  $('#botonTema').addEventListener('click', alternarTema);
+  $('#botonAgregar').addEventListener('click', agregarActividad);
+  $('#botonVolverDetalle').addEventListener('click', function () {
+    fechaDetalleActual = null;
+    renderizarHistorial();
+    mostrarVista('vistaHistorial');
+  });
+  // Todos los botones "Volver" regresan a la pantalla principal.
+  document.querySelectorAll('[data-volver]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+      renderizarPrincipal();
+      mostrarVista('vistaPrincipal');
+    });
+  });
+}
+
+// Punto de entrada de la aplicación.
+function inicializar() {
+  aplicarTema();
+  verificarCambioDeDia();  // cambio de día automático si pasó la medianoche
+  guardarDiaActual();      // crea el registro de hoy si aún no existe
+  renderizarPrincipal();
+  conectarEventos();
+
+  // Revisa la fecha periódicamente y al volver a la app,
+  // por si el teléfono quedó abierto al cambiar de día.
+  setInterval(verificarCambioDeDia, 30000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) verificarCambioDeDia();
+  });
+}
+
+inicializar();
+</script>
+
+</body>
+</html>

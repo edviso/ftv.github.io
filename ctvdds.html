@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" data-tema="claro">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Control Diario de Actividades</title>
@@ -233,6 +233,15 @@ ol.ranking li {
 .etiqueta { color: var(--texto-suave); font-size: 15px; margin-bottom: 4px; }
 .valor { font-size: 24px; font-weight: 700; }
 .texto-vacio { color: var(--texto-suave); font-size: 16px; padding: 8px 0; }
+.aviso {
+  font-size: 15px;
+  color: var(--texto-suave);
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
 </style>
 </head>
 <body>
@@ -297,14 +306,16 @@ ol.ranking li {
   <!-- ==================== VISTA DETALLE DE DÍA ==================== -->
   <section id="vistaDetalle" class="vista" hidden>
     <h1 id="detalleFecha"></h1>
+    <p class="aviso" id="detalleAvisoHoy" hidden>Este es el día de hoy. Los cambios que hagas aquí también se reflejan en la pantalla principal.</p>
+    <p class="aviso" id="detalleAvisoEditar">Puedes tocar cada actividad para corregir este día.</p>
     <div class="tarjeta resumen-dia">
       <div class="valor" id="detallePuntos"></div>
       <div class="porcentaje" id="detallePorcentaje"></div>
     </div>
-    <h2>Actividades realizadas</h2>
-    <ul id="detalleHechas" class="lista-simple"></ul>
-    <h2>Actividades pendientes</h2>
-    <ul id="detallePendientes" class="lista-simple"></ul>
+    <h2>Actividades Prioritarias</h2>
+    <div id="detallePrioritarias"></div>
+    <h2>Actividades Secundarias</h2>
+    <div id="detalleSecundarias"></div>
     <button id="botonVolverDetalle" class="boton">Volver</button>
   </section>
 
@@ -574,29 +585,46 @@ function calcularResumenActual() {
    5. REGISTRO DIARIO — guardado automático e historial
    ============================================================ */
 
+// Quita del objeto "marcas" cualquier id que ya no corresponda
+// a una actividad existente (por ejemplo, tras eliminarla).
+function limpiarMarcasHuerfanas() {
+  Object.keys(estado.marcas).forEach(function (id) {
+    const existe = estado.actividades.some(function (a) { return a.id === id; });
+    if (!existe) delete estado.marcas[id];
+  });
+}
+
+// Recalcula puntos y porcentaje de un registro diario a partir
+// de sus "items". Es la ÚNICA fórmula de redondeo de la app:
+// se suman los puntos exactos de las actividades marcadas como
+// hechas y se redondea una sola vez, al final. Así la pantalla
+// principal y el historial nunca quedan desincronizados por
+// redondeos acumulados.
+function recalcularRegistro(registro) {
+  const suma = registro.items
+    .filter(function (i) { return i.hecha; })
+    .reduce(function (s, i) { return s + i.puntos; }, 0);
+  const redondeado = Math.round(suma);
+  registro.puntos = redondeado;
+  registro.porcentaje = redondeado;
+}
+
 // Guarda una "foto" del día actual dentro del historial.
 // Se llama en cada cambio, así el día siempre queda respaldado.
 function guardarDiaActual() {
+  limpiarMarcasHuerfanas();
   const items = estado.actividades.map(function (a) {
-    const puntos = puntosDeActividad(a.tipo);
     return {
       id: a.id,
       nombre: a.nombre,
       tipo: a.tipo,
-      puntos: Number(puntos.toFixed(2)),
+      puntos: puntosDeActividad(a.tipo),
       hecha: !!estado.marcas[a.id]
     };
   });
-  const puntos = Math.round(
-    items.filter(function (i) { return i.hecha; })
-         .reduce(function (s, i) { return s + i.puntos; }, 0)
-  );
-  estado.dias[estado.fechaActual] = {
-    fecha: estado.fechaActual,
-    puntos: puntos,
-    porcentaje: puntos,
-    items: items
-  };
+  const registro = { fecha: estado.fechaActual, items: items, puntos: 0, porcentaje: 0 };
+  recalcularRegistro(registro);
+  estado.dias[estado.fechaActual] = registro;
   guardarEstado();
 }
 
@@ -804,40 +832,59 @@ function renderizarHistorial() {
   });
 }
 
-// Dibuja el detalle de un día: puntuación, realizadas y pendientes.
+// Fecha del día que se está viendo/editando en la vista de detalle.
+let fechaDetalleActual = null;
+
+// Dibuja el detalle de un día: puntuación y actividades editables.
 function renderizarDetalle(fechaISO) {
   const registro = estado.dias[fechaISO];
   if (!registro) return;
+  fechaDetalleActual = fechaISO;
 
   $('#detalleFecha').textContent = formatearFechaISO(fechaISO);
   $('#detallePuntos').textContent = registro.puntos + ' / ' + PUNTOS_TOTALES + ' puntos';
   $('#detallePorcentaje').textContent = registro.porcentaje + ' %';
+  $('#detalleAvisoHoy').hidden = fechaISO !== estado.fechaActual;
 
-  llenarListaDetalle($('#detalleHechas'),
-    registro.items.filter(function (i) { return i.hecha; }), 'Ninguna actividad realizada.');
-  llenarListaDetalle($('#detallePendientes'),
-    registro.items.filter(function (i) { return !i.hecha; }), 'Todo completado.');
+  renderDetalleGrupo($('#detallePrioritarias'), TIPO_PRIORITARIA, registro);
+  renderDetalleGrupo($('#detalleSecundarias'), TIPO_SECUNDARIA, registro);
 }
 
-// Llena una lista del detalle (realizadas o pendientes).
-function llenarListaDetalle(lista, items, mensajeVacio) {
-  lista.innerHTML = '';
-  if (items.length === 0) {
+// Dibuja un grupo (prioritarias o secundarias) de la vista de detalle,
+// con checkboxes editables para corregir el día.
+function renderDetalleGrupo(contenedor, tipo, registro) {
+  contenedor.innerHTML = '';
+  const grupo = registro.items.filter(function (i) { return i.tipo === tipo; });
+
+  if (grupo.length === 0) {
     const vacio = document.createElement('p');
     vacio.className = 'texto-vacio';
-    vacio.textContent = mensajeVacio;
-    lista.appendChild(vacio);
+    vacio.textContent = 'Sin actividades en este grupo.';
+    contenedor.appendChild(vacio);
     return;
   }
-  items.forEach(function (i) {
-    const li = document.createElement('li');
+
+  grupo.forEach(function (item) {
+    const fila = document.createElement('label');
+    fila.className = 'actividad' + (item.hecha ? ' hecha' : '');
+
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = item.hecha;
+    check.addEventListener('change', function () {
+      alternarActividadEnDia(registro.fecha, item.id);
+    });
+
     const nombre = document.createElement('span');
-    nombre.textContent = i.nombre;
+    nombre.className = 'nombre';
+    nombre.textContent = item.nombre;
+
     const puntos = document.createElement('span');
     puntos.className = 'puntos';
-    puntos.textContent = formatearPuntos(i.puntos) + ' pts';
-    li.append(nombre, puntos);
-    lista.appendChild(li);
+    puntos.textContent = formatearPuntos(item.puntos) + ' pts';
+
+    fila.append(check, nombre, puntos);
+    contenedor.appendChild(fila);
   });
 }
 
@@ -855,6 +902,32 @@ function alternarActividad(id) {
   }
   guardarDiaActual();
   renderizarPrincipal();
+}
+
+// Marca o desmarca una actividad dentro de un día del historial
+// (incluido el día de hoy, visto desde el Historial). Corrige ese
+// día sin afectar la estructura actual de actividades.
+function alternarActividadEnDia(fechaISO, itemId) {
+  const registro = estado.dias[fechaISO];
+  if (!registro) return;
+  const item = registro.items.find(function (i) { return i.id === itemId; });
+  if (!item) return;
+
+  item.hecha = !item.hecha;
+  recalcularRegistro(registro);
+
+  // Si se está corrigiendo el día de hoy, la pantalla principal
+  // debe quedar sincronizada con este cambio.
+  if (fechaISO === estado.fechaActual) {
+    if (item.hecha) {
+      estado.marcas[itemId] = true;
+    } else {
+      delete estado.marcas[itemId];
+    }
+  }
+
+  guardarEstado();
+  renderizarDetalle(fechaISO);
 }
 
 // Agrega una actividad nueva desde el formulario de Administrar.
@@ -959,6 +1032,8 @@ function exportarJSON() {
 }
 
 // Restaura completamente la aplicación desde un archivo JSON.
+// Pide confirmación explícita antes de reemplazar cualquier dato,
+// ya que esta acción sobreescribe actividades, marcas e historial.
 function importarJSON(archivo) {
   const lector = new FileReader();
   lector.onload = function () {
@@ -967,6 +1042,9 @@ function importarJSON(archivo) {
       if (!datos || !Array.isArray(datos.actividades) ||
           !datos.dias || typeof datos.dias !== 'object') {
         throw new Error('Formato inválido');
+      }
+      if (!confirm('¿Importar este archivo? Se reemplazarán todas las actividades, marcas e historial actuales. Esta acción no se puede deshacer.')) {
+        return;
       }
       estado = {
         version: 1,
@@ -1051,20 +1129,26 @@ function renderizarEstadisticas() {
   $('#estTotal').textContent = String(totalRealizadas);
 
   // --- Cumplimiento por actividad ---
-  // Se agrupa por nombre para que el historial siga siendo válido
-  // aunque la actividad se edite o se elimine después.
+  // Se agrupa por ID (no por nombre): así, si una actividad se
+  // renombra, su historial sigue unido; y si se elimina y luego
+  // se crea otra con el mismo nombre, sus datos NO se mezclan.
+  // El nombre mostrado es el más reciente registrado para ese id.
+  const registrosPorFecha = registros.slice().sort(function (a, b) {
+    return a.fecha.localeCompare(b.fecha);
+  });
   const acumulado = {};
-  registros.forEach(function (r) {
+  registrosPorFecha.forEach(function (r) {
     r.items.forEach(function (i) {
-      if (!acumulado[i.nombre]) acumulado[i.nombre] = { hechas: 0, total: 0 };
-      acumulado[i.nombre].total++;
-      if (i.hecha) acumulado[i.nombre].hechas++;
+      if (!acumulado[i.id]) acumulado[i.id] = { nombre: i.nombre, hechas: 0, total: 0 };
+      acumulado[i.id].nombre = i.nombre; // se queda con el nombre más reciente
+      acumulado[i.id].total++;
+      if (i.hecha) acumulado[i.id].hechas++;
     });
   });
-  const cumplimiento = Object.keys(acumulado).map(function (nombre) {
-    const v = acumulado[nombre];
+  const cumplimiento = Object.keys(acumulado).map(function (id) {
+    const v = acumulado[id];
     return {
-      nombre: nombre,
+      nombre: v.nombre,
       hechas: v.hechas,
       total: v.total,
       porcentaje: Math.round((v.hechas / v.total) * 100)
@@ -1180,6 +1264,7 @@ function conectarEventos() {
   $('#botonTema').addEventListener('click', alternarTema);
   $('#botonAgregar').addEventListener('click', agregarActividad);
   $('#botonVolverDetalle').addEventListener('click', function () {
+    fechaDetalleActual = null;
     renderizarHistorial();
     mostrarVista('vistaHistorial');
   });

@@ -77,7 +77,25 @@
     function update() {
         const checkedIndices = [];
         document.querySelectorAll('input:checked').forEach(el => checkedIndices.push(parseInt(el.id.substring(1))));
-        const score = Math.round((checkedIndices.length / activities.length) * 100);
+        
+        // Índices de las actividades principales (50% del peso)
+        const mainTasks = [0, 2, 5, 7, 17, 18]; 
+        let mainCount = 0;
+        let secCount = 0;
+        
+        checkedIndices.forEach(idx => {
+            if (mainTasks.includes(idx)) {
+                mainCount++;
+            } else {
+                secCount++;
+            }
+        });
+        
+        // Cálculo ponderado
+        const totalMainTasks = 6;
+        const totalSecTasks = 13;
+        
+        const score = Math.round(((mainCount / totalMainTasks) * 50) + ((secCount / totalSecTasks) * 50));
         
         document.getElementById('scoreDisplay').textContent = score;
         document.getElementById('scoreDisplay').style.background = score === 100 ? 'var(--success)' : 'var(--primary)';

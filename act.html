@@ -233,6 +233,18 @@ ol.ranking li {
 .etiqueta { color: var(--texto-suave); font-size: 15px; margin-bottom: 4px; }
 .valor { font-size: 24px; font-weight: 700; }
 .texto-vacio { color: var(--texto-suave); font-size: 16px; padding: 8px 0; }
+.aviso-flotante {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--peligro);
+  background: var(--fondo-suave);
+  border-bottom: 1px solid var(--borde);
+  padding: 10px 16px;
+  text-align: center;
+}
 .aviso {
   font-size: 15px;
   color: var(--texto-suave);
@@ -245,6 +257,11 @@ ol.ranking li {
 </style>
 </head>
 <body>
+
+<div id="avisoSinGuardado" class="aviso-flotante" hidden>
+  ⚠️ Este navegador no permite guardar datos aquí. Los cambios funcionan, pero se perderán al recargar la página.
+</div>
+
 <main>
 
   <!-- ==================== VISTA PRINCIPAL ==================== -->
@@ -484,13 +501,37 @@ function cargarEstado() {
     datos.fechaActual = datos.fechaActual || obtenerFechaHoy();
     return datos;
   } catch (error) {
+    avisarSinAlmacenamiento();
     return crearEstadoInicial();
   }
 }
 
+// Indica si localStorage funciona en este navegador/entorno.
+// Empieza en true y se pone en false la primera vez que falla
+// un guardado (por ejemplo, dentro de un iframe con sandbox,
+// como ocurre en algunas vistas previas de HTML incrustadas).
+let almacenamientoDisponible = true;
+
 // Persiste el estado completo en localStorage.
+// Protegido con try/catch: si el navegador bloquea el acceso al
+// almacenamiento, la app sigue funcionando con los datos en
+// memoria durante la sesión (aunque no se guarden al recargar),
+// en vez de detener toda la inicialización con un error.
 function guardarEstado() {
-  localStorage.setItem(CLAVE_STORAGE, JSON.stringify(estado));
+  try {
+    localStorage.setItem(CLAVE_STORAGE, JSON.stringify(estado));
+  } catch (error) {
+    avisarSinAlmacenamiento();
+  }
+}
+
+// Muestra una sola vez el banner que avisa que los cambios
+// no se están guardando de forma permanente.
+function avisarSinAlmacenamiento() {
+  if (!almacenamientoDisponible) return;
+  almacenamientoDisponible = false;
+  const aviso = document.getElementById('avisoSinGuardado');
+  if (aviso) aviso.hidden = false;
 }
 
 

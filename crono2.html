@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>  
+<head> 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistente de Tueste - Vinza Café</title>
@@ -223,7 +223,7 @@
         th { background-color: #2a2a2a; color: var(--accent-color); }
         tr:hover { background-color: #2a2a2a; }
         
-        .row-controls { display: flex; gap: 10px; }
+        .row-controls { display: flex; gap: 10px; align-items: center; }
 
         #stats-table-container {
             margin-top: 15px;
@@ -343,44 +343,47 @@
         </div>
 
         <div class="form-group">
-            <label for="secuencia">Secuencia (Min:Seg | Temp | F):</label>
+            <div class="row-controls" style="margin-bottom: 5px;">
+                <label for="secuencia" style="margin-bottom:0; flex-grow: 1;">Secuencia de Tueste:</label>
+                <button id="btn-load-profile" type="button" style="width: auto; padding: 5px 10px; font-size: 0.9rem; margin-bottom:0;" class="btn-info">📂 Cargar Curva JSON</button>
+            </div>
             <textarea id="secuencia">
 0:00 | 32°C | C
-0:30 | 82°C | S
-1:00 | 95°C | S
-1:30 | 107°C | S
-2:00 | 118°C | S
-2:30 | 128°C | S
-3:00 | 137°C | S
+0:30 | 88°C | S
+1:00 | 105°C | S
+1:30 | 114°C | S
+2:00 | 122°C | S
+2:30 | 130°C | S
+3:00 | 138°C | S
 3:30 | 145°C | S
-4:00 | 152°C | S
-4:30 | 157°C | M
-5:00 | 163°C | M
-5:30 | 168°C | M
+4:00 | 151°C | S
+4:30 | 156°C | M
+5:00 | 161°C | M
+5:30 | 167°C | M
 6:00 | 173°C | M
 6:30 | 178°C | M
-7:00 | 182°C | M
-7:30 | 186°C | M
-8:00 | 190°C | M
-8:30 | 193°C | M
-9:00 | 195°C | M
-9:30 | 197°C | 1
-10:00 | 198°C | D
-10:30 | 199°C | D
-11:00 | 199°C | D
-11:30 | 200°C | D
-11:45 | 200°C | D</textarea>
+7:00 | 184°C | M
+7:30 | 189°C | M
+8:00 | 193°C | M
+8:30 | 196°C | M
+8:45 | 197°C | 1
+9:00 | 199°C | 1
+9:30 | 202°C | D
+10:00 | 203°C | D
+10:30 | 204°C | D
+11:00 | 205°C | D</textarea>
         </div>
 
         <button id="btn-start" class="btn-primary">Iniciar Tueste</button>
         
-        <div class="row-controls">
+        <div class="row-controls" style="margin-top: 15px;">
             <button id="btn-view-history" class="btn-secondary">Ver Historial</button>
-            <button id="btn-trigger-load" class="btn-info">Cargar JSON</button>
+            <button id="btn-trigger-load" class="btn-warning">Cargar JSON (Ver Histórico)</button>
             <input type="file" id="file-loader" accept=".json" style="display: none;">
         </div>
     </div>
 
+    <!-- Resto del HTML sin cambios visuales mayores -->
     <div id="roast-screen" class="screen">
         <div class="status-container">
             <div class="status-box" id="box-actual">
@@ -505,6 +508,7 @@
         let currentRoastScore = 0;
         let currentRoastExportData = null; 
         const alphaEMA = 0.25; 
+        let fileLoadMode = 'history'; // Variable para detectar si cargamos perfil o historial
 
         const screens = {
             setup: document.getElementById('setup-screen'),
@@ -1333,7 +1337,14 @@
             showScreen('history');
         });
 
+        // NUEVO: Funciones separadas para cargar según el botón pulsado
+        document.getElementById('btn-load-profile').addEventListener('click', () => {
+            fileLoadMode = 'profile';
+            document.getElementById('file-loader').click();
+        });
+        
         document.getElementById('btn-trigger-load').addEventListener('click', () => {
+            fileLoadMode = 'history';
             document.getElementById('file-loader').click();
         });
 
@@ -1346,6 +1357,20 @@
                 try {
                     const loadedData = JSON.parse(e.target.result);
                     
+                    // Si el usuario quiere usar este JSON como plantilla para un tueste NUEVO:
+                    if (fileLoadMode === 'profile') {
+                        if (loadedData.variedad) document.getElementById('variedad').value = loadedData.variedad;
+                        if (loadedData.codigo) document.getElementById('codigo').value = loadedData.codigo;
+                        
+                        if (loadedData.secuencia_teorica) {
+                            const seqString = loadedData.secuencia_teorica.map(pt => `${pt.timeLabel} | ${pt.tempValue}°C | ${pt.faseLetra || 'S'}`).join('\n');
+                            document.getElementById('secuencia').value = seqString;
+                        }
+                        alert("✅ Curva y perfil importados exitosamente. Listo para iniciar tueste.");
+                        return; // Detenemos aquí, NO mostramos la pantalla de resultados.
+                    }
+                    
+                    // Si el usuario quiere ver el RESULTADO histórico:
                     if (loadedData.puntos_reales && loadedData.puntos_reales.length > 0) {
                         for (let i = 1; i < loadedData.puntos_reales.length; i++) {
                             let pt = loadedData.puntos_reales[i];

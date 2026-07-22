@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis de Tueste y Cata con IA</title>
@@ -8,7 +8,7 @@
         :root {
             --bg-color: #121212;
             --surface: #1e1e1e;
-            --primary: #bb86fc;
+            --primary: #00bcd4; /* Cambiado a un tono celeste vibrante */
             --secondary: #03dac6;
             --accent: #cf6679;
             --text: #e0e0e0;
@@ -92,11 +92,11 @@
             display: none;
         }
         #btnExportar {
-            background-color: #03dac6;
+            background-color: var(--primary);
             color: #000;
         }
         #btnImportarLabel {
-            background-color: #f39c12;
+            background-color: #ff9800;
             color: #000;
             display: block;
             text-align: center;
@@ -220,11 +220,10 @@ Herbal: 1</textarea>
 
             <button id="btnAnalizar" onclick="solicitarAnalisis()">Generar Análisis y Recomendación</button>
             
-            <!-- Botones de Respaldo JSON -->
             <div class="btn-row" style="margin-top: 15px;">
                 <button id="btnExportar" onclick="exportarJSON()">Exportar Datos & IA (JSON)</button>
                 <label id="btnImportarLabel" for="inputJSON">Importar JSON</label>
-                <input type="file" id="inputJSON" accept=".json" onchange="importarJSON(event)">
+                <input type="file" id="inputJSON" accept=".json,.txt" onchange="importarJSON(event)">
             </div>
         </div>
 
@@ -406,24 +405,27 @@ MUY IMPORTANTE: Al final absoluto de tu respuesta, debes escribir la tabla de la
             }
         };
 
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(datosSesion, null, 2));
+        // Forzar tipo application/json para que Android reconozca el archivo nativamente
+        const blob = new Blob([JSON.stringify(datosSesion, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
         const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.href = url;
         
-        // Extraer nombre del lote si es posible para bautizar el archivo
         let nombreLote = "sesion_tueste";
         try {
-            const metaLines = document.getElementById('metadatosTueste').value.split('\n');
+            const metaLines = document.getElementById('metadatosTueste').value.split('
+');
             const loteLine = metaLines.find(l => l.toLowerCase().includes('lote:'));
             if (loteLine) {
                 nombreLote = loteLine.split(':')[1].trim().replace(/\s+/g, '_');
             }
         } catch(e) {}
 
-        downloadAnchor.setAttribute("download", `${nombreLote}_respaldo.json`);
+        downloadAnchor.download = `${nombreLote}_respaldo.json`;
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
+        URL.revokeObjectURL(url);
     }
 
     function importarJSON(event) {
@@ -464,7 +466,6 @@ MUY IMPORTANTE: Al final absoluto de tu respuesta, debes escribir la tabla de la
             } catch (err) {
                 alert("El archivo JSON no tiene un formato válido. Error: " + err.message);
             }
-            // Limpiar el input file para permitir re-importar el mismo archivo si se desea
             event.target.value = '';
         };
         reader.readAsText(file);

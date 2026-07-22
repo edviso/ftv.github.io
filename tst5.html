@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis de Tueste y Cata con IA</title>
@@ -10,6 +10,7 @@
             --surface: #1e1e1e;
             --primary: #bb86fc;
             --secondary: #03dac6;
+            --accent: #cf6679;
             --text: #e0e0e0;
             --border: #333;
             --error: #cf6679;
@@ -68,6 +69,7 @@
             cursor: pointer;
             width: 100%;
             transition: opacity 0.2s;
+            margin-bottom: 10px;
         }
         button:active {
             opacity: 0.8;
@@ -77,9 +79,34 @@
             color: #888;
             cursor: not-allowed;
         }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-row button {
+            flex: 1;
+        }
         #btnCopiar {
             background-color: var(--secondary);
             margin-top: 15px;
+            display: none;
+        }
+        #btnExportar {
+            background-color: #03dac6;
+            color: #000;
+        }
+        #btnImportarLabel {
+            background-color: #f39c12;
+            color: #000;
+            display: block;
+            text-align: center;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        input[type="file"] {
             display: none;
         }
         #app-section, #loading-section, #error-message {
@@ -192,6 +219,13 @@ Tostado: 1
 Herbal: 1</textarea>
 
             <button id="btnAnalizar" onclick="solicitarAnalisis()">Generar Análisis y Recomendación</button>
+            
+            <!-- Botones de Respaldo JSON -->
+            <div class="btn-row" style="margin-top: 15px;">
+                <button id="btnExportar" onclick="exportarJSON()">Exportar Datos & IA (JSON)</button>
+                <label id="btnImportarLabel" for="inputJSON">Importar JSON</label>
+                <input type="file" id="inputJSON" accept=".json" onchange="importarJSON(event)">
+            </div>
         </div>
 
         <div id="loading-section" class="card" style="text-align: center;">
@@ -210,6 +244,8 @@ Herbal: 1</textarea>
 <script>
     let GEMINI_API_KEY = "";
     let textoCurvaExtraido = "";
+    let ultimoAnalisisHTML = "";
+    let ultimoAnalisisBruto = "";
 
     function iniciarApp() {
         const keyInput = document.getElementById('apiKey').value.trim();
@@ -273,6 +309,8 @@ MUY IMPORTANTE: Al final absoluto de tu respuesta, debes escribir la tabla de la
         resultadoSection.style.display = 'none';
         resultadoTexto.innerHTML = "";
         textoCurvaExtraido = "";
+        ultimoAnalisisHTML = "";
+        ultimoAnalisisBruto = "";
 
         try {
             const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
@@ -309,19 +347,19 @@ MUY IMPORTANTE: Al final absoluto de tu respuesta, debes escribir la tabla de la
             const datos = await respuesta.json();
             let textoGenerado = datos.candidates[0].content.parts[0].text;
             
-            // Extraer la curva con formato usando una expresión regular
+            ultimoAnalisisBruto = textoGenerado;
+
             const regex = /\[INICIO_CURVA\]([\s\S]*?)\[FIN_CURVA\]/;
             const match = textoGenerado.match(regex);
             
             if (match) {
-                // Guardar la curva extraida para el portapapeles
                 textoCurvaExtraido = match[1].trim();
-                // Eliminar el bloque de formato bruto del texto que lee el usuario
                 textoGenerado = textoGenerado.replace(regex, '');
                 btnCopiar.style.display = 'block';
             }
             
-            resultadoTexto.innerHTML = textoGenerado.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            ultimoAnalisisHTML = textoGenerado.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            resultadoTexto.innerHTML = ultimoAnalisisHTML;
             resultadoSection.style.display = 'block';
             
         } catch (error) {
@@ -350,6 +388,86 @@ MUY IMPORTANTE: Al final absoluto de tu respuesta, debes escribir la tabla de la
         }).catch(err => {
             alert("Tu navegador no permitió copiar automáticamente. Error: " + err);
         });
+    }
+
+    function exportarJSON() {
+        const datosSesion = {
+            version: "1.0",
+            fechaExportacion: new Date().toISOString(),
+            entrada: {
+                curvaTueste: document.getElementById('datosTueste').value,
+                metadatosTueste: document.getElementById('metadatosTueste').value,
+                datosCata: document.getElementById('datosCata').value,
+                puntuaciones: document.getElementById('puntuaciones').value
+            },
+            salidaIA: {
+                analisisTextoBruto: ultimoAnalisisBruto,
+                curvaSugeridaFormateada: textoCurvaExtraido
+            }
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(datosSesion, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        
+        // Extraer nombre del lote si es posible para bautizar el archivo
+        let nombreLote = "sesion_tueste";
+        try {
+            const metaLines = document.getElementById('metadatosTueste').value.split('\n');
+            const loteLine = metaLines.find(l => l.toLowerCase().includes('lote:'));
+            if (loteLine) {
+                nombreLote = loteLine.split(':')[1].trim().replace(/\s+/g, '_');
+            }
+        } catch(e) {}
+
+        downloadAnchor.setAttribute("download", `${nombreLote}_respaldo.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function importarJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const contenido = JSON.parse(e.target.result);
+                
+                if (contenido.entrada) {
+                    if (contenido.entrada.curvaTueste) document.getElementById('datosTueste').value = contenido.entrada.curvaTueste;
+                    if (contenido.entrada.metadatosTueste) document.getElementById('metadatosTueste').value = contenido.entrada.metadatosTueste;
+                    if (contenido.entrada.datosCata) document.getElementById('datosCata').value = contenido.entrada.datosCata;
+                    if (contenido.entrada.puntuaciones) document.getElementById('puntuaciones').value = contenido.entrada.puntuaciones;
+                }
+
+                if (contenido.salidaIA) {
+                    ultimoAnalisisBruto = contenido.salidaIA.analisisTextoBruto || "";
+                    textoCurvaExtraido = contenido.salidaIA.curvaSugeridaFormateada || "";
+                    
+                    if (ultimoAnalisisBruto) {
+                        const regex = /\[INICIO_CURVA\]([\s\S]*?)\[FIN_CURVA\]/;
+                        let textoLimpio = ultimoAnalisisBruto.replace(regex, '');
+                        ultimoAnalisisHTML = textoLimpio.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                        
+                        document.getElementById('resultado-texto').innerHTML = ultimoAnalisisHTML;
+                        document.getElementById('resultado-section').style.display = 'block';
+                        
+                        if (textoCurvaExtraido) {
+                            document.getElementById('btnCopiar').style.display = 'block';
+                        }
+                    }
+                }
+
+                alert("¡Datos importados con éxito!");
+            } catch (err) {
+                alert("El archivo JSON no tiene un formato válido. Error: " + err.message);
+            }
+            // Limpiar el input file para permitir re-importar el mismo archivo si se desea
+            event.target.value = '';
+        };
+        reader.readAsText(file);
     }
 </script>
 </body>

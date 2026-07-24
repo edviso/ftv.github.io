@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Tueste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1611;
+    --surface:#231d16;
+    --surface-2:#2c2419;
+    --border:#3a3022;
+    --text:#ece3d3;
+    --text-dim:#a89a83;
+    --text-faint:#6f6553;
+    --green:#8fa37a;
+    --green-dim:#3d4433;
+    --green-bg:rgba(143,163,122,0.08);
+    --amber:#c98a3e;
+    --amber-dim:#4a3620;
+    --amber-bg:rgba(201,138,62,0.09);
+    --red:#b2543c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,138,62,0.07), transparent);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    padding-bottom:80px;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 40px;}
+
+  header.top{padding:8px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+  header.top h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-style:italic;
+    font-size:2rem;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+    color:var(--text);
+  }
+  header.top p{margin:0;color:var(--text-dim);font-size:0.92rem;line-height:1.5;}
+
+  .section{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    margin-bottom:18px;
+    overflow:hidden;
+  }
+  .section-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:14px 16px 10px;
+  }
+  .section-head h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.05rem;
+    margin:0;
+    color:var(--text);
+  }
+  .section-head .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.68rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  .section-body{padding:2px 16px 16px;}
+
+  label{
+    display:block;
+    font-size:0.78rem;
+    color:var(--text-dim);
+    margin-bottom:5px;
+    font-weight:500;
+  }
+  .field{margin-bottom:14px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+  input[type=text], input[type=number], select, textarea{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-left:3px solid var(--green);
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.95rem;
+    padding:9px 10px;
+    border-radius:6px;
+    outline:none;
+  }
+  select{font-family:'IBM Plex Sans', sans-serif;}
+  input:focus, select:focus{border-color:var(--green);box-shadow:0 0 0 2px var(--green-bg);}
+  input.invalid{border-left-color:var(--red);}
+  input[readonly]{
+    border-left-color:var(--amber);
+    color:var(--amber);
+    background:var(--amber-bg);
+  }
+
+  .calc-field{
+    border-left:3px solid var(--amber);
+    background:var(--amber-bg);
+    border-radius:6px;
+    padding:9px 10px;
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--amber);
+    font-size:0.95rem;
+    border:1px solid var(--border);
+    border-left-width:3px;
+  }
+  .calc-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.62rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--amber);
+    opacity:0.75;
+    margin-bottom:5px;
+    display:block;
+  }
+  .input-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.62rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--green);
+    opacity:0.75;
+  }
+
+  /* Tramos */
+  .tramo-card{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 12px 8px;
+    margin-bottom:10px;
+    position:relative;
+  }
+  .tramo-card .tramo-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    color:var(--text-faint);
+    letter-spacing:0.06em;
+    margin-bottom:8px;
+  }
+  .tramo-remove{
+    position:absolute;top:10px;right:10px;
+    background:none;border:none;color:var(--text-faint);
+    font-size:1.1rem;cursor:pointer;line-height:1;padding:2px 6px;
+  }
+  .tramo-remove:hover{color:var(--red);}
+  .tramo-duracion{
+    margin-top:8px;
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.8rem;
+    color:var(--amber);
+    border-top:1px dashed var(--border);
+    padding-top:8px;
+  }
+  .led{
+    font-family:'IBM Plex Mono', monospace;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0.02em;
+  }
+
+  button.ghost-btn{
+    width:100%;
+    background:transparent;
+    border:1px dashed var(--border);
+    color:var(--text-dim);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:0.85rem;
+    padding:10px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  button.ghost-btn:hover{border-color:var(--green);color:var(--green);}
+
+  .total-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:12px;padding:10px 12px;
+    background:var(--amber-bg);
+    border:1px solid var(--amber-dim);
+    border-radius:8px;
+  }
+  .total-bar .val{font-family:'IBM Plex Mono', monospace;font-size:1.1rem;color:var(--amber);}
+
+  /* Radio pills */
+  .pill-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    padding:8px 12px;
+    border-radius:20px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .pill.active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+
+  /* Chips (SCA) */
+  .chip-group{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;}
+  .chip{
+    font-size:0.78rem;
+    padding:7px 12px;
+    border-radius:16px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .chip.active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+
+  /* Sliders */
+  .slider-row{margin-bottom:14px;}
+  .slider-row .top{display:flex;justify-content:space-between;margin-bottom:6px;}
+  .slider-row .top .v{font-family:'IBM Plex Mono', monospace;color:var(--green);font-size:0.9rem;}
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    height:4px;
+    background:var(--border);
+    border-radius:2px;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--green);
+    border:2px solid var(--bg);
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;
+    background:var(--green);border:2px solid var(--bg);cursor:pointer;
+  }
+
+  .note{font-size:0.78rem;color:var(--text-faint);line-height:1.5;margin:4px 0 12px;}
+
+  /* Footer actions */
+  .actions{
+    max-width:640px;margin:0 auto;padding:0 16px;
+    display:flex;gap:10px;flex-wrap:wrap;
+  }
+  button.primary{
+    flex:1;min-width:140px;
+    background:var(--amber);
+    color:#1a1611;
+    border:none;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    font-size:0.9rem;
+    padding:13px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  button.secondary{
+    flex:1;min-width:140px;
+    background:var(--surface-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:0.9rem;
+    padding:13px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  button.secondary:hover{border-color:var(--green);}
+
+  #jsonPanel{
+    max-width:640px;margin:16px auto 0;padding:0 16px;
+    display:none;
+  }
+  #jsonPanel.show{display:block;}
+  #jsonOut{
+    width:100%;
+    min-height:220px;
+    background:#100d09;
+    color:#d8cdb8;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.76rem;
+    line-height:1.5;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px;
+    white-space:pre;
+    overflow:auto;
+  }
+  .copy-status{font-size:0.78rem;color:var(--green);margin-top:6px;min-height:1.2em;}
+
+  /* History */
+  .hist-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 12px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    margin-bottom:8px;
+    gap:10px;
+  }
+  .hist-item .meta{font-size:0.8rem;color:var(--text-dim);}
+  .hist-item .meta .id{color:var(--text);font-family:'IBM Plex Mono', monospace;display:block;margin-bottom:2px;}
+  .hist-actions{display:flex;gap:6px;flex-shrink:0;}
+  .hist-actions button{
+    background:none;border:1px solid var(--border);color:var(--text-dim);
+    font-size:0.72rem;padding:6px 8px;border-radius:6px;cursor:pointer;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .hist-actions button:hover{border-color:var(--green);color:var(--green);}
+  .hist-actions button.del:hover{border-color:var(--red);color:var(--red);}
+  .empty-state{color:var(--text-faint);font-size:0.85rem;padding:8px 2px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Ficha de Tueste</h1>
+    <p>Datos duros por tueste — sin narrativa. Verde para lo que cargás, ámbar para lo que la ficha calcula sola. Al final generás el JSON para compartir.</p>
+  </header>
+
+  <!-- A. LOTE -->
+  <div class="section">
+    <div class="section-head"><h2>Lote</h2><span class="eyebrow">A</span></div>
+    <div class="section-body">
+      <div class="row2">
+        <div class="field">
+          <label>Fecha de tueste</label>
+          <input type="text" id="fecha" placeholder="AAAA-MM-DD">
+        </div>
+        <div class="field">
+          <label>ID de lote</label>
+          <input type="text" id="idLote" placeholder="2026-07-22-Blend-01">
+        </div>
+      </div>
+      <div class="field">
+        <label>Variedad / origen</label>
+        <input type="text" id="variedad" placeholder="Sidra / Pink Bourbon / Blend...">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Peso verde (g)</label>
+          <input type="number" id="pesoVerde" value="80" step="0.1">
+        </div>
+        <div class="field">
+          <label>Días de reposo del verde</label>
+          <input type="number" id="diasReposo" step="1" min="0">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. PROGRAMA DE MAQUINA -->
+  <div class="section">
+    <div class="section-head"><h2>Programa de máquina</h2><span class="eyebrow">B</span></div>
+    <div class="section-body">
+      <div id="tramosContainer"></div>
+      <button class="ghost-btn" id="addTramo" type="button">+ Agregar tramo</button>
+      <div class="total-bar">
+        <span class="input-tag">tiempo total programado</span>
+        <span class="val led" id="tiempoTotalOut">--:--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. CRACK -->
+  <div class="section">
+    <div class="section-head"><h2>Detección de crack</h2><span class="eyebrow">C</span></div>
+    <div class="section-body">
+      <div class="field">
+        <label>Método de detección</label>
+        <div class="pill-group" id="metodoCrack">
+          <div class="pill active" data-val="audio_grabado">Audio grabado</div>
+          <div class="pill" data-val="visual">Visual</div>
+          <div class="pill" data-val="no_detectado">No detectado</div>
+        </div>
+      </div>
+      <div class="field" id="crackTsField">
+        <label>Tiempo transcurrido hasta 1er crack (mm:ss desde el inicio)</label>
+        <input type="text" id="crackTs" placeholder="10:30">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>¿Hubo 2do crack?</label>
+          <div class="pill-group" id="segundoCrack">
+            <div class="pill active" data-val="no">No</div>
+            <div class="pill" data-val="si">Sí</div>
+          </div>
+        </div>
+        <div class="field" id="crack2Field" style="display:none">
+          <label>Timestamp 2do crack</label>
+          <input type="text" id="crack2Ts" placeholder="mm:ss">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D. RESULTADOS -->
+  <div class="section">
+    <div class="section-head"><h2>Resultados</h2><span class="eyebrow">D</span></div>
+    <div class="section-body">
+      <div class="row2">
+        <div class="field">
+          <label>Peso tostado final (g)</label>
+          <input type="number" id="pesoTostado" step="0.1">
+        </div>
+        <div class="field">
+          <span class="calc-tag">merma</span>
+          <div class="calc-field" id="mermaOut">--%</div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Agtron</label>
+          <input type="number" id="agtron" step="0.1">
+        </div>
+        <div class="field">
+          <label>Escala / disco de referencia</label>
+          <input type="text" id="agtronRef" placeholder="Agtron Gourmet Scale">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <span class="calc-tag">desarrollo (crack → drop)</span>
+          <div class="calc-field led" id="desarrolloOut">--:--</div>
+        </div>
+        <div class="field">
+          <span class="calc-tag">dtr</span>
+          <div class="calc-field" id="dtrOut">--%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E. CATA -->
+  <div class="section">
+    <div class="section-head"><h2>Cata</h2><span class="eyebrow">E</span></div>
+    <div class="section-body">
+      <p class="note">Cupping por inmersión · 8.25 g / 150 ml · agua 93 °C · 4 min antes de romper costra · 3 tazas.</p>
+
+      <div class="field">
+        <label>Día post-tueste de la cata</label>
+        <input type="number" id="diaCata" step="1" min="0" style="max-width:120px">
+      </div>
+
+      <div class="slider-row">
+        <div class="top"><label style="margin:0">Fragancia / Aroma</label><span class="v" id="aromaScoreV">7</span></div>
+        <input type="range" id="aromaScore" min="1" max="10" step="0.25" value="7">
+        <div class="chip-group" data-group="aromaCats">
+          <div class="chip" data-val="Frutal">Frutal</div>
+          <div class="chip" data-val="Floral">Floral</div>
+          <div class="chip" data-val="Dulce">Dulce</div>
+          <div class="chip" data-val="Nuez/Cacao">Nuez/Cacao</div>
+          <div class="chip" data-val="Especiado">Especiado</div>
+          <div class="chip" data-val="Tostado">Tostado</div>
+          <div class="chip" data-val="Verde/Vegetal">Verde/Vegetal</div>
+          <div class="chip" data-val="Agrio/Fermentado">Agrio/Fermentado</div>
+          <div class="chip" data-val="Otro">Otro</div>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <div class="top"><label style="margin:0">Sabor</label><span class="v" id="saborScoreV">7</span></div>
+        <input type="range" id="saborScore" min="1" max="10" step="0.25" value="7">
+        <div class="chip-group" data-group="saborCats">
+          <div class="chip" data-val="Frutal">Frutal</div>
+          <div class="chip" data-val="Floral">Floral</div>
+          <div class="chip" data-val="Dulce">Dulce</div>
+          <div class="chip" data-val="Nuez/Cacao">Nuez/Cacao</div>
+          <div class="chip" data-val="Especiado">Especiado</div>
+          <div class="chip" data-val="Tostado">Tostado</div>
+          <div class="chip" data-val="Verde/Vegetal">Verde/Vegetal</div>
+          <div class="chip" data-val="Agrio/Fermentado">Agrio/Fermentado</div>
+          <div class="chip" data-val="Otro">Otro</div>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <div class="top"><label style="margin:0">Retrogusto</label><span class="v" id="retroScoreV">7</span></div>
+        <input type="range" id="retroScore" min="1" max="10" step="0.25" value="7">
+        <div class="row2" style="margin-top:8px">
+          <div class="field" style="margin-bottom:0">
+            <label>Duración (seg)</label>
+            <input type="number" id="retroDur" step="1" min="0">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Carácter</label>
+            <div class="pill-group" id="retroLimpio">
+              <div class="pill active" data-val="limpio">Limpio</div>
+              <div class="pill" data-val="astringente">Astringente</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <div class="top"><label style="margin:0">Acidez — intensidad</label><span class="v" id="acidIntV">7</span></div>
+        <input type="range" id="acidInt" min="1" max="10" step="0.25" value="7">
+        <div class="top" style="margin-top:10px"><label style="margin:0">Acidez — calidad</label><span class="v" id="acidCalV">7</span></div>
+        <input type="range" id="acidCal" min="1" max="10" step="0.25" value="7">
+        <div class="field" style="margin-top:8px;margin-bottom:0">
+          <label>Tipo</label>
+          <select id="acidTipo">
+            <option>Cítrica</option>
+            <option>Málica</option>
+            <option>Frutal</option>
+            <option>Floral-ácida</option>
+            <option>Vinosa</option>
+            <option>Otra</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <div class="top"><label style="margin:0">Cuerpo — intensidad</label><span class="v" id="cuerpoIntV">6</span></div>
+        <input type="range" id="cuerpoInt" min="1" max="10" step="0.25" value="6">
+        <div class="top" style="margin-top:10px"><label style="margin:0">Cuerpo — calidad</label><span class="v" id="cuerpoCalV">6</span></div>
+        <input type="range" id="cuerpoCal" min="1" max="10" step="0.25" value="6">
+      </div>
+
+      <div class="slider-row">
+        <div class="top"><label style="margin:0">Dulzor</label><span class="v" id="dulzorScoreV">6</span></div>
+        <input type="range" id="dulzorScore" min="1" max="10" step="0.25" value="6">
+        <div class="field" style="margin-top:8px;margin-bottom:0">
+          <label>Tipo</label>
+          <select id="dulzorTipo">
+            <option>Caramelo</option>
+            <option>Miel</option>
+            <option>Frutal</option>
+            <option>Achocolatado</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <div class="top"><label style="margin:0">Balance</label><span class="v" id="balanceV">7</span></div>
+        <input type="range" id="balance" min="1" max="10" step="0.25" value="7">
+      </div>
+
+      <div class="field">
+        <label>Uniformidad (entre las 3 tazas)</label>
+        <div class="pill-group" id="uniformidad">
+          <div class="pill active" data-val="consistente">Consistente</div>
+          <div class="pill" data-val="inconsistente">Inconsistente</div>
+        </div>
+      </div>
+
+      <div class="slider-row" style="margin-bottom:0">
+        <div class="top"><label style="margin:0">Overall</label><span class="v" id="overallV">7</span></div>
+        <input type="range" id="overall" min="1" max="10" step="0.25" value="7">
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="section">
+    <div class="section-head"><h2>Tuestes guardados</h2><span class="eyebrow">Historial</span></div>
+    <div class="section-body">
+      <div id="histList"><div class="empty-state">Cargando…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="actions">
+  <button class="secondary" id="btnSave" type="button">Guardar lote</button>
+  <button class="primary" id="btnJson" type="button">Generar JSON</button>
+</div>
+
+<div id="jsonPanel">
+  <textarea id="jsonOut" readonly></textarea>
+  <div style="display:flex;gap:10px;margin-top:8px;">
+    <button class="secondary" id="btnCopy" type="button" style="flex:1">Copiar</button>
+  </div>
+  <div class="copy-status" id="copyStatus"></div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const SCA_LABEL = { aromaCats:'Fragancia/Aroma', saborCats:'Sabor' };
+
+  // ---------- helpers ----------
+  function parseMMSS(str){
+    if(!str) return null;
+    const m = String(str).trim().match(/^(\d{1,3}):([0-5]?\d)$/);
+    if(!m) return null;
+    return parseInt(m[1],10)*60 + parseInt(m[2],10);
+  }
+  function formatMMSS(sec){
+    if(sec===null || sec===undefined || isNaN(sec)) return '--:--';
+    const sign = sec < 0 ? '-' : '';
+    sec = Math.abs(Math.round(sec));
+    const m = Math.floor(sec/60), s = sec%60;
+    return sign + m + ':' + String(s).padStart(2,'0');
+  }
+  function num(id){
+    const v = parseFloat($(id).value);
+    return isNaN(v) ? null : v;
+  }
+
+  // ---------- pill / chip groups ----------
+  function setupPillGroup(containerId, onChange){
+    const el = $(containerId);
+    el.addEventListener('click', e=>{
+      const pill = e.target.closest('.pill');
+      if(!pill) return;
+      [...el.children].forEach(c=>c.classList.remove('active'));
+      pill.classList.add('active');
+      onChange && onChange(pill.dataset.val);
+    });
+  }
+  function getActivePill(containerId){
+    const active = $(containerId).querySelector('.pill.active');
+    return active ? active.dataset.val : null;
+  }
+  function setupChipGroup(container){
+    container.addEventListener('click', e=>{
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      chip.classList.toggle('active');
+      recalc();
+    });
+  }
+  function getActiveChips(container){
+    return [...container.querySelectorAll('.chip.active')].map(c=>c.dataset.val);
+  }
+
+  document.querySelectorAll('.chip-group').forEach(setupChipGroup);
+
+  // ---------- sliders ----------
+  document.querySelectorAll('input[type=range]').forEach(sl=>{
+    const out = $(sl.id + 'V');
+    if(out){
+      sl.addEventListener('input', ()=>{ out.textContent = sl.value; });
+    }
+  });
+
+  // ---------- TRAMOS ----------
+  let tramoCount = 0;
+  function addTramo(prefill){
+    tramoCount++;
+    const id = tramoCount;
+    const card = document.createElement('div');
+    card.className = 'tramo-card';
+    card.dataset.id = id;
+    card.innerHTML = `
+      <button class="tramo-remove" type="button" title="Quitar tramo">&times;</button>
+      <div class="tramo-label">TRAMO ${id}</div>
+      <div class="row3">
+        <div class="field" style="margin-bottom:0">
+          <label>Inicio</label>
+          <input type="text" class="t-inicio" placeholder="mm:ss">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Fin</label>
+          <input type="text" class="t-fin" placeholder="mm:ss">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Temp aire (°C)</label>
+          <input type="number" class="t-temp" step="1">
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px;margin-bottom:0;max-width:140px">
+        <label>Velocidad</label>
+        <select class="t-vel">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+        </select>
+      </div>
+      <div class="tramo-duracion">
+        <span class="input-tag">duración</span>
+        <span class="led" data-out="dur">--:--</span>
+      </div>
+    `;
+    $('tramosContainer').appendChild(card);
+    card.querySelector('.tramo-remove').addEventListener('click', ()=>{
+      card.remove();
+      renumberTramos();
+      recalc();
+    });
+    card.querySelectorAll('input, select').forEach(inp=>{
+      inp.addEventListener('input', recalc);
+      inp.addEventListener('change', recalc);
+    });
+    if(prefill){
+      card.querySelector('.t-inicio').value = prefill.inicio || '';
+      card.querySelector('.t-fin').value = prefill.fin || '';
+      card.querySelector('.t-temp').value = prefill.temp || '';
+      card.querySelector('.t-vel').value = prefill.vel || '3';
+    }
+  }
+  function renumberTramos(){
+    [...document.querySelectorAll('.tramo-card')].forEach((card, i)=>{
+      card.querySelector('.tramo-label').textContent = 'TRAMO ' + (i+1);
+    });
+  }
+  $('addTramo').addEventListener('click', ()=>{ addTramo(); recalc(); });
+
+  // start with 3 empty tramos
+  addTramo(); addTramo(); addTramo();
+
+  // ---------- crack pills ----------
+  setupPillGroup('metodoCrack', val=>{
+    $('crackTsField').style.display = (val === 'no_detectado') ? 'none' : 'block';
+    recalc();
+  });
+  setupPillGroup('segundoCrack', val=>{
+    $('crack2Field').style.display = (val === 'si') ? 'block' : 'none';
+  });
+  setupPillGroup('retroLimpio', ()=>{});
+  setupPillGroup('uniformidad', ()=>{});
+
+  // ---------- recalculation ----------
+  function recalc(){
+    // tramos
+    let total = 0, anyInvalid = false;
+    document.querySelectorAll('.tramo-card').forEach(card=>{
+      const ini = parseMMSS(card.querySelector('.t-inicio').value);
+      const fin = parseMMSS(card.querySelector('.t-fin').value);
+      const out = card.querySelector('[data-out="dur"]');
+      const iniInp = card.querySelector('.t-inicio');
+      const finInp = card.querySelector('.t-fin');
+      if(ini === null || fin === null || ini < fin){
+        out.textContent = '--:--';
+        iniInp.classList.toggle('invalid', card.querySelector('.t-inicio').value !== '' && ini === null);
+        finInp.classList.toggle('invalid', card.querySelector('.t-fin').value !== '' && fin === null);
+        anyInvalid = true;
+      } else {
+        const dur = ini - fin;
+        out.textContent = formatMMSS(dur);
+        iniInp.classList.remove('invalid');
+        finInp.classList.remove('invalid');
+        total += dur;
+      }
+    });
+    $('tiempoTotalOut').textContent = total > 0 ? formatMMSS(total) + (anyInvalid ? ' *' : '') : '--:--';
+
+    // merma
+    const pv = num('pesoVerde'), pt = num('pesoTostado');
+    if(pv && pt && pv > 0){
+      const merma = (pv - pt) / pv * 100;
+      $('mermaOut').textContent = merma.toFixed(1) + '%';
+    } else {
+      $('mermaOut').textContent = '--%';
+    }
+
+    // desarrollo / DTR
+    const metodo = getActivePill('metodoCrack');
+    const crackSec = parseMMSS($('crackTs').value);
+    if(metodo !== 'no_detectado' && crackSec !== null && total > 0){
+      const dev = total - crackSec;
+      $('desarrolloOut').textContent = formatMMSS(dev);
+      $('dtrOut').textContent = (dev/total*100).toFixed(1) + '%';
+    } else {
+      $('desarrolloOut').textContent = 'No calculable';
+      $('dtrOut').textContent = 'No calculable';
+    }
+  }
+  $('crackTs').addEventListener('input', recalc);
+  $('pesoVerde').addEventListener('input', recalc);
+  $('pesoTostado').addEventListener('input', recalc);
+  recalc();
+
+  // ---------- build record ----------
+  function buildRecord(){
+    const tramos = [...document.querySelectorAll('.tramo-card')].map((card, i)=>{
+      const ini = parseMMSS(card.querySelector('.t-inicio').value);
+      const fin = parseMMSS(card.querySelector('.t-fin').value);
+      return {
+        tramo: i+1,
+        inicio: card.querySelector('.t-inicio').value || null,
+        fin: card.querySelector('.t-fin').value || null,
+        duracion_seg: (ini!==null && fin!==null && ini>=fin) ? (ini-fin) : null,
+        temp_aire_c: num_from(card.querySelector('.t-temp')),
+        velocidad: parseInt(card.querySelector('.t-vel').value,10)
+      };
+    });
+    const tiempoTotalSeg = tramos.reduce((a,t)=> a + (t.duracion_seg||0), 0) || null;
+
+    const metodo = getActivePill('metodoCrack');
+    const crackSec = parseMMSS($('crackTs').value);
+    const desarrolloSeg = (metodo!=='no_detectado' && crackSec!==null && tiempoTotalSeg) ? (tiempoTotalSeg - crackSec) : null;
+
+    const pv = num('pesoVerde'), pt = num('pesoTostado');
+    const merma = (pv && pt && pv>0) ? +((pv-pt)/pv*100).toFixed(2) : null;
+
+    return {
+      lote: {
+        fecha: $('fecha').value || null,
+        id_lote: $('idLote').value || null,
+        variedad: $('variedad').value || null,
+        peso_verde_g: pv,
+        dias_reposo_verde: num('diasReposo')
+      },
+      programa_maquina: {
+        tramos,
+        tiempo_total_programado_seg: tiempoTotalSeg
+      },
+      crack: {
+        metodo_deteccion: metodo,
+        timestamp_elapsed: metodo==='no_detectado' ? null : ($('crackTs').value || null),
+        timestamp_elapsed_seg: metodo==='no_detectado' ? null : crackSec,
+        segundo_crack: {
+          ocurrio: getActivePill('segundoCrack') === 'si',
+          timestamp_elapsed: getActivePill('segundoCrack')==='si' ? ($('crack2Ts').value || null) : null
+        }
+      },
+      resultados: {
+        peso_tostado_g: pt,
+        merma_pct: merma,
+        agtron: num('agtron'),
+        agtron_escala_ref: $('agtronRef').value || null,
+        tiempo_total_seg: tiempoTotalSeg,
+        desarrollo_seg: desarrolloSeg,
+        dtr_pct: (desarrolloSeg!==null && tiempoTotalSeg) ? +(desarrolloSeg/tiempoTotalSeg*100).toFixed(2) : null
+      },
+      cata: {
+        dia_post_tueste: num('diaCata'),
+        fragancia_aroma: { score: num_from($('aromaScore')), categorias: getActiveChips(document.querySelector('[data-group="aromaCats"]')) },
+        sabor: { score: num_from($('saborScore')), categorias: getActiveChips(document.querySelector('[data-group="saborCats"]')) },
+        retrogusto: { score: num_from($('retroScore')), duracion_seg: num('retroDur'), caracter: getActivePill('retroLimpio') },
+        acidez: { intensidad: num_from($('acidInt')), calidad: num_from($('acidCal')), tipo: $('acidTipo').value },
+        cuerpo: { intensidad: num_from($('cuerpoInt')), calidad: num_from($('cuerpoCal')) },
+        dulzor: { score: num_from($('dulzorScore')), tipo: $('dulzorTipo').value },
+        balance: num_from($('balance')),
+        uniformidad: getActivePill('uniformidad'),
+        overall: num_from($('overall'))
+      },
+      meta: {
+        generado: new Date().toISOString(),
+        version_ficha: '1.0'
+      }
+    };
+  }
+  function num_from(elOrId){
+    const el = typeof elOrId === 'string' ? $(elOrId) : elOrId;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? null : v;
+  }
+
+  // ---------- JSON export ----------
+  $('btnJson').addEventListener('click', ()=>{
+    const record = buildRecord();
+    $('jsonOut').value = JSON.stringify(record, null, 2);
+    $('jsonPanel').classList.add('show');
+    $('jsonPanel').scrollIntoView({behavior:'smooth', block:'start'});
+  });
+  $('btnCopy').addEventListener('click', async ()=>{
+    const text = $('jsonOut').value;
+    try{
+      await navigator.clipboard.writeText(text);
+      $('copyStatus').textContent = 'Copiado.';
+    }catch(e){
+      $('jsonOut').focus();
+      $('jsonOut').select();
+      $('copyStatus').textContent = 'No se pudo copiar automáticamente — está seleccionado, usá copiar manual.';
+    }
+    setTimeout(()=>{ $('copyStatus').textContent=''; }, 4000);
+  });
+
+  // ---------- persistence ----------
+  async function saveRecord(){
+    const record = buildRecord();
+    if(!record.lote.id_lote){
+      alert('Poné un ID de lote antes de guardar.');
+      return;
+    }
+    try{
+      const result = await window.storage.set('tueste:' + record.lote.id_lote, JSON.stringify(record), false);
+      if(!result){
+        alert('No se pudo guardar. Probá de nuevo.');
+        return;
+      }
+      await loadHistory();
+    }catch(e){
+      alert('Error al guardar: ' + e.message);
+    }
+  }
+  $('btnSave').addEventListener('click', saveRecord);
+
+  async function loadHistory(){
+    const listEl = $('histList');
+    listEl.innerHTML = '<div class="empty-state">Cargando…</div>';
+    try{
+      const res = await window.storage.list('tueste:', false);
+      const keys = (res && res.keys) ? res.keys : [];
+      if(keys.length === 0){
+        listEl.innerHTML = '<div class="empty-state">Sin tuestes guardados. Guardá el primero con el botón de abajo.</div>';
+        return;
+      }
+      listEl.innerHTML = '';
+      for(const key of keys){
+        try{
+          const item = await window.storage.get(key, false);
+          if(!item) continue;
+          const rec = JSON.parse(item.value);
+          const row = document.createElement('div');
+          row.className = 'hist-item';
+          row.innerHTML = `
+            <div class="meta">
+              <span class="id">${rec.lote.id_lote || '(sin id)'}</span>
+              ${rec.lote.fecha || '—'} · Agtron ${rec.resultados.agtron ?? '—'} · merma ${rec.resultados.merma_pct ?? '—'}%
+            </div>
+            <div class="hist-actions">
+              <button class="load">Cargar</button>
+              <button class="del">Eliminar</button>
+            </div>
+          `;
+          row.querySelector('.load').addEventListener('click', ()=> loadRecordIntoForm(rec));
+          row.querySelector('.del').addEventListener('click', async ()=>{
+            if(!confirm('¿Eliminar ' + rec.lote.id_lote + '?')) return;
+            try{ await window.storage.delete(key, false); await loadHistory(); }
+            catch(e){ alert('Error al eliminar: ' + e.message); }
+          });
+          listEl.appendChild(row);
+        }catch(e){ /* skip corrupt entry */ }
+      }
+    }catch(e){
+      listEl.innerHTML = '<div class="empty-state">No se pudo cargar el historial.</div>';
+    }
+  }
+
+  function loadRecordIntoForm(rec){
+    $('fecha').value = rec.lote.fecha || '';
+    $('idLote').value = rec.lote.id_lote || '';
+    $('variedad').value = rec.lote.variedad || '';
+    $('pesoVerde').value = rec.lote.peso_verde_g ?? 80;
+    $('diasReposo').value = rec.lote.dias_reposo_verde ?? '';
+
+    document.querySelectorAll('.tramo-card').forEach(c=>c.remove());
+    tramoCount = 0;
+    (rec.programa_maquina.tramos || []).forEach(t=>{
+      addTramo({ inicio:t.inicio, fin:t.fin, temp:t.temp_aire_c, vel:t.velocidad });
+    });
+    if((rec.programa_maquina.tramos||[]).length===0){ addTramo(); addTramo(); addTramo(); }
+
+    setPill('metodoCrack', rec.crack.metodo_deteccion);
+    $('crackTsField').style.display = rec.crack.metodo_deteccion === 'no_detectado' ? 'none' : 'block';
+    $('crackTs').value = rec.crack.timestamp_elapsed || '';
+    setPill('segundoCrack', rec.crack.segundo_crack.ocurrio ? 'si' : 'no');
+    $('crack2Field').style.display = rec.crack.segundo_crack.ocurrio ? 'block' : 'none';
+    $('crack2Ts').value = rec.crack.segundo_crack.timestamp_elapsed || '';
+
+    $('pesoTostado').value = rec.resultados.peso_tostado_g ?? '';
+    $('agtron').value = rec.resultados.agtron ?? '';
+    $('agtronRef').value = rec.resultados.agtron_escala_ref || '';
+
+    $('diaCata').value = rec.cata.dia_post_tueste ?? '';
+    setSlider('aromaScore', rec.cata.fragancia_aroma.score);
+    setChips('[data-group="aromaCats"]', rec.cata.fragancia_aroma.categorias);
+    setSlider('saborScore', rec.cata.sabor.score);
+    setChips('[data-group="saborCats"]', rec.cata.sabor.categorias);
+    setSlider('retroScore', rec.cata.retrogusto.score);
+    $('retroDur').value = rec.cata.retrogusto.duracion_seg ?? '';
+    setPill('retroLimpio', rec.cata.retrogusto.caracter);
+    setSlider('acidInt', rec.cata.acidez.intensidad);
+    setSlider('acidCal', rec.cata.acidez.calidad);
+    $('acidTipo').value = rec.cata.acidez.tipo || 'Cítrica';
+    setSlider('cuerpoInt', rec.cata.cuerpo.intensidad);
+    setSlider('cuerpoCal', rec.cata.cuerpo.calidad);
+    setSlider('dulzorScore', rec.cata.dulzor.score);
+    $('dulzorTipo').value = rec.cata.dulzor.tipo || 'Caramelo';
+    setSlider('balance', rec.cata.balance);
+    setPill('uniformidad', rec.cata.uniformidad);
+    setSlider('overall', rec.cata.overall);
+
+    recalc();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function setPill(containerId, val){
+    if(!val) return;
+    const el = $(containerId);
+    [...el.children].forEach(c=> c.classList.toggle('active', c.dataset.val===val));
+  }
+  function setSlider(id, val){
+    if(val===null || val===undefined) return;
+    $(id).value = val;
+    if($(id+'V')) $(id+'V').textContent = val;
+  }
+  function setChips(selector, vals){
+    const group = document.querySelector(selector);
+    if(!group) return;
+    vals = vals || [];
+    group.querySelectorAll('.chip').forEach(c=> c.classList.toggle('active', vals.includes(c.dataset.val)));
+  }
+
+  loadHistory();
+})();
+</script>
+</body>
+</html>

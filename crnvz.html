@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora de Tueste - Push To Talk</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 15px; 
+            max-width: 600px; 
+            margin: auto; 
+            background-color: #f9f9f9;
+            color: #333;
+            user-select: none; /* Evita seleccionar texto al mantener presionado */
+        }
+        h2 { text-align: center; margin-bottom: 5px; }
+        
+        /* Cronómetro */
+        .timer-display {
+            font-size: 3.5rem;
+            text-align: center;
+            font-weight: bold;
+            color: #212529;
+            margin: 10px 0 20px 0;
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Formulario */
+        .form-section {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 1.1rem; }
+        .form-group select, .form-group input[type="text"], .form-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+            background-color: #fff;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        .radio-group label { font-weight: normal; margin: 0; display: flex; align-items: center; gap: 5px; }
+        .radio-group input { transform: scale(1.3); }
+        
+        /* Campos dinámicos */
+        .hidden { display: none !important; }
+        .grid-escalonada {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .grid-escalonada span { font-weight: bold; text-align: center; color: #555; }
+
+        /* Botones de Control de Tueste */
+        .button-container { display: flex; gap: 10px; margin-bottom: 15px; }
+        button { 
+            font-size: 1.1rem; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 8px; 
+            border: none; 
+            color: white; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        #btn-start-tueste { background-color: #28a745; }
+        #btn-stop-tueste { background-color: #6c757d; }
+        button:disabled { opacity: 0.4; pointer-events: none; }
+
+        /* Botón Push to Talk */
+        .ptt-container { margin-bottom: 20px; }
+        #btn-ptt {
+            background-color: #007bff;
+            font-size: 1.3rem;
+            font-weight: bold;
+            padding: 25px 15px;
+            height: 100px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        #btn-ptt.recording {
+            background-color: #dc3545;
+            transform: scale(0.98);
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* Tabla y estado */
+        table { width: 100%; border-collapse: collapse; background-color: white; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 1.1rem; }
+        th { background-color: #e9ecef; }
+        
+        .status { font-size: 1.1rem; color: #555; text-align: center; min-height: 24px; margin-bottom: 15px; font-weight: bold; }
+
+        /* Botones JSON */
+        .json-container { display: flex; gap: 10px; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px;}
+        .btn-json { background-color: #6c757d; font-size: 1.1rem; }
+        .btn-json-load { background-color: #17a2b8; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+    <h2>Bitácora de Tueste</h2>
+    
+    <!-- Cronómetro Visual -->
+    <div class="timer-display" id="display-timer">00:00</div>
+
+    <!-- Controles del Tiempo -->
+    <div class="button-container">
+        <button id="btn-start-tueste">▶ Iniciar Tueste</button>
+        <button id="btn-stop-tueste" disabled>⏹ Finalizar</button>
+    </div>
+
+    <!-- Botón PTT -->
+    <div class="ptt-container">
+        <button id="btn-ptt" disabled>Mantener presionado<br>para dictar temperatura</button>
+    </div>
+    
+    <div class="status" id="status">Configura los datos e inicia el tueste.</div>
+
+    <!-- Formulario de Datos -->
+    <div class="form-section">
+        <div class="form-group">
+            <label for="variedad">Variedad:</label>
+            <select id="variedad">
+                <option value="Sidra honey">Sidra honey</option>
+                <option value="Sidra lavado">Sidra lavado</option>
+                <option value="Blend">Blend</option>
+                <option value="Geisha">Geisha</option>
+                <option value="Otra">Otra...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="tiempo-tueste">Tiempo Estimado (min):</label>
+            <input type="number" id="tiempo-tueste" placeholder="Ej. 12">
+        </div>
+
+        <div class="form-group">
+            <label>Tipo de Temperatura:</label>
+            <div class="radio-group">
+                <label><input type="radio" name="tipo-temp" value="fija" checked> Fija</label>
+                <label><input type="radio" name="tipo-temp" value="escalonada"> Escalonada</label>
+            </div>
+        </div>
+
+        <div class="form-group" id="contenedor-fija">
+            <label for="temp-fija">Temperatura (°C):</label>
+            <input type="number" id="temp-fija" placeholder="Ej. 200">
+        </div>
+
+        <div class="form-group hidden" id="contenedor-escalonada">
+            <label>Niveles (Minuto - Temperatura °C):</label>
+            <div class="grid-escalonada">
+                <span>Minuto</span><span>Temp (°C)</span>
+                <input type="number" id="esc-min-1" placeholder="Ej. 0">
+                <input type="number" id="esc-temp-1" placeholder="Ej. 190">
+                <input type="number" id="esc-min-2" placeholder="Ej. 4">
+                <input type="number" id="esc-temp-2" placeholder="Ej. 205">
+                <input type="number" id="esc-min-3" placeholder="Ej. 8">
+                <input type="number" id="esc-temp-3" placeholder="Ej. 220">
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla Dinámica -->
+    <table id="data-table">
+        <thead>
+            <tr>
+                <th>Tiempo</th>
+                <th>Temp Dictada (°C)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Los datos aparecerán aquí -->
+        </tbody>
+    </table>
+
+    <!-- Botones JSON -->
+    <div class="json-container">
+        <button class="btn-json" onclick="guardarJSON()">Guardar JSON</button>
+        <button class="btn-json-load" onclick="document.getElementById('file-input').click()">Cargar JSON</button>
+        <input type="file" id="file-input" accept=".json" class="hidden" onchange="cargarJSON(event)">
+    </div>
+
+    <script>
+        // Variables globales
+        let startTime = null;
+        let timerInterval = null;
+        let isRecording = false;
+        
+        // Elementos del DOM
+        const displayTimer = document.getElementById('display-timer');
+        const btnStartTueste = document.getElementById('btn-start-tueste');
+        const btnStopTueste = document.getElementById('btn-stop-tueste');
+        const btnPtt = document.getElementById('btn-ptt');
+        const statusText = document.getElementById('status');
+        const tableBody = document.querySelector('#data-table tbody');
+        
+        const radiosTipoTemp = document.getElementsByName('tipo-temp');
+        const contFija = document.getElementById('contenedor-fija');
+        const contEscalonada = document.getElementById('contenedor-escalonada');
+
+        // Lógica de UI para el formulario
+        radiosTipoTemp.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if(this.value === 'fija') {
+                    contFija.classList.remove('hidden');
+                    contEscalonada.classList.add('hidden');
+                } else {
+                    contFija.classList.add('hidden');
+                    contEscalonada.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Lógica del Cronómetro Maestro
+        function actualizarCronometro() {
+            if (!startTime) return;
+            const elapsedMs = Date.now() - startTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            displayTimer.innerText = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+        }
+
+        // Reconocimiento de Voz (Push to Talk)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+
+        if (!SpeechRecognition) {
+            statusText.innerText = "Tu navegador no soporta el reconocimiento de voz.";
+            btnStartTueste.disabled = true;
+        } else {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; // Solo escucha una vez por cada pulsación
+            recognition.interimResults = false; 
+            recognition.lang = 'es-EC'; 
+
+            recognition.onstart = function() {
+                statusText.innerText = "🔴 Escuchando... Dicta ahora.";
+                statusText.style.color = "#dc3545"; 
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript.trim();
+                
+                // Formatear el tiempo usando el reloj maestro interno
+                const elapsedMs = Date.now() - startTime;
+                const totalSeconds = Math.floor(elapsedMs / 1000);
+                const timeString = Math.floor(totalSeconds / 60) + ":" + (totalSeconds % 60 < 10 ? "0" : "") + (totalSeconds % 60);
+
+                const numbersMatch = transcript.match(/\d+/g);
+                const finalValue = numbersMatch ? numbersMatch.join("") : transcript;
+
+                if(finalValue !== "") {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).innerText = timeString;
+                    row.insertCell(1).innerText = finalValue;
+                }
+            };
+
+            recognition.onerror = function(event) {
+                if (event.error !== 'no-speech') {
+                    console.error("Error de voz: ", event.error);
+                }
+            };
+
+            recognition.onend = function() {
+                // Al detenerse el reconocimiento, restaurar la interfaz si el tueste sigue activo
+                if (startTime) {
+                    statusText.innerText = "🟢 Micrófono apagado. En espera.";
+                    statusText.style.color = "#28a745";
+                }
+            };
+        }
+
+        // Eventos de Iniciar y Finalizar Tueste
+        btnStartTueste.addEventListener('click', function() {
+            startTime = Date.now(); 
+            tableBody.innerHTML = ''; 
+            displayTimer.innerText = "0:00";
+            
+            timerInterval = setInterval(actualizarCronometro, 1000);
+            
+            btnStartTueste.disabled = true;
+            btnStopTueste.disabled = false;
+            btnPtt.disabled = false; // Habilitar el botón de voz
+            
+            statusText.innerText = "🟢 Tueste en proceso. En espera de lecturas.";
+            statusText.style.color = "#28a745";
+        });
+
+        btnStopTueste.addEventListener('click', function() {
+            clearInterval(timerInterval);
+            startTime = null; // Detiene la lógica de tiempo
+            
+            btnStartTueste.disabled = false;
+            btnStopTueste.disabled = true;
+            btnPtt.disabled = true; // Bloquear botón de voz
+            btnPtt.classList.remove('recording');
+            btnPtt.innerHTML = "Mantener presionado<br>para dictar temperatura";
+            
+            statusText.innerText = "Tueste finalizado.";
+            statusText.style.color = "#555";
+        });
+
+        // Funciones del botón Push to Talk
+        const startDictation = (e) => {
+            e.preventDefault(); // Evita comportamientos táctiles por defecto (como zoom o scroll)
+            if (btnPtt.disabled || isRecording || !recognition) return;
+            
+            try {
+                recognition.start();
+                isRecording = true;
+                btnPtt.classList.add('recording');
+                btnPtt.innerHTML = "MICRÓFONO ABIERTO<br>¡Habla!";
+            } catch (err) { console.error(err); }
+        };
+
+        const stopDictation = (e) => {
+            e.preventDefault();
+            if (!isRecording || !recognition) return;
+            
+            try {
+                recognition.stop();
+                isRecording = false;
+                btnPtt.classList.remove('recording');
+                btnPtt.innerHTML = "Mantener presionado<br>para dictar temperatura";
+            } catch (err) { console.error(err); }
+        };
+
+        // Eventos para Ratón (Computadora)
+        btnPtt.addEventListener('mousedown', startDictation);
+        btnPtt.addEventListener('mouseup', stopDictation);
+        btnPtt.addEventListener('mouseleave', stopDictation); // Por si arrastra el ratón fuera del botón
+
+        // Eventos para Táctil (Móvil)
+        btnPtt.addEventListener('touchstart', startDictation, {passive: false});
+        btnPtt.addEventListener('touchend', stopDictation, {passive: false});
+        btnPtt.addEventListener('touchcancel', stopDictation, {passive: false});
+
+
+        // --- SISTEMA JSON (Se mantiene igual) ---
+        function guardarJSON() {
+            const variedad = document.getElementById('variedad').value;
+            const tiempoTueste = document.getElementById('tiempo-tueste').value;
+            const tipoTemp = document.querySelector('input[name="tipo-temp"]:checked').value;
+            
+            const datosJSON = {
+                variedad: variedad,
+                tiempoTueste: tiempoTueste,
+                tipoTemperatura: tipoTemp,
+                temperaturaFija: document.getElementById('temp-fija').value,
+                escalonada: [
+                    { min: document.getElementById('esc-min-1').value, temp: document.getElementById('esc-temp-1').value },
+                    { min: document.getElementById('esc-min-2').value, temp: document.getElementById('esc-temp-2').value },
+                    { min: document.getElementById('esc-min-3').value, temp: document.getElementById('esc-temp-3').value }
+                ],
+                registrosVoz: []
+            };
+
+            const filas = tableBody.querySelectorAll('tr');
+            filas.forEach(fila => {
+                const celdas = fila.querySelectorAll('td');
+                if(celdas.length === 2) {
+                    datosJSON.registrosVoz.push({
+                        tiempo: celdas[0].innerText,
+                        temperatura: celdas[1].innerText
+                    });
+                }
+            });
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(datosJSON, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            const fecha = new Date().toISOString().split('T')[0];
+            downloadAnchorNode.setAttribute("download", "Tueste_" + variedad.replace(" ","_") + "_" + fecha + ".json");
+            document.body.appendChild(downloadAnchorNode); 
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function cargarJSON(event) {
+            const archivo = event.target.files[0];
+            if (!archivo) return;
+
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                try {
+                    const datos = JSON.parse(e.target.result);
+                    
+                    if(datos.variedad) document.getElementById('variedad').value = datos.variedad;
+                    if(datos.tiempoTueste) document.getElementById('tiempo-tueste').value = datos.tiempoTueste;
+                    
+                    if(datos.tipoTemperatura) {
+                        const radios = document.getElementsByName('tipo-temp');
+                        radios.forEach(r => {
+                            r.checked = (r.value === datos.tipoTemperatura);
+                            r.dispatchEvent(new Event('change')); 
+                        });
+                    }
+
+                    if(datos.temperaturaFija) document.getElementById('temp-fija').value = datos.temperaturaFija;
+                    
+                    if(datos.escalonada && datos.escalonada.length === 3) {
+                        document.getElementById('esc-min-1').value = datos.escalonada[0].min;
+                        document.getElementById('esc-temp-1').value = datos.escalonada[0].temp;
+                        document.getElementById('esc-min-2').value = datos.escalonada[1].min;
+                        document.getElementById('esc-temp-2').value = datos.escalonada[1].temp;
+                        document.getElementById('esc-min-3').value = datos.escalonada[2].min;
+                        document.getElementById('esc-temp-3').value = datos.escalonada[2].temp;
+                    }
+
+                    tableBody.innerHTML = ''; 
+                    if(datos.registrosVoz) {
+                        datos.registrosVoz.forEach(reg => {
+                            const row = tableBody.insertRow();
+                            row.insertCell(0).innerText = reg.tiempo;
+                            row.insertCell(1).innerText = reg.temperatura;
+                        });
+                    }
+                    
+                    alert("¡Datos cargados correctamente!");
+                } catch (error) {
+                    alert("Error al leer el archivo JSON: " + error.message);
+                }
+            };
+            lector.readAsText(archivo);
+            event.target.value = ''; 
+        }
+    </script>
+</body>
+</html>

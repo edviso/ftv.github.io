@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bitácora de Tueste - Extractor de Video</title>
-    <!-- Versión 2.1.4: Más estable para ejecución local en móviles -->
     <script src="https://unpkg.com/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -85,7 +84,7 @@
             width: 100%;
         }
         video { display: none; }
-        canvas#captureCanvas { display: none; }
+        canvas { display: none; }
     </style>
 </head>
 <body>
@@ -106,7 +105,8 @@
     <div id="status">Esperando video...</div>
 
     <video id="videoPlayer" playsinline muted></video>
-    <canvas id="captureCanvas"></canvas>
+    <canvas id="sourceCanvas"></canvas>
+    <canvas id="cropCanvas"></canvas>
 
     <div class="chart-container">
         <canvas id="tempChart"></canvas>
@@ -120,17 +120,18 @@
                     <th>Temperatura (°C)</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Los datos se insertarán aquí -->
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 </div>
 
 <script>
     const video = document.getElementById('videoPlayer');
-    const canvas = document.getElementById('captureCanvas');
-    const ctx = canvas.getContext('2d');
+    const sourceCanvas = document.getElementById('sourceCanvas');
+    const sCtx = sourceCanvas.getContext('2d');
+    const cropCanvas = document.getElementById('cropCanvas');
+    const cCtx = cropCanvas.getContext('2d');
+    
     const statusDiv = document.getElementById('status');
     const startBtn = document.getElementById('startBtn');
     const tbody = document.querySelector('#dataTable tbody');
@@ -176,10 +177,11 @@
     function parseOCRText(text) {
         const cleaned = text.replace(/[^0-9.]/g, '');
         const value = parseFloat(cleaned);
-        return isNaN(value) ? null : value;
+        // Validar que sea una temperatura lógica de tueste (ej. entre 0 y 500 °C)
+        if (isNaN(value) || value > 500 || value < 0) return null;
+        return value;
     }
 
-    // Se usa window.updateDataFromTable para asegurar que el HTML lo encuentre
     window.updateDataFromTable = function(index, element) {
         const newValue = parseFloat(element.innerText.replace(/[^0-9.]/g, ''));
         if (!isNaN(newValue)) {
@@ -193,7 +195,7 @@
         if (file) {
             const fileURL = URL.createObjectURL(file);
             video.src = fileURL;
-            video.load(); // Vital para móviles
+            video.load();
             video.onloadeddata = () => {
                 statusDiv.innerText = `Video cargado (${video.duration.toFixed(1)} seg). Listo para extraer.`;
             };
@@ -216,15 +218,14 @@
         initChart();
 
         try {
-            statusDiv.innerText = "Descargando herramientas OCR...";
+            statusDiv.innerText = "Cargando motor OCR...";
             
             const worker = Tesseract.createWorker({
                 logger: m => {
                     if (m.status === 'recognizing text') {
-                        statusDiv.innerText = `Analizando imagen... ${Math.round(m.progress * 100)}%`;
+                        statusDiv.innerText = `Leyendo dígitos... ${Math.round(m.progress * 100)}%`;
                     } else {
-                        // Mostramos en pantalla qué archivo está descargando/cargando
-                        statusDiv.innerText = `Cargando OCR: ${m.status}`;
+                        statusDiv.innerText = `OCR: ${m.status}`;
                     }
                 }
             });
@@ -237,32 +238,35 @@
             });
 
             const duration = video.duration;
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
+            sourceCanvas.width = video.videoWidth || 640;
+            sourceCanvas.height = video.videoHeight || 480;
 
             let currentTime = 0;
             let index = 0;
 
             while (currentTime <= duration) {
-                statusDiv.innerText = `Moviendo video al segundo ${currentTime}...`;
                 video.currentTime = currentTime;
                 
-                // Forzamos al navegador a esperar que el fotograma esté listo
                 await new Promise(resolve => {
                     let resolved = false;
-                    video.onseeked = () => {
-                        if (!resolved) { resolved = true; resolve(); }
-                    };
-                    // Si el navegador no responde en 1 segundo, forzamos la lectura
-                    setTimeout(() => {
-                        if (!resolved) { resolved = true; resolve(); }
-                    }, 1000);
+                    video.onseeked = () => { if (!resolved) { resolved = true; resolve(); } };
+                    setTimeout(() => { if (!resolved) { resolved = true; resolve(); } }, 800);
                 });
 
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                statusDiv.innerText = `Leyendo temperatura (Min ${formatTime(currentTime)})...`;
-                const { data: { text } } = await worker.recognize(canvas);
+                sCtx.drawImage(video, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+                // RECORTAR ZONA DE LA PANTALLA LCD (Ajustado al área central superior donde están los números grandes)
+                // Tomamos un recuadro que enfoca el visor del termómetro TM-902C
+                const cropX = sourceCanvas.width * 0.15;
+                const cropY = sourceCanvas.height * 0.05;
+                const cropW = sourceCanvas.width * 0.70;
+                const cropH = sourceCanvas.height * 0.40;
+
+                cropCanvas.width = cropW;
+                cropCanvas.height = cropH;
+                cCtx.drawImage(sourceCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+                const { data: { text } } = await worker.recognize(cropCanvas);
                 
                 const timeLabel = formatTime(currentTime);
                 const tempValue = parseOCRText(text);
@@ -286,9 +290,8 @@
             }
 
             await worker.terminate();
-            statusDiv.innerText = "¡Extracción completada! Puedes corregir valores en las celdas amarillas.";
+            statusDiv.innerText = "¡Extracción completada! Revisa la tabla y gráfica.";
         } catch (error) {
-            // Si algo falla, el error saldrá en texto naranja en vez de ocultarse
             statusDiv.innerText = "Error: " + error.message;
             console.error(error);
         } finally {

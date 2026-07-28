@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora de Tueste - Extractor de Video</title>
+    <!-- Versión 2.1.4: Más estable para ejecución local en móviles -->
+    <script src="https://unpkg.com/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h2 { margin-top: 0; color: #444; font-size: 1.5em;}
+        .control-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        label { font-weight: bold; font-size: 0.9em; }
+        input[type="file"], input[type="number"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:disabled { background-color: #95a5a6; }
+        #status {
+            font-size: 0.9em;
+            color: #d35400;
+            font-weight: bold;
+            margin-bottom: 10px;
+            min-height: 20px;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th { background-color: #f8f9fa; }
+        td[contenteditable="true"] {
+            background-color: #fffbdd;
+            outline: none;
+        }
+        td[contenteditable="true"]:focus {
+            background-color: #fff;
+            border: 2px solid #3498db;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        video { display: none; }
+        canvas#captureCanvas { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Extracción Térmica de Tueste</h2>
+    
+    <div class="control-group">
+        <label for="videoFile">Seleccionar Video:</label>
+        <input type="file" id="videoFile" accept="video/*">
+        
+        <label for="interval">Intervalo de captura (segundos):</label>
+        <input type="number" id="interval" value="10" min="1">
+        
+        <button id="startBtn">Iniciar Extracción</button>
+    </div>
+
+    <div id="status">Esperando video...</div>
+
+    <video id="videoPlayer" playsinline muted></video>
+    <canvas id="captureCanvas"></canvas>
+
+    <div class="chart-container">
+        <canvas id="tempChart"></canvas>
+    </div>
+
+    <div class="table-container">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Tiempo (mm:ss)</th>
+                    <th>Temperatura (°C)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Los datos se insertarán aquí -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('videoPlayer');
+    const canvas = document.getElementById('captureCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusDiv = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+    const tbody = document.querySelector('#dataTable tbody');
+    let chartInstance = null;
+    
+    let timeData = [];
+    let tempData = [];
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function initChart() {
+        const ctxChart = document.getElementById('tempChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctxChart, {
+            type: 'line',
+            data: {
+                labels: timeData,
+                datasets: [{
+                    label: 'Curva de Temperatura (°C)',
+                    data: tempData,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { title: { display: true, text: 'Temperatura (°C)' } },
+                    x: { title: { display: true, text: 'Tiempo' } }
+                }
+            }
+        });
+    }
+
+    function parseOCRText(text) {
+        const cleaned = text.replace(/[^0-9.]/g, '');
+        const value = parseFloat(cleaned);
+        return isNaN(value) ? null : value;
+    }
+
+    // Se usa window.updateDataFromTable para asegurar que el HTML lo encuentre
+    window.updateDataFromTable = function(index, element) {
+        const newValue = parseFloat(element.innerText.replace(/[^0-9.]/g, ''));
+        if (!isNaN(newValue)) {
+            tempData[index] = newValue;
+            chartInstance.update();
+        }
+    }
+
+    document.getElementById('videoFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const fileURL = URL.createObjectURL(file);
+            video.src = fileURL;
+            video.load(); // Vital para móviles
+            video.onloadeddata = () => {
+                statusDiv.innerText = `Video cargado (${video.duration.toFixed(1)} seg). Listo para extraer.`;
+            };
+        }
+    });
+
+    startBtn.addEventListener('click', async () => {
+        if (!video.src) {
+            alert("Por favor selecciona un video primero.");
+            return;
+        }
+
+        const interval = parseInt(document.getElementById('interval').value, 10);
+        if (interval < 1) return;
+
+        startBtn.disabled = true;
+        tbody.innerHTML = '';
+        timeData = [];
+        tempData = [];
+        initChart();
+
+        try {
+            statusDiv.innerText = "Descargando herramientas OCR...";
+            
+            const worker = Tesseract.createWorker({
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        statusDiv.innerText = `Analizando imagen... ${Math.round(m.progress * 100)}%`;
+                    } else {
+                        // Mostramos en pantalla qué archivo está descargando/cargando
+                        statusDiv.innerText = `Cargando OCR: ${m.status}`;
+                    }
+                }
+            });
+            
+            await worker.load();
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            await worker.setParameters({
+                tessedit_char_whitelist: '0123456789.',
+            });
+
+            const duration = video.duration;
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            let currentTime = 0;
+            let index = 0;
+
+            while (currentTime <= duration) {
+                statusDiv.innerText = `Moviendo video al segundo ${currentTime}...`;
+                video.currentTime = currentTime;
+                
+                // Forzamos al navegador a esperar que el fotograma esté listo
+                await new Promise(resolve => {
+                    let resolved = false;
+                    video.onseeked = () => {
+                        if (!resolved) { resolved = true; resolve(); }
+                    };
+                    // Si el navegador no responde en 1 segundo, forzamos la lectura
+                    setTimeout(() => {
+                        if (!resolved) { resolved = true; resolve(); }
+                    }, 1000);
+                });
+
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                statusDiv.innerText = `Leyendo temperatura (Min ${formatTime(currentTime)})...`;
+                const { data: { text } } = await worker.recognize(canvas);
+                
+                const timeLabel = formatTime(currentTime);
+                const tempValue = parseOCRText(text);
+
+                timeData.push(timeLabel);
+                tempData.push(tempValue !== null ? tempValue : 0);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${timeLabel}</td>
+                    <td contenteditable="true" onblur="updateDataFromTable(${index}, this)">
+                        ${tempValue !== null ? tempValue : '0'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                chartInstance.update();
+
+                currentTime += interval;
+                index++;
+            }
+
+            await worker.terminate();
+            statusDiv.innerText = "¡Extracción completada! Puedes corregir valores en las celdas amarillas.";
+        } catch (error) {
+            // Si algo falla, el error saldrá en texto naranja en vez de ocultarse
+            statusDiv.innerText = "Error: " + error.message;
+            console.error(error);
+        } finally {
+            startBtn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Maillard</title>
+    <!-- Cargamos la librería Chart.js para el gráfico -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 20px; 
+            max-width: 500px; 
+            margin: auto;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; font-size: 1.5em; margin-bottom: 20px; }
+        .slider-container { margin: 20px 0 40px 0; }
+        input[type=range] { width: 100%; margin-top: 10px; }
+        .labels {
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 14px; 
+            color: #666;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+        .status { text-align: center; font-size: 1.1em; font-weight: bold; color: #d35400; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Impacto de la Fase de Maillard</h2>
+        
+        <div class="slider-container">
+            <div class="status">Tiempo: <span id="sliderValue">Equilibrado</span></div>
+            <input type="range" id="maillardSlider" min="0" max="100" value="50">
+            <div class="labels">
+                <span>Corto</span>
+                <span>Largo</span>
+            </div>
+        </div>
+
+        <canvas id="flavorChart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('flavorChart').getContext('2d');
+        
+        // Inicializamos el gráfico
+        let flavorChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Acidez', 'Dulzor', 'Cuerpo'],
+                datasets: [{
+                    label: 'Intensidad en Taza',
+                    data: [50, 100, 50],
+                    backgroundColor: ['#e74c3c', '#f1c40f', '#8e44ad'],
+                    borderRadius: 6
+                }]
+            },
+            options: { 
+                scales: { 
+                    y: { beginAtZero: true, max: 100 } 
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Lógica de manipulación de la barra
+        document.getElementById('maillardSlider').addEventListener('input', function(e) {
+            let val = parseInt(e.target.value);
+            let label = "Equilibrado";
+            
+            if (val < 35) label = "Corto (Rápido)";
+            else if (val > 65) label = "Largo (Extendido)";
+            
+            document.getElementById('sliderValue').innerText = label;
+
+            // Fórmulas simples para simular el comportamiento químico
+            let acidez = 100 - val; // La acidez baja a medida que se alarga
+            let cuerpo = val;       // El cuerpo sube a medida que se alarga
+            let dulzor = 100 - Math.abs(50 - val) * 2; // El dulzor tiene su pico en el medio
+
+            // Actualizamos los datos del gráfico
+            flavorChart.data.datasets[0].data = [acidez, dulzor, cuerpo];
+            flavorChart.update();
+        });
+    </script>
+</body>
+</html>

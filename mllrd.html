@@ -4,57 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de Maillard</title>
-    <!-- Cargamos la librería Chart.js para el gráfico -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { 
             font-family: system-ui, -apple-system, sans-serif; 
-            padding: 20px; 
+            padding: 15px; 
             max-width: 500px; 
             margin: auto;
-            background-color: #f9f9f9;
+            background-color: #eef2f3;
             color: #333;
         }
         .container {
             background: white;
-            padding: 20px;
+            padding: 20px 15px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        h2 { text-align: center; font-size: 1.5em; margin-bottom: 20px; }
-        .slider-container { margin: 20px 0 40px 0; }
-        input[type=range] { width: 100%; margin-top: 10px; }
+        h2 { 
+            text-align: center; 
+            font-size: 1.3em; 
+            margin-top: 0;
+            margin-bottom: 20px; 
+            color: #2c3e50;
+        }
+        
+        /* Contenedor principal para colocar gráfico y slider lado a lado */
+        .main-layout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .chart-container {
+            flex-grow: 1;
+            padding-right: 15px;
+            position: relative;
+            height: 260px; /* Altura fija para evitar que el gráfico colapse */
+        }
+        
+        /* Estilos del slider vertical a la derecha */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 260px;
+            width: 50px;
+        }
+        
+        input[type=range] {
+            -webkit-appearance: slider-vertical; /* Específico para navegadores webkit/Android */
+            width: 30px;
+            height: 200px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        
         .labels {
-            display: flex; 
-            justify-content: space-between; 
-            font-size: 14px; 
-            color: #666;
-            margin-top: 8px;
+            font-size: 12px;
+            color: #7f8c8d;
             font-weight: bold;
         }
-        .status { text-align: center; font-size: 1.1em; font-weight: bold; color: #d35400; margin-bottom: 15px;}
+        
+        /* Panel inferior de información */
+        .status-container { 
+            text-align: center; 
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ecf0f1;
+        }
+        .status-text { 
+            font-size: 1em; 
+            color: #7f8c8d; 
+            margin-bottom: 5px;
+        }
+        .status-text span {
+            font-weight: bold;
+            color: #d35400;
+        }
+        .status-percent { 
+            font-size: 1.2em; 
+            font-weight: bold; 
+            color: #2c3e50; 
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Impacto de la Fase de Maillard</h2>
         
-        <div class="slider-container">
-            <div class="status">Tiempo: <span id="sliderValue">Equilibrado</span></div>
-            <input type="range" id="maillardSlider" min="0" max="100" value="50">
-            <div class="labels">
-                <span>Corto</span>
-                <span>Largo</span>
+        <div class="main-layout">
+            <!-- Gráfico a la izquierda -->
+            <div class="chart-container">
+                <canvas id="flavorChart"></canvas>
+            </div>
+            
+            <!-- Slider vertical a la derecha -->
+            <div class="slider-container">
+                <span class="labels">Largo</span>
+                <!-- Se añade orient="vertical" por compatibilidad con Firefox -->
+                <input type="range" id="maillardSlider" min="0" max="100" value="50" orient="vertical">
+                <span class="labels">Corto</span>
             </div>
         </div>
 
-        <canvas id="flavorChart"></canvas>
+        <!-- Indicadores de estado y porcentaje -->
+        <div class="status-container">
+            <div class="status-text">Perfil en Taza: <span id="sliderValue">Equilibrado</span></div>
+            <div class="status-percent">Tiempo Maillard: <span id="percentageValue">50%</span></div>
+        </div>
     </div>
 
     <script>
         const ctx = document.getElementById('flavorChart').getContext('2d');
         
-        // Inicializamos el gráfico
         let flavorChart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -63,20 +128,22 @@
                     label: 'Intensidad en Taza',
                     data: [50, 100, 50],
                     backgroundColor: ['#e74c3c', '#f1c40f', '#8e44ad'],
-                    borderRadius: 6
+                    borderRadius: 4
                 }]
             },
             options: { 
+                responsive: true,
+                maintainAspectRatio: false, // Permite que el gráfico se adapte a la altura del contenedor
                 scales: { 
                     y: { beginAtZero: true, max: 100 } 
                 },
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: { enabled: false }
                 }
             }
         });
 
-        // Lógica de manipulación de la barra
         document.getElementById('maillardSlider').addEventListener('input', function(e) {
             let val = parseInt(e.target.value);
             let label = "Equilibrado";
@@ -85,13 +152,13 @@
             else if (val > 65) label = "Largo (Extendido)";
             
             document.getElementById('sliderValue').innerText = label;
+            document.getElementById('percentageValue').innerText = val + "%";
 
-            // Fórmulas simples para simular el comportamiento químico
-            let acidez = 100 - val; // La acidez baja a medida que se alarga
-            let cuerpo = val;       // El cuerpo sube a medida que se alarga
-            let dulzor = 100 - Math.abs(50 - val) * 2; // El dulzor tiene su pico en el medio
+            // Fórmulas para simular la degradación y formación de compuestos
+            let acidez = 100 - val; 
+            let cuerpo = val;       
+            let dulzor = 100 - Math.abs(50 - val) * 2; 
 
-            // Actualizamos los datos del gráfico
             flavorChart.data.datasets[0].data = [acidez, dulzor, cuerpo];
             flavorChart.update();
         });

@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Maillard — Curva de tueste con IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17130f;
+    --surface:#211a14;
+    --surface-2:#2b2119;
+    --ink:#f1e9dd;
+    --muted:#a7998a;
+    --line: rgba(241,233,221,0.10);
+    --line-strong: rgba(241,233,221,0.18);
+    --secado:#a7b24a;
+    --secado-ink:#1c1f0d;
+    --maillard:#c08a4e;
+    --maillard-ink:#241a0d;
+    --desarrollo:#8a3a2b;
+    --desarrollo-ink:#f6e9e1;
+    --ember:#c1502e;
+    --ember-soft: rgba(193,80,46,0.16);
+    --good:#8fae5b;
+    --warn:#cf9a3e;
+    --primary: #c1502e; /* Adaptado al color ember del diseño original */
+    --font-display: 'Space Grotesk', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body{
+    padding: 20px 16px 60px;
+  }
+
+  .wrap{ max-width: 760px; margin: 0 auto; }
+
+  /* ---------- Auth Section ---------- */
+  #auth-section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  #auth-section h2 { color: var(--maillard); margin-top: 0; }
+  .auth-input {
+    width: 100%; max-width: 400px; padding: 12px; margin: 15px 0;
+    border: 1px solid var(--line-strong); border-radius: 8px;
+    background-color: var(--bg); color: var(--ink);
+    font-family: inherit; font-size: 15px;
+  }
+  .auth-btn {
+    background-color: var(--ember); color: #fff; border: none;
+    padding: 12px 24px; border-radius: 8px; font-size: 15px;
+    font-weight: bold; cursor: pointer; transition: opacity 0.2s;
+  }
+  .auth-btn:hover { opacity: 0.9; }
+  #error-message { color: var(--ember); margin-top: 10px; display: none; font-size: 14px; }
+  #app-section { display: none; }
+  .change-key-btn {
+    background: transparent; border: none; color: var(--muted);
+    font-size: 12px; text-decoration: underline; cursor: pointer;
+    margin-top: 20px; display: block; width: 100%; text-align: center;
+  }
+
+  /* ---------- header ---------- */
+  .eyebrow{
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--ember); margin: 0 0 10px;
+  }
+  h1{
+    font-size: 30px; line-height: 1.08; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em;
+  }
+  h1 span{ color: var(--maillard); }
+  .subtitle{
+    color: var(--muted); font-size: 14.5px; line-height: 1.5; margin: 0 0 26px; max-width: 56ch;
+  }
+
+  section{
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px; margin-bottom: 14px; position: relative;
+  }
+
+  .section-label{
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 14px;
+    display:flex; align-items:center; justify-content: space-between; gap: 10px;
+  }
+  
+  /* ---------- Botón IA ---------- */
+  .ia-btn {
+    background: var(--surface-2);
+    color: var(--maillard);
+    border: 1px solid var(--maillard);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ia-btn:hover { background: var(--ember-soft); color: #fff; border-color: var(--ember); }
+  .ia-btn:active { transform: scale(0.95); }
+
+  /* ---------- controls: variedad / metodo ---------- */
+  .controls-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px){ .controls-grid{ grid-template-columns: 1fr; } }
+  label.field{ display:flex; flex-direction:column; gap:6px; font-size: 12.5px; color: var(--muted); }
+  select{
+    appearance:none; -webkit-appearance:none; background: var(--surface-2);
+    border: 1px solid var(--line-strong); color: var(--ink); font-family: var(--font-display);
+    font-weight: 500; font-size: 14.5px; padding: 10px 34px 10px 12px; border-radius: 9px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0L5 6L10 0' fill='none' stroke='%23a7998a' stroke-width='1.4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+  }
+  select:focus-visible, input:focus-visible, button:focus-visible{
+    outline: 2px solid var(--maillard); outline-offset: 2px;
+  }
+  .variety-note, .method-note{
+    margin-top: 10px; font-size: 12.5px; line-height: 1.5; color: var(--muted);
+    border-top: 1px dashed var(--line-strong); padding-top: 10px;
+  }
+  .method-row{ display:flex; align-items:center; gap:10px; margin-top: 10px; flex-wrap: wrap; }
+  .affinity{
+    font-family: var(--font-mono); font-size: 11.5px; padding: 4px 9px;
+    border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-strong); white-space: nowrap;
+  }
+  .affinity b{ font-weight:600; }
+  .preset-btn{
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.02em;
+    background: transparent; color: var(--maillard); border: 1px solid var(--maillard);
+    border-radius: 999px; padding: 5px 12px; cursor: pointer;
+  }
+  .preset-btn:hover{ background: var(--ember-soft); }
+
+  /* ---------- sliders ---------- */
+  .slider-row{ margin-bottom: 18px; }
+  .slider-row:last-child{ margin-bottom: 0; }
+  .slider-top{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .slider-name{ font-size: 13.5px; font-weight: 600; }
+  .slider-name small{ color: var(--muted); font-weight: 400; font-family: var(--font-mono); }
+  .slider-val{ font-family: var(--font-mono); font-size: 13px; color: var(--muted); min-width: 28px; text-align:right; }
+  input[type="range"]{
+    -webkit-appearance: none; appearance:none; width: 100%; height: 6px; border-radius: 999px;
+    background: var(--surface-2); cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--ink); border: 3px solid var(--ember); margin-top: -7px;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width: 14px; height: 14px; border-radius: 50%; background: var(--ink); border: 3px solid var(--ember);
+  }
+  input[type="range"]::-webkit-slider-runnable-track{ height:6px; border-radius:999px; }
+  #s-acidez::-webkit-slider-thumb{ border-color: var(--secado); }
+  #s-dulzor::-webkit-slider-thumb{ border-color: var(--maillard); }
+  #s-cuerpo::-webkit-slider-thumb{ border-color: var(--desarrollo); }
+
+  .reset-row{ text-align:right; margin-top:2px; }
+  .reset-btn{
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted); background:none; border:none; 
+    cursor:pointer; text-decoration: underline; text-underline-offset: 3px; padding: 0;
+  }
+  .reset-btn:hover{ color: var(--ink); }
+
+  /* ---------- phase bar ---------- */
+  .phasebar{
+    display:flex; width:100%; height: 58px; border-radius: 10px; overflow:hidden;
+    border: 1px solid var(--line-strong);
+  }
+  .phase-seg{
+    display:flex; flex-direction:column; justify-content:center; padding: 0 10px;
+    transition: width 0.35s ease; overflow:hidden; white-space: nowrap;
+  }
+  .phase-seg .p-name{ font-size: 11px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; }
+  .phase-seg .p-time{ font-family: var(--font-mono); font-size: 11px; opacity:0.85; margin-top:1px; }
+  .phase-legend{ display:grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; }
+  @media (max-width: 560px){ .phase-legend{ grid-template-columns: 1fr; } }
+  .leg-item{ font-size: 12.5px; line-height:1.5; color: var(--muted); }
+  .leg-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; vertical-align:1px; }
+  .leg-item b{ color: var(--ink); font-weight:600; }
+
+  /* ---------- chart ---------- */
+  .chart-wrap{ position:relative; }
+  canvas{ width:100%; height: 300px; display:block; }
+  .chart-caption{
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin-top: 10px;
+  }
+
+  /* ---------- table ---------- */
+  table{ width:100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 13px; }
+  thead th{
+    text-align:left; font-size: 10.5px; letter-spacing:0.08em; text-transform:uppercase;
+    color: var(--muted); font-weight:500; padding: 0 8px 10px; border-bottom: 1px solid var(--line-strong);
+  }
+  thead th:not(:first-child){ text-align:right; }
+  tbody td{ padding: 8px; border-bottom: 1px solid var(--line); }
+  tbody td:not(:first-child){ text-align:right; }
+  tbody tr:last-child td{ border-bottom:none; font-weight:600; color: var(--maillard); }
+  .fase-tag{
+    font-size: 10px; padding: 2px 7px; border-radius:999px; font-family:var(--font-display); font-weight:600;
+  }
+
+  footer{ margin-top: 22px; font-size: 11.5px; color: var(--muted); line-height:1.6; text-align:center; }
+
+  /* ---------- Modal IA ---------- */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px);
+    z-index: 1000; justify-content: center; align-items: center;
+    padding: 20px;
+  }
+  .modal-content {
+    background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: 14px; width: 100%; max-width: 600px; max-height: 85vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .modal-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface-2);
+  }
+  .modal-header h3 { margin: 0; font-size: 16px; color: var(--maillard); }
+  .modal-close {
+    background: transparent; border: none; color: var(--muted);
+    font-size: 24px; cursor: pointer; line-height: 1; padding: 0;
+  }
+  .modal-close:hover { color: var(--ember); }
+  .modal-body {
+    padding: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: var(--ink);
+  }
+  .modal-body b { color: var(--maillard); }
+  .loader { text-align: center; color: var(--muted); font-style: italic; padding: 20px; }
+  .loader span { color: var(--ember); font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- SECCIÓN AUTH -->
+  <div id="auth-section">
+    <h2>Configuración de Inteligencia Artificial</h2>
+    <p class="subtitle" style="margin: 0 auto; margin-bottom: 10px;">Ingresa tu API Key de Google Gemini para activar el asistente de tueste.</p>
+    <input type="password" id="apiKey" class="auth-input" placeholder="AIzaSy...">
+    <br>
+    <button class="auth-btn" onclick="guardarEIniciarApp()">Iniciar Aplicación</button>
+    <div id="error-message">Por favor, ingresa una API Key válida.</div>
+  </div>
+
+  <!-- APLICACIÓN PRINCIPAL -->
+  <div id="app-section">
+    <p class="eyebrow">Laboratorio de tueste</p>
+    <h1>El mapa de <span>Maillard</span></h1>
+    <p class="subtitle">Mueve la acidez, el dulzor y el cuerpo que buscas en taza y observa cómo se reacomodan el secado, el pardeamiento de Maillard y el desarrollo — junto con una curva de tueste y su tabla de tiempo/temperatura cada 2 minutos.</p>
+
+    <!-- SECCIÓN 1: Café y método -->
+    <section>
+      <div class="section-label">
+        <span>Café y método</span>
+        <button class="ia-btn" onclick="analizarIA(1)">IA*</button>
+      </div>
+      <div class="controls-grid">
+        <label class="field">Variedad / proceso
+          <select id="sel-variedad"></select>
+        </label>
+        <label class="field">Método de extracción
+          <select id="sel-metodo"></select>
+        </label>
+      </div>
+      <p class="variety-note" id="variety-note"></p>
+      <div class="method-row">
+        <span class="affinity" id="affinity-badge">Afinidad: —</span>
+        <button class="preset-btn" id="preset-btn">Aplicar perfil sugerido para este método</button>
+      </div>
+      <p class="method-note" id="method-note"></p>
+    </section>
+
+    <!-- SECCIÓN 2: Objetivo en taza -->
+    <section>
+      <div class="section-label">
+        <span>Objetivo en taza</span>
+        <button class="ia-btn" onclick="analizarIA(2)">IA*</button>
+      </div>
+      <div class="slider-row">
+        <div class="slider-top">
+          <span class="slider-name">Acidez <small>brillo, cítricos</small></span>
+          <span class="slider-val" id="v-acidez">50</span>
+        </div>
+        <input type="range" id="s-acidez" min="0" max="100" value="50" aria-label="Acidez">
+      </div>
+      <div class="slider-row">
+        <div class="slider-top">
+          <span class="slider-name">Dulzor <small>caramelo, fruta</small></span>
+          <span class="slider-val" id="v-dulzor">50</span>
+        </div>
+        <input type="range" id="s-dulzor" min="0" max="100" value="50" aria-label="Dulzor">
+      </div>
+      <div class="slider-row">
+        <div class="slider-top">
+          <span class="slider-name">Cuerpo <small>densidad, textura</small></span>
+          <span class="slider-val" id="v-cuerpo">50</span>
+        </div>
+        <input type="range" id="s-cuerpo" min="0" max="100" value="50" aria-label="Cuerpo">
+      </div>
+      <div class="reset-row"><button class="reset-btn" id="reset-btn">Restablecer a 50 / 50 / 50</button></div>
+    </section>
+
+    <!-- SECCIÓN 3: Reparto de tueste -->
+    <section>
+      <div class="section-label">
+        <span>Cómo se reparte el tueste</span>
+        <button class="ia-btn" onclick="analizarIA(3)">IA*</button>
+      </div>
+      <div class="phasebar" id="phasebar"></div>
+      <div class="phase-legend">
+        <div class="leg-item"><span class="leg-dot" style="background:var(--secado)"></span><b>Secado —</b> evapora el agua libre del grano; pasa de verde a amarillo pajizo.</div>
+        <div class="leg-item"><span class="leg-dot" style="background:var(--maillard)"></span><b>Maillard —</b> azúcares y aminoácidos reaccionan y generan el color canela.</div>
+        <div class="leg-item"><span class="leg-dot" style="background:var(--desarrollo)"></span><b>Desarrollo —</b> tras el 1er crack domina la caramelización.</div>
+      </div>
+    </section>
+
+    <!-- Gráfica (Sin botón IA) -->
+    <section>
+      <p class="section-label">
+        Curva de tueste generada
+        <span id="chart-total-time"></span>
+      </p>
+      <div class="chart-wrap">
+        <canvas id="chart"></canvas>
+      </div>
+      <div class="chart-caption">
+        <span id="cap-crack"></span>
+        <span id="cap-drop"></span>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: Tabla -->
+    <section>
+      <div class="section-label">
+        <span>Tiempo / temperatura cada 2 min</span>
+        <button class="ia-btn" onclick="analizarIA(4)">IA*</button>
+      </div>
+      <table>
+        <thead><tr><th>Tiempo</th><th>Temp. °C</th><th>Fase</th></tr></thead>
+        <tbody id="tbody-curve"></tbody>
+      </table>
+    </section>
+
+    <footer>
+      Curva generada con un modelo heurístico educativo (no telemetría de una tostadora real).
+    </footer>
+    
+    <button class="change-key-btn" onclick="cambiarApiKey()">⚙️ Cambiar API Key</button>
+  </div>
+</div>
+
+<!-- VENTANA FLOTANTE IA -->
+<div class="modal-overlay" id="ia-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="ia-modal-title">Análisis IA</h3>
+      <button class="modal-close" onclick="cerrarModalIA()">&times;</button>
+    </div>
+    <div class="modal-body" id="ia-modal-body">
+      <!-- Contenido generado por la IA -->
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ SISTEMA IA Y AUTH ============ */
+  let GEMINI_API_KEY = "";
+
+  window.onload = function() {
+    const keyGuardada = localStorage.getItem('gemini_maillard_key');
+    if (keyGuardada && keyGuardada.length > 10) {
+      GEMINI_API_KEY = keyGuardada;
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('app-section').style.display = 'block';
+      update();
+    } else {
+      update(); // Actualiza visualmente aunque esté oculto
+    }
+  };
+
+  window.guardarEIniciarApp = function() {
+    const keyInput = document.getElementById('apiKey').value.trim();
+    const errorDiv = document.getElementById('error-message');
+    
+    if (keyInput.length < 10) {
+      errorDiv.style.display = "block";
+      return;
+    }
+    errorDiv.style.display = "none";
+    GEMINI_API_KEY = keyInput;
+    localStorage.setItem('gemini_maillard_key', keyInput);
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('app-section').style.display = 'block';
+  };
+
+  window.cambiarApiKey = function() {
+    localStorage.removeItem('gemini_maillard_key');
+    document.getElementById('app-section').style.display = 'none';
+    document.getElementById('auth-section').style.display = 'block';
+  };
+
+  window.cerrarModalIA = function() {
+    document.getElementById('ia-modal').style.display = 'none';
+  };
+
+  window.analizarIA = async function(nivelSeccion) {
+    const modal = document.getElementById('ia-modal');
+    const modalTitle = document.getElementById('ia-modal-title');
+    const modalBody = document.getElementById('ia-modal-body');
+    
+    modal.style.display = 'flex';
+    modalBody.innerHTML = '<div class="loader">Analizando datos<span>...</span><br><small>Conectando con Gemini</small></div>';
+    
+    // Recolectar contexto actual
+    const p = computePhases();
+    
+    // Nivel 1
+    const contextoCafe = `SECCIÓN: CAFÉ Y MÉTODO\nVariedad/Proceso: ${state.variedad.nombre}\nNotas de variedad: ${state.variedad.nota}\nMétodo de extracción deseado: ${state.metodo.nombre}\nNotas del método: ${state.metodo.nota}`;
+    
+    // Nivel 2
+    const contextoObjetivo = `SECCIÓN: OBJETIVO EN TAZA\nAcidez deseada: ${state.acidez}/100\nDulzor deseado: ${state.dulzor}/100\nCuerpo deseado: ${state.cuerpo}/100`;
+    
+    // Nivel 3
+    const contextoFases = `SECCIÓN: REPARTO DEL TUESTE\nFase de Secado: ${p.secadoPct.toFixed(1)}%\nFase Maillard: ${p.maillardPct.toFixed(1)}%\nFase de Desarrollo: ${p.desarrolloPct.toFixed(1)}%\nTiempo Total Estimado: ${fmtTime(p.T)}\nTemperatura Final (Caída): ${Math.round(p.Tfinal)}°C`;
+    
+    // Nivel 4
+    let tablaTexto = `SECCIÓN: TABLA FINAL DE TUESTE (Tiempo | Temp | Fase)\n`;
+    const filas = document.querySelectorAll('#tbody-curve tr');
+    filas.forEach(tr => {
+      const celdas = tr.querySelectorAll('td');
+      if (celdas.length === 3) {
+        tablaTexto += `- ${celdas[0].innerText} | ${celdas[1].innerText} | ${celdas[2].innerText}\n`;
+      }
+    });
+
+    let prompt = `Actúa como un maestro tostador experto. El usuario está utilizando una herramienta educativa para simular perfiles de tueste.\n\n`;
+    let titulo = "";
+
+    // Armado incremental del prompt según el botón presionado
+    if (nivelSeccion === 1) {
+      titulo = "Análisis: Café y Método";
+      prompt += `Por favor, analiza SOLAMENTE la siguiente información:\n\n${contextoCafe}\n\nExplica brevemente qué retos o características tiene esta combinación de grano y método de preparación.`;
+    } 
+    else if (nivelSeccion === 2) {
+      titulo = "Análisis: Objetivo en taza";
+      prompt += `Datos de referencia previos:\n${contextoCafe}\n\nPor favor, analiza SOLAMENTE la siguiente sección, tomando en cuenta la referencia:\n\n${contextoObjetivo}\n\nExplica si estos objetivos sensoriales tienen sentido para la variedad y método elegidos, y qué se requiere lograr en el tueste.`;
+    }
+    else if (nivelSeccion === 3) {
+      titulo = "Análisis: Reparto del tueste";
+      prompt += `Datos de referencia previos:\n${contextoCafe}\n${contextoObjetivo}\n\nPor favor, analiza SOLAMENTE la siguiente sección de distribución térmica:\n\n${contextoFases}\n\nExplica de forma técnica por qué los porcentajes de fase proyectados ayudarán (o dificultarán) a conseguir el objetivo en taza.`;
+    }
+    else if (nivelSeccion === 4) {
+      titulo = "Análisis: Curva Final";
+      prompt += `Datos de referencia previos:\n${contextoCafe}\n${contextoObjetivo}\n${contextoFases}\n\nPor favor, analiza la siguiente tabla de curva generada:\n\n${tablaTexto}\n\nHaz un análisis final de la progresión térmica (RoR implícito cada 2 minutos) y da recomendaciones prácticas para ejecutar este tueste.`;
+    }
+
+    modalTitle.innerText = titulo;
+
+    try {
+      const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.6 }
+        })
+      });
+
+      if (!respuesta.ok) {
+        const errorData = await respuesta.json();
+        throw new Error(errorData.error?.message || "Error al conectar con la API de Gemini");
+      }
+
+      const datos = await respuesta.json();
+      let textoGenerado = datos.candidates[0].content.parts[0].text;
+      
+      // Formato básico markdown a HTML
+      let textoHTML = textoGenerado
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Negritas
+        .replace(/\n\n/g, '</p><p>')            // Párrafos dobles
+        .replace(/\n/g, '<br>');                // Saltos de línea
+        
+      modalBody.innerHTML = `<p>${textoHTML}</p>`;
+
+    } catch (error) {
+      modalBody.innerHTML = `<span style="color: var(--error)"><b>Error:</b><br>${error.message}</span>`;
+    }
+  };
+
+
+  /* ============ datos ============ */
+  const VARIEDADES = [
+    { id:'sidra', nombre:'Sidra (lavado)', aB:6, dB:0, cB:-3, crack:198,
+      nota:'Floral y cítrico, con acidez vibrante. Suele lucir con tuestes más claros que la resalten.' },
+    { id:'pink', nombre:'Pink Bourbon', aB:2, dB:5, cB:2, crack:197,
+      nota:'Dulzor a fruta madura y cuerpo sedoso. Tolera un desarrollo un poco más largo sin perder brillo.' },
+    { id:'blend_nat', nombre:'Blend natural de especialidad', aB:-4, dB:4, cB:5, crack:196,
+      nota:'Azúcares en la superficie del grano: conviene un secado más gradual para evitar scorching.' },
+    { id:'lavado_gen', nombre:'Lavado genérico', aB:3, dB:0, cB:-1, crack:198,
+      nota:'Perfil limpio y brillante, típico de proceso lavado sin mucílago.' },
+    { id:'natural_gen', nombre:'Natural genérico', aB:-3, dB:3, cB:3, crack:196,
+      nota:'Cuerpo y dulzor pronunciados; vigila que el secado no se quede corto.' },
+    { id:'honey', nombre:'Honey / Miel', aB:0, dB:4, cB:1, crack:197,
+      nota:'Punto intermedio entre lavado y natural: buen balance entre acidez y dulzor.' },
+  ];
+
+  const METODOS = [
+    { id:'v60', nombre:'V60', acidez:70, dulzor:50, cuerpo:35,
+      nota:'Filtro cónico y flujo rápido: resalta acidez y claridad; el cuerpo queda más ligero.' },
+    { id:'origami', nombre:'Origami', acidez:60, dulzor:60, cuerpo:50,
+      nota:'Versátil según el filtro que uses (cónico o plano): buen equilibrio entre claridad y cuerpo.' },
+    { id:'aeropress', nombre:'AeroPress', acidez:40, dulzor:65, cuerpo:70,
+      nota:'Inmersión más presión: extrae más cuerpo y dulzor, y tolera un mayor desarrollo.' },
+  ];
+
+  const T0 = 100;
+  const T1 = 158;
+  const X_MAX = 14;
+  const Y_MIN = 70, Y_MAX = 235;
+
+  /* ============ estado ============ */
+  const state = {
+    acidez: 50, dulzor: 50, cuerpo: 50,
+    variedad: VARIEDADES[0],
+    metodo: METODOS[1],
+  };
+
+  /* ============ utilidades ============ */
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+  function fmtTime(minFloat){
+    const totalSec = Math.round(minFloat*60);
+    const m = Math.floor(totalSec/60), s = totalSec%60;
+    return m + ':' + String(s).padStart(2,'0');
+  }
+  function easeOutQuad(u){ return 1-(1-u)*(1-u); }
+  function lerpSeg(t0,T0v,t1,T1v,t){
+    const u = clamp((t-t0)/(t1-t0 || 1e-6), 0, 1);
+    return T0v + (T1v-T0v)*easeOutQuad(u);
+  }
+
+  function computePhases(){
+    const v = state.variedad;
+    const eA = clamp(state.acidez + v.aB, 0, 100);
+    const eD = clamp(state.dulzor + v.dB, 0, 100);
+    const eC = clamp(state.cuerpo + v.cB, 0, 100);
+
+    let dtr = 20 + (eC-50)*0.10 - (eA-50)*0.08 + (eD-50)*0.02;
+    dtr = clamp(dtr, 14, 26);
+
+    let secado = 42 + (eD-50)*0.05 + (eC-50)*0.04 - (eA-50)*0.08;
+    secado = clamp(secado, 32, 50);
+
+    let maillard = 100 - secado - dtr;
+    if (maillard < 24){
+      const deficit = 24 - maillard;
+      secado -= deficit/2; dtr -= deficit/2; maillard = 24;
+    }
+    const sum = secado + maillard + dtr;
+    secado = secado/sum*100; maillard = maillard/sum*100; dtr = dtr/sum*100;
+
+    let T = 11 + (eC-50)*0.02 - (eA-50)*0.02;
+    T = clamp(T, 8, 14);
+
+    let Tfinal = 205 + (eC-50)*0.15 - (eA-50)*0.15 + (eD-50)*0.02;
+    Tfinal = clamp(Tfinal, 195, 230);
+
+    const t1 = T * secado/100;
+    const t2 = t1 + T * maillard/100;
+
+    return {
+      secadoPct: secado, maillardPct: maillard, desarrolloPct: dtr,
+      T, Tfinal, Tcrack: v.crack, t1, t2, t3: T,
+    };
+  }
+
+  function tempAt(p, t){
+    if (t <= p.t1) return lerpSeg(0, T0, p.t1, T1, t);
+    if (t <= p.t2) return lerpSeg(p.t1, T1, p.t2, p.Tcrack, t);
+    return lerpSeg(p.t2, p.Tcrack, p.t3, p.Tfinal, t);
+  }
+
+  function faseAt(p, t){
+    if (t <= p.t1 + 1e-6) return 'secado';
+    if (t <= p.t2 + 1e-6) return 'maillard';
+    return 'desarrollo';
+  }
+  const FASE_LABEL = { secado:'Secado', maillard:'Maillard', desarrollo:'Desarrollo' };
+
+  function compatibility(m){
+    const d = (Math.abs(state.acidez-m.acidez) + Math.abs(state.dulzor-m.dulzor) + Math.abs(state.cuerpo-m.cuerpo)) / 3;
+    return Math.round(clamp(100-d, 0, 100));
+  }
+
+  /* ============ render: selects ============ */
+  const selVariedad = document.getElementById('sel-variedad');
+  const selMetodo = document.getElementById('sel-metodo');
+
+  VARIEDADES.forEach(v=>{
+    const o = document.createElement('option'); o.value=v.id; o.textContent=v.nombre;
+    selVariedad.appendChild(o);
+  });
+  METODOS.forEach(m=>{
+    const o = document.createElement('option'); o.value=m.id; o.textContent=m.nombre;
+    selMetodo.appendChild(o);
+  });
+  selVariedad.value = state.variedad.id;
+  selMetodo.value = state.metodo.id;
+
+  /* ============ render: phase bar ============ */
+  const phasebarEl = document.getElementById('phasebar');
+  const SEG_DEFS = [
+    { key:'secadoPct', name:'Secado', bg:'var(--secado)', ink:'var(--secado-ink)' },
+    { key:'maillardPct', name:'Maillard', bg:'var(--maillard)', ink:'var(--maillard-ink)' },
+    { key:'desarrolloPct', name:'Desarrollo', bg:'var(--desarrollo)', ink:'var(--desarrollo-ink)' },
+  ];
+  SEG_DEFS.forEach(def=>{
+    const seg = document.createElement('div');
+    seg.className = 'phase-seg';
+    seg.style.background = def.bg;
+    seg.style.color = def.ink;
+    seg.innerHTML = '<span class="p-name">'+def.name+'</span><span class="p-time"></span>';
+    seg.dataset.key = def.key;
+    phasebarEl.appendChild(seg);
+  });
+
+  function renderPhaseBar(p){
+    const times = {
+      secadoPct: [0, p.t1],
+      maillardPct: [p.t1, p.t2],
+      desarrolloPct: [p.t2, p.t3],
+    };
+    [...phasebarEl.children].forEach(seg=>{
+      const key = seg.dataset.key;
+      const pct = p[key];
+      seg.style.width = pct.toFixed(1) + '%';
+      const [a,b] = times[key];
+      seg.querySelector('.p-time').textContent = fmtTime(a) + '–' + fmtTime(b) + ' · ' + Math.round(pct) + '%';
+    });
+  }
+
+  /* ============ render: chart ============ */
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const PHASE_COLORS = {
+    secado: getCssVar('--secado'), maillard: getCssVar('--maillard'), desarrollo: getCssVar('--desarrollo'),
+  };
+  function getCssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function resizeCanvas(){
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+    if (!cssW || !cssH) return;
+    canvas.width = Math.round(cssW*dpr);
+    canvas.height = Math.round(cssH*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function hexToRgba(hex, alpha){
+    const h = hex.replace('#','');
+    const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+    return 'rgba('+r+','+g+','+b+','+alpha+')';
+  }
+
+  function drawChart(p){
+    resizeCanvas();
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const padL = 42, padR = 14, padT = 14, padB = 30;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    function xPix(t){ return padL + (t/X_MAX)*plotW; }
+    function yPix(temp){ return padT + (1-(temp-Y_MIN)/(Y_MAX-Y_MIN))*plotH; }
+
+    ctx.clearRect(0,0,W,H);
+
+    const bands = [
+      ['secado', 0, p.t1], ['maillard', p.t1, p.t2], ['desarrollo', p.t2, p.t3],
+    ];
+    bands.forEach(([key,a,b])=>{
+      ctx.fillStyle = hexToRgba(PHASE_COLORS[key], 0.13);
+      ctx.fillRect(xPix(a), padT, xPix(b)-xPix(a), plotH);
+    });
+
+    ctx.strokeStyle = 'rgba(241,233,221,0.08)';
+    ctx.lineWidth = 1;
+    ctx.font = '11px "IBM Plex Mono", monospace';
+    ctx.fillStyle = getCssVar('--muted');
+    for (let temp=80; temp<=Y_MAX; temp+=20){
+      const y = yPix(temp);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W-padR, y); ctx.stroke();
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText(temp, padL-8, y);
+    }
+    for (let m=0; m<=X_MAX; m+=2){
+      const x = xPix(m);
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, H-padB); ctx.stroke();
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(m, x, H-padB+8);
+    }
+
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = 'rgba(241,233,221,0.35)';
+    const yCrack = yPix(p.Tcrack);
+    ctx.beginPath(); ctx.moveTo(padL, yCrack); ctx.lineTo(xPix(p.t2), yCrack); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    const steps = 140;
+    for (let i=0; i<=steps; i++){
+      const t = (i/steps)*p.t3;
+      const temp = tempAt(p, t);
+      const x = xPix(t), y = yPix(temp);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = getCssVar('--ember');
+    ctx.lineWidth = 2.75;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.fillStyle = getCssVar('--ember');
+    for (let m=0; m<=p.t3; m+=2){
+      const y = yPix(tempAt(p,m));
+      ctx.beginPath(); ctx.arc(xPix(m), y, 3.6, 0, Math.PI*2); ctx.fill();
+    }
+    const yEnd = yPix(tempAt(p,p.t3));
+    ctx.beginPath(); ctx.arc(xPix(p.t3), yEnd, 5, 0, Math.PI*2);
+    ctx.fillStyle = getCssVar('--maillard'); ctx.fill();
+    ctx.strokeStyle = getCssVar('--bg') || '#17130f'; ctx.lineWidth=1.5; ctx.stroke();
+
+    const yC = yPix(p.Tcrack);
+    ctx.beginPath(); ctx.arc(xPix(p.t2), yC, 5, 0, Math.PI*2);
+    ctx.fillStyle = getCssVar('--desarrollo'); ctx.fill();
+    ctx.strokeStyle = '#17130f'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+
+  /* ============ render: tabla ============ */
+  const tbody = document.getElementById('tbody-curve');
+  const FASE_BG = { secado:'var(--secado)', maillard:'var(--maillard)', desarrollo:'var(--desarrollo)' };
+  const FASE_INK = { secado:'var(--secado-ink)', maillard:'var(--maillard-ink)', desarrollo:'var(--desarrollo-ink)' };
+
+  function renderTable(p){
+    tbody.innerHTML = '';
+    const rows = [];
+    for (let m=0; m<=p.t3+1e-6; m+=2){
+      rows.push(Math.min(m, p.t3));
+    }
+    if (rows.length===0 || rows[rows.length-1] < p.t3 - 1e-6) rows.push(p.t3);
+
+    rows.forEach((t,i)=>{
+      const temp = tempAt(p, t);
+      const fase = faseAt(p, t);
+      const tr = document.createElement('tr');
+      const label = (i===rows.length-1) ? fmtTime(t) + ' (caída)' : fmtTime(t);
+      tr.innerHTML = '<td>'+label+'</td>'+
+        '<td>'+Math.round(temp)+'°</td>'+
+        '<td><span class="fase-tag" style="background:'+FASE_BG[fase]+';color:'+FASE_INK[fase]+'">'+FASE_LABEL[fase]+'</span></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* ============ update maestro ============ */
+  function update(){
+    const p = computePhases();
+
+    renderPhaseBar(p);
+    drawChart(p);
+    renderTable(p);
+
+    document.getElementById('chart-total-time').textContent = 'Total: ' + fmtTime(p.T);
+    document.getElementById('cap-crack').textContent = '● 1er crack ≈ ' + fmtTime(p.t2) + ' · ' + Math.round(p.Tcrack) + '°C';
+    document.getElementById('cap-drop').textContent = '● Caída ≈ ' + fmtTime(p.t3) + ' · ' + Math.round(p.Tfinal) + '°C';
+
+    document.getElementById('variety-note').textContent = state.variedad.nota;
+    document.getElementById('method-note').textContent = state.metodo.nota;
+
+    const aff = compatibility(state.metodo);
+    const badge = document.getElementById('affinity-badge');
+    badge.innerHTML = 'Afinidad con ' + state.metodo.nombre + ': <b>' + aff + '%</b>';
+    badge.style.borderColor = aff>=70 ? 'var(--good)' : (aff>=45 ? 'var(--warn)' : 'var(--ember)');
+
+    document.getElementById('v-acidez').textContent = state.acidez;
+    document.getElementById('v-dulzor').textContent = state.dulzor;
+    document.getElementById('v-cuerpo').textContent = state.cuerpo;
+  }
+
+  /* ============ eventos ============ */
+  document.getElementById('s-acidez').addEventListener('input', e=>{ state.acidez = +e.target.value; update(); });
+  document.getElementById('s-dulzor').addEventListener('input', e=>{ state.dulzor = +e.target.value; update(); });
+  document.getElementById('s-cuerpo').addEventListener('input', e=>{ state.cuerpo = +e.target.value; update(); });
+
+  selVariedad.addEventListener('change', e=>{
+    state.variedad = VARIEDADES.find(v=>v.id===e.target.value);
+    update();
+  });
+  selMetodo.addEventListener('change', e=>{
+    state.metodo = METODOS.find(m=>m.id===e.target.value);
+    update();
+  });
+
+  document.getElementById('preset-btn').addEventListener('click', ()=>{
+    state.acidez = state.metodo.acidez;
+    state.dulzor = state.metodo.dulzor;
+    state.cuerpo = state.metodo.cuerpo;
+    document.getElementById('s-acidez').value = state.acidez;
+    document.getElementById('s-dulzor').value = state.dulzor;
+    document.getElementById('s-cuerpo').value = state.cuerpo;
+    update();
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', ()=>{
+    state.acidez = state.dulzor = state.cuerpo = 50;
+    document.getElementById('s-acidez').value = 50;
+    document.getElementById('s-dulzor').value = 50;
+    document.getElementById('s-cuerpo').value = 50;
+    update();
+  });
+
+  window.addEventListener('resize', ()=> update());
+  
+  // Cerrar modal si se hace clic fuera del contenido
+  document.getElementById('ia-modal').addEventListener('click', function(e) {
+    if(e.target === this) cerrarModalIA();
+  });
+
+})();
+</script>
+</body>
+</html>

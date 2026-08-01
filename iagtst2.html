@@ -429,6 +429,17 @@
 (function(){
   "use strict";
 
+  /* ============ CONTEXTO FIJO DE LA TOSTADORA ============ */
+  // Esta descripción se envía en TODOS los prompts a la IA para que sus
+  // recomendaciones sean específicas a esta máquina y no asuma una tostadora de tambor.
+  const CONTEXTO_MAQUINA = `PERFIL DE LA TOSTADORA (tenlo en cuenta SIEMPRE al analizar y dar recomendaciones; no asumas otro tipo de máquina):
+- Tipo: tostadora de aire por convección. NO es una tostadora de tambor: no hay tambor rotando ni quemador de gas directo sobre el grano.
+- Carga máxima: 80 gramos de café verde por tueste.
+- Control de temperatura: puede operarse con temperatura FIJA (un solo setpoint durante todo el tueste) o con temperatura VARIABLE, que el usuario ajusta manualmente en tiempo real durante el tueste (perfiles escalonados o graduales).
+- Control de aire: 3 niveles de velocidad de aire (V1, V2, V3), también ajustables manualmente en tiempo real durante el tueste, de forma independiente a la temperatura.
+- Registro de datos: el sensor de temperatura está adaptado para grabar la temperatura segundo a segundo, lo que permite reconstruir y analizar la curva de tueste y el RoR (Rate of Rise) con precisión después de cada tueste.
+Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de temperatura y nivel de aire (V1/V2/V3) a lo largo del tiempo, no en términos de velocidad de tambor, potencia de quemador de gas u otros controles que esta máquina no tiene.`;
+
   /* ============ SISTEMA IA Y AUTH ============ */
   let GEMINI_API_KEY = "";
 
@@ -493,7 +504,7 @@
       }
     });
 
-    let prompt = `Actúa como un maestro tostador experto. El usuario está utilizando una herramienta educativa para simular perfiles de tueste.\n\n`;
+    let prompt = `Actúa como un maestro tostador experto. El usuario está utilizando una herramienta educativa para simular perfiles de tueste.\n\n${CONTEXTO_MAQUINA}\n\n`;
     let titulo = "";
 
     if (nivelSeccion === 1) {
@@ -550,13 +561,15 @@
 
     const prompt = `Actúa como un maestro tostador experto. El usuario está usando un simulador de tueste y te ha hecho una consulta específica basándose en su configuración actual.
 
+    ${CONTEXTO_MAQUINA}
+
     CONFIGURACIÓN ACTUAL DEL TUESTE:
     ${contextoGeneral}
 
     PREGUNTA DEL USUARIO:
     "${pregunta}"
 
-    Por favor, responde a la pregunta de forma técnica pero accesible, basándote en los parámetros térmicos y sensoriales actuales.`;
+    Por favor, responde a la pregunta de forma técnica pero accesible, basándote en los parámetros térmicos y sensoriales actuales, y en el perfil de la tostadora indicado arriba.`;
 
     ejecutarLlamadaGemini(prompt, modalBody, preguntaInput);
   };
@@ -621,6 +634,8 @@
       nota:'Versátil según el filtro que uses (cónico o plano): buen equilibrio entre claridad y cuerpo.' },
     { id:'aeropress', nombre:'AeroPress', acidez:40, dulzor:65, cuerpo:70,
       nota:'Inmersión más presión: extrae más cuerpo y dulzor, y tolera un mayor desarrollo.' },
+    { id:'generico', nombre:'Genérico (V60 / Origami / AeroPress)', acidez:55, dulzor:58, cuerpo:52,
+      nota:'Perfil intermedio, sin llevar ningún atributo al extremo: pensado como punto de partida seguro que funciona razonablemente bien tanto en V60 como en Origami y AeroPress, sin comprometerse del todo con ninguno.' },
   ];
 
   const T0 = 100;

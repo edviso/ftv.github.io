@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -338,6 +338,7 @@ function guardarApiKeyYSeguir(){
   err.classList.add('oculto');
   DATOS = cargarDatos();
   irAVistaSegunEstado();
+  mostrarToast('API Key guardada');
 }
 function cambiarApiKey(){
   borrarApiKeyStorage();
@@ -350,6 +351,18 @@ let borradorConfig = null;
 
 function renderSetup(){
   borradorConfig = JSON.parse(JSON.stringify(DATOS.config));
+  // Si el ejercicio ya tiene progreso guardado, mostramos/editamos su peso y reps ACTUALES
+  // (no el valor histórico con el que se creó), para que guardar aquí siempre sea seguro y predecible.
+  ['superior','inferior'].forEach(bloque=>{
+    borradorConfig.ejercicios[bloque].forEach(ej=>{
+      const prog = DATOS.progreso[ej.id];
+      if(prog){
+        ej.pesoInicial = prog.pesoObjetivo;
+        ej.repsObjetivo = prog.repsObjetivo.slice();
+        ej.series = ej.repsObjetivo.length;
+      }
+    });
+  });
   const esPrimeraVez = !DATOS.config.setupCompleto;
   document.getElementById('setupTitulo').textContent = esPrimeraVez ? 'Configura tu rutina' : 'Editar rutina y horario';
   document.getElementById('btnCancelarSetup').classList.toggle('oculto', esPrimeraVez);
@@ -411,7 +424,7 @@ function renderEjerciciosEditor(bloque){
       <input type="text" value="${ej.repsObjetivo.join(',')}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].repsObjetivo = this.value.split(',').map(x=>parseInt(x.trim())||0)">
       <div class="fila">
         <div>
-          <label>Peso inicial (lbs)</label>
+          <label>${DATOS.progreso[ej.id] ? 'Peso actual (lbs)' : 'Peso inicial (lbs)'}</label>
           <input type="number" step="0.5" value="${ej.pesoInicial}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].pesoInicial=parseFloat(this.value)||0">
         </div>
         <div>
@@ -440,8 +453,7 @@ function guardarConfiguracion(){
   const nuevoProgreso = {};
   ['superior','inferior'].forEach(bloque=>{
     borradorConfig.ejercicios[bloque].forEach(ej=>{
-      const previo = DATOS.progreso[ej.id];
-      nuevoProgreso[ej.id] = previo || {
+      nuevoProgreso[ej.id] = {
         pesoObjetivo: ej.pesoInicial,
         repsObjetivo: ej.repsObjetivo.slice(),
         pesoUltimaSesion: ej.pesoInicial,
@@ -454,6 +466,7 @@ function guardarConfiguracion(){
   DATOS.progreso = nuevoProgreso;
   guardarDatos();
   mostrarVista('hoy');
+  mostrarToast('Configuración guardada');
 }
 
 // ---- 7. Vista: Hoy ----
@@ -474,6 +487,7 @@ function renderHoy(){
       <div class="card">
         <p>Hoy es día de descanso según tu horario.</p>
         <button class="btn secundario" onclick="forzarRegistroManual()">Registrar una sesión de todas formas</button>
+        <small class="ayuda" style="margin-top:8px;">El análisis de la IA y el chat de seguimiento aparecen debajo, pero solo después de registrar y analizar una sesión del día. Hoy no hay ninguna todavía.</small>
       </div>`;
     return;
   }
@@ -913,6 +927,20 @@ function importarJSON(event){
 }
 
 // ---- 10. Utilidades ----
+function mostrarToast(mensaje){
+  let toast = document.getElementById('toastMsg');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'toastMsg';
+    toast.style.cssText = 'position:fixed;left:50%;bottom:74px;transform:translateX(-50%);max-width:88vw;text-align:center;background:var(--primary);color:var(--on-primary);padding:10px 18px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = mensaje;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>{ toast.style.opacity = '0'; }, 2200);
+}
+
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function capitalizar(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 function escapeHtml(s){

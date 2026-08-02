@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Entrenador IA - Bitácora de Fuerza</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface: #1e1e1e;
+            --primary: #00bcd4;
+            --secondary: #4caf50;
+            --accent: #ff9800;
+            --text: #e0e0e0;
+            --border: #333;
+            --error: #cf6679;
+            --warning: #ffd54f;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+        }
+        h1, h2, h3 { margin-top: 0; color: var(--primary); font-size: 1.3rem; }
+        h1 { font-size: 1.5rem; text-align: center; }
+        
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #bbb; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background-color: #2a2a2a;
+            color: var(--text);
+            box-sizing: border-box;
+            font-size: 16px; /* Evita zoom en iOS */
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .routine-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .badge-superior { background-color: rgba(0, 188, 212, 0.2); color: var(--primary); border: 1px solid var(--primary); }
+        .badge-inferior { background-color: rgba(76, 175, 80, 0.2); color: var(--secondary); border: 1px solid var(--secondary); }
+        .badge-descanso { background-color: rgba(255, 152, 0, 0.2); color: var(--accent); border: 1px solid var(--accent); }
+        .badge-penalty { background-color: rgba(207, 102, 121, 0.2); color: var(--error); border: 1px solid var(--error); }
+
+        .exercise-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        .exercise-title { font-weight: bold; margin-bottom: 10px; color: #fff; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+        
+        button.action-btn {
+            background-color: var(--primary);
+            color: #000;
+            border: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: opacity 0.2s;
+        }
+        button.action-btn:active { opacity: 0.8; }
+        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+        
+        .btn-row { display: flex; gap: 10px; }
+        .btn-row button, .btn-row label {
+            flex: 1;
+            background-color: #2a2a2a;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        input[type="file"] { display: none; }
+
+        #loading-section { text-align: center; display: none; }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .result-box {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            white-space: pre-wrap;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        /* Chat Styles */
+        .chat-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #121212;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+        }
+        .chat-msg {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .chat-user { background-color: rgba(0, 188, 212, 0.2); margin-left: 20%; text-align: right; }
+        .chat-ai { background-color: #2a2a2a; margin-right: 20%; }
+        
+        .hidden { display: none !important; }
+        .text-small { font-size: 12px; color: #888; margin-top: -10px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- SECCIÓN AUTH -->
+    <div id="auth-section" class="card">
+        <h1>🏋️ Entrenador IA Virtual</h1>
+        <p style="text-align: center; color: #aaa; font-size: 14px;">Prototipo conceptual minimalista</p>
+        <label for="apiKey">API Key de Google Gemini:</label>
+        <input type="password" id="apiKey" placeholder="AIzaSy...">
+        <p class="text-small">Tu clave se guarda solo en tu dispositivo (localStorage). Nunca se envía a nuestros servidores.</p>
+        <button class="action-btn" onclick="guardarEIniciarApp()">Iniciar Aplicación</button>
+        <div id="error-message" style="color: var(--error); text-align: center; display: none;"></div>
+    </div>
+
+    <!-- SECCIÓN PRINCIPAL -->
+    <div id="app-section" class="hidden">
+        <div class="card">
+            <h1>📅 Panel de Hoy</h1>
+            <div id="fecha-hoy" style="text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;"></div>
+            <div id="routine-badge" class="routine-badge badge-descanso">Cargando...</div>
+            <div id="penalty-warning" class="hidden" style="background: rgba(207, 102, 121, 0.1); border: 1px solid var(--error); padding: 10px; border-radius: 8px; margin-bottom: 15px; color: var(--error); font-size: 14px;">
+                ⚠️ <strong>Regla de penalización activada:</strong> Se detectó un día de entrenamiento perdido. Según tus reglas, debes repetir la última rutina realizada antes de avanzar.
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📝 Estado Previo al Entreno</h2>
+            <div class="row">
+                <div>
+                    <label for="sueno">Sueño/Descanso:</label>
+                    <select id="sueno">
+                        <option value="Excelente (7-8 hrs, reparador)">Excelente</option>
+                        <option value="Bueno (6-7 hrs, normal)" selected>Bueno / Normal</option>
+                        <option value="Regular (Interrumpido o <6 hrs)">Regular</option>
+                        <option value="Malo (Muy poco o mal sueño)">Malo</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="energia">Energía (1-10):</label>
+                    <select id="energia">
+                        <option value="10">10 - Máxima</option>
+                        <option value="8" selected>8 - Buena</option>
+                        <option value="6">6 - Moderada</option>
+                        <option value="4">4 - Baja</option>
+                    </select>
+                </div>
+            </div>
+            <label for="molestias">¿Molestias articulares o dolor hoy?</label>
+            <input type="text" id="molestias" placeholder="Ej: Ninguna, o ligera rigidez en hombro derecho">
+        </div>
+
+        <div class="card">
+            <h2>💪 Registro de Ejercicios</h2>
+            <p class="text-small">Ajusta los valores. Se precargaron con tu último registro para facilitar la sobrecarga progresiva.</p>
+            <div id="ejercicios-container"></div>
+            <button class="action-btn" style="background-color: #2a2a2a; color: var(--primary); border: 1px dashed var(--primary); margin-top: 10px;" onclick="agregarEjercicioManual()">+ Agregar otro ejercicio</button>
+        </div>
+
+        <button id="btnAnalizar" class="action-btn" onclick="solicitarAnalisisIA()">🧠 Guardar y Analizar con IA</button>
+
+        <div class="btn-row">
+            <button onclick="exportarJSON()">💾 Exportar JSON</button>
+            <label for="inputJSON">📂 Importar JSON</label>
+            <input type="file" id="inputJSON" accept=".json,.txt" onchange="importarJSON(event)">
+        </div>
+        <button style="background: transparent; color: #666; border: none; width: 100%; margin-top: 15px; padding: 10px; cursor: pointer;" onclick="cambiarApiKey()">⚙️ Cambiar API Key</button>
+    </div>
+
+    <!-- SECCIÓN CARGA -->
+    <div id="loading-section" class="card">
+        <div class="spinner"></div>
+        <p>Analizando tu progreso y calculando la sobrecarga progresiva...</p>
+    </div>
+
+    <!-- SECCIÓN RESULTADOS Y CHAT -->
+    <div id="resultado-section" class="hidden">
+        <div class="card">
+            <h2>🎯 Análisis y Próxima Sesión</h2>
+            <div id="resultado-texto" class="result-box"></div>
+        </div>
+        
+        <div class="card">
+            <h2>💬 Consultar al Entrenador IA</h2>
+            <div id="chat-history" class="chat-container"></div>
+            <div class="row">
+                <input type="text" id="chat-input" placeholder="Ej: ¿Por qué recomiendas bajar el peso?" style="margin-bottom: 0;">
+                <button class="action-btn" style="width: auto; margin-bottom: 0; padding: 12px;" onclick="enviarMensajeChat()">Enviar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- CONFIGURACIÓN Y ESTADO ---
+    let GEMINI_API_KEY = "";
+    let tipoRutinaActual = "superior";
+    let historialSesiones = [];
+    let chatContext = [];
+    let ultimoAnalisisBruto = "";
+
+    // Estructura base de ejercicios según tu equipo y descripción
+    const rutinasBase = {
+        superior: [
+            { nombre: "Press de Banca (Barra)", peso: 60, series_reps: "6 series: 10, 9, 8, 7, 6, 5 reps", notas: "Nunca al fallo, controlando el hombro" },
+            { nombre: "Jalón al Pecho (Máquina)", peso: 60, series_reps: "4 series x 10 reps", notas: "Controlar la excéntrica" },
+            { nombre: "Jalones para Tríceps (Máquina)", peso: 40, series_reps: "3 series x 12 reps", notas: "" },
+            { nombre: "Accesorios con Ligas (Hombro/Bíceps)", peso: 0, series_reps: "2 series x 12 reps c/u", notas: "Tensión media, sin dolor" }
+        ],
+        inferior: [
+            { nombre: "Calentamiento: Caminadora / Saco / Ligas", peso: 0, series_reps: "10-15 minutos", notas: "Activación general" },
+            { nombre: "Sentadilla con Barra (Barra 30lbs + peso)", peso: 30, series_reps: "4 series x 8 reps", notas: "Barra apoyada segura en altura de hombros" },
+            { nombre: "Extensión de Piernas Sentado (Máquina)", peso: 50, series_reps: "3 series x 12 reps", notas: "" },
+            { nombre: "Jalón de Piernas Acostado (Máquina)", peso: 50, series_reps: "3 series x 12 reps", notas: "" }
+        ],
+        descanso: [
+            { nombre: "Caminata suave o Estiramientos", peso: 0, series_reps: "20-30 minutos", notas: "Recuperación activa" }
+        ]
+    };
+
+    // --- INICIALIZACIÓN ---
+    window.onload = function() {
+        const keyGuardada = localStorage.getItem('gemini_fitness_key');
+        if (keyGuardada && keyGuardada.length > 10) {
+            GEMINI_API_KEY = keyGuardada;
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('app-section').classList.remove('hidden');
+            inicializarApp();
+        }
+    };
+
+    function guardarEIniciarApp() {
+        const keyInput = document.getElementById('apiKey').value.trim();
+        if (keyInput.length < 10) {
+            mostrarError("Ingresa una API Key válida de Google Gemini.");
+            return;
+        }
+        GEMINI_API_KEY = keyInput;
+        localStorage.setItem('gemini_fitness_key', keyInput);
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('app-section').classList.remove('hidden');
+        inicializarApp();
+    }
+
+    function cambiarApiKey() {
+        localStorage.removeItem('gemini_fitness_key');
+        location.reload();
+    }
+
+    function mostrarError(msg) {
+        const errDiv = document.getElementById('error-message');
+        errDiv.innerText = msg;
+        errDiv.style.display = "block";
+    }
+
+    // --- LÓGICA DE FECHA Y RUTINA (GUAYAQUIL) ---
+    function obtenerFechaGuayaquil() {
+        // Obtener fecha actual en UTC-5 (Guayaquil)
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const guayaquilTime = new Date(utc + (-5 * 3600000));
+        return guayaquilTime;
+    }
+
+    function inicializarApp() {
+        const fechaGye = obtenerFechaGuayaquil();
+        const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        const diaSemana = diasSemana[fechaGye.getDay()];
+        const fechaStr = fechaGye.toLocaleDateString('es-EC', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Guayaquil' });
+        
+        document.getElementById('fecha-hoy').innerText = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+
+        // Determinar rutina programada
+        let rutinaProgramada = "descanso";
+        if (diaSemana === 'lunes' || diaSemana === 'jueves') rutinaProgramada = "superior";
+        else if (diaSemana === 'martes' || diaSemana === 'viernes') rutinaProgramada = "inferior";
+
+        // Cargar historial
+        const historialGuardado = localStorage.getItem('fitness_historial');
+        if (historialGuardado) {
+            historialSesiones = JSON.parse(historialGuardado);
+        }
+
+        // Verificar penalización (día saltado)
+        verificarPenalizacion(fechaGye, rutinaProgramada);
+
+        // Forzar la rutina programada, o permitir cambio manual si hay penalización
+        tipoRutinaActual = rutinaProgramada;
+        actualizarBadgeRutina(rutinaProgramada);
+        renderizarEjercicios(rutinaProgramada);
+    }
+
+    function verificarPenalizacion(fechaActual, rutinaProgramada) {
+        if (historialSesiones.length === 0) return;
+        
+        const ultimaSesion = historialSesiones[historialSesiones.length - 1];
+        const fechaUltima = new Date(ultimaSesion.fecha);
+        const diffTiempo = Math.abs(fechaActual - fechaUltima);
+        const diffDias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)); 
+
+        // Si pasaron más de 2 días y no era un día de descanso programado, o si se saltó un día de entreno
+        // Lógica simple: si el último entreno no fue ayer (y ayer tocaba entreno), hay penalización.
+        if (diffDias > 2 && rutinaProgramada !== "descanso") {
+            document.getElementById('penalty-warning').classList.remove('hidden');
+            // La regla del usuario: "se castiga con repetir la rutina del último día realizado"
+            tipoRutinaActual = ultimaSesion.tipoBloque; 
+            actualizarBadgeRutina(tipoRutinaActual + " (Penalización: Repetición)");
+        }
+    }
+
+    function actualizarBadgeRutina(texto) {
+        const badge = document.getElementById('routine-badge');
+        badge.innerText = "📌 Hoy toca: " + texto.toUpperCase();
+        badge.className = 'routine-badge';
+        if (texto.includes('superior')) badge.classList.add('badge-superior');
+        else if (texto.includes('inferior')) badge.classList.add('badge-inferior');
+        else badge.classList.add('badge-descanso');
+    }
+
+    // --- RENDERIZADO DINÁMICO DE EJERCICIOS ---
+    function renderizarEjercicios(tipo) {
+        const container = document.getElementById('ejercicios-container');
+        container.innerHTML = '';
+
+        // Buscar el último registro de este tipo de rutina para precargar pesos
+        const ultimoRegistro = historialSesiones.slice().reverse().find(s => s.tipoBloque === tipo.replace(' (Penalización: Repetición)', ''));
+        
+        const ejercicios = JSON.parse(JSON.stringify(rutinasBase[tipo.replace(' (Penalización: Repetición)', '')] || rutinasBase.descanso));
+
+        // Si hay registro anterior, sobreescribir con sus valores para facilitar la progresión
+        if (ultimoRegistro && ultimoRegistro.ejercicios) {
+            ejercicios.forEach((ej, index) => {
+                if (ultimoRegistro.ejercicios[index]) {
+                    ej.peso = ultimoRegistro.ejercicios[index].peso;
+                    ej.series_reps = ultimoRegistro.ejercicios[index].series_reps;
+                }
+            });
+        }
+
+        ejercicios.forEach((ej, index) => {
+            const div = document.createElement('div');
+            div.className = 'exercise-card';
+            div.innerHTML = `
+                <div class="exercise-title">${ej.nombre}</div>
+                <div class="row">
+                    <div>
+                        <label>Peso (lbs):</label>
+                        <input type="number" class="ej-peso" value="${ej.peso}" placeholder="0">
+                    </div>
+                    <div>
+                        <label>Series y Reps:</label>
+                        <input type="text" class="ej-reps" value="${ej.series_reps}" placeholder="Ej: 4 x 10">
+                    </div>
+                </div>
+                <input type="text" class="ej-notas" value="${ej.notas}" placeholder="Notas o sensaciones (opcional)">
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function agregarEjercicioManual() {
+        const container = document.getElementById('ejercicios-container');
+        const div = document.createElement('div');
+        div.className = 'exercise-card';
+        div.innerHTML = `
+            <div class="row">
+                <div style="flex: 2;">
+                    <label>Nombre del Ejercicio:</label>
+                    <input type="text" class="ej-nombre" placeholder="Ej: Curl con ligas">
+                </div>
+                <div>
+                    <label>Peso (lbs):</label>
+                    <input type="number" class="ej-peso" value="0">
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label>Series y Reps:</label>
+                    <input type="text" class="ej-reps" placeholder="Ej: 3 x 12">
+                </div>
+                <div>
+                    <label>Notas:</label>
+                    <input type="text" class="ej-notas" placeholder="Sensaciones">
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function recopilarDatosEntreno() {
+        const ejercicios = [];
+        const cards = document.querySelectorAll('.exercise-card');
+        cards.forEach(card => {
+            const nombre = card.querySelector('.ej-nombre') ? card.querySelector('.ej-nombre').value : card.querySelector('.exercise-title').innerText;
+            const peso = card.querySelector('.ej-peso').value;
+            const reps = card.querySelector('.ej-reps').value;
+            const notas = card.querySelector('.ej-notas').value;
+            if (nombre) {
+                ejercicios.push({ nombre, peso, series_reps: reps, notas });
+            }
+        });
+
+        return {
+            fecha: obtenerFechaGuayaquil().toISOString().split('T')[0],
+            tipoBloque: tipoRutinaActual.replace(' (Penalización: Repetición)', ''),
+            sueno: document.getElementById('sueno').value,
+            energia: document.getElementById('energia').value,
+            molestias: document.getElementById('molestias').value || "Ninguna",
+            ejercicios: ejercicios
+        };
+    }
+
+    // --- LÓGICA DE IA (GEMINI) ---
+    async function solicitarAnalisisIA() {
+        const datosSesion = recopilarDatosEntreno();
+        const btn = document.getElementById('btnAnalizar');
+        const loading = document.getElementById('loading-section');
+        const resultadoSection = document.getElementById('resultado-section');
+
+        // Guardar sesión en historial local
+        historialSesiones.push(datosSesion);
+        localStorage.setItem('fitness_historial', JSON.stringify(historialSesiones));
+
+        btn.disabled = true;
+        loading.style.display = 'block';
+        resultadoSection.classList.add('hidden');
+
+        // Obtener la sesión anterior del mismo tipo para contexto de progresión
+        const sesionesPrevias = historialSesiones.filter(s => s.tipoBloque === datosSesion.tipoBloque);
+        const sesionAnterior = sesionesPrevias.length > 1 ? sesionesPrevias[sesionesPrevias.length - 2] : null;
+
+        const promptSistema = `Eres un entrenador personal experto en biomecánica y sobrecarga progresiva para atletas masters. 
+        PERFIL DEL USUARIO: Hombre, 68 años, 173 cm, 150 lbs. Objetivo: ganar 10 lbs de músculo en 12 meses. 
+        CONSIDERACIONES CRÍTICAS: Viene de una lesión de hombros (2 años sin gym). En press de banca usa un esquema de 6 series descendentes (10, 9, 8, 7, 6, 5 reps) NUNCA al fallo. Aumenta solo 1 lb por semana en press de banca. 
+        EQUIPO DISPONIBLE: Máquina multifunción (press banca, jalón pecho, extensión piernas sentado/acostado, tríceps), máquina de dominadas/fondos, caminadora no eléctrica, ligas, saco de boxeo, barra de 30 lbs para sentadillas apoyada en barra de fondos.
+        REGLA DE ORO: La progresión debe ser sostenida, segura y técnica. Si reportó molestias, prioriza la rehabilitación y reduce la carga. Si el peso de press de banca parece anormalmente bajo (ej. 24 lbs), asume que es una fase de rehabilitación muy temprana y valida la técnica antes de sugerir subidas agresivas.`;
+
+        const promptUsuario = `Analiza esta sesión y diseña la próxima.
+        SESIÓN ACTUAL (${datosSesion.fecha}):
+        - Bloque: ${datosSesion.tipoBloque}
+        - Sueño: ${datosSesion.sueno}
+        - Energía: ${datosSesion.energia}/10
+        - Molestias: ${datosSesion.molestias}
+        - Ejercicios realizados: ${JSON.stringify(datosSesion.ejercicios)}
+
+        ${sesionAnterior ? `COMPARACIÓN CON SESIÓN ANTERIOR (${sesionAnterior.fecha}): ${JSON.stringify(sesionAnterior.ejercicios)}` : 'Primera sesión registrada.'}
+
+        RESPONDE EXCLUSIVAMENTE CON ESTE FORMATO (usa negritas con **):
+        1. **EVALUACIÓN**: Breve análisis del rendimiento, volumen y manejo de la molestia reportada.
+        2. **PRÓXIMA SESIÓN (${datosSesion.tipoBloque})**: Tabla o lista clara con el peso exacto, series y repeticiones recomendadas para cada ejercicio, aplicando sobrecarga progresiva (+1 rep o +1 a 2 lbs si fue exitoso, o mantener si hubo molestia).
+        3. **CONSEJO TÉCNICO**: Recomendación específica sobre calentamiento, ejecución o recuperación para su perfil de 68 años.`;
+
+        try {
+            const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: promptSistema + "\n\n" + promptUsuario }] }],
+                    generationConfig: { temperature: 0.4 }
+                })
+            });
+
+            if (!respuesta.ok) throw new Error("Error en la API de Gemini. Verifica tu clave.");
+
+            const datos = await respuesta.json();
+            ultimoAnalisisBruto = datos.candidates[0].content.parts[0].text;
+            
+            // Renderizar resultado
+            document.getElementById('resultado-texto').innerHTML = ultimoAnalisisBruto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            resultadoSection.classList.remove('hidden');
+
+            // Inicializar chat
+            chatContext = [
+                { role: "user", parts: [{ text: promptSistema + "\n\n" + promptUsuario }] },
+                { role: "model", parts: [{ text: ultimoAnalisisBruto }] }
+            ];
+            document.getElementById('chat-history').innerHTML = `<div class="chat-msg chat-ai">¡Hola! He analizado tu sesión. ¿Tienes alguna pregunta sobre la rutina, los pesos o tu recuperación?</div>`;
+
+        } catch (error) {
+            document.getElementById('resultado-texto').innerHTML = `<span style="color: var(--error)"><b>Error:</b><br>${error.message}</span>`;
+            resultadoSection.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            loading.style.display = 'none';
+            resultadoSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    // --- CHAT CON IA ---
+    async function enviarMensajeChat() {
+        const input = document.getElementById('chat-input');
+        const mensaje = input.value.trim();
+        if (!mensaje) return;
+
+        const chatHistoryDiv = document.getElementById('chat-history');
+        chatHistoryDiv.innerHTML += `<div class="chat-msg chat-user">${mensaje}</div>`;
+        input.value = '';
+        chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+
+        chatContext.push({ role: "user", parts: [{ text: mensaje }] });
+
+        try {
+            const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: chatContext })
+            });
+            const datos = await respuesta.json();
+            const respuestaIA = datos.candidates[0].content.parts[0].text;
+            
+            chatContext.push({ role: "model", parts: [{ text: respuestaIA }] });
+            chatHistoryDiv.innerHTML += `<div class="chat-msg chat-ai">${respuestaIA.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>`;
+            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+        } catch (error) {
+            chatHistoryDiv.innerHTML += `<div class="chat-msg chat-ai" style="color: var(--error)">Error al responder: ${error.message}</div>`;
+        }
+    }
+
+    // --- EXPORTAR / IMPORTAR JSON ---
+    function exportarJSON() {
+        const datosCompletos = {
+            version: "2.0",
+            perfil: "Hombre 68 años, 150 lbs, objetivo +10 lbs músculo, rehab hombro",
+            historial: historialSesiones,
+            ultimoAnalisis: ultimoAnalisisBruto
+        };
+        const blob = new Blob([JSON.stringify(datosCompletos, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bitacora_fitness_${obtenerFechaGuayaquil().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    function importarJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const datos = JSON.parse(e.target.result);
+                if (datos.historial && Array.isArray(datos.historial)) {
+                    historialSesiones = datos.historial;
+                    localStorage.setItem('fitness_historial', JSON.stringify(historialSesiones));
+                    alert("¡Historial cargado correctamente! La app se recargará para aplicar los cambios.");
+                    location.reload();
+                } else {
+                    alert("El archivo no tiene el formato de historial esperado.");
+                }
+            } catch (err) {
+                alert("Error al leer el archivo JSON: " + err.message);
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+</script>
+</body>
+</html>

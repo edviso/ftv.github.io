@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Control de Pesas &amp; IA</title>
+<style>
+  :root{
+    --bg:#12161a;
+    --surface:#1a2027;
+    --surface-alt:#212a33;
+    --border:#2b3540;
+    --text:#dfe6ec;
+    --text-dim:#8695a3;
+    --primary:#3fb8ae;
+    --primary-dim:#2c8a82;
+    --on-primary:#08201d;
+    --amber:#d99a4e;
+    --green:#6fbf73;
+    --error:#e0685f;
+    --radius:12px;
+    --mono: ui-monospace, "Roboto Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0 0 84px 0;
+    background:var(--bg); color:var(--text);
+    font-family:var(--sans); line-height:1.5; font-size:15px;
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:16px;}
+  h1,h2,h3{margin:0 0 10px 0; font-weight:700; letter-spacing:-0.01em;}
+  h1{font-size:20px; color:var(--text);}
+  h2{font-size:17px; color:var(--primary);}
+  h3{font-size:14px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em;}
+  p{margin:0 0 12px 0; color:var(--text-dim);}
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px; margin-bottom:14px;
+  }
+  label{display:block; font-size:13px; font-weight:600; color:var(--text-dim); margin-bottom:6px;}
+  input[type="text"], input[type="password"], input[type="number"], select, textarea{
+    width:100%; padding:11px 12px; margin-bottom:12px;
+    border:1px solid var(--border); border-radius:9px;
+    background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:15px;
+  }
+  input[type="number"]{font-family:var(--mono);}
+  textarea{min-height:70px; resize:vertical; font-family:var(--sans);}
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible{
+    outline:2px solid var(--primary); outline-offset:1px;
+  }
+  button{ font-family:var(--sans); cursor:pointer; }
+  .btn{
+    width:100%; padding:13px 16px; border:none; border-radius:9px;
+    font-size:15px; font-weight:700; background:var(--primary); color:var(--on-primary);
+    margin-bottom:10px;
+  }
+  .btn:active{opacity:.82;}
+  .btn:disabled{background:#3a4550; color:#7c8894; cursor:not-allowed;}
+  .btn.secundario{background:var(--surface-alt); color:var(--text); border:1px solid var(--border);}
+  .btn.peligro{background:transparent; color:var(--error); border:1px solid var(--error);}
+  .btn.chico{width:auto; padding:8px 12px; font-size:13px; margin:0;}
+  .fila{display:flex; gap:10px;}
+  .fila > *{flex:1;}
+  .badge{
+    display:inline-block; padding:4px 10px; border-radius:20px;
+    font-size:12px; font-weight:700; letter-spacing:.02em;
+  }
+  .badge.on-track{background:rgba(63,184,174,.16); color:var(--primary);}
+  .badge.consolidacion{background:rgba(217,154,78,.12); color:var(--amber);}
+  .badge.recuperacion{background:rgba(217,154,78,.2); color:var(--amber);}
+  .badge.descanso{background:rgba(255,255,255,.06); color:var(--text-dim);}
+  .top-status{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+  .fecha-linea{font-family:var(--mono); font-size:13px; color:var(--text-dim);}
+  .ejercicio-bloque{border-top:1px solid var(--border); padding-top:12px; margin-top:12px;}
+  .ejercicio-bloque:first-child{border-top:none; padding-top:0; margin-top:0;}
+  .ejercicio-nombre{font-weight:700; margin-bottom:2px;}
+  .ejercicio-meta{font-size:12px; color:var(--text-dim); margin-bottom:8px;}
+  .serie-fila{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .serie-num{font-family:var(--mono); font-size:12px; color:var(--text-dim); width:20px; flex-shrink:0;}
+  .stepper{display:flex; align-items:center; gap:4px; flex:1;}
+  .stepper button{
+    width:30px; height:36px; border-radius:7px; border:1px solid var(--border);
+    background:var(--surface-alt); color:var(--text); font-size:16px; flex-shrink:0;
+  }
+  .stepper input{margin:0; text-align:center; padding:8px 4px;}
+  .stepper span.unidad{font-size:11px; color:var(--text-dim); width:34px; flex-shrink:0;}
+  .chip-lista{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
+  .chip{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface-alt); border:1px solid var(--border);
+    border-radius:9px; padding:9px 12px; font-size:14px;
+  }
+  .chip input[type="checkbox"]{width:18px; height:18px; margin:0;}
+  nav.tabs{
+    position:fixed; bottom:0; left:0; right:0; background:var(--surface);
+    border-top:1px solid var(--border); display:flex; z-index:20;
+  }
+  nav.tabs button{
+    flex:1; background:none; border:none; color:var(--text-dim);
+    padding:12px 4px 10px; font-size:12px; font-weight:600;
+  }
+  nav.tabs button.activo{color:var(--primary);}
+  .oculto{display:none !important;}
+  .resultado-caja{
+    background:var(--bg); border:1px solid var(--border); border-radius:9px;
+    padding:13px; margin-bottom:10px; font-size:14px;
+  }
+  .recom-fila{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:8px 0; border-bottom:1px solid var(--border); gap:10px;
+  }
+  .recom-fila:last-child{border-bottom:none;}
+  .recom-peso{font-family:var(--mono); font-weight:700; color:var(--primary); white-space:nowrap;}
+  .msg-chat{margin-bottom:10px; font-size:14px;}
+  .msg-chat.usuario{color:var(--text);}
+  .msg-chat.usuario b{color:var(--primary);}
+  .msg-chat.ia b{color:var(--amber);}
+  .error-msg{color:var(--error); font-size:13px; margin-top:-4px; margin-bottom:10px;}
+  .exercise-edit-row{border:1px solid var(--border); border-radius:9px; padding:12px; margin-bottom:10px; background:var(--bg);}
+  .exercise-edit-row .fila{margin-bottom:0;}
+  .hist-item{
+    border:1px solid var(--border); border-radius:9px; padding:12px; margin-bottom:8px; background:var(--bg);
+  }
+  .hist-item .fecha{font-family:var(--mono); font-size:13px; color:var(--text-dim);}
+  small.ayuda{display:block; color:var(--text-dim); font-size:12px; margin:-8px 0 12px;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ===================== VISTA: API KEY ===================== -->
+  <div id="vista-auth" class="oculto">
+    <div class="card">
+      <h1>🏋️ Control de Pesas &amp; IA</h1>
+      <p>Ingresa tu API Key de Google Gemini. Se guarda solo en este dispositivo, nunca en el código ni en tus respaldos JSON.</p>
+      <label for="inputApiKey">API Key de Gemini</label>
+      <input type="password" id="inputApiKey" placeholder="AIzaSy...">
+      <div id="errorAuth" class="error-msg oculto"></div>
+      <button class="btn" onclick="guardarApiKeyYSeguir()">Continuar</button>
+    </div>
+  </div>
+
+  <!-- ===================== VISTA: CONFIGURACIÓN INICIAL / EDITAR ===================== -->
+  <div id="vista-setup" class="oculto">
+    <div class="card">
+      <h1 id="setupTitulo">Configura tu rutina</h1>
+      <p>Estos datos se definen una sola vez (y puedes editarlos luego desde Ajustes). Nada queda escrito en el código: todo se guarda en tu teléfono.</p>
+    </div>
+
+    <div class="card">
+      <h2>Horario semanal</h2>
+      <small class="ayuda">Define qué bloque corresponde a cada día. La app se posicionará sola en el bloque correcto al abrir.</small>
+      <div id="horarioEditor"></div>
+    </div>
+
+    <div class="card">
+      <h2>Calentamiento</h2>
+      <small class="ayuda">Sin control de peso, solo se marca como realizado.</small>
+      <div id="calentamientoEditor"></div>
+      <button class="btn chico secundario" onclick="agregarCalentamiento()">+ Agregar ítem de calentamiento</button>
+    </div>
+
+    <div class="card">
+      <h2>Movilidad, equilibrio y flexibilidad</h2>
+      <small class="ayuda">Rutina liviana para miércoles y sábado. Sin peso ni progresión, solo checklist con la guía de repeticiones/segundos.</small>
+      <div id="movilidadEditor"></div>
+      <button class="btn chico secundario" onclick="agregarMovilidad()">+ Agregar ejercicio de movilidad</button>
+    </div>
+
+    <div class="card">
+      <h2>Tren Superior</h2>
+      <div id="editorSuperior"></div>
+      <button class="btn chico secundario" onclick="agregarEjercicio('superior')">+ Agregar ejercicio</button>
+    </div>
+
+    <div class="card">
+      <h2>Tren Inferior</h2>
+      <div id="editorInferior"></div>
+      <button class="btn chico secundario" onclick="agregarEjercicio('inferior')">+ Agregar ejercicio</button>
+    </div>
+
+    <div class="card">
+      <button class="btn" onclick="guardarConfiguracion()">Guardar configuración</button>
+      <button id="btnCancelarSetup" class="btn secundario oculto" onclick="mostrarVista('hoy')">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ===================== VISTA: HOY ===================== -->
+  <div id="vista-hoy" class="oculto"></div>
+
+  <!-- ===================== VISTA: HISTORIAL ===================== -->
+  <div id="vista-historial" class="oculto"></div>
+
+  <!-- ===================== VISTA: CONSULTA GENERAL ===================== -->
+  <div id="vista-consulta" class="oculto"></div>
+
+  <!-- ===================== VISTA: AJUSTES ===================== -->
+  <div id="vista-ajustes" class="oculto">
+    <div class="card">
+      <h2>Ajustes</h2>
+      <button class="btn secundario" onclick="mostrarVista('setup')">Editar rutina y horario</button>
+      <button class="btn secundario" onclick="exportarJSON()">Exportar respaldo (JSON)</button>
+      <label for="inputJSON" style="margin-top:4px;">
+        <span class="btn secundario" style="display:block; text-align:center;">Importar respaldo (JSON)</span>
+      </label>
+      <input type="file" id="inputJSON" accept=".json" style="display:none" onchange="importarJSON(event)">
+      <button class="btn peligro" onclick="cambiarApiKey()">Cambiar / borrar API Key</button>
+    </div>
+  </div>
+
+</div>
+
+<nav class="tabs" id="navTabs">
+  <button id="tabHoy" onclick="mostrarVista('hoy')">Hoy</button>
+  <button id="tabHistorial" onclick="mostrarVista('historial')">Historial</button>
+  <button id="tabConsulta" onclick="mostrarVista('consulta')">Consulta</button>
+  <button id="tabAjustes" onclick="mostrarVista('ajustes')">Ajustes</button>
+</nav>
+
+
+<script>
+/* =========================================================================
+   CONTROL DE PESAS & IA
+   Estructura del archivo:
+   1. Semillas por defecto (solo prellenan el formulario de configuración)
+   2. Persistencia (localStorage) — API key separada de los datos
+   3. Fecha/hora de Guayaquil y lógica de programación semanal
+   4. Enrutador de vistas
+   5. Vista: API Key
+   6. Vista: Configuración (setup / ajustes de rutina)
+   7. Vista: Hoy (registro diario + análisis IA + chat)
+   8. Vista: Historial
+   9. Exportar / Importar
+   10. Utilidades
+   ========================================================================= */
+
+const CLAVE_DATOS = 'controlPesasIA_datos_v1';
+const CLAVE_APIKEY = 'controlPesasIA_apiKey_v1';
+const DIAS_CORTOS = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
+const NOMBRE_BLOQUE = {superior:'Tren Superior', inferior:'Tren Inferior', movilidad:'Movilidad'};
+
+// Perfil fijo del atleta, usado en todos los prompts de IA (análisis y consulta general).
+const PERFIL_USUARIO = 'Hombre de 68 años que goza de buena salud. Entrena en casa con equipo limitado (máquina multifunción, barra, ligas), nunca al fallo muscular, con antecedente de una lesión de hombro. Prioriza la calidad y seguridad de la técnica por sobre el volumen de esfuerzo sin control. Objetivo a 1 año: ganar unas 10 libras de masa muscular de forma sostenible.';
+
+// ---- 1. Semillas por defecto: SOLO sugerencias iniciales editables ----
+function semillaConfig(){
+  return {
+    setupCompleto:false,
+    schedule:{0:null,1:'superior',2:'inferior',3:'movilidad',4:'superior',5:'inferior',6:'movilidad'},
+    calentamiento:[
+      {id:uid(), nombre:'Ligas de resistencia'},
+      {id:uid(), nombre:'Saco de boxeo'},
+      {id:uid(), nombre:'Caminadora (no eléctrica)'}
+    ],
+    movilidad:semillaMovilidad(),
+    ejercicios:{
+      superior:[
+        {id:uid(), nombre:'Press de Banca (Barra)', tipo:'barra', series:6, repsObjetivo:[10,9,8,7,6,5], pesoInicial:24, incrementoMax:1},
+        {id:uid(), nombre:'Jalón al Pecho (Máquina)', tipo:'maquina', series:4, repsObjetivo:[10,10,10,10], pesoInicial:0, incrementoMax:2.5},
+        {id:uid(), nombre:'Jalón de Tríceps (Máquina)', tipo:'maquina', series:3, repsObjetivo:[12,12,10], pesoInicial:0, incrementoMax:2.5},
+        {id:uid(), nombre:'Dominadas / Fondos (Máquina asistida)', tipo:'maquina', series:3, repsObjetivo:[8,8,8], pesoInicial:0, incrementoMax:2.5}
+      ],
+      inferior:[
+        {id:uid(), nombre:'Sentadilla con Barra (rack en soporte de fondos)', tipo:'barra', series:4, repsObjetivo:[10,10,10,10], pesoInicial:30, incrementoMax:1},
+        {id:uid(), nombre:'Extensión de Piernas (Sentado)', tipo:'maquina', series:3, repsObjetivo:[12,12,10], pesoInicial:0, incrementoMax:2.5},
+        {id:uid(), nombre:'Extensión de Piernas (Acostado)', tipo:'maquina', series:3, repsObjetivo:[12,12,10], pesoInicial:0, incrementoMax:2.5}
+      ]
+    }
+  };
+}
+
+function semillaMovilidad(){
+  return [
+    {id:uid(), categoria:'Movilidad articular', nombre:'Gato-camello', detalle:'8-10 repeticiones, en cuadrupedia'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos de cadera y tobillos', detalle:'10 círculos hacia cada lado'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos suaves de hombros', detalle:'10 adelante y 10 atrás, sin molestia'},
+    {id:uid(), categoria:'Equilibrio', nombre:'Postura sobre una pierna', detalle:'20-30 segundos, 2-3 series por pierna, cerca de una pared o silla'},
+    {id:uid(), categoria:'Equilibrio', nombre:'Caminata talón-punta', detalle:'10-12 pasos en línea recta'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Isquiotibiales sentado', detalle:'20-30 segundos por pierna, espalda recta'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Pectoral en marco de puerta', detalle:'20 segundos por lado, estiramiento suave'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Pantorrillas en pared', detalle:'20-30 segundos por pierna'}
+  ];
+}
+
+function datosVacios(){
+  return { version:1, config:semillaConfig(), progreso:{}, historial:[], chatGeneral:{mensajes:[]} };
+}
+
+// ---- 2. Persistencia ----
+let DATOS = null;
+
+function cargarDatos(){
+  const crudo = localStorage.getItem(CLAVE_DATOS);
+  if(!crudo) return datosVacios();
+  try{
+    const datos = JSON.parse(crudo);
+    if(!datos.chatGeneral) datos.chatGeneral = {mensajes:[]}; // migración para respaldos previos
+    if(!datos.config.movilidad){
+      // migración: se agrega la rutina de movilidad y se activa mié/sáb solo si estaban en descanso puro
+      datos.config.movilidad = semillaMovilidad();
+      if(!datos.config.schedule[3]) datos.config.schedule[3] = 'movilidad';
+      if(!datos.config.schedule[6]) datos.config.schedule[6] = 'movilidad';
+    }
+    return datos;
+  } catch(e){ return datosVacios(); }
+}
+function guardarDatos(){
+  localStorage.setItem(CLAVE_DATOS, JSON.stringify(DATOS));
+}
+function obtenerApiKey(){ return localStorage.getItem(CLAVE_APIKEY) || ''; }
+function guardarApiKey(k){ localStorage.setItem(CLAVE_APIKEY, k); }
+function borrarApiKeyStorage(){ localStorage.removeItem(CLAVE_APIKEY); }
+
+// ---- 3. Fecha de Guayaquil y programación ----
+function obtenerFechaGuayaquil(){
+  const ahora = new Date();
+  const fechaISO = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Guayaquil', year:'numeric', month:'2-digit', day:'2-digit'}).format(ahora);
+  const nombreDiaLargo = new Intl.DateTimeFormat('es-EC', {timeZone:'America/Guayaquil', weekday:'long'}).format(ahora);
+  const diaCorto = new Intl.DateTimeFormat('en-US', {timeZone:'America/Guayaquil', weekday:'short'}).format(ahora);
+  return { fechaISO, nombreDiaLargo, diaSemana: DIAS_CORTOS[diaCorto] };
+}
+
+function bloqueDelDia(config, diaSemana){ return config.schedule[diaSemana] || null; }
+
+// Día "de carga" = el primero (más temprano en la semana) entre los días configurados para ese bloque.
+// El otro día del mismo bloque es "de consolidación": se repite el peso, sin incremento.
+function esDiaDeCarga(config, bloque, diaSemana){
+  const dias = Object.keys(config.schedule).filter(d => config.schedule[d] === bloque).map(Number).sort((a,b)=>a-b);
+  if(dias.length === 0) return true;
+  return Number(diaSemana) === dias[0];
+}
+
+// Detecta si se saltó algún día programado entre la última sesión registrada y hoy.
+function detectarPenalizacion(datos, fechaInfo){
+  if(datos.historial.length === 0) return false;
+  const ultima = datos.historial[datos.historial.length - 1];
+  if(ultima.fecha >= fechaInfo.fechaISO) return false;
+  let cursor = new Date(ultima.fecha + 'T12:00:00-05:00');
+  cursor.setDate(cursor.getDate() + 1);
+  const hoy = new Date(fechaInfo.fechaISO + 'T12:00:00-05:00');
+  while(cursor < hoy){
+    const dow = cursor.getDay();
+    const bloqueDow = datos.config.schedule[dow];
+    if(bloqueDow === 'superior' || bloqueDow === 'inferior'){ return true; }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return false;
+}
+
+// ---- 4. Enrutador de vistas ----
+function mostrarVista(nombre){
+  ['auth','setup','hoy','historial','consulta','ajustes'].forEach(v=>{
+    document.getElementById('vista-'+v).classList.toggle('oculto', v!==nombre);
+  });
+  document.getElementById('navTabs').classList.toggle('oculto', nombre==='auth' || nombre==='setup');
+  ['Hoy','Historial','Consulta','Ajustes'].forEach(t=>{
+    document.getElementById('tab'+t).classList.toggle('activo', t.toLowerCase()===nombre);
+  });
+  if(nombre==='hoy') renderHoy();
+  if(nombre==='historial') renderHistorial();
+  if(nombre==='consulta') renderConsulta();
+  if(nombre==='setup') renderSetup();
+}
+
+// ---- 5. Vista: API Key ----
+function guardarApiKeyYSeguir(){
+  const valor = document.getElementById('inputApiKey').value.trim();
+  const err = document.getElementById('errorAuth');
+  if(valor.length < 10){
+    err.textContent = 'Ingresa una API Key válida.';
+    err.classList.remove('oculto');
+    return;
+  }
+  guardarApiKey(valor);
+  err.classList.add('oculto');
+  DATOS = cargarDatos();
+  irAVistaSegunEstado();
+  mostrarToast('API Key guardada');
+}
+function cambiarApiKey(){
+  borrarApiKeyStorage();
+  document.getElementById('inputApiKey').value = '';
+  mostrarVista('auth');
+}
+
+// ---- 6. Vista: Configuración ----
+let borradorConfig = null;
+
+function renderSetup(){
+  borradorConfig = JSON.parse(JSON.stringify(DATOS.config));
+  // Si el ejercicio ya tiene progreso guardado, mostramos/editamos su peso y reps ACTUALES
+  // (no el valor histórico con el que se creó), para que guardar aquí siempre sea seguro y predecible.
+  ['superior','inferior'].forEach(bloque=>{
+    borradorConfig.ejercicios[bloque].forEach(ej=>{
+      const prog = DATOS.progreso[ej.id];
+      if(prog){
+        ej.pesoInicial = prog.pesoObjetivo;
+        ej.repsObjetivo = prog.repsObjetivo.slice();
+        ej.series = ej.repsObjetivo.length;
+      }
+    });
+  });
+  const esPrimeraVez = !DATOS.config.setupCompleto;
+  document.getElementById('setupTitulo').textContent = esPrimeraVez ? 'Configura tu rutina' : 'Editar rutina y horario';
+  document.getElementById('btnCancelarSetup').classList.toggle('oculto', esPrimeraVez);
+  renderHorarioEditor();
+  renderCalentamientoEditor();
+  renderMovilidadEditor();
+  renderEjerciciosEditor('superior');
+  renderEjerciciosEditor('inferior');
+}
+
+function renderHorarioEditor(){
+  const nombresDias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const cont = document.getElementById('horarioEditor');
+  cont.innerHTML = nombresDias.map((n,i)=>`
+    <div class="fila" style="align-items:center; margin-bottom:8px;">
+      <label style="flex:0 0 90px; margin:0;">${n}</label>
+      <select onchange="borradorConfig.schedule[${i}] = this.value || null;">
+        <option value="" ${!borradorConfig.schedule[i]?'selected':''}>Descanso</option>
+        <option value="superior" ${borradorConfig.schedule[i]==='superior'?'selected':''}>Tren Superior</option>
+        <option value="inferior" ${borradorConfig.schedule[i]==='inferior'?'selected':''}>Tren Inferior</option>
+        <option value="movilidad" ${borradorConfig.schedule[i]==='movilidad'?'selected':''}>Movilidad</option>
+      </select>
+    </div>`).join('');
+}
+
+function renderMovilidadEditor(){
+  const cont = document.getElementById('movilidadEditor');
+  cont.innerHTML = borradorConfig.movilidad.map((it,i)=>`
+    <div class="exercise-edit-row">
+      <label>Nombre</label>
+      <input type="text" value="${escapeAttr(it.nombre)}" oninput="borradorConfig.movilidad[${i}].nombre=this.value">
+      <label>Categoría</label>
+      <select onchange="borradorConfig.movilidad[${i}].categoria=this.value">
+        <option value="Movilidad articular" ${it.categoria==='Movilidad articular'?'selected':''}>Movilidad articular</option>
+        <option value="Equilibrio" ${it.categoria==='Equilibrio'?'selected':''}>Equilibrio</option>
+        <option value="Flexibilidad" ${it.categoria==='Flexibilidad'?'selected':''}>Flexibilidad</option>
+      </select>
+      <label>Guía (repeticiones o segundos)</label>
+      <input type="text" value="${escapeAttr(it.detalle)}" oninput="borradorConfig.movilidad[${i}].detalle=this.value">
+      <button class="btn chico peligro" onclick="borradorConfig.movilidad.splice(${i},1); renderMovilidadEditor();">Eliminar</button>
+    </div>`).join('');
+}
+function agregarMovilidad(){
+  borradorConfig.movilidad.push({id:uid(), categoria:'Movilidad articular', nombre:'Nuevo ejercicio', detalle:''});
+  renderMovilidadEditor();
+}
+
+function renderCalentamientoEditor(){
+  const cont = document.getElementById('calentamientoEditor');
+  cont.innerHTML = borradorConfig.calentamiento.map((it,i)=>`
+    <div class="fila" style="margin-bottom:8px;">
+      <input type="text" value="${escapeAttr(it.nombre)}" oninput="borradorConfig.calentamiento[${i}].nombre=this.value">
+      <button class="btn chico peligro" style="flex:0 0 auto;" onclick="borradorConfig.calentamiento.splice(${i},1); renderCalentamientoEditor();">✕</button>
+    </div>`).join('');
+}
+function agregarCalentamiento(){
+  borradorConfig.calentamiento.push({id:uid(), nombre:''});
+  renderCalentamientoEditor();
+}
+
+function renderEjerciciosEditor(bloque){
+  const cont = document.getElementById(bloque==='superior' ? 'editorSuperior' : 'editorInferior');
+  const lista = borradorConfig.ejercicios[bloque];
+  cont.innerHTML = lista.map((ej,i)=>`
+    <div class="exercise-edit-row">
+      <label>Nombre</label>
+      <input type="text" value="${escapeAttr(ej.nombre)}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].nombre=this.value">
+      <div class="fila">
+        <div>
+          <label>Tipo</label>
+          <select onchange="borradorConfig.ejercicios['${bloque}'][${i}].tipo=this.value">
+            <option value="barra" ${ej.tipo==='barra'?'selected':''}>Barra</option>
+            <option value="maquina" ${ej.tipo==='maquina'?'selected':''}>Máquina</option>
+            <option value="liga" ${ej.tipo==='liga'?'selected':''}>Liga</option>
+          </select>
+        </div>
+        <div>
+          <label>N.º series</label>
+          <input type="number" min="1" max="10" value="${ej.series}" oninput="actualizarSeries('${bloque}',${i},this.value)">
+        </div>
+      </div>
+      <label>Repeticiones objetivo por serie (separadas por coma)</label>
+      <input type="text" value="${ej.repsObjetivo.join(',')}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].repsObjetivo = this.value.split(',').map(x=>parseInt(x.trim())||0)">
+      <div class="fila">
+        <div>
+          <label>${DATOS.progreso[ej.id] ? 'Peso actual (lbs)' : 'Peso inicial (lbs)'}</label>
+          <input type="number" step="0.5" value="${ej.pesoInicial}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].pesoInicial=parseFloat(this.value)||0">
+        </div>
+        <div>
+          <label>Incremento máx. por sesión (lbs)</label>
+          <input type="number" step="0.5" value="${ej.incrementoMax}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].incrementoMax=parseFloat(this.value)||0">
+        </div>
+      </div>
+      <button class="btn chico peligro" onclick="borradorConfig.ejercicios['${bloque}'].splice(${i},1); renderEjerciciosEditor('${bloque}');">Eliminar ejercicio</button>
+    </div>`).join('');
+}
+function actualizarSeries(bloque, idx, valor){
+  const n = Math.max(1, parseInt(valor)||1);
+  const ej = borradorConfig.ejercicios[bloque][idx];
+  ej.series = n;
+  const reps = ej.repsObjetivo.slice(0,n);
+  while(reps.length < n) reps.push(reps.length ? reps[reps.length-1] : 10);
+  ej.repsObjetivo = reps;
+}
+function agregarEjercicio(bloque){
+  borradorConfig.ejercicios[bloque].push({id:uid(), nombre:'Nuevo ejercicio', tipo:'maquina', series:3, repsObjetivo:[10,10,10], pesoInicial:0, incrementoMax:2.5});
+  renderEjerciciosEditor(bloque);
+}
+
+function guardarConfiguracion(){
+  // Inicializar / conservar progreso por ejercicio
+  const nuevoProgreso = {};
+  ['superior','inferior'].forEach(bloque=>{
+    borradorConfig.ejercicios[bloque].forEach(ej=>{
+      nuevoProgreso[ej.id] = {
+        pesoObjetivo: ej.pesoInicial,
+        repsObjetivo: ej.repsObjetivo.slice(),
+        pesoUltimaSesion: ej.pesoInicial,
+        repsUltimaSesion: ej.repsObjetivo.slice()
+      };
+    });
+  });
+  borradorConfig.setupCompleto = true;
+  DATOS.config = borradorConfig;
+  DATOS.progreso = nuevoProgreso;
+  guardarDatos();
+  mostrarVista('hoy');
+  mostrarToast('Configuración guardada');
+}
+
+// ---- 7. Vista: Hoy ----
+function renderHoy(){
+  const cont = document.getElementById('vista-hoy');
+  const fechaInfo = obtenerFechaGuayaquil();
+  const bloqueHoy = bloqueDelDia(DATOS.config, fechaInfo.diaSemana);
+  const sesionHoy = DATOS.historial.find(s => s.fecha === fechaInfo.fechaISO);
+
+  if(sesionHoy){
+    if(sesionHoy.bloque === 'movilidad'){
+      cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaResumenMovilidad(sesionHoy);
+      return;
+    }
+    cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaResumenSesion(sesionHoy);
+    renderChatEnDom(sesionHoy);
+    return;
+  }
+
+  if(!bloqueHoy){
+    cont.innerHTML = plantillaEncabezado(fechaInfo, null, false) + `
+      <div class="card">
+        <p>Hoy es día de descanso según tu horario.</p>
+        <button class="btn secundario" onclick="forzarRegistroManual()">Registrar una sesión de todas formas</button>
+        <small class="ayuda" style="margin-top:8px;">El análisis de la IA y el chat de seguimiento aparecen debajo, pero solo después de registrar y analizar una sesión del día. Hoy no hay ninguna todavía.</small>
+      </div>`;
+    return;
+  }
+
+  if(bloqueHoy === 'movilidad'){
+    cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaFormularioMovilidad();
+    return;
+  }
+
+  const penalizado = detectarPenalizacion(DATOS, fechaInfo);
+  cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, penalizado) + plantillaFormularioRegistro(bloqueHoy, fechaInfo, penalizado);
+}
+
+function forzarRegistroManual(){
+  const fechaInfo = obtenerFechaGuayaquil();
+  const cont = document.getElementById('vista-hoy');
+  cont.innerHTML = plantillaEncabezado(fechaInfo, null, false) + `
+    <div class="card">
+      <label>¿Qué bloque quieres registrar?</label>
+      <select id="selectBloqueManual" onchange="renderBloqueManual(this.value)">
+        <option value="">Selecciona...</option>
+        <option value="superior">Tren Superior</option>
+        <option value="inferior">Tren Inferior</option>
+        <option value="movilidad">Movilidad</option>
+      </select>
+    </div>
+    <div id="contBloqueManual"></div>`;
+}
+function renderBloqueManual(bloque){
+  if(!bloque){ document.getElementById('contBloqueManual').innerHTML=''; return; }
+  const fechaInfo = obtenerFechaGuayaquil();
+  document.getElementById('contBloqueManual').innerHTML = bloque === 'movilidad'
+    ? plantillaFormularioMovilidad()
+    : plantillaFormularioRegistro(bloque, fechaInfo, false, true);
+}
+
+function plantillaEncabezado(fechaInfo, bloque, penalizado){
+  let badge;
+  if(!bloque) badge = `<span class="badge descanso">Descanso</span>`;
+  else if(bloque === 'movilidad') badge = `<span class="badge on-track">Movilidad · flexibilidad y equilibrio</span>`;
+  else if(penalizado) badge = `<span class="badge recuperacion">Recuperación · se repite carga anterior</span>`;
+  else {
+    const carga = esDiaDeCarga(DATOS.config, bloque, fechaInfo.diaSemana);
+    badge = carga ? `<span class="badge on-track">${NOMBRE_BLOQUE[bloque]} · día de progresión</span>`
+                  : `<span class="badge consolidacion">${NOMBRE_BLOQUE[bloque]} · día de consolidación</span>`;
+  }
+  return `<div class="card">
+    <div class="top-status"><h1 style="margin:0;">Hoy</h1>${badge}</div>
+    <div class="fecha-linea">${capitalizar(fechaInfo.nombreDiaLargo)} · ${fechaInfo.fechaISO} (Guayaquil)</div>
+  </div>`;
+}
+
+function plantillaFormularioRegistro(bloque, fechaInfo, penalizado, manual){
+  const idForm = 'formRegistro';
+  const calent = DATOS.config.calentamiento.map(it => `
+    <label class="chip"><input type="checkbox" data-calent="${it.id}"> ${escapeHtml(it.nombre)}</label>
+  `).join('');
+
+  const ejerciciosHtml = DATOS.config.ejercicios[bloque].map(ej=>{
+    const prog = DATOS.progreso[ej.id] || {pesoObjetivo: ej.pesoInicial, repsObjetivo: ej.repsObjetivo};
+    const pesoBase = penalizado ? (prog.pesoUltimaSesion ?? prog.pesoObjetivo) : prog.pesoObjetivo;
+    const repsBase = penalizado ? (prog.repsUltimaSesion ?? prog.repsObjetivo) : prog.repsObjetivo;
+    const filas = [];
+    for(let s=0; s<ej.series; s++){
+      const repObjetivo = repsBase[s] ?? repsBase[repsBase.length-1] ?? 10;
+      filas.push(`
+        <div class="serie-fila">
+          <span class="serie-num">S${s+1}</span>
+          <div class="stepper">
+            <button type="button" onclick="ajustarValor('${ej.id}_peso_${s}', -1)">−</button>
+            <input type="number" step="0.5" id="${ej.id}_peso_${s}" value="${pesoBase}">
+            <span class="unidad">lbs</span>
+          </div>
+          <div class="stepper">
+            <button type="button" onclick="ajustarValor('${ej.id}_reps_${s}', -1)">−</button>
+            <input type="number" step="1" id="${ej.id}_reps_${s}" value="${repObjetivo}">
+            <span class="unidad">reps</span>
+          </div>
+          <button type="button" class="stepper-plus" onclick="ajustarValor('${ej.id}_reps_${s}', 1)">+</button>
+        </div>`);
+    }
+    return `<div class="ejercicio-bloque" data-ejercicio="${ej.id}">
+      <div class="ejercicio-nombre">${escapeHtml(ej.nombre)}</div>
+      <div class="ejercicio-meta">${ej.series} series · objetivo previo ${repsBase.join('-')} reps</div>
+      ${filas.join('')}
+    </div>`;
+  }).join('');
+
+  return `
+    <form id="${idForm}" class="card" onsubmit="return false;">
+      <h2>Calentamiento</h2>
+      <div class="chip-lista">${calent}</div>
+
+      <h2>${NOMBRE_BLOQUE[bloque]}</h2>
+      ${ejerciciosHtml}
+    </form>
+
+    <div class="card">
+      <h2>Cómo llegaste hoy</h2>
+      <label for="selSueno">Sueño / descanso anoche</label>
+      <select id="selSueno">
+        <option value="excelente">Excelente</option>
+        <option value="buena" selected>Buena</option>
+        <option value="regular">Regular / interrumpido</option>
+        <option value="mala">Mala / poco sueño</option>
+      </select>
+      <label for="selEnergia">Energía percibida hoy</label>
+      <select id="selEnergia">
+        <option value="alta">Alta</option>
+        <option value="normal" selected>Normal</option>
+        <option value="baja">Baja</option>
+        <option value="muy_baja">Muy baja</option>
+      </select>
+      <label for="selMolestias">Molestias articulares o musculares</label>
+      <select id="selMolestias" onchange="document.getElementById('detalleMolestias').classList.toggle('oculto', this.value==='ninguna')">
+        <option value="ninguna" selected>Ninguna</option>
+        <option value="leve">Leve</option>
+        <option value="moderada">Moderada</option>
+        <option value="debo_parar">Importante, debería parar</option>
+      </select>
+      <input type="text" id="detalleMolestias" class="oculto" placeholder="¿Dónde y qué tipo de molestia?">
+    </div>
+
+    <div class="card">
+      <button class="btn" id="btnRegistrar" onclick="registrarYAnalizar('${bloque}', ${penalizado ? 'true':'false'}, ${manual ? 'true':'false'})">Registrar y analizar con IA</button>
+      <div id="loadingRegistro" class="oculto" style="text-align:center; color:var(--text-dim);">⏳ Analizando tu sesión...</div>
+      <div id="errorRegistro" class="error-msg oculto"></div>
+    </div>`;
+}
+
+function ajustarValor(id, delta){
+  const el = document.getElementById(id);
+  const paso = parseFloat(el.step) || 1;
+  el.value = (parseFloat(el.value)||0) + delta*paso;
+}
+
+function recopilarFormulario(bloque){
+  const calent = DATOS.config.calentamiento.map(it=>({
+    id:it.id, nombre:it.nombre,
+    hecho: document.querySelector(`[data-calent="${it.id}"]`).checked
+  }));
+  const ejercicios = DATOS.config.ejercicios[bloque].map(ej=>{
+    const series = [];
+    for(let s=0; s<ej.series; s++){
+      series.push({
+        peso: parseFloat(document.getElementById(`${ej.id}_peso_${s}`).value)||0,
+        reps: parseInt(document.getElementById(`${ej.id}_reps_${s}`).value)||0
+      });
+    }
+    return {id:ej.id, nombre:ej.nombre, tipo:ej.tipo, incrementoMax:ej.incrementoMax, series};
+  });
+  const molestiasSel = document.getElementById('selMolestias').value;
+  const detalle = document.getElementById('detalleMolestias').value.trim();
+  return {
+    calentamiento: calent,
+    ejercicios,
+    sueno: document.getElementById('selSueno').value,
+    energia: document.getElementById('selEnergia').value,
+    molestias: molestiasSel,
+    molestiasDetalle: detalle
+  };
+}
+
+async function registrarYAnalizar(bloque, penalizado, manual){
+  const btn = document.getElementById('btnRegistrar');
+  const loading = document.getElementById('loadingRegistro');
+  const errDiv = document.getElementById('errorRegistro');
+  errDiv.classList.add('oculto');
+  btn.disabled = true;
+  loading.classList.remove('oculto');
+
+  try{
+    const fechaInfo = obtenerFechaGuayaquil();
+    const form = recopilarFormulario(bloque);
+    const diaDeCarga = esDiaDeCarga(DATOS.config, bloque, fechaInfo.diaSemana);
+
+    const prompt = construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual);
+    const respuestaTexto = await llamarGemini([{role:'user', parts:[{text:prompt}]}]);
+    const parsed = parsearRespuestaIA(respuestaTexto);
+
+    // Aplicar límites de seguridad de forma determinística
+    const recomendacionesFinal = aplicarLimitesSeguridad(bloque, form, parsed.recomendaciones || [], penalizado, diaDeCarga);
+
+    // Actualizar progreso guardado por ejercicio
+    recomendacionesFinal.forEach(r=>{
+      const p = DATOS.progreso[r.id];
+      if(!p) return;
+      const enviado = form.ejercicios.find(e=>e.id===r.id);
+      p.pesoUltimaSesion = enviado ? enviado.series[0].peso : p.pesoUltimaSesion;
+      p.repsUltimaSesion = enviado ? enviado.series.map(s=>s.reps) : p.repsUltimaSesion;
+      p.pesoObjetivo = r.pesoSugerido;
+      p.repsObjetivo = r.repsSugeridos;
+    });
+
+    const sesion = {
+      fecha: fechaInfo.fechaISO,
+      diaSemana: fechaInfo.diaSemana,
+      bloque, manual: !!manual,
+      penalizado, diaDeCarga,
+      sueno: form.sueno, energia: form.energia,
+      molestias: form.molestias, molestiasDetalle: form.molestiasDetalle,
+      calentamiento: form.calentamiento,
+      ejercicios: form.ejercicios,
+      analisis: {
+        evaluacion: parsed.evaluacion || respuestaTexto,
+        recomendaciones: recomendacionesFinal,
+        consejoGeneral: parsed.consejoGeneral || ''
+      },
+      geminiHistorial: [
+        {role:'user', parts:[{text:prompt}]},
+        {role:'model', parts:[{text:respuestaTexto}]}
+      ],
+      chat: []
+    };
+
+    DATOS.historial.push(sesion);
+    guardarDatos();
+    renderHoy();
+  }catch(e){
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.classList.remove('oculto');
+    btn.disabled = false;
+    loading.classList.add('oculto');
+  }
+}
+
+function construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual){
+  const lineasEjercicios = form.ejercicios.map(ej =>
+    `- ${ej.nombre} [id:${ej.id}]: ` + ej.series.map((s,i)=>`S${i+1} ${s.peso}lbs x ${s.reps}`).join(', ')
+  ).join('\n');
+
+  const calentLinea = form.calentamiento.map(c => `${c.nombre}: ${c.hecho ? 'realizado' : 'omitido'}`).join(', ');
+
+  return `Eres un preparador físico especializado en sobrecarga progresiva conservadora. Perfil del atleta: ${PERFIL_USUARIO}
+
+Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades.
+
+DATOS DE HOY (${fechaInfo.fechaISO}, ${bloque === 'superior' ? 'Tren Superior' : 'Tren Inferior'}):
+- Sesión programada: ${manual ? 'no, registro manual fuera de horario' : 'sí'}
+- ¿Se saltó un día programado antes de hoy?: ${penalizado ? 'sí, esta es una sesión de recuperación' : 'no'}
+- Tipo de día en el ciclo: ${diaDeCarga ? 'día de progresión (primer día de este bloque en la semana)' : 'día de consolidación (segundo día de este bloque en la semana, normalmente se repite el peso)'}
+- Sueño anoche: ${form.sueno}
+- Energía percibida: ${form.energia}
+- Molestias: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''}
+- Calentamiento: ${calentLinea}
+
+EJERCICIOS Y SERIES DE HOY (peso en libras):
+${lineasEjercicios}
+
+INSTRUCCIONES:
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin bloques de markdown ni backticks, con esta estructura exacta:
+{
+  "evaluacion": "máximo 2 frases sobre el rendimiento de hoy",
+  "recomendaciones": [
+    {"id": "<mismo id del ejercicio>", "pesoSugerido": <numero>, "repsSugeridos": [<numeros>], "nota": "máximo 1 frase corta"}
+  ],
+  "consejoGeneral": "máximo 2 frases sobre manejo de fatiga, técnica o cuidado articular"
+}
+Usa exactamente los mismos "id" que aparecen entre corchetes en cada ejercicio. Los incrementos de peso deben ser pequeños y sostenibles, nunca agresivos, y nunca debes sugerir entrenar al fallo. Si se reportan molestias relevantes, o si es un día de consolidación, o si es una sesión de recuperación, la recomendación de peso debe mantenerse igual al peso usado hoy.`;
+}
+
+function parsearRespuestaIA(texto){
+  let limpio = texto.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  try{
+    return JSON.parse(limpio);
+  }catch(e){
+    return { evaluacion: texto, recomendaciones: [], consejoGeneral: '' };
+  }
+}
+
+// Capa de seguridad determinística: nunca confía ciegamente en la IA para el número final.
+function aplicarLimitesSeguridad(bloque, form, recomendaciones, penalizado, diaDeCarga){
+  const mapaRecom = {};
+  recomendaciones.forEach(r => mapaRecom[r.id] = r);
+
+  const molestiasImportantes = form.molestias !== 'ninguna';
+  const suenoMalo = form.sueno === 'mala';
+  const energiaBaja = form.energia === 'muy_baja';
+  const debeMantener = penalizado || !diaDeCarga || molestiasImportantes || suenoMalo || energiaBaja;
+
+  return DATOS.config.ejercicios[bloque].map(ej=>{
+    const enviado = form.ejercicios.find(e=>e.id===ej.id);
+    const pesoHoy = enviado ? enviado.series[0].peso : ej.pesoInicial;
+    const repsHoy = enviado ? enviado.series.map(s=>s.reps) : ej.repsObjetivo;
+    const sugerida = mapaRecom[ej.id];
+
+    if(debeMantener || !sugerida){
+      return { id:ej.id, nombre:ej.nombre, pesoSugerido: pesoHoy, repsSugeridos: repsHoy,
+        nota: sugerida ? sugerida.nota : 'Se mantiene el peso para consolidar.' };
+    }
+    let delta = (sugerida.pesoSugerido ?? pesoHoy) - pesoHoy;
+    delta = Math.max(-ej.incrementoMax, Math.min(ej.incrementoMax, delta));
+    const pesoFinal = Math.round((pesoHoy + delta) * 2) / 2; // redondeo a 0.5
+    return { id:ej.id, nombre:ej.nombre, pesoSugerido: pesoFinal,
+      repsSugeridos: Array.isArray(sugerida.repsSugeridos) && sugerida.repsSugeridos.length ? sugerida.repsSugeridos : repsHoy,
+      nota: sugerida.nota || '' };
+  });
+}
+
+function plantillaResumenSesion(sesion){
+  const recomHtml = sesion.analisis.recomendaciones.map(r=>`
+    <div class="recom-fila">
+      <div>
+        <div>${escapeHtml(r.nombre)}</div>
+        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}</small>
+      </div>
+      <div class="recom-peso">${r.pesoSugerido} lbs · ${r.repsSugeridos.join('-')}</div>
+    </div>`).join('');
+
+  return `
+    <div class="card">
+      <h2>Sesión de hoy registrada</h2>
+      <p style="margin-bottom:4px;">Sueño: ${textoSueno(sesion.sueno)} · Energía: ${textoEnergia(sesion.energia)} · Molestias: ${textoMolestias(sesion.molestias)}</p>
+    </div>
+    <div class="card">
+      <h2>Análisis de la IA</h2>
+      <div class="resultado-caja">${escapeHtml(sesion.analisis.evaluacion)}</div>
+      <h3>Próxima sesión de ${NOMBRE_BLOQUE[sesion.bloque]}</h3>
+      ${recomHtml}
+      ${sesion.analisis.consejoGeneral ? `<h3 style="margin-top:12px;">Consejo</h3><div class="resultado-caja">${escapeHtml(sesion.analisis.consejoGeneral)}</div>` : ''}
+    </div>
+    <div class="card" id="cardChat">
+      <h2>Preguntar a la IA sobre esta sesión</h2>
+      <div id="listaChat"></div>
+      <div class="fila">
+        <input type="text" id="inputPregunta" placeholder="Escribe tu pregunta...">
+      </div>
+      <button class="btn secundario" id="btnPreguntar" onclick="enviarPregunta('${sesion.fecha}')">Enviar</button>
+    </div>`;
+}
+
+// ---- 7b. Movilidad, equilibrio y flexibilidad (miércoles/sábado) ----
+// Sesión liviana: sin peso que progresar, así que no se llama a la IA aquí (ahorra tokens);
+// para preguntas puntuales sobre movilidad está siempre disponible la pestaña "Consulta".
+function plantillaFormularioMovilidad(){
+  const categorias = {};
+  DATOS.config.movilidad.forEach(it=>{
+    (categorias[it.categoria] = categorias[it.categoria] || []).push(it);
+  });
+  const secciones = Object.keys(categorias).map(cat => `
+    <h3>${escapeHtml(cat)}</h3>
+    <div class="chip-lista">
+      ${categorias[cat].map(it => `
+        <label class="chip" style="flex-direction:column; align-items:flex-start; gap:2px;">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" data-movilidad="${it.id}" checked> ${escapeHtml(it.nombre)}
+          </span>
+          <small class="ayuda" style="margin:0;">${escapeHtml(it.detalle)}</small>
+        </label>
+      `).join('')}
+    </div>`).join('');
+
+  return `
+    <div class="card">
+      <h2>Movilidad, equilibrio y flexibilidad</h2>
+      <p>Rutina suave de 15-20 minutos. Ningún ejercicio debe causar dolor.</p>
+      ${secciones}
+    </div>
+    <div class="card">
+      <label for="selMolestiasMov">Molestias articulares o musculares</label>
+      <select id="selMolestiasMov" onchange="document.getElementById('detalleMolestiasMov').classList.toggle('oculto', this.value==='ninguna')">
+        <option value="ninguna" selected>Ninguna</option>
+        <option value="leve">Leve</option>
+        <option value="moderada">Moderada</option>
+        <option value="debo_parar">Importante, debería parar</option>
+      </select>
+      <input type="text" id="detalleMolestiasMov" class="oculto" placeholder="¿Dónde y qué tipo de molestia?">
+    </div>
+    <div class="card">
+      <button class="btn" onclick="registrarMovilidad()">Registrar sesión de movilidad</button>
+    </div>`;
+}
+
+function registrarMovilidad(){
+  const fechaInfo = obtenerFechaGuayaquil();
+  const items = DATOS.config.movilidad.map(it=>({
+    id: it.id, nombre: it.nombre, categoria: it.categoria,
+    hecho: document.querySelector(`[data-movilidad="${it.id}"]`).checked
+  }));
+  const sesion = {
+    fecha: fechaInfo.fechaISO, diaSemana: fechaInfo.diaSemana,
+    bloque:'movilidad',
+    molestias: document.getElementById('selMolestiasMov').value,
+    molestiasDetalle: document.getElementById('detalleMolestiasMov').value.trim(),
+    movilidad: items
+  };
+  DATOS.historial.push(sesion);
+  guardarDatos();
+  mostrarToast('Sesión de movilidad registrada');
+  renderHoy();
+}
+
+function plantillaResumenMovilidad(sesion){
+  const hechos = sesion.movilidad.filter(m=>m.hecho).length;
+  const total = sesion.movilidad.length;
+  const lista = sesion.movilidad.map(m=>`<div style="padding:4px 0;">${m.hecho ? '✅' : '⬜️'} ${escapeHtml(m.nombre)}</div>`).join('');
+  return `<div class="card">
+    <h2>Movilidad de hoy registrada</h2>
+    <p>${hechos}/${total} ejercicios completados${sesion.molestias && sesion.molestias!=='ninguna' ? ' · Molestias: '+textoMolestias(sesion.molestias) : ''}</p>
+    ${lista}
+  </div>`;
+}
+
+function renderChatEnDom(sesion){
+  const cont = document.getElementById('listaChat');
+  if(!cont) return;
+  cont.innerHTML = sesion.chat.map(m => `
+    <div class="msg-chat ${m.rol==='usuario'?'usuario':'ia'}"><b>${m.rol==='usuario'?'Tú':'IA'}:</b> ${escapeHtml(m.texto)}</div>
+  `).join('');
+}
+
+async function enviarPregunta(fecha){
+  const sesion = DATOS.historial.find(s=>s.fecha===fecha);
+  const input = document.getElementById('inputPregunta');
+  const pregunta = input.value.trim();
+  if(!pregunta) return;
+  const btn = document.getElementById('btnPreguntar');
+  btn.disabled = true;
+
+  sesion.chat.push({rol:'usuario', texto:pregunta});
+  renderChatEnDom(sesion);
+  input.value = '';
+
+  const contents = sesion.geminiHistorial.concat(
+    sesion.chat.slice(0,-1).map(m=>({role: m.rol==='usuario'?'user':'model', parts:[{text:m.texto}]})),
+    [{role:'user', parts:[{text:pregunta}]}]
+  );
+
+  try{
+    const respuesta = await llamarGemini(contents);
+    sesion.geminiHistorial.push({role:'user', parts:[{text:pregunta}]}, {role:'model', parts:[{text:respuesta}]});
+    sesion.chat.push({rol:'ia', texto:respuesta});
+    guardarDatos();
+    renderChatEnDom(sesion);
+  }catch(e){
+    sesion.chat.push({rol:'ia', texto:'Error: ' + e.message});
+    renderChatEnDom(sesion);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function llamarGemini(contents){
+  const apiKey = obtenerApiKey();
+  const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json', 'x-goog-api-key': apiKey},
+    body: JSON.stringify({ contents, generationConfig:{ temperature:0.5 } })
+  });
+  if(!respuesta.ok){
+    let msg = 'Error de conexión con Gemini';
+    try{ const errData = await respuesta.json(); msg = errData.error?.message || JSON.stringify(errData); }catch(e){}
+    throw new Error(msg);
+  }
+  const datos = await respuesta.json();
+  return datos.candidates[0].content.parts[0].text;
+}
+
+// ---- 8. Vista: Historial ----
+function renderHistorial(){
+  const cont = document.getElementById('vista-historial');
+  if(DATOS.historial.length === 0){
+    cont.innerHTML = `<div class="card"><h1>Historial</h1><p>Todavía no hay sesiones registradas.</p></div>`;
+    return;
+  }
+  const items = DATOS.historial.slice().reverse().map((s,idxRev)=>{
+    const idx = DATOS.historial.length - 1 - idxRev;
+    const resumen = s.bloque === 'movilidad'
+      ? s.movilidad.filter(m=>m.hecho).map(m=>m.nombre).slice(0,2).join(' · ') || 'Sin ejercicios marcados'
+      : s.ejercicios.slice(0,2).map(e=>`${e.nombre}: ${e.series[0].peso}lbs`).join(' · ');
+    return `<div class="hist-item">
+      <div class="fecha">${s.fecha} · ${NOMBRE_BLOQUE[s.bloque]}${s.penalizado?' · recuperación':''}</div>
+      <div style="margin:4px 0;">${escapeHtml(resumen)}</div>
+      <button class="btn chico secundario" onclick="verDetalleHistorial(${idx})">Ver detalle</button>
+      <div id="detalle-${idx}" class="oculto" style="margin-top:10px;"></div>
+    </div>`;
+  }).join('');
+  cont.innerHTML = `<div class="card"><h1>Historial</h1></div>` + items;
+}
+function verDetalleHistorial(idx){
+  const div = document.getElementById('detalle-'+idx);
+  const abierto = !div.classList.contains('oculto');
+  if(abierto){ div.classList.add('oculto'); div.innerHTML=''; return; }
+  const s = DATOS.historial[idx];
+  if(s.bloque === 'movilidad'){
+    div.innerHTML = plantillaResumenMovilidad(s);
+    div.classList.remove('oculto');
+    return;
+  }
+  div.innerHTML = plantillaResumenSesion(s);
+  div.classList.remove('oculto');
+  renderChatEnDom(s);
+  const btnPreguntar = div.querySelector('#btnPreguntar');
+  if(btnPreguntar) btnPreguntar.setAttribute('onclick', `enviarPregunta('${s.fecha}')`);
+}
+
+// ---- 8b. Vista: Consulta general (chat libre, cualquier día) ----
+function renderConsulta(){
+  const cont = document.getElementById('vista-consulta');
+  cont.innerHTML = `
+    <div class="card">
+      <h1>Consulta</h1>
+      <p>Pregúntale a la IA sobre tu progreso general, tu rutina o cualquier duda de entrenamiento — no hace falta registrar una sesión ni esperar a un día programado.</p>
+    </div>
+    <div class="card">
+      <div id="listaConsultaGeneral"></div>
+      <div class="fila">
+        <input type="text" id="inputPreguntaGeneral" placeholder="Escribe tu pregunta...">
+      </div>
+      <button class="btn secundario" id="btnPreguntarGeneral" onclick="enviarPreguntaGeneral()">Enviar</button>
+    </div>`;
+  renderMensajesGeneral();
+}
+
+function renderMensajesGeneral(){
+  const cont = document.getElementById('listaConsultaGeneral');
+  if(!cont) return;
+  if(DATOS.chatGeneral.mensajes.length === 0){
+    cont.innerHTML = `<small class="ayuda">Aún no hay preguntas. Por ejemplo: "¿cómo va mi progreso este mes?" o "¿debería bajar el ritmo esta semana?".</small>`;
+    return;
+  }
+  cont.innerHTML = DATOS.chatGeneral.mensajes.map(m=>`
+    <div class="msg-chat ${m.rol==='usuario'?'usuario':'ia'}"><b>${m.rol==='usuario'?'Tú':'IA'}:</b> ${escapeHtml(m.texto)}</div>
+  `).join('');
+}
+
+// Arma un resumen fresco del estado actual (horario, pesos objetivo, últimas sesiones)
+// para que la IA responda con datos reales aunque la conversación sea larga.
+function construirContextoGeneral(){
+  const fechaInfo = obtenerFechaGuayaquil();
+  const bloqueHoy = bloqueDelDia(DATOS.config, fechaInfo.diaSemana);
+
+  const resumenProgreso = [];
+  ['superior','inferior'].forEach(b=>{
+    DATOS.config.ejercicios[b].forEach(ej=>{
+      const p = DATOS.progreso[ej.id];
+      if(p) resumenProgreso.push(`- ${ej.nombre} (${NOMBRE_BLOQUE[b]}): ${p.pesoObjetivo} lbs objetivo actual, reps ${p.repsObjetivo.join('-')}`);
+    });
+  });
+
+  const ultimas = DATOS.historial.slice(-5).map(s=>{
+    if(s.bloque === 'movilidad'){
+      const hechos = s.movilidad.filter(m=>m.hecho).length;
+      return `- ${s.fecha} (Movilidad): ${hechos}/${s.movilidad.length} ejercicios, molestias ${textoMolestias(s.molestias)}`;
+    }
+    return `- ${s.fecha} (${NOMBRE_BLOQUE[s.bloque]}${s.penalizado?', sesión de recuperación':''}): sueño ${textoSueno(s.sueno)}, energía ${textoEnergia(s.energia)}, molestias ${textoMolestias(s.molestias)}`;
+  }).join('\n');
+
+  return `Eres un preparador físico que acompaña a este atleta. Perfil: ${PERFIL_USUARIO}
+
+Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades.
+
+CONTEXTO ACTUAL:
+Fecha: ${fechaInfo.fechaISO} (${capitalizar(fechaInfo.nombreDiaLargo)}, Guayaquil)
+Hoy corresponde: ${bloqueHoy ? NOMBRE_BLOQUE[bloqueHoy] : 'día de descanso'}
+
+Pesos objetivo actuales por ejercicio:
+${resumenProgreso.join('\n') || 'Todavía no hay progreso registrado.'}
+
+Últimas sesiones registradas:
+${ultimas || 'Todavía no hay sesiones registradas.'}
+
+Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo.`;
+}
+
+async function enviarPreguntaGeneral(){
+  const input = document.getElementById('inputPreguntaGeneral');
+  const pregunta = input.value.trim();
+  if(!pregunta) return;
+  const btn = document.getElementById('btnPreguntarGeneral');
+  btn.disabled = true;
+
+  DATOS.chatGeneral.mensajes.push({rol:'usuario', texto:pregunta});
+  guardarDatos();
+  renderMensajesGeneral();
+  input.value = '';
+
+  // Se reconstruye el contexto en cada pregunta (no se acumula sin límite) y se
+  // agregan solo los últimos intercambios como memoria conversacional reciente.
+  const contexto = construirContextoGeneral();
+  const previos = DATOS.chatGeneral.mensajes.slice(-13, -1);
+  const contents = [
+    {role:'user', parts:[{text: contexto}]},
+    {role:'model', parts:[{text:'Entendido, tengo el contexto de tu entrenamiento. ¿En qué te ayudo?'}]},
+    ...previos.map(m=>({role: m.rol==='usuario'?'user':'model', parts:[{text:m.texto}]})),
+    {role:'user', parts:[{text: pregunta}]}
+  ];
+
+  try{
+    const respuesta = await llamarGemini(contents);
+    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:respuesta});
+  }catch(e){
+    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:'Error: ' + e.message});
+  }finally{
+    guardarDatos();
+    renderMensajesGeneral();
+    btn.disabled = false;
+  }
+}
+
+// ---- 9. Exportar / Importar ----
+function exportarJSON(){
+  // La API key NUNCA se incluye en el respaldo.
+  const blob = new Blob([JSON.stringify(DATOS, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `control-pesas-ia_${obtenerFechaGuayaquil().fechaISO}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importarJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const contenido = JSON.parse(e.target.result);
+      if(!contenido.config || !contenido.historial) throw new Error('Formato no reconocido');
+      if(!confirm('Esto reemplazará tus datos actuales en este dispositivo. ¿Continuar?')) return;
+      DATOS = contenido;
+      guardarDatos();
+      alert('Historial importado correctamente.');
+      mostrarVista('hoy');
+    }catch(err){
+      alert('El archivo no es un respaldo válido: ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ---- 10. Utilidades ----
+function mostrarToast(mensaje){
+  let toast = document.getElementById('toastMsg');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'toastMsg';
+    toast.style.cssText = 'position:fixed;left:50%;bottom:74px;transform:translateX(-50%);max-width:88vw;text-align:center;background:var(--primary);color:var(--on-primary);padding:10px 18px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = mensaje;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>{ toast.style.opacity = '0'; }, 2200);
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function capitalizar(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+function textoSueno(v){ return {excelente:'Excelente', buena:'Buena', regular:'Regular', mala:'Mala'}[v] || v; }
+function textoEnergia(v){ return {alta:'Alta', normal:'Normal', baja:'Baja', muy_baja:'Muy baja'}[v] || v; }
+function textoMolestias(v){ return {ninguna:'Ninguna', leve:'Leve', moderada:'Moderada', debo_parar:'Importante'}[v] || v; }
+
+function irAVistaSegunEstado(){
+  if(!DATOS.config.setupCompleto){ mostrarVista('setup'); }
+  else{ mostrarVista('hoy'); }
+}
+
+// ---- Inicio ----
+window.onload = function(){
+  const apiKey = obtenerApiKey();
+  if(!apiKey){ mostrarVista('auth'); return; }
+  DATOS = cargarDatos();
+  irAVistaSegunEstado();
+};
+</script>
+</body>
+</html>

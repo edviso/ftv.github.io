@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>    
+<head>   
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mapa de Maillard — Curva de tueste con IA</title>
@@ -302,6 +302,22 @@
     cursor: pointer; flex-shrink: 0; font-weight: bold;
   }
   .followup-btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ---------- Barra superior y botón Log ---------- */
+  .top-bar{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom: 10px; }
+  .top-bar .eyebrow{ margin: 0; }
+  .log-btn{
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--line-strong);
+    border-radius: 6px; padding: 4px 10px; font-family: var(--font-mono); font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .log-btn:hover{ color: var(--ink); border-color: var(--maillard); background: var(--ember-soft); }
+  .log-entry{ padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px dashed var(--line-strong); }
+  .log-entry:last-child{ border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .log-fecha{ font-family: var(--font-mono); font-size: 11.5px; color: var(--maillard); margin-bottom: 4px; }
+  .log-desc{ font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+  .log-note{ font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line-strong); }
 </style>
 </head>
 <body>
@@ -320,7 +336,10 @@
 
   <!-- APLICACIÓN PRINCIPAL -->
   <div id="app-section">
-    <p class="eyebrow">Laboratorio de tueste</p>
+    <div class="top-bar">
+      <p class="eyebrow">Laboratorio de tueste</p>
+      <button class="log-btn" onclick="abrirModalLog()">🕓 Log</button>
+    </div>
     <h1>El mapa de <span>Tueste</span></h1>
     <p class="subtitle">Mueve la acidez, el dulzor y el cuerpo que buscas en taza y observa cómo se reacomodan el secado, el pardeamiento de Maillard y el desarrollo — junto con una curva de tueste y su tabla de tiempo/temperatura cada 2 minutos.</p>
 
@@ -451,6 +470,19 @@
   </div>
 </div>
 
+<!-- VENTANA FLOTANTE: HISTORIAL DE CAMBIOS -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Historial de cambios <span style="font-family:var(--font-mono); font-size:10.5px; color:var(--muted); font-weight:400;">(hora de Ecuador)</span></h3>
+      <button class="modal-close" onclick="cerrarModalLog()">&times;</button>
+    </div>
+    <div class="modal-body" id="log-modal-body">
+      <!-- entradas generadas dinámicamente -->
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -468,7 +500,7 @@
 - Registro de datos: el sensor está adaptado para grabar la temperatura segundo a segundo, lo que permite reconstruir y analizar la curva de tueste y el RoR (Rate of Rise) de esa temperatura registrada con precisión después de cada tueste.
 
 HALLAZGO CALIBRADO EN ESTA MÁQUINA — ESTANCAMIENTO TÉRMICO CON SETPOINT FIJO O DESCENDENTE:
-En tuestes reales con esta tostadora, fijar (o bajar) el setpoint de temperatura del aire alrededor de ~211-212°C provocó que el RoR cayera a casi cero apenas el aire alcanzaba ese setpoint (minuto 3-4), estancando el tueste térmicamente — en el caso más extremo ni siquiera llegó a cruzar el primer crack. En cambio, perfiles de setpoint ASCENDENTE (por pasos, ej. 195→199→203→207→211→214°C) mantuvieron el RoR positivo hasta el final y dieron tuestes limpios. Por lo tanto, en ESTA máquina específica, para sostener un RoR positivo y evitar el estancamiento, la recomendación calibrada es usar rampas de setpoint ASCENDENTES (no descendentes), aunque la teoría clásica de tueste en tambor sugiera lo contrario. Si vas a recomendar un perfil de temperatura decreciente para esta máquina, señala explícitamente que esa recomendación es teórica, contradice el comportamiento ya calibrado, y sugiere validarla con precaución antes de confiar en ella.
+En tuestes reales con esta tostadora, fijar (o bajar) el setpoint de temperatura del aire alrededor de ~211-212°C provocó que el RoR cayera a casi cero apenas el aire alcanzaba ese setpoint (minuto 3-4), estancando el tueste térmicamente — en el caso más extremo ni siquiera llegó a cruzar el primer crack. En cambio, perfiles de setpoint ASCENDENTE (por pasos, ej. 195→199→203→207→211→214°C) mantuvieron el RoR positivo hasta el final y dieron tuestes limpios. El rango exacto validado de estancamiento es ~211-212°C: no generalices este hallazgo a un rango más amplio (por ejemplo "200-210°C") como si también estuviera calibrado — si vas a extrapolar el fenómeno a otras temperaturas fijas, dilo explícitamente como extrapolación/hipótesis, no como dato calibrado. Por lo tanto, en ESTA máquina específica, para sostener un RoR positivo y evitar el estancamiento, la recomendación calibrada es usar rampas de setpoint ASCENDENTES (no descendentes), aunque la teoría clásica de tueste en tambor sugiera lo contrario. Si vas a recomendar un perfil de temperatura decreciente para esta máquina, señala explícitamente que esa recomendación es teórica, contradice el comportamiento ya calibrado, y sugiere validarla con precaución antes de confiar en ella.
 
 COMPORTAMIENTO CONOCIDO — CAÍDAS TÉRMICAS BREVES POR AUTORREGULACIÓN:
 Esta tostadora, para evitar que el grano se sobrecaliente, a veces apaga las resistencias internas y sopla solo aire durante unos segundos. Esto causa caídas temporales de temperatura que luego se recuperan solas. Es un comportamiento normal de autorregulación de la máquina, no un error de sensor ni una apertura manual de la cámara — tenlo en cuenta como causa conocida al analizar caídas abruptas breves seguidas de recuperación.
@@ -494,6 +526,32 @@ PROTOCOLO COMPLETO — aplícalo ÚNICAMENTE cuando el usuario te entregue una s
 4. Distingue tendencia térmica de fondo, oscilaciones y eventos anómalos.
 5. Estructura la respuesta en este orden: Resumen ejecutivo, Validación de los datos, Resultados cuantitativos, Patrones detectados, Anomalías y eventos térmicos, Análisis del RoR de la temperatura registrada, Dinámica e inercia térmica, Fases estimadas (aclarando que son una estimación basada en la temperatura registrada, no en una BT calibrada), Posibles implicaciones en el tueste, Causas posibles de las anomalías, Qué se puede concluir y qué no, Recomendaciones (cada una con: problema detectado, evidencia, cambio recomendado, razón técnica, nivel de confianza — distinguiendo recomendación basada en datos vs. experimental), Datos adicionales que serían necesarios, Nivel de confianza de las conclusiones.
 No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, primer crack, ni causas de anomalías. Prioriza la precisión y fidelidad a los datos sobre dar una respuesta que "suene completa".`;
+
+  /* ============ LOG DE CAMBIOS ============ */
+  // Cada vez que se modifica el código de esta app, se agrega una entrada aquí
+  // con fecha/hora de Ecuador y un resumen breve del cambio (más reciente primero).
+  const REGISTRO_CAMBIOS = [
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se agregó el botón "Log" con esta ventana de historial de cambios.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se acotó el hallazgo de estancamiento térmico al rango exacto validado (~211-212°C), para que la IA no lo generalice a un rango mayor (ej. 200-210°C) sin avisar que es extrapolación.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se corrigió la descripción del sensor: es una lectura MIXTA aire+grano (está en medio de la cama de granos), no una ET pura. Se ajustaron los nombres de "RoR" y "fases estimadas" en el protocolo de análisis. Se agregó: no puede oír los cracks por el ruido de la máquina, patrón de aire habitual (V3 primeros 4 min → V2), preferencia por datos estructurados, y carga fija de 80g.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se añadió al contexto fijo el hallazgo de estancamiento térmico (setpoint fijo/descendente ~211-212°C) y un protocolo de análisis riguroso de series de tiempo/temperatura (disciplina de evidencia: dato/cálculo/patrón/inferencia/hipótesis), aplicado siempre en sus reglas generales y de forma completa solo cuando se pega una tabla real de datos.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se rediseñaron las ventanas de IA (por sección y consulta libre) como chat multi-turno: ahora se puede repreguntar varias veces sin perder el contexto, en vez de cerrarse tras una sola respuesta.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se actualizó el modelo de IA de "gemini-flash-latest" a "gemini-3.6-flash" explícito; se corrigió un color de error inexistente (var(--error) → var(--ember)).' },
+  ];
+
+  window.abrirModalLog = function() {
+    const body = document.getElementById('log-modal-body');
+    const nota = '<div class="log-note">Los cambios de hoy se registraron de forma retroactiva al crear este log. Desde ahora, cada modificación al código se agrega aquí con su fecha y hora reales.</div>';
+    const entradas = REGISTRO_CAMBIOS.map(e =>
+      '<div class="log-entry"><div class="log-fecha">' + e.fecha + '</div><div class="log-desc">' + e.descripcion + '</div></div>'
+    ).join('');
+    body.innerHTML = nota + entradas;
+    document.getElementById('log-modal').style.display = 'flex';
+  };
+
+  window.cerrarModalLog = function() {
+    document.getElementById('log-modal').style.display = 'none';
+  };
 
   /* ============ SISTEMA IA Y AUTH ============ */
   let GEMINI_API_KEY = "";
@@ -1064,6 +1122,11 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
       e.preventDefault();
       enviarSeguimiento();
     }
+  });
+
+  // Cerrar el modal de Log si se hace clic fuera del contenido
+  document.getElementById('log-modal').addEventListener('click', function(e) {
+    if(e.target === this) cerrarModalLog();
   });
 
 })();

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>     
+<head>   
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mapa de Maillard — Curva de tueste con IA</title>
@@ -527,6 +527,15 @@ REGLAS GENERALES (aplican a CUALQUIER consulta, incluidas las de cada sección):
 - Es preferible decir "no se puede determinar con estos datos" antes que dar una explicación plausible pero no demostrada.
 - Cuando propongas un perfil de tueste nuevo (una combinación concreta de setpoints, tiempos y aire que no se ha probado tal cual), separa explícitamente el PRINCIPIO general en que te basas —si ese principio sí está calibrado (ej. "rampas ascendentes evitan el estancamiento")— de la combinación específica de números y tiempos que estás proponiendo, que sigue siendo una HIPÓTESIS nueva aunque el principio detrás esté validado. No le prestes a la combinación nueva la misma confianza que al principio general en el que se apoya. Incluye siempre una etiqueta explícita de confianza (ALTA/MEDIA/BAJA) para el perfil propuesto en su conjunto, no solo la palabra "hipótesis" sin más.
 - Antes de entregar cualquier tabla de setpoints ascendentes, verifica fila por fila que cada una sea estrictamente mayor a la anterior (nunca igual, nunca descendente) — un perfil que se declara "estrictamente ascendente" pero repite el mismo setpoint en dos filas consecutivas es una contradicción que debes corregir antes de responder, no después. Si algún paso pasa por ~211-212°C, debe ser una transición breve seguida de inmediato por un paso más alto: nunca el setpoint final o sostenido justo antes de la descarga, que es el peor lugar para arriesgar un estancamiento.
+- Cada vez que expliques o propongas una curva/perfil de tueste con una tabla de setpoints paso a paso, termina la respuesta con un resumen ultra-condensado bajo el título "Resumen para el tostador", en formato de CUENTA REGRESIVA (tiempo restante hasta la descarga en 0:00, no tiempo transcurrido desde el inicio, porque así funciona el contador de esta tostadora). Escríbelo en líneas de texto plano, NO como tabla markdown con símbolos "|": una línea por cada cambio de setpoint, con tiempo restante, temperatura (°C) y nivel de aire (V1/V2/V3), por ejemplo:
+Resumen para el tostador
+12:00   195°C   V3
+10:00   199°C   V3
+8:00    203°C   V2
+6:00    207°C   V2
+5:00    211°C   V2
+2:00    214°C (hasta 0:00)   V2
+Calcula el tiempo restante de cada fila restando el tiempo transcurrido (del perfil de setpoints ya propuesto) del tiempo total del perfil. La última fila debe indicar entre paréntesis que ese setpoint se mantiene hasta la descarga (hasta 0:00). Si la respuesta no incluye un perfil de tueste nuevo (por ejemplo, es una pregunta conceptual o sobre datos ya registrados), omite este resumen.
 - Si necesitas pedirle datos adicionales para responder mejor, pídelos en campos concretos y estructurados (tiempos, temperaturas, pesos, Agtron, etc.) en vez de pedir una descripción narrativa abierta — así es como él reporta y prefiere trabajar sus tuestes.
 
 PROTOCOLO COMPLETO — aplícalo ÚNICAMENTE cuando el usuario te entregue una serie temporal real (tabla de Tiempo (s) | Temperatura registrada (°C), con muchos registros, normalmente cada 1 segundo). Para el resto de consultas de esta herramienta (café/método, objetivo en taza, reparto de fases, gráfica, tabla resumen cada 2 min), ignora el formato de 14 secciones de abajo y responde de forma normal a lo que se te pida, manteniendo eso sí las reglas generales anteriores:
@@ -541,6 +550,7 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
   // Cada vez que se modifica el código de esta app, se agrega una entrada aquí
   // con fecha/hora de Ecuador y un resumen breve del cambio (más reciente primero).
   const REGISTRO_CAMBIOS = [
+    { fecha: '04/08/2026 · 13:33', descripcion: 'Se agregó instrucción para que, al proponer un perfil de tueste nuevo, la IA cierre siempre con un resumen ultra-condensado en cuenta regresiva ("Resumen para el tostador": tiempo restante, temperatura, aire), calculado a partir del perfil ya propuesto.' },
     { fecha: '04/08/2026 · 12:01', descripcion: 'Se agregó un botón "Copiar pregunta y respuesta" al final de cada respuesta de la IA en el modal de chat, para copiar al portapapeles la pregunta (o la sección, si fue un análisis automático) junto con la respuesta, con alternativa de respaldo si el navegador bloquea el portapapeles.' },
     { fecha: '04/08/2026 · 11:57', descripcion: 'Se agregó verificación obligatoria de que las tablas de setpoints "ascendentes" no repitan/sostengan el mismo valor en filas consecutivas (se detectó una respuesta real que se declaraba "estrictamente ascendente" pero sostenía 211°C fijo los últimos 2 min antes de la descarga, justo el rango de riesgo).' },
     { fecha: '04/08/2026 · 11:40', descripcion: 'Se agregó una regla para que, al proponer un perfil de tueste nuevo, la IA separe el principio general calibrado (ej. rampas ascendentes evitan estancamiento) de la combinación específica de números/tiempos propuesta (que sigue siendo una hipótesis nueva), y siempre incluya una etiqueta explícita de confianza (ALTA/MEDIA/BAJA) para el perfil completo.' },
@@ -1196,4 +1206,3 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
 </script>
 </body>
 </html>
- 

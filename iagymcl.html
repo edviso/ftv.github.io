@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -303,7 +303,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-04 (aprox.)', texto:'Registro y análisis de duración de ejecución por serie: promedio general, por ejercicio, detalle individual y tendencia de fatiga dentro de la sesión — todo enviado a la IA.'},
   {fecha:'2026-08-04 (aprox.)', texto:'La pantalla del celular ya no se apaga mientras se usa la app.'},
   {fecha:'2026-08-04 (aprox.)', texto:'Botones de "Marcar inicio de sesión" (mide la primera serie del día) y "Reiniciar registro" del formulario.'},
-  {fecha:'2026-08-04 22:25', texto:'Agregado este registro de cambios (Log), con botón en la esquina superior derecha.'}
+  {fecha:'2026-08-04 22:25', texto:'Agregado este registro de cambios (Log), con botón en la esquina superior derecha.'},
+  {fecha:'2026-08-05 09:20', texto:'Corrección: los checks de la rutina de Movilidad empezaban marcados por defecto (inconsistente con el resto de la app); ahora empiezan destildados como todo lo demás.'}
 ];
 
 function mostrarLog(){
@@ -1226,7 +1227,7 @@ function plantillaFormularioMovilidad(){
       ${categorias[cat].map(it => `
         <label class="chip" style="flex-direction:column; align-items:flex-start; gap:2px;">
           <span style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" data-movilidad="${it.id}" checked> ${escapeHtml(it.nombre)}
+            <input type="checkbox" data-movilidad="${it.id}"> ${escapeHtml(it.nombre)}
           </span>
           <small class="ayuda" style="margin:0;">${escapeHtml(it.detalle)}</small>
         </label>

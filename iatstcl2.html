@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>    
+<head>   
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mapa de Maillard — Curva de tueste con IA</title>
@@ -513,6 +513,9 @@ En tuestes reales con esta tostadora, fijar (o bajar) el setpoint de temperatura
 COMPORTAMIENTO CONOCIDO — CAÍDAS TÉRMICAS BREVES POR AUTORREGULACIÓN:
 Esta tostadora, para evitar que el grano se sobrecaliente, a veces apaga las resistencias internas y sopla solo aire durante unos segundos. Esto causa caídas temporales de temperatura que luego se recuperan solas. Es un comportamiento normal de autorregulación de la máquina, no un error de sensor ni una apertura manual de la cámara — tenlo en cuenta como causa conocida al analizar caídas abruptas breves seguidas de recuperación.
 
+RELACIÓN ENTRE LA CURVA SIMULADA DE LA APP Y LOS SETPOINTS REALES A USAR:
+La gráfica y la tabla "Tiempo/Temperatura cada 2 min" que muestra la app son una curva OBJETIVO de lectura del sensor, calculada con un modelo matemático simple a partir de los sliders de acidez/dulzor/cuerpo — no son los setpoints de aire que hay que marcar en la máquina. Cuando propongas un perfil práctico de setpoints, es normal y esperado que tus setpoints recomendados corran por encima de esa curva objetivo (bastante más al inicio, cada vez más cerca al final), porque hay una brecha térmica entre lo que se marca en el dial y lo que el sensor realmente registra mientras el grano frío absorbe calor con rapidez. La primera vez que menciones un perfil de setpoints en una respuesta, acláralo brevemente para que no se lea como una discrepancia o error entre ambas curvas.
+
 Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de temperatura y nivel de aire (V1/V2/V3) a lo largo del tiempo, no en términos de velocidad de tambor, potencia de quemador de gas u otros controles que esta máquina no tiene.`;
 
   const PROTOCOLO_ANALISIS_TERMICO = `PROTOCOLO DE ANÁLISIS DE DATOS TÉRMICOS (disciplina de evidencia):
@@ -550,6 +553,8 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
   // Cada vez que se modifica el código de esta app, se agrega una entrada aquí
   // con fecha/hora de Ecuador y un resumen breve del cambio (más reciente primero).
   const REGISTRO_CAMBIOS = [
+    { fecha: '05/08/2026 · 11:08', descripcion: 'Se agregaron 3 variedades al selector "Variedad / proceso": Geisha, Típica lavado y Sidra Honey, cada una con sus propios sesgos de acidez/dulzor/cuerpo, temperatura de crack y nota descriptiva.' },
+    { fecha: '04/08/2026 · 23:35', descripcion: 'Se agregó una aclaración al contexto: la curva/tabla que muestra la app es una lectura objetivo del sensor (modelo matemático de los sliders), no los setpoints a marcar; la IA debe explicar brevemente por qué sus setpoints propuestos corren por encima de esa curva (brecha térmica al inicio, que se cierra hacia el final) para que no se lea como un error.' },
     { fecha: '04/08/2026 · 13:33', descripcion: 'Se agregó instrucción para que, al proponer un perfil de tueste nuevo, la IA cierre siempre con un resumen ultra-condensado en cuenta regresiva ("Resumen para el tostador": tiempo restante, temperatura, aire), calculado a partir del perfil ya propuesto.' },
     { fecha: '04/08/2026 · 12:01', descripcion: 'Se agregó un botón "Copiar pregunta y respuesta" al final de cada respuesta de la IA en el modal de chat, para copiar al portapapeles la pregunta (o la sección, si fue un análisis automático) junto con la respuesta, con alternativa de respaldo si el navegador bloquea el portapapeles.' },
     { fecha: '04/08/2026 · 11:57', descripcion: 'Se agregó verificación obligatoria de que las tablas de setpoints "ascendentes" no repitan/sostengan el mismo valor en filas consecutivas (se detectó una respuesta real que se declaraba "estrictamente ascendente" pero sostenía 211°C fijo los últimos 2 min antes de la descarga, justo el rango de riesgo).' },
@@ -867,6 +872,12 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
       nota:'Cuerpo y dulzor pronunciados; vigila que el secado no se quede corto.' },
     { id:'honey', nombre:'Honey / Miel', aB:0, dB:4, cB:1, crack:197,
       nota:'Punto intermedio entre lavado y natural: buen balance entre acidez y dulzor.' },
+    { id:'geisha', nombre:'Geisha', aB:7, dB:1, cB:-4, crack:198,
+      nota:'Extremadamente floral y aromática (jazmín, bergamota, té, cítricos exóticos), acidez muy alta y delicada, cuerpo ligero. Se opaca fácil con tuestes largos u oscuros; luce mejor con perfiles claros y cortos.' },
+    { id:'tipica_lavado', nombre:'Típica lavado', aB:1, dB:2, cB:1, crack:197,
+      nota:'Variedad clásica de perfil limpio y equilibrado: dulzor suave, acidez moderada y notas a caramelo/nuez. Menos exótica que Sidra o Geisha, pero versátil y fácil de tostar bien.' },
+    { id:'sidra_honey', nombre:'Sidra Honey', aB:3, dB:4, cB:1, crack:197,
+      nota:'El mismo carácter floral de la Sidra, pero el proceso honey suaviza la acidez y aporta más dulzor y cuerpo que la versión lavada — un punto intermedio entre Sidra lavado y un natural.' },
   ];
 
   const METODOS = [

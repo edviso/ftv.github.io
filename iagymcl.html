@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -140,9 +140,33 @@
   .hist-item .fecha{font-family:var(--mono); font-size:13px; color:var(--text-dim);}
   small.ayuda{display:block; color:var(--text-dim); font-size:12px; margin:-8px 0 12px;}
   @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  #btnLogFlotante{
+    position:fixed; top:12px; right:12px; z-index:25;
+    background:var(--surface-alt); color:var(--text-dim); border:1px solid var(--border);
+    border-radius:20px; padding:6px 14px; font-size:12px; font-weight:700;
+  }
+  .log-item{border-top:1px solid var(--border); padding:10px 0;}
+  .log-item:first-child{border-top:none;}
+  .log-fecha{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+  .log-texto{margin-top:2px;}
 </style>
 </head>
 <body>
+
+<button id="btnLogFlotante" onclick="mostrarLog()" title="Registro de cambios de la app">Log</button>
+
+<div id="modalLog" class="oculto" style="position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:40; overflow-y:auto;">
+  <div style="max-width:640px; margin:0 auto; padding:16px;">
+    <div class="card">
+      <div class="top-status">
+        <h2 style="margin:0;">Registro de cambios</h2>
+        <button class="btn chico secundario" onclick="cerrarLog()">Cerrar</button>
+      </div>
+      <small class="ayuda">Los cambios de antes del 4 de agosto de 2026 tienen fecha aproximada (reconstruida de la conversación); no hay hora porque no hay forma de saberla con certeza. De ahí en adelante, cada cambio queda con fecha y hora exactas.</small>
+      <div id="listaLog"></div>
+    </div>
+  </div>
+</div>
 
 <div class="wrap">
 
@@ -259,6 +283,41 @@ const NOMBRE_BLOQUE = {superior:'Tren Superior', inferior:'Tren Inferior', movil
 
 // Perfil fijo del atleta, usado en todos los prompts de IA (análisis y consulta general).
 const PERFIL_USUARIO = 'Hombre de 68 años que goza de buena salud. Entrena en casa con equipo limitado (máquina multifunción, barra, ligas), nunca al fallo muscular, con antecedente de una lesión de hombro. Prioriza la calidad y seguridad de la técnica por sobre el volumen de esfuerzo sin control. Objetivo a 1 año: ganar unas 10 libras de masa muscular de forma sostenible.';
+
+// ---- Registro de cambios de la app (changelog) ----
+// Las entradas antes del 2026-08-04 22:25 son una reconstrucción aproximada (sin hora exacta,
+// solo fecha estimada). De ahí en adelante cada cambio nuevo lleva fecha y hora reales.
+const REGISTRO_CAMBIOS = [
+  {fecha:'2026-08-03 (aprox.)', texto:'Reconstrucción completa del prototipo original: configuración inicial editable sin rutina quemada, registro estructurado por series, horario semanal con posicionamiento automático, penalización por día saltado, análisis de IA con chat de seguimiento, exportar/importar JSON.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Corrección: faltaba el botón "+" para subir el peso en cada serie.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Corrección: guardar la configuración no confirmaba visualmente nada; y editar la rutina después ya no sobrescribe el progreso real con los valores originales.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Nueva pestaña "Consulta": chat libre con la IA disponible cualquier día, con tu progreso como contexto.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Restricción de tema en los chats de la IA: solo temas de entrenamiento.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Rutina de Movilidad, equilibrio y flexibilidad para miércoles y sábado.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'La app ahora abre en Ajustes en vez de en Hoy.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Ajuste de ancho: campo de peso más ancho (caben los decimales), campo de repeticiones más angosto.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Reemplazada la palabra "reps" por un check para marcar cada serie como completada.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Diagnóstico y arreglo del bloqueo al guardar en GitHub Pages: el guardado ya no se congela en silencio, muestra el motivo real si falla.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Nuevos tipos de ejercicio: "Pesa" y "Libre (sin equipo)".'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Cronómetro de descanso de 2:30 con alarma sonora y vibración al marcar una serie, luego fijado arriba de la pantalla al hacer scroll.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Registro y análisis de duración de ejecución por serie: promedio general, por ejercicio, detalle individual y tendencia de fatiga dentro de la sesión — todo enviado a la IA.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'La pantalla del celular ya no se apaga mientras se usa la app.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Botones de "Marcar inicio de sesión" (mide la primera serie del día) y "Reiniciar registro" del formulario.'},
+  {fecha:'2026-08-04 22:25', texto:'Agregado este registro de cambios (Log), con botón en la esquina superior derecha.'}
+];
+
+function mostrarLog(){
+  const cont = document.getElementById('listaLog');
+  cont.innerHTML = REGISTRO_CAMBIOS.slice().reverse().map(c => `
+    <div class="log-item">
+      <div class="log-fecha">${escapeHtml(c.fecha)}</div>
+      <div class="log-texto">${escapeHtml(c.texto)}</div>
+    </div>`).join('');
+  document.getElementById('modalLog').classList.remove('oculto');
+}
+function cerrarLog(){
+  document.getElementById('modalLog').classList.add('oculto');
+}
 
 // ---- 1. Semillas por defecto: SOLO sugerencias iniciales editables ----
 function semillaConfig(){

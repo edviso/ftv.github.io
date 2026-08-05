@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -236,11 +236,15 @@
   <!-- ===================== VISTA: CONSULTA GENERAL ===================== -->
   <div id="vista-consulta" class="oculto"></div>
 
+  <!-- ===================== VISTA: SIMULACIÓN ===================== -->
+  <div id="vista-simulacion" class="oculto"></div>
+
   <!-- ===================== VISTA: AJUSTES ===================== -->
   <div id="vista-ajustes" class="oculto">
     <div class="card">
       <h2>Ajustes</h2>
       <button class="btn secundario" onclick="mostrarVista('setup')">Editar rutina y horario</button>
+      <button class="btn secundario" onclick="mostrarVista('simulacion')">🧪 Simulación</button>
       <button class="btn secundario" onclick="exportarJSON()">Exportar respaldo (JSON)</button>
       <label for="inputJSON" style="margin-top:4px;">
         <span class="btn secundario" style="display:block; text-align:center;">Importar respaldo (JSON)</span>
@@ -304,7 +308,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-04 (aprox.)', texto:'La pantalla del celular ya no se apaga mientras se usa la app.'},
   {fecha:'2026-08-04 (aprox.)', texto:'Botones de "Marcar inicio de sesión" (mide la primera serie del día) y "Reiniciar registro" del formulario.'},
   {fecha:'2026-08-04 22:25', texto:'Agregado este registro de cambios (Log), con botón en la esquina superior derecha.'},
-  {fecha:'2026-08-05 09:20', texto:'Corrección: los checks de la rutina de Movilidad empezaban marcados por defecto (inconsistente con el resto de la app); ahora empiezan destildados como todo lo demás.'}
+  {fecha:'2026-08-05 09:20', texto:'Corrección: los checks de la rutina de Movilidad empezaban marcados por defecto (inconsistente con el resto de la app); ahora empiezan destildados como todo lo demás.'},
+  {fecha:'2026-08-05', texto:'Nueva sección "🧪 Simulación" en Ajustes: recorre cualquier rutina (superior, inferior o movilidad) con el descanso y la duración de cada serie comprimidos a 5 segundos. Llama a la IA de verdad, pero nunca guarda nada en el historial ni cambia los pesos reales.'}
 ];
 
 function mostrarLog(){
@@ -445,10 +450,10 @@ function detectarPenalizacion(datos, fechaInfo){
 // ---- 4. Enrutador de vistas ----
 function mostrarVista(nombre){
   limpiarTemporizador();
-  ['auth','setup','hoy','historial','consulta','ajustes'].forEach(v=>{
+  ['auth','setup','hoy','historial','consulta','simulacion','ajustes'].forEach(v=>{
     document.getElementById('vista-'+v).classList.toggle('oculto', v!==nombre);
   });
-  document.getElementById('navTabs').classList.toggle('oculto', nombre==='auth' || nombre==='setup');
+  document.getElementById('navTabs').classList.toggle('oculto', nombre==='auth' || nombre==='setup' || nombre==='simulacion');
   ['Hoy','Historial','Consulta','Ajustes'].forEach(t=>{
     document.getElementById('tab'+t).classList.toggle('activo', t.toLowerCase()===nombre);
   });
@@ -456,6 +461,7 @@ function mostrarVista(nombre){
   if(nombre==='historial') renderHistorial();
   if(nombre==='consulta') renderConsulta();
   if(nombre==='setup') renderSetup();
+  if(nombre==='simulacion') renderSimulacionInicio();
 }
 
 // ---- 5. Vista: API Key ----
@@ -640,6 +646,8 @@ function guardarConfiguracion(){
 // ---- 7. Vista: Hoy ----
 function renderHoy(){
   limpiarTemporizador();
+  modoSimulacion = false;
+  TEMPORIZADOR_DESCANSO_SEG = 150;
   const cont = document.getElementById('vista-hoy');
   const fechaInfo = obtenerFechaGuayaquil();
   const bloqueHoy = bloqueDelDia(DATOS.config, fechaInfo.diaSemana);
@@ -696,6 +704,60 @@ function renderBloqueManual(bloque){
   document.getElementById('contBloqueManual').innerHTML = bloque === 'movilidad'
     ? plantillaFormularioMovilidad()
     : plantillaFormularioRegistro(bloque, fechaInfo, false, true);
+}
+
+// ---- Simulación: recorre cualquier rutina con descanso/duración comprimidos a 5s,
+// para revisar la app rápido (o mostrársela a alguien) sin esperar tiempos reales.
+// Llama a la IA de verdad (usa tu API key), pero NUNCA escribe en tu historial ni progreso reales.
+function renderSimulacionInicio(){
+  limpiarTemporizador();
+  modoSimulacion = false;
+  TEMPORIZADOR_DESCANSO_SEG = 150;
+  registrosSerie = [];
+  // Evita que un formulario real a medio llenar en "Hoy" quede de fondo con los mismos
+  // IDs que el formulario de simulación — se reconstruye solo al volver a esa pestaña.
+  document.getElementById('vista-hoy').innerHTML = '';
+  const cont = document.getElementById('vista-simulacion');
+  cont.innerHTML = `
+    <div class="card">
+      <h1>🧪 Simulación</h1>
+      <p>Recorre cualquier rutina con el descanso y la duración de cada serie comprimidos a 5 segundos, para probar la app rápido o mostrársela a alguien. La IA sí analiza de verdad con tu API key, pero nada de esto se guarda en tu historial ni afecta tus pesos reales.</p>
+      <label for="selectSimulacion">¿Qué quieres simular?</label>
+      <select id="selectSimulacion" onchange="iniciarSimulacion(this.value)">
+        <option value="">Selecciona...</option>
+        <option value="superior">Tren Superior</option>
+        <option value="inferior">Tren Inferior</option>
+        <option value="movilidad">Movilidad</option>
+      </select>
+    </div>
+    <div class="card">
+      <button class="btn secundario" onclick="mostrarVista('ajustes')">Salir de simulación</button>
+    </div>`;
+}
+
+function iniciarSimulacion(bloque){
+  if(!bloque) return;
+  modoSimulacion = true;
+  TEMPORIZADOR_DESCANSO_SEG = 5;
+  registrosSerie = [];
+  const fechaInfo = obtenerFechaGuayaquil();
+  const contenido = bloque === 'movilidad'
+    ? plantillaFormularioMovilidad()
+    : plantillaFormularioRegistro(bloque, fechaInfo, false, true);
+  document.getElementById('vista-simulacion').innerHTML = `
+    <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
+      <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — descanso y duración comprimidos a 5s. No se guarda en tu historial real.
+      <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
+    </div>
+    ${contenido}`;
+}
+
+function salirSimulacion(){
+  modoSimulacion = false;
+  TEMPORIZADOR_DESCANSO_SEG = 150;
+  limpiarTemporizador();
+  registrosSerie = [];
+  mostrarVista('ajustes');
 }
 
 function plantillaEncabezado(fechaInfo, bloque, penalizado){
@@ -812,8 +874,9 @@ function ajustarValor(id, delta){
   el.value = (parseFloat(el.value)||0) + delta*paso;
 }
 
-// ---- 6b. Temporizador de descanso entre series (2:30) ----
-const TEMPORIZADOR_DESCANSO_SEG = 150;
+// ---- 6b. Temporizador de descanso entre series (2:30, o 5s en modo simulación) ----
+let TEMPORIZADOR_DESCANSO_SEG = 150;
+let modoSimulacion = false;
 let temporizadorInterval = null;
 let temporizadorRestante = 0;
 let registrosSerie = []; // {exId, serieIndex, t} — hora de cada check de "serie completada" en la sesión actual
@@ -1021,16 +1084,18 @@ async function registrarYAnalizar(bloque, penalizado, manual){
     // Aplicar límites de seguridad de forma determinística
     const recomendacionesFinal = aplicarLimitesSeguridad(bloque, form, parsed.recomendaciones || [], penalizado, diaDeCarga);
 
-    // Actualizar progreso guardado por ejercicio
-    recomendacionesFinal.forEach(r=>{
-      const p = DATOS.progreso[r.id];
-      if(!p) return;
-      const enviado = form.ejercicios.find(e=>e.id===r.id);
-      p.pesoUltimaSesion = enviado ? enviado.series[0].peso : p.pesoUltimaSesion;
-      p.repsUltimaSesion = enviado ? enviado.series.map(s=>s.reps) : p.repsUltimaSesion;
-      p.pesoObjetivo = r.pesoSugerido;
-      p.repsObjetivo = r.repsSugeridos;
-    });
+    // Actualizar progreso guardado por ejercicio (nunca en modo simulación)
+    if(!modoSimulacion){
+      recomendacionesFinal.forEach(r=>{
+        const p = DATOS.progreso[r.id];
+        if(!p) return;
+        const enviado = form.ejercicios.find(e=>e.id===r.id);
+        p.pesoUltimaSesion = enviado ? enviado.series[0].peso : p.pesoUltimaSesion;
+        p.repsUltimaSesion = enviado ? enviado.series.map(s=>s.reps) : p.repsUltimaSesion;
+        p.pesoObjetivo = r.pesoSugerido;
+        p.repsObjetivo = r.repsSugeridos;
+      });
+    }
 
     const sesion = {
       fecha: fechaInfo.fechaISO,
@@ -1055,9 +1120,18 @@ async function registrarYAnalizar(bloque, penalizado, manual){
       chat: []
     };
 
-    DATOS.historial.push(sesion);
-    guardarDatos();
-    renderHoy();
+    if(modoSimulacion){
+      document.getElementById('vista-simulacion').innerHTML = `
+        <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
+          <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — este resultado no se guardó en tu historial ni cambió tus pesos reales.
+          <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
+        </div>
+        ${plantillaResumenSesion(sesion, true)}`;
+    }else{
+      DATOS.historial.push(sesion);
+      guardarDatos();
+      renderHoy();
+    }
   }catch(e){
     errDiv.textContent = 'Error: ' + e.message;
     errDiv.classList.remove('oculto');
@@ -1165,7 +1239,7 @@ function aplicarLimitesSeguridad(bloque, form, recomendaciones, penalizado, diaD
   });
 }
 
-function plantillaResumenSesion(sesion){
+function plantillaResumenSesion(sesion, sinChat){
   const recomHtml = sesion.analisis.recomendaciones.map(r=>{
     const dur = sesion.duracionPorEjercicio && sesion.duracionPorEjercicio[r.id] != null ? sesion.duracionPorEjercicio[r.id] : null;
     return `
@@ -1203,6 +1277,7 @@ function plantillaResumenSesion(sesion){
       ${recomHtml}
       ${sesion.analisis.consejoGeneral ? `<h3 style="margin-top:12px;">Consejo</h3><div class="resultado-caja">${escapeHtml(sesion.analisis.consejoGeneral)}</div>` : ''}
     </div>
+    ${sinChat ? '' : `
     <div class="card" id="cardChat">
       <h2>Preguntar a la IA sobre esta sesión</h2>
       <div id="listaChat"></div>
@@ -1210,7 +1285,7 @@ function plantillaResumenSesion(sesion){
         <input type="text" id="inputPregunta" placeholder="Escribe tu pregunta...">
       </div>
       <button class="btn secundario" id="btnPreguntar" onclick="enviarPregunta('${sesion.fecha}')">Enviar</button>
-    </div>`;
+    </div>`}`;
 }
 
 // ---- 7b. Movilidad, equilibrio y flexibilidad (miércoles/sábado) ----
@@ -1268,6 +1343,15 @@ function registrarMovilidad(){
     molestiasDetalle: document.getElementById('detalleMolestiasMov').value.trim(),
     movilidad: items
   };
+  if(modoSimulacion){
+    document.getElementById('vista-simulacion').innerHTML = `
+      <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
+        <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — esto no se guardó en tu historial real.
+        <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
+      </div>
+      ${plantillaResumenMovilidad(sesion)}`;
+    return;
+  }
   DATOS.historial.push(sesion);
   guardarDatos();
   mostrarToast('Sesión de movilidad registrada');

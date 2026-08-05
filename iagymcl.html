@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -99,10 +99,11 @@
   .chip input[type="checkbox"]{width:18px; height:18px; margin:0;}
   .check-serie{width:22px; height:22px; margin:0; flex-shrink:0;}
   .timer-caja{
+    position:sticky; top:8px; z-index:15;
     margin:4px 0 16px; padding:12px; border:1px solid var(--primary); border-radius:9px;
-    background:rgba(63,184,174,.08); text-align:center;
+    background:var(--surface); box-shadow:0 4px 12px rgba(0,0,0,.4); text-align:center;
   }
-  .timer-caja.alerta{ border-color:var(--amber); background:rgba(217,154,78,.14); }
+  .timer-caja.alerta{ border-color:var(--amber); }
   .timer-label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;}
   .timer-reloj{font-family:var(--mono); font-size:34px; font-weight:700; color:var(--primary); letter-spacing:.02em; margin-bottom:8px;}
   .timer-caja.alerta .timer-reloj{color:var(--amber);}
@@ -693,6 +694,12 @@ function plantillaFormularioRegistro(bloque, fechaInfo, penalizado, manual){
 
   return `
     <form id="${idForm}" class="card" onsubmit="return false;">
+      <div class="fila" style="margin-bottom:6px;">
+        <button type="button" class="btn chico secundario" id="btnIniciarSesion" onclick="iniciarSesionEntrenamiento()">▶ Marcar inicio</button>
+        <button type="button" class="btn chico peligro" onclick="reiniciarRegistroHoy(${manual ? 'true' : 'false'}, '${bloque}')">Reiniciar registro</button>
+      </div>
+      <small class="ayuda" style="margin-bottom:14px;">"Marcar inicio" es opcional: tócalo justo antes de tu primera serie para que también se mida su duración. "Reiniciar" borra los checks y el cronómetro de este formulario si te confundiste.</small>
+
       <h2>Calentamiento</h2>
       <div class="chip-lista">${calent}</div>
 
@@ -758,19 +765,89 @@ function marcarSerieCompletada(exId, serieIndex){
   iniciarTemporizadorDescanso();
 }
 
-// Duración de ejecución de cada serie = tiempo entre dos checks consecutivos DEL MISMO ejercicio,
-// menos los 2:30 de descanso ya contados. Así no se mezcla con el tiempo de cambiar de máquina.
+// Marca el momento en que arranca la sesión (opcional), para poder calcular también
+// la duración de la primerísima serie del día. A diferencia de los checks entre series,
+// aquí no hubo descanso de por medio, así que esa primera duración no le resta los 2:30.
+function iniciarSesionEntrenamiento(){
+  registrosSerie = registrosSerie.filter(r => !r.esInicio);
+  registrosSerie.push({exId:'__inicio__', serieIndex:-1, t: Date.now(), esInicio:true});
+  const btn = document.getElementById('btnIniciarSesion');
+  if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  mostrarToast('Sesión iniciada — se medirá la duración de tu primera serie');
+}
+
+// Borra los checks, el cronómetro y los valores modificados del formulario de hoy,
+// reconstruyéndolo desde cero — para cuando hay que corregir un error o suspender por fuerza mayor.
+function reiniciarRegistroHoy(manual, bloque){
+  if(!confirm('¿Seguro que quieres reiniciar el registro de hoy? Se borrarán los checks, el cronómetro y los valores que hayas modificado en este formulario.')) return;
+  limpiarTemporizador();
+  registrosSerie = [];
+  if(manual){ renderBloqueManual(bloque); }
+  else{ renderHoy(); }
+  mostrarToast('Registro de hoy reiniciado');
+}
+
 function calcularDuracionesSerie(){
   const ordenados = registrosSerie.slice().sort((a,b)=>a.t-b.t);
   const duraciones = [];
+  // El check anterior (sea del mismo ejercicio o de otro) siempre marca el inicio del descanso
+  // que termina con la alarma, así que la duración se calcula entre cualquier par consecutivo.
+  // Solo la primerísima serie del día se queda sin dato, salvo que se haya marcado el inicio de
+  // sesión — en ese caso, esa primera duración no resta los 2:30 porque no hubo descanso previo.
   for(let i=1; i<ordenados.length; i++){
-    if(ordenados[i].exId === ordenados[i-1].exId){
-      const segundos = Math.max(0, Math.round((ordenados[i].t - ordenados[i-1].t)/1000) - TEMPORIZADOR_DESCANSO_SEG);
-      duraciones.push({exId: ordenados[i].exId, serieIndex: ordenados[i].serieIndex, segundos});
-    }
+    if(ordenados[i].esInicio) continue;
+    const esPrimeraTrasInicio = ordenados[i-1].esInicio === true;
+    const descuento = esPrimeraTrasInicio ? 0 : TEMPORIZADOR_DESCANSO_SEG;
+    const segundos = Math.max(0, Math.round((ordenados[i].t - ordenados[i-1].t)/1000) - descuento);
+    duraciones.push({exId: ordenados[i].exId, serieIndex: ordenados[i].serieIndex, segundos});
   }
   const duracionPromedio = duraciones.length ? Math.round(duraciones.reduce((a,d)=>a+d.segundos,0)/duraciones.length) : null;
-  return {duraciones, duracionPromedio};
+  const duracionPorEjercicio = {};
+  duraciones.forEach(d=>{
+    (duracionPorEjercicio[d.exId] = duracionPorEjercicio[d.exId] || []).push(d.segundos);
+  });
+  Object.keys(duracionPorEjercicio).forEach(exId=>{
+    const arr = duracionPorEjercicio[exId];
+    duracionPorEjercicio[exId] = Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
+  });
+  return {duraciones, duracionPromedio, duracionPorEjercicio};
+}
+
+// Detalle de duración de cada serie individual, agrupado por ejercicio.
+// La primerísima serie del día nunca tiene dato porque no hay check anterior con el que compararla.
+// De ahí en más, incluida la S1 de cada ejercicio nuevo, sí queda registrada.
+function formatearDuracionPorSerie(duraciones, ejercicios){
+  if(!duraciones || !duraciones.length) return null;
+  const porEjercicio = {};
+  duraciones.forEach(d=>{
+    (porEjercicio[d.exId] = porEjercicio[d.exId] || []).push(d);
+  });
+  return Object.keys(porEjercicio).map(exId=>{
+    const nombre = (ejercicios.find(e=>e.id===exId)||{}).nombre || exId;
+    const series = porEjercicio[exId]
+      .sort((a,b)=>a.serieIndex-b.serieIndex)
+      .map(d => `S${d.serieIndex+1}=${d.segundos}s`)
+      .join(', ');
+    return {exId, nombre, texto: series};
+  });
+}
+
+// Compara, para cada ejercicio con 2+ series medidas, la primera contra la última —
+// y promedia ese cambio porcentual entre todos los ejercicios de la sesión.
+// Positivo = las series finales fueron más lentas (fatiga); negativo = más rápidas.
+function calcularTendenciaDentroSesion(duraciones){
+  if(!duraciones || !duraciones.length) return null;
+  const porEjercicio = {};
+  duraciones.forEach(d=>{ (porEjercicio[d.exId] = porEjercicio[d.exId] || []).push(d); });
+  const cambios = [];
+  Object.values(porEjercicio).forEach(arr=>{
+    if(arr.length < 2) return;
+    const ordenado = arr.slice().sort((a,b)=>a.serieIndex-b.serieIndex);
+    const primera = ordenado[0].segundos;
+    const ultima = ordenado[ordenado.length-1].segundos;
+    if(primera > 0) cambios.push(Math.round(((ultima - primera) / primera) * 100));
+  });
+  return cambios.length ? Math.round(cambios.reduce((a,b)=>a+b,0)/cambios.length) : null;
 }
 
 function limpiarTemporizador(){
@@ -851,7 +928,8 @@ function recopilarFormulario(bloque){
   });
   const molestiasSel = document.getElementById('selMolestias').value;
   const detalle = document.getElementById('detalleMolestias').value.trim();
-  const {duraciones, duracionPromedio} = calcularDuracionesSerie();
+  const {duraciones, duracionPromedio, duracionPorEjercicio} = calcularDuracionesSerie();
+  const tendenciaDentroSesion = calcularTendenciaDentroSesion(duraciones);
   return {
     calentamiento: calent,
     ejercicios,
@@ -859,7 +937,7 @@ function recopilarFormulario(bloque){
     energia: document.getElementById('selEnergia').value,
     molestias: molestiasSel,
     molestiasDetalle: detalle,
-    duraciones, duracionPromedio
+    duraciones, duracionPromedio, duracionPorEjercicio, tendenciaDentroSesion
   };
 }
 
@@ -903,7 +981,8 @@ async function registrarYAnalizar(bloque, penalizado, manual){
       molestias: form.molestias, molestiasDetalle: form.molestiasDetalle,
       calentamiento: form.calentamiento,
       ejercicios: form.ejercicios,
-      duraciones: form.duraciones, duracionPromedio: form.duracionPromedio,
+      duraciones: form.duraciones, duracionPromedio: form.duracionPromedio, duracionPorEjercicio: form.duracionPorEjercicio,
+      tendenciaDentroSesion: form.tendenciaDentroSesion,
       analisis: {
         evaluacion: parsed.evaluacion || respuestaTexto,
         recomendaciones: recomendacionesFinal,
@@ -940,6 +1019,23 @@ function construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual
     .map(s => `${s.fecha}: ${s.duracionPromedio}s`)
     .join(' | ');
 
+  const duracionPorEjercicioLinea = form.duracionPorEjercicio && Object.keys(form.duracionPorEjercicio).length
+    ? Object.entries(form.duracionPorEjercicio)
+        .map(([exId, seg]) => `${(form.ejercicios.find(e=>e.id===exId)||{}).nombre || exId}: ${seg}s`)
+        .join(', ')
+    : 'sin datos suficientes';
+
+  const detalleSerieArr = formatearDuracionPorSerie(form.duraciones, form.ejercicios);
+  const detalleSerieLinea = detalleSerieArr && detalleSerieArr.length
+    ? detalleSerieArr.map(e => `${e.nombre}: ${e.texto}`).join(' | ')
+    : 'sin datos suficientes';
+
+  const tendenciaHistorica = DATOS.historial
+    .filter(s => s.bloque === bloque && s.tendenciaDentroSesion != null)
+    .slice(-4)
+    .map(s => `${s.fecha}: ${s.tendenciaDentroSesion>0?'+':''}${s.tendenciaDentroSesion}%`)
+    .join(' | ');
+
   return `Eres un preparador físico especializado en sobrecarga progresiva conservadora. Perfil del atleta: ${PERFIL_USUARIO}
 
 Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este espacio es solo para temas de entrenamiento, técnica, progreso, recuperación y movilidad; si una pregunta de seguimiento no tiene relación con eso, dilo brevemente y no la respondas.
@@ -952,7 +1048,9 @@ DATOS DE HOY (${fechaInfo.fechaISO}, ${bloque === 'superior' ? 'Tren Superior' :
 - Energía percibida: ${form.energia}
 - Molestias: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''}
 - Calentamiento: ${calentLinea}
-- Duración promedio de ejecución por serie hoy: ${form.duracionPromedio != null ? form.duracionPromedio+' segundos' : 'sin datos suficientes'}. Sesiones recientes del mismo bloque: ${duracionHistorica || 'sin datos previos'}. Si la duración sube respecto a sesiones anteriores, interpreta que las series le están costando más esfuerzo; si baja, que le resultan más fáciles; considéralo junto con sueño/energía/molestias al decidir la progresión.
+- Duración promedio de ejecución por serie hoy: ${form.duracionPromedio != null ? form.duracionPromedio+' segundos' : 'sin datos suficientes'} (global). Por ejercicio: ${duracionPorEjercicioLinea}. Sesiones recientes del mismo bloque (promedio global): ${duracionHistorica || 'sin datos previos'}. Si la duración sube respecto a sesiones anteriores, interpreta que las series le están costando más esfuerzo; si baja, que le resultan más fáciles; compara cada ejercicio contra su propio ritmo esperado (no es igual el tiempo de una serie de sentadillas que de elevaciones de talón) y considéralo junto con sueño/energía/molestias al decidir la progresión de cada uno.
+- Duración de cada serie individual (la primerísima serie del día no tiene dato, es la primera y no tiene con qué compararse; el resto sí, incluida la primera serie de cada ejercicio nuevo): ${detalleSerieLinea}. Ten este detalle a mano por si el usuario pregunta por una serie o ejercicio específico en el chat de seguimiento.
+- Tendencia DENTRO de esta sesión (comparando, en cada ejercicio con 2+ series medidas, la primera contra la última, promediado entre ejercicios): hoy ${form.tendenciaDentroSesion != null ? (form.tendenciaDentroSesion>0?'+':'')+form.tendenciaDentroSesion+'%' : 'sin datos suficientes'} (positivo = las series finales fueron más lentas que las iniciales; negativo = más rápidas). Mismo dato en sesiones recientes del mismo bloque: ${tendenciaHistorica || 'sin datos previos'}. Si el porcentaje de hoy es alto, coméntalo en la evaluación como posible fatiga dentro de la sesión (o mejora de ritmo si es negativo). Si ese mismo patrón se repite de forma consistente en varias sesiones seguidas, señálalo explícitamente como algo a investigar (por ejemplo: orden de los ejercicios, tiempo de descanso, o fatiga acumulada entre sesiones) en vez de tratarlo como un dato aislado de hoy.
 
 EJERCICIOS Y SERIES DE HOY (peso en libras):
 ${lineasEjercicios}
@@ -1008,20 +1106,35 @@ function aplicarLimitesSeguridad(bloque, form, recomendaciones, penalizado, diaD
 }
 
 function plantillaResumenSesion(sesion){
-  const recomHtml = sesion.analisis.recomendaciones.map(r=>`
+  const recomHtml = sesion.analisis.recomendaciones.map(r=>{
+    const dur = sesion.duracionPorEjercicio && sesion.duracionPorEjercicio[r.id] != null ? sesion.duracionPorEjercicio[r.id] : null;
+    return `
     <div class="recom-fila">
       <div>
         <div>${escapeHtml(r.nombre)}</div>
-        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}</small>
+        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}${dur != null ? ' · '+dur+'s/serie' : ''}</small>
       </div>
       <div class="recom-peso">${r.pesoSugerido} lbs · ${r.repsSugeridos.join('-')}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+
+  const detalleSerieArr = formatearDuracionPorSerie(sesion.duraciones, sesion.ejercicios);
+  const detalleSerieHtml = detalleSerieArr && detalleSerieArr.length
+    ? `<details style="margin-top:8px;">
+        <summary style="cursor:pointer; color:var(--primary); font-size:13px;">Ver duración de cada serie</summary>
+        <div style="margin-top:8px; font-size:13px; font-family:var(--mono); color:var(--text-dim);">
+          ${detalleSerieArr.map(e => `<div style="margin-bottom:4px;"><span style="color:var(--text);">${escapeHtml(e.nombre)}:</span> ${e.texto}</div>`).join('')}
+        </div>
+      </details>`
+    : '';
 
   return `
     <div class="card">
       <h2>Sesión de hoy registrada</h2>
       <p style="margin-bottom:4px;">Sueño: ${textoSueno(sesion.sueno)} · Energía: ${textoEnergia(sesion.energia)} · Molestias: ${textoMolestias(sesion.molestias)}</p>
       ${sesion.duracionPromedio != null ? `<p style="margin-bottom:0;">Duración promedio por serie: <span style="font-family:var(--mono); color:var(--primary);">${sesion.duracionPromedio}s</span></p>` : ''}
+      ${sesion.tendenciaDentroSesion != null ? `<p style="margin-bottom:0;">Tendencia dentro de la sesión (última serie vs primera): <span style="font-family:var(--mono); color:${sesion.tendenciaDentroSesion>15?'var(--amber)':'var(--primary)'};">${sesion.tendenciaDentroSesion>0?'+':''}${sesion.tendenciaDentroSesion}%</span></p>` : ''}
+      ${detalleSerieHtml}
     </div>
     <div class="card">
       <h2>Análisis de la IA</h2>
@@ -1372,7 +1485,26 @@ function irAVistaSegunEstado(){
 }
 
 // ---- Inicio ----
+// ---- Mantener la pantalla encendida mientras se usa la app ----
+let referenciaWakeLock = null;
+async function mantenerPantallaActiva(){
+  try{
+    if('wakeLock' in navigator){
+      referenciaWakeLock = await navigator.wakeLock.request('screen');
+      referenciaWakeLock.addEventListener('release', ()=>{ referenciaWakeLock = null; });
+    }
+  }catch(e){
+    console.error('No se pudo mantener la pantalla activa', e);
+  }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && !referenciaWakeLock){
+    mantenerPantallaActiva();
+  }
+});
+
 window.onload = function(){
+  mantenerPantallaActiva();
   const apiKey = obtenerApiKey();
   if(!apiKey){ mostrarVista('auth'); return; }
   DATOS = cargarDatos();

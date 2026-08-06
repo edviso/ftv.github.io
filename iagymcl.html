@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>. 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -310,7 +310,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-04 22:25', texto:'Agregado este registro de cambios (Log), con botón en la esquina superior derecha.'},
   {fecha:'2026-08-05 09:20', texto:'Corrección: los checks de la rutina de Movilidad empezaban marcados por defecto (inconsistente con el resto de la app); ahora empiezan destildados como todo lo demás.'},
   {fecha:'2026-08-05', texto:'Nueva sección "🧪 Simulación" en Ajustes: recorre cualquier rutina (superior, inferior o movilidad) con el descanso y la duración de cada serie comprimidos a 5 segundos. Llama a la IA de verdad, pero nunca guarda nada en el historial ni cambia los pesos reales.'},
-  {fecha:'2026-08-05', texto:'Corrección importante: los checks y valores del formulario de hoy se borraban al ir a Consulta y volver (se reconstruía todo desde cero). Ahora se guarda un borrador y se restaura, incluyendo los tiempos ya registrados. Agregados dos ejercicios de movilidad (Niño a Cobra, Mariposa sentado). En Movilidad: botón de "Marcar inicio" para medir cuánto toma cada ejercicio (sin cronómetro/alarma) y calificación de dificultad 1-5 por ejercicio al marcarlo hecho; ese detalle ya queda disponible para el chat de Consulta.'}
+  {fecha:'2026-08-05', texto:'Corrección importante: los checks y valores del formulario de hoy se borraban al ir a Consulta y volver (se reconstruía todo desde cero). Ahora se guarda un borrador y se restaura, incluyendo los tiempos ya registrados. Agregados dos ejercicios de movilidad (Niño a Cobra, Mariposa sentado). En Movilidad: botón de "Marcar inicio" para medir cuánto toma cada ejercicio (sin cronómetro/alarma) y calificación de dificultad 1-5 por ejercicio al marcarlo hecho; ese detalle ya queda disponible para el chat de Consulta.'},
+  {fecha:'2026-08-05 20:11', texto:'Cambiadas las etiquetas de la calificación de Movilidad: 1 Normal, 2 Con cierta dificultad, 3 Con dificultad, 4 Con dificultad y algo de dolor, 5 Con dificultad y mucho dolor. La IA ahora sabe que 4-5 indican dolor, no solo esfuerzo.'}
 ];
 
 function mostrarLog(){
@@ -1405,12 +1406,12 @@ function plantillaFormularioMovilidad(){
           </span>
           <small class="ayuda" style="margin:0;">${escapeHtml(it.detalle)}</small>
           <select data-dificultad="${it.id}" class="oculto" style="margin-top:4px;">
-            <option value="">Dificultad de hoy...</option>
-            <option value="1">1 - Muy fácil</option>
-            <option value="2">2 - Fácil</option>
-            <option value="3">3 - Normal</option>
-            <option value="4">4 - Difícil</option>
-            <option value="5">5 - Muy difícil</option>
+            <option value="">Calificación de hoy...</option>
+            <option value="1">1 - Normal</option>
+            <option value="2">2 - Con cierta dificultad</option>
+            <option value="3">3 - Con dificultad</option>
+            <option value="4">4 - Con dificultad y algo de dolor</option>
+            <option value="5">5 - Con dificultad y mucho dolor</option>
           </select>
         </label>
       `).join('')}
@@ -1516,7 +1517,7 @@ function plantillaResumenMovilidad(sesion){
   const total = sesion.movilidad.length;
   const lista = sesion.movilidad.map(m=>{
     const detalles = [];
-    if(m.dificultad != null) detalles.push(`dificultad ${m.dificultad}/5`);
+    if(m.dificultad != null) detalles.push(`${m.dificultad}/5 · ${textoDificultadMovilidad(m.dificultad)}`);
     if(m.duracionSeg != null) detalles.push(`${m.duracionSeg}s`);
     return `<div style="padding:4px 0;">${m.hecho ? '✅' : '⬜️'} ${escapeHtml(m.nombre)}${detalles.length ? ' · '+detalles.join(' · ') : ''}</div>`;
   }).join('');
@@ -1692,7 +1693,7 @@ ${resumenProgreso.join('\n') || 'Todavía no hay progreso registrado.'}
 Últimas sesiones registradas:
 ${ultimas || 'Todavía no hay sesiones registradas.'}
 
-Tendencia de dificultad en Movilidad (1=muy fácil, 5=muy difícil; que baje con el tiempo es señal de estar recuperando flexibilidad/equilibrio/movilidad): ${movilidadHistorica || 'sin datos suficientes'}.
+Tendencia de calificación en Movilidad (1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor; que baje con el tiempo es señal de estar recuperando flexibilidad/equilibrio/movilidad; un 4 o 5 indica dolor, no solo esfuerzo, y merece atención aparte): ${movilidadHistorica || 'sin datos suficientes'}.
 
 Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo.`;
 }
@@ -1788,6 +1789,7 @@ function escapeAttr(s){ return escapeHtml(s); }
 function textoSueno(v){ return {excelente:'Excelente', buena:'Buena', regular:'Regular', mala:'Mala'}[v] || v; }
 function textoEnergia(v){ return {alta:'Alta', normal:'Normal', baja:'Baja', muy_baja:'Muy baja'}[v] || v; }
 function textoMolestias(v){ return {ninguna:'Ninguna', leve:'Leve', moderada:'Moderada', debo_parar:'Importante'}[v] || v; }
+function textoDificultadMovilidad(n){ return {1:'Normal', 2:'Con cierta dificultad', 3:'Con dificultad', 4:'Con dificultad y algo de dolor', 5:'Con dificultad y mucho dolor'}[n] || ''; }
 
 function irAVistaSegunEstado(){
   if(!DATOS.config.setupCompleto){ mostrarVista('setup'); }

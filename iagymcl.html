@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -311,7 +311,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-05 09:20', texto:'Corrección: los checks de la rutina de Movilidad empezaban marcados por defecto (inconsistente con el resto de la app); ahora empiezan destildados como todo lo demás.'},
   {fecha:'2026-08-05', texto:'Nueva sección "🧪 Simulación" en Ajustes: recorre cualquier rutina (superior, inferior o movilidad) con el descanso y la duración de cada serie comprimidos a 5 segundos. Llama a la IA de verdad, pero nunca guarda nada en el historial ni cambia los pesos reales.'},
   {fecha:'2026-08-05', texto:'Corrección importante: los checks y valores del formulario de hoy se borraban al ir a Consulta y volver (se reconstruía todo desde cero). Ahora se guarda un borrador y se restaura, incluyendo los tiempos ya registrados. Agregados dos ejercicios de movilidad (Niño a Cobra, Mariposa sentado). En Movilidad: botón de "Marcar inicio" para medir cuánto toma cada ejercicio (sin cronómetro/alarma) y calificación de dificultad 1-5 por ejercicio al marcarlo hecho; ese detalle ya queda disponible para el chat de Consulta.'},
-  {fecha:'2026-08-05 20:11', texto:'Cambiadas las etiquetas de la calificación de Movilidad: 1 Normal, 2 Con cierta dificultad, 3 Con dificultad, 4 Con dificultad y algo de dolor, 5 Con dificultad y mucho dolor. La IA ahora sabe que 4-5 indican dolor, no solo esfuerzo.'}
+  {fecha:'2026-08-05 20:11', texto:'Cambiadas las etiquetas de la calificación de Movilidad: 1 Normal, 2 Con cierta dificultad, 3 Con dificultad, 4 Con dificultad y algo de dolor, 5 Con dificultad y mucho dolor. La IA ahora sabe que 4-5 indican dolor, no solo esfuerzo.'},
+  {fecha:'2026-08-05', texto:'Movilidad ahora sí llama a la IA al registrar (se dejó de lado el ahorro de tokens por decisión del usuario): evaluación de la sesión, consejo, y chat de seguimiento igual que en fuerza. La IA compara la calificación de hoy contra sesiones recientes y trata con cautela cualquier calificación 4-5 (dolor).'}
 ];
 
 function mostrarLog(){
@@ -746,6 +747,7 @@ function renderHoy(){
   if(sesionHoy){
     if(sesionHoy.bloque === 'movilidad'){
       cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaResumenMovilidad(sesionHoy);
+      renderChatEnDom(sesionHoy);
       return;
     }
     cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaResumenSesion(sesionHoy);
@@ -1387,8 +1389,8 @@ function plantillaResumenSesion(sesion, sinChat){
 }
 
 // ---- 7b. Movilidad, equilibrio y flexibilidad (miércoles/sábado) ----
-// Sesión liviana: sin peso que progresar, así que no se llama a la IA aquí (ahorra tokens);
-// para preguntas puntuales sobre movilidad está siempre disponible la pestaña "Consulta".
+// Sin peso que progresar, pero sí análisis de IA con evaluación, consejo y chat de
+// seguimiento, igual que en fuerza — con foco en la tendencia de dificultad/dolor.
 function plantillaFormularioMovilidad(){
   registrosMovilidad = [];
   inicioMovilidad = null;
@@ -1439,7 +1441,9 @@ function plantillaFormularioMovilidad(){
       <input type="text" id="detalleMolestiasMov" class="oculto" placeholder="¿Dónde y qué tipo de molestia?">
     </div>
     <div class="card">
-      <button class="btn" onclick="registrarMovilidad()">Registrar sesión de movilidad</button>
+      <button class="btn" id="btnRegistrarMovilidad" onclick="registrarMovilidad()">Registrar y analizar con IA</button>
+      <div id="loadingMovilidad" class="oculto" style="text-align:center; color:var(--text-dim);">⏳ Analizando tu sesión de movilidad...</div>
+      <div id="errorMovilidad" class="error-msg oculto"></div>
     </div>`;
 }
 
@@ -1473,7 +1477,38 @@ function calcularDuracionesMovilidad(){
   return duraciones;
 }
 
-function registrarMovilidad(){
+function construirPromptMovilidad(fechaInfo, form){
+  const lineas = form.items.map(it =>
+    `- ${it.nombre} (${it.categoria}): ${it.hecho ? 'hecho' : 'omitido'}${it.dificultad != null ? ', calificación ' + it.dificultad + '/5 (' + textoDificultadMovilidad(it.dificultad) + ')' : ''}${it.duracionSeg != null ? ', ' + it.duracionSeg + 's' : ''}`
+  ).join('\n');
+
+  const historica = DATOS.historial
+    .filter(s => s.bloque === 'movilidad' && s.dificultadPromedio != null)
+    .slice(-6)
+    .map(s => `${s.fecha}: ${s.dificultadPromedio}/5`)
+    .join(' | ');
+
+  return `Eres un preparador físico especializado en movilidad, equilibrio y flexibilidad para un atleta mayor. Perfil: ${PERFIL_USUARIO}
+
+Sé concreto y breve para ahorrar tokens: máximo 2-3 frases por sección, sin relleno. Este espacio es solo para temas de entrenamiento; si hay una pregunta de seguimiento ajena al tema, no la respondas.
+
+DATOS DE HOY (${fechaInfo.fechaISO}, Movilidad):
+- Molestias generales de la sesión: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''}
+- Ejercicios de hoy:
+${lineas}
+- Calificación promedio hoy: ${form.dificultadPromedio != null ? form.dificultadPromedio+'/5' : 'sin datos'}. Escala: 1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor.
+- Calificación promedio en sesiones recientes de movilidad: ${historica || 'sin datos previos'}.
+
+INSTRUCCIONES:
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques de markdown, con esta estructura exacta:
+{
+  "evaluacion": "máximo 2-3 frases sobre cómo le fue hoy, comparando con la tendencia reciente si hay datos para eso",
+  "consejoGeneral": "máximo 2-3 frases de consejo — si algún ejercicio calificó 4 o 5 (dolor), coméntalo con cautela y sugiere consultar a un profesional si el dolor persiste o empeora; si la tendencia mejora, dilo con ánimo pero sin exagerar"
+}
+Nunca minimices el dolor reportado ni lo confundas con simple esfuerzo o dificultad.`;
+}
+
+async function registrarMovilidad(){
   const fechaInfo = obtenerFechaGuayaquil();
   const duraciones = calcularDuracionesMovilidad();
   const items = DATOS.config.movilidad.map(it=>{
@@ -1488,31 +1523,59 @@ function registrarMovilidad(){
   });
   const dificultades = items.filter(i=>i.dificultad != null).map(i=>i.dificultad);
   const dificultadPromedio = dificultades.length ? Math.round((dificultades.reduce((a,b)=>a+b,0)/dificultades.length)*10)/10 : null;
-
-  const sesion = {
-    fecha: fechaInfo.fechaISO, diaSemana: fechaInfo.diaSemana,
-    bloque:'movilidad',
+  const form = {
     molestias: document.getElementById('selMolestiasMov').value,
     molestiasDetalle: document.getElementById('detalleMolestiasMov').value.trim(),
-    movilidad: items, dificultadPromedio
+    items, dificultadPromedio
   };
-  if(modoSimulacion){
-    document.getElementById('vista-simulacion').innerHTML = `
-      <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
-        <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — esto no se guardó en tu historial real.
-        <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
-      </div>
-      ${plantillaResumenMovilidad(sesion)}`;
-    return;
+
+  const btn = document.getElementById('btnRegistrarMovilidad');
+  const loading = document.getElementById('loadingMovilidad');
+  const errDiv = document.getElementById('errorMovilidad');
+  errDiv.classList.add('oculto');
+  btn.disabled = true;
+  loading.classList.remove('oculto');
+
+  try{
+    const prompt = construirPromptMovilidad(fechaInfo, form);
+    const respuestaTexto = await llamarGemini([{role:'user', parts:[{text:prompt}]}]);
+    const parsed = parsearRespuestaIA(respuestaTexto);
+
+    const sesion = {
+      fecha: fechaInfo.fechaISO, diaSemana: fechaInfo.diaSemana,
+      bloque:'movilidad',
+      molestias: form.molestias, molestiasDetalle: form.molestiasDetalle,
+      movilidad: items, dificultadPromedio,
+      analisis: { evaluacion: parsed.evaluacion || respuestaTexto, consejoGeneral: parsed.consejoGeneral || '' },
+      geminiHistorial: [
+        {role:'user', parts:[{text:prompt}]},
+        {role:'model', parts:[{text:respuestaTexto}]}
+      ],
+      chat: []
+    };
+
+    if(modoSimulacion){
+      document.getElementById('vista-simulacion').innerHTML = `
+        <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
+          <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — este resultado no se guardó en tu historial real.
+          <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
+        </div>
+        ${plantillaResumenMovilidad(sesion, true)}`;
+      return;
+    }
+    DATOS.historial.push(sesion);
+    guardarDatos();
+    borradorHoy = null;
+    renderHoy();
+  }catch(e){
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.classList.remove('oculto');
+    btn.disabled = false;
+    loading.classList.add('oculto');
   }
-  DATOS.historial.push(sesion);
-  guardarDatos();
-  borradorHoy = null;
-  mostrarToast('Sesión de movilidad registrada');
-  renderHoy();
 }
 
-function plantillaResumenMovilidad(sesion){
+function plantillaResumenMovilidad(sesion, sinChat){
   const hechos = sesion.movilidad.filter(m=>m.hecho).length;
   const total = sesion.movilidad.length;
   const lista = sesion.movilidad.map(m=>{
@@ -1521,11 +1584,28 @@ function plantillaResumenMovilidad(sesion){
     if(m.duracionSeg != null) detalles.push(`${m.duracionSeg}s`);
     return `<div style="padding:4px 0;">${m.hecho ? '✅' : '⬜️'} ${escapeHtml(m.nombre)}${detalles.length ? ' · '+detalles.join(' · ') : ''}</div>`;
   }).join('');
+  const analisisHtml = sesion.analisis ? `
+    <div class="card">
+      <h2>Análisis de la IA</h2>
+      <div class="resultado-caja">${escapeHtml(sesion.analisis.evaluacion)}</div>
+      ${sesion.analisis.consejoGeneral ? `<h3 style="margin-top:12px;">Consejo</h3><div class="resultado-caja">${escapeHtml(sesion.analisis.consejoGeneral)}</div>` : ''}
+    </div>` : '';
+  const chatHtml = (sinChat || !sesion.analisis) ? '' : `
+    <div class="card" id="cardChat">
+      <h2>Preguntar a la IA sobre esta sesión</h2>
+      <div id="listaChat"></div>
+      <div class="fila">
+        <input type="text" id="inputPregunta" placeholder="Escribe tu pregunta...">
+      </div>
+      <button class="btn secundario" id="btnPreguntar" onclick="enviarPregunta('${sesion.fecha}')">Enviar</button>
+    </div>`;
   return `<div class="card">
     <h2>Movilidad de hoy registrada</h2>
-    <p>${hechos}/${total} ejercicios completados${sesion.dificultadPromedio != null ? ' · Dificultad promedio: '+sesion.dificultadPromedio+'/5' : ''}${sesion.molestias && sesion.molestias!=='ninguna' ? ' · Molestias: '+textoMolestias(sesion.molestias) : ''}</p>
+    <p>${hechos}/${total} ejercicios completados${sesion.dificultadPromedio != null ? ' · Calificación promedio: '+sesion.dificultadPromedio+'/5' : ''}${sesion.molestias && sesion.molestias!=='ninguna' ? ' · Molestias: '+textoMolestias(sesion.molestias) : ''}</p>
     ${lista}
-  </div>`;
+  </div>
+  ${analisisHtml}
+  ${chatHtml}`;
 }
 
 function renderChatEnDom(sesion){
@@ -1612,6 +1692,7 @@ function verDetalleHistorial(idx){
   if(s.bloque === 'movilidad'){
     div.innerHTML = plantillaResumenMovilidad(s);
     div.classList.remove('oculto');
+    renderChatEnDom(s);
     return;
   }
   div.innerHTML = plantillaResumenSesion(s);

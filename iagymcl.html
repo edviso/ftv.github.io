@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -312,7 +312,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-05', texto:'Nueva sección "🧪 Simulación" en Ajustes: recorre cualquier rutina (superior, inferior o movilidad) con el descanso y la duración de cada serie comprimidos a 5 segundos. Llama a la IA de verdad, pero nunca guarda nada en el historial ni cambia los pesos reales.'},
   {fecha:'2026-08-05', texto:'Corrección importante: los checks y valores del formulario de hoy se borraban al ir a Consulta y volver (se reconstruía todo desde cero). Ahora se guarda un borrador y se restaura, incluyendo los tiempos ya registrados. Agregados dos ejercicios de movilidad (Niño a Cobra, Mariposa sentado). En Movilidad: botón de "Marcar inicio" para medir cuánto toma cada ejercicio (sin cronómetro/alarma) y calificación de dificultad 1-5 por ejercicio al marcarlo hecho; ese detalle ya queda disponible para el chat de Consulta.'},
   {fecha:'2026-08-05 20:11', texto:'Cambiadas las etiquetas de la calificación de Movilidad: 1 Normal, 2 Con cierta dificultad, 3 Con dificultad, 4 Con dificultad y algo de dolor, 5 Con dificultad y mucho dolor. La IA ahora sabe que 4-5 indican dolor, no solo esfuerzo.'},
-  {fecha:'2026-08-05', texto:'Movilidad ahora sí llama a la IA al registrar (se dejó de lado el ahorro de tokens por decisión del usuario): evaluación de la sesión, consejo, y chat de seguimiento igual que en fuerza. La IA compara la calificación de hoy contra sesiones recientes y trata con cautela cualquier calificación 4-5 (dolor).'}
+  {fecha:'2026-08-05', texto:'Movilidad ahora sí llama a la IA al registrar (se dejó de lado el ahorro de tokens por decisión del usuario): evaluación de la sesión, consejo, y chat de seguimiento igual que en fuerza. La IA compara la calificación de hoy contra sesiones recientes y trata con cautela cualquier calificación 4-5 (dolor).'},
+  {fecha:'2026-08-05 22:56', texto:'Corrección: en el Consejo de Movilidad la IA inventó "columna" (no reportada) y omitió "tobillo" (sí reportado), infiriendo partes del cuerpo por el tipo de ejercicio en vez de usar las palabras reales. Reforzada la instrucción en los tres prompts de IA (fuerza, movilidad, consulta) para citar las molestias tal cual se reportaron, sin agregar, quitar ni atribuirlas a un ejercicio específico sin base.'}
 ];
 
 function mostrarLog(){
@@ -1280,7 +1281,7 @@ DATOS DE HOY (${fechaInfo.fechaISO}, ${bloque === 'superior' ? 'Tren Superior' :
 - Tipo de día en el ciclo: ${diaDeCarga ? 'día de progresión (primer día de este bloque en la semana)' : 'día de consolidación (segundo día de este bloque en la semana, normalmente se repite el peso)'}
 - Sueño anoche: ${form.sueno}
 - Energía percibida: ${form.energia}
-- Molestias: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''}
+- Molestias: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''} (usa exactamente estas palabras si las mencionas; no agregues, cambies ni omitas partes del cuerpo, y no le atribuyas la molestia a un ejercicio específico salvo que el usuario lo haya dicho así)
 - Calentamiento: ${calentLinea}
 - Duración promedio de ejecución por serie hoy: ${form.duracionPromedio != null ? form.duracionPromedio+' segundos' : 'sin datos suficientes'} (global). Por ejercicio: ${duracionPorEjercicioLinea}. Sesiones recientes del mismo bloque (promedio global): ${duracionHistorica || 'sin datos previos'}. Si la duración sube respecto a sesiones anteriores, interpreta que las series le están costando más esfuerzo; si baja, que le resultan más fáciles; compara cada ejercicio contra su propio ritmo esperado (no es igual el tiempo de una serie de sentadillas que de elevaciones de talón) y considéralo junto con sueño/energía/molestias al decidir la progresión de cada uno.
 - Duración de cada serie individual (la primerísima serie del día no tiene dato, es la primera y no tiene con qué compararse; el resto sí, incluida la primera serie de cada ejercicio nuevo): ${detalleSerieLinea}. Ten este detalle a mano por si el usuario pregunta por una serie o ejercicio específico en el chat de seguimiento.
@@ -1493,7 +1494,7 @@ function construirPromptMovilidad(fechaInfo, form){
 Sé concreto y breve para ahorrar tokens: máximo 2-3 frases por sección, sin relleno. Este espacio es solo para temas de entrenamiento; si hay una pregunta de seguimiento ajena al tema, no la respondas.
 
 DATOS DE HOY (${fechaInfo.fechaISO}, Movilidad):
-- Molestias generales de la sesión: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''}
+- Molestias generales de la sesión: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''} (usa exactamente estas palabras si las mencionas en tu respuesta; no agregues, cambies ni omitas partes del cuerpo, y no le atribuyas la molestia a un ejercicio específico de la lista de abajo salvo que el usuario lo haya dicho así explícitamente)
 - Ejercicios de hoy:
 ${lineas}
 - Calificación promedio hoy: ${form.dificultadPromedio != null ? form.dificultadPromedio+'/5' : 'sin datos'}. Escala: 1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor.
@@ -1776,7 +1777,7 @@ ${ultimas || 'Todavía no hay sesiones registradas.'}
 
 Tendencia de calificación en Movilidad (1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor; que baje con el tiempo es señal de estar recuperando flexibilidad/equilibrio/movilidad; un 4 o 5 indica dolor, no solo esfuerzo, y merece atención aparte): ${movilidadHistorica || 'sin datos suficientes'}.
 
-Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo.`;
+Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo. Si mencionas molestias reportadas, usa exactamente las palabras/partes del cuerpo del contexto — no agregues, cambies ni las atribuyas a un ejercicio específico salvo que así conste.`;
 }
 
 async function enviarPreguntaGeneral(){

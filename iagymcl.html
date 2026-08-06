@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -309,7 +309,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-04 (aprox.)', texto:'Botones de "Marcar inicio de sesión" (mide la primera serie del día) y "Reiniciar registro" del formulario.'},
   {fecha:'2026-08-04 22:25', texto:'Agregado este registro de cambios (Log), con botón en la esquina superior derecha.'},
   {fecha:'2026-08-05 09:20', texto:'Corrección: los checks de la rutina de Movilidad empezaban marcados por defecto (inconsistente con el resto de la app); ahora empiezan destildados como todo lo demás.'},
-  {fecha:'2026-08-05', texto:'Nueva sección "🧪 Simulación" en Ajustes: recorre cualquier rutina (superior, inferior o movilidad) con el descanso y la duración de cada serie comprimidos a 5 segundos. Llama a la IA de verdad, pero nunca guarda nada en el historial ni cambia los pesos reales.'}
+  {fecha:'2026-08-05', texto:'Nueva sección "🧪 Simulación" en Ajustes: recorre cualquier rutina (superior, inferior o movilidad) con el descanso y la duración de cada serie comprimidos a 5 segundos. Llama a la IA de verdad, pero nunca guarda nada en el historial ni cambia los pesos reales.'},
+  {fecha:'2026-08-05', texto:'Corrección importante: los checks y valores del formulario de hoy se borraban al ir a Consulta y volver (se reconstruía todo desde cero). Ahora se guarda un borrador y se restaura, incluyendo los tiempos ya registrados. Agregados dos ejercicios de movilidad (Niño a Cobra, Mariposa sentado). En Movilidad: botón de "Marcar inicio" para medir cuánto toma cada ejercicio (sin cronómetro/alarma) y calificación de dificultad 1-5 por ejercicio al marcarlo hecho; ese detalle ya queda disponible para el chat de Consulta.'}
 ];
 
 function mostrarLog(){
@@ -357,11 +358,13 @@ function semillaMovilidad(){
     {id:uid(), categoria:'Movilidad articular', nombre:'Gato-camello', detalle:'8-10 repeticiones, en cuadrupedia'},
     {id:uid(), categoria:'Movilidad articular', nombre:'Círculos de cadera y tobillos', detalle:'10 círculos hacia cada lado'},
     {id:uid(), categoria:'Movilidad articular', nombre:'Círculos suaves de hombros', detalle:'10 adelante y 10 atrás, sin molestia'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Niño a Cobra (flexión-extensión de columna)', detalle:'Desde cuadrupedia, siéntate sobre los talones con el tronco al piso y brazos extendidos (postura del niño); vuelve a cuadrupedia y baja cadera y pelvis con brazos extendidos mirando hacia arriba (extensión). Repite con control.'},
     {id:uid(), categoria:'Equilibrio', nombre:'Postura sobre una pierna', detalle:'20-30 segundos, 2-3 series por pierna, cerca de una pared o silla'},
     {id:uid(), categoria:'Equilibrio', nombre:'Caminata talón-punta', detalle:'10-12 pasos en línea recta'},
     {id:uid(), categoria:'Flexibilidad', nombre:'Isquiotibiales sentado', detalle:'20-30 segundos por pierna, espalda recta'},
     {id:uid(), categoria:'Flexibilidad', nombre:'Pectoral en marco de puerta', detalle:'20 segundos por lado, estiramiento suave'},
-    {id:uid(), categoria:'Flexibilidad', nombre:'Pantorrillas en pared', detalle:'20-30 segundos por pierna'}
+    {id:uid(), categoria:'Flexibilidad', nombre:'Pantorrillas en pared', detalle:'20-30 segundos por pierna'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Mariposa sentado (caída de rodillas)', detalle:'Sentado, pies fuera de la colchoneta y rodillas dobladas ~90°, manos atrás para equilibrio; lleva cada rodilla hacia la colchoneta tratando de tocarla, alternando lados, sin forzar.'}
   ];
 }
 
@@ -383,6 +386,17 @@ function cargarDatos(){
       datos.config.movilidad = semillaMovilidad();
       if(!datos.config.schedule[3]) datos.config.schedule[3] = 'movilidad';
       if(!datos.config.schedule[6]) datos.config.schedule[6] = 'movilidad';
+    }else{
+      // migración: sumar ejercicios nuevos de movilidad que no existan todavía (por nombre, sin duplicar)
+      const nuevos = [
+        {categoria:'Movilidad articular', nombre:'Niño a Cobra (flexión-extensión de columna)', detalle:'Desde cuadrupedia, siéntate sobre los talones con el tronco al piso y brazos extendidos (postura del niño); vuelve a cuadrupedia y baja cadera y pelvis con brazos extendidos mirando hacia arriba (extensión). Repite con control.'},
+        {categoria:'Flexibilidad', nombre:'Mariposa sentado (caída de rodillas)', detalle:'Sentado, pies fuera de la colchoneta y rodillas dobladas ~90°, manos atrás para equilibrio; lleva cada rodilla hacia la colchoneta tratando de tocarla, alternando lados, sin forzar.'}
+      ];
+      nuevos.forEach(n=>{
+        if(!datos.config.movilidad.some(it=>it.nombre === n.nombre)){
+          datos.config.movilidad.push({id:uid(), ...n});
+        }
+      });
     }
     return datos;
   } catch(e){ return datosVacios(); }
@@ -449,6 +463,9 @@ function detectarPenalizacion(datos, fechaInfo){
 
 // ---- 4. Enrutador de vistas ----
 function mostrarVista(nombre){
+  if(nombre !== 'hoy' && !document.getElementById('vista-hoy').classList.contains('oculto')){
+    capturarBorradorHoy();
+  }
   limpiarTemporizador();
   ['auth','setup','hoy','historial','consulta','simulacion','ajustes'].forEach(v=>{
     document.getElementById('vista-'+v).classList.toggle('oculto', v!==nombre);
@@ -644,6 +661,78 @@ function guardarConfiguracion(){
 }
 
 // ---- 7. Vista: Hoy ----
+// Borrador del formulario de Hoy sin registrar: evita perder checks/valores al ir a otra
+// pestaña (p.ej. Consulta, para preguntarle algo a la IA) y volver — captura de forma genérica
+// cualquier input/select con id, o checkbox con data-calent/data-movilidad, dentro de #vista-hoy.
+let borradorHoy = null;
+
+function capturarBorradorHoy(){
+  const cont = document.getElementById('vista-hoy');
+  if(!cont) return;
+  const campos = cont.querySelectorAll('input[id], select[id], input[data-calent], input[data-movilidad], select[data-dificultad]');
+  if(!campos.length){ borradorHoy = null; return; }
+  const valores = {};
+  campos.forEach(el=>{
+    let clave = null;
+    if(el.id) clave = 'id:' + el.id;
+    else if(el.dataset.calent) clave = 'calent:' + el.dataset.calent;
+    else if(el.dataset.movilidad) clave = 'mov:' + el.dataset.movilidad;
+    else if(el.dataset.dificultad) clave = 'dif:' + el.dataset.dificultad;
+    if(!clave) return;
+    valores[clave] = (el.type === 'checkbox') ? el.checked : el.value;
+  });
+  // También los registros de tiempo, ya que reconstruir el formulario los reinicia a vacío.
+  borradorHoy = {
+    fecha: obtenerFechaGuayaquil().fechaISO,
+    valores,
+    registrosSerie: registrosSerie.slice(),
+    registrosMovilidad: registrosMovilidad.slice(),
+    inicioMovilidad
+  };
+}
+
+function aplicarBorradorHoy(){
+  if(!borradorHoy) return;
+  if(borradorHoy.fecha !== obtenerFechaGuayaquil().fechaISO){ borradorHoy = null; return; }
+  const cont = document.getElementById('vista-hoy');
+  if(!cont) return;
+  Object.keys(borradorHoy.valores).forEach(clave=>{
+    const valor = borradorHoy.valores[clave];
+    const tipo = clave.slice(0, clave.indexOf(':'));
+    const id = clave.slice(clave.indexOf(':')+1);
+    let el = null;
+    if(tipo === 'id') el = cont.querySelector('#'+CSS.escape(id));
+    else if(tipo === 'calent') el = cont.querySelector(`[data-calent="${id}"]`);
+    else if(tipo === 'mov') el = cont.querySelector(`[data-movilidad="${id}"]`);
+    else if(tipo === 'dif') el = cont.querySelector(`[data-dificultad="${id}"]`);
+    if(!el) return;
+    if(el.type === 'checkbox') el.checked = valor;
+    else el.value = valor;
+  });
+  // Restaurar los registros de tiempo (se perderían si no, al reconstruirse el formulario)
+  registrosSerie = (borradorHoy.registrosSerie || []).slice();
+  registrosMovilidad = (borradorHoy.registrosMovilidad || []).slice();
+  inicioMovilidad = borradorHoy.inicioMovilidad != null ? borradorHoy.inicioMovilidad : null;
+  // Reflejar el botón de "Marcar inicio" si ya se había activado antes de salir
+  if(registrosSerie.some(r=>r.esInicio)){
+    const btn = cont.querySelector('#btnIniciarSesion');
+    if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  }
+  if(inicioMovilidad != null){
+    const btn = cont.querySelector('#btnIniciarMovilidad');
+    if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  }
+  // Reaplicar la visibilidad de campos condicionales (detalle de molestias, dificultad por ejercicio)
+  const selMol = cont.querySelector('#selMolestias');
+  if(selMol) cont.querySelector('#detalleMolestias')?.classList.toggle('oculto', selMol.value==='ninguna');
+  const selMolMov = cont.querySelector('#selMolestiasMov');
+  if(selMolMov) cont.querySelector('#detalleMolestiasMov')?.classList.toggle('oculto', selMolMov.value==='ninguna');
+  cont.querySelectorAll('[data-movilidad]').forEach(chk=>{
+    const sel = cont.querySelector(`[data-dificultad="${chk.dataset.movilidad}"]`);
+    if(sel) sel.classList.toggle('oculto', !chk.checked);
+  });
+}
+
 function renderHoy(){
   limpiarTemporizador();
   modoSimulacion = false;
@@ -675,11 +764,13 @@ function renderHoy(){
 
   if(bloqueHoy === 'movilidad'){
     cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaFormularioMovilidad();
+    aplicarBorradorHoy();
     return;
   }
 
   const penalizado = detectarPenalizacion(DATOS, fechaInfo);
   cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, penalizado) + plantillaFormularioRegistro(bloqueHoy, fechaInfo, penalizado);
+  aplicarBorradorHoy();
 }
 
 function forzarRegistroManual(){
@@ -880,6 +971,8 @@ let modoSimulacion = false;
 let temporizadorInterval = null;
 let temporizadorRestante = 0;
 let registrosSerie = []; // {exId, serieIndex, t} — hora de cada check de "serie completada" en la sesión actual
+let registrosMovilidad = []; // {id, t} — hora de cada check de un ejercicio de movilidad
+let inicioMovilidad = null; // hora de "Marcar inicio" en movilidad (sin cronómetro, solo referencia)
 
 function marcarSerieCompletada(exId, serieIndex){
   const existente = registrosSerie.find(r => r.exId===exId && r.serieIndex===serieIndex);
@@ -905,6 +998,9 @@ function reiniciarRegistroHoy(manual, bloque){
   if(!confirm('¿Seguro que quieres reiniciar el registro de hoy? Se borrarán los checks, el cronómetro y los valores que hayas modificado en este formulario.')) return;
   limpiarTemporizador();
   registrosSerie = [];
+  registrosMovilidad = [];
+  inicioMovilidad = null;
+  borradorHoy = null;
   if(manual){ renderBloqueManual(bloque); }
   else{ renderHoy(); }
   mostrarToast('Registro de hoy reiniciado');
@@ -1130,6 +1226,7 @@ async function registrarYAnalizar(bloque, penalizado, manual){
     }else{
       DATOS.historial.push(sesion);
       guardarDatos();
+      borradorHoy = null;
       renderHoy();
     }
   }catch(e){
@@ -1292,6 +1389,8 @@ function plantillaResumenSesion(sesion, sinChat){
 // Sesión liviana: sin peso que progresar, así que no se llama a la IA aquí (ahorra tokens);
 // para preguntas puntuales sobre movilidad está siempre disponible la pestaña "Consulta".
 function plantillaFormularioMovilidad(){
+  registrosMovilidad = [];
+  inicioMovilidad = null;
   const categorias = {};
   DATOS.config.movilidad.forEach(it=>{
     (categorias[it.categoria] = categorias[it.categoria] || []).push(it);
@@ -1302,9 +1401,17 @@ function plantillaFormularioMovilidad(){
       ${categorias[cat].map(it => `
         <label class="chip" style="flex-direction:column; align-items:flex-start; gap:2px;">
           <span style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" data-movilidad="${it.id}"> ${escapeHtml(it.nombre)}
+            <input type="checkbox" data-movilidad="${it.id}" onchange="marcarMovilidadHecha('${it.id}', this.checked)"> ${escapeHtml(it.nombre)}
           </span>
           <small class="ayuda" style="margin:0;">${escapeHtml(it.detalle)}</small>
+          <select data-dificultad="${it.id}" class="oculto" style="margin-top:4px;">
+            <option value="">Dificultad de hoy...</option>
+            <option value="1">1 - Muy fácil</option>
+            <option value="2">2 - Fácil</option>
+            <option value="3">3 - Normal</option>
+            <option value="4">4 - Difícil</option>
+            <option value="5">5 - Muy difícil</option>
+          </select>
         </label>
       `).join('')}
     </div>`).join('');
@@ -1313,6 +1420,11 @@ function plantillaFormularioMovilidad(){
     <div class="card">
       <h2>Movilidad, equilibrio y flexibilidad</h2>
       <p>Rutina suave de 15-20 minutos. Ningún ejercicio debe causar dolor.</p>
+      <div class="fila" style="margin-bottom:6px;">
+        <button type="button" class="btn chico secundario" id="btnIniciarMovilidad" onclick="iniciarSesionMovilidad()">▶ Marcar inicio</button>
+        <button type="button" class="btn chico peligro" onclick="reiniciarRegistroHoy(false, 'movilidad')">Reiniciar registro</button>
+      </div>
+      <small class="ayuda">"Marcar inicio" es opcional: mide cuánto te toma cada ejercicio (sin cronómetro ni alarma). Al marcar uno como hecho, elige qué tan difícil te resultó hoy.</small>
       ${secciones}
     </div>
     <div class="card">
@@ -1330,18 +1442,58 @@ function plantillaFormularioMovilidad(){
     </div>`;
 }
 
+function iniciarSesionMovilidad(){
+  inicioMovilidad = Date.now();
+  registrosMovilidad = [];
+  const btn = document.getElementById('btnIniciarMovilidad');
+  if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  mostrarToast('Sesión iniciada — se medirá cuánto te toma cada ejercicio');
+}
+
+function marcarMovilidadHecha(id, checked){
+  const sel = document.querySelector(`[data-dificultad="${id}"]`);
+  if(sel) sel.classList.toggle('oculto', !checked);
+  if(!checked) return;
+  const existente = registrosMovilidad.find(r=>r.id===id);
+  if(existente){ existente.t = Date.now(); }
+  else{ registrosMovilidad.push({id, t: Date.now()}); }
+}
+
+// Duración de cada ejercicio = tiempo desde el check anterior (o desde "Marcar inicio" si es el
+// primero). A diferencia de fuerza, aquí no hay descanso programado que restar.
+function calcularDuracionesMovilidad(){
+  const ordenado = registrosMovilidad.slice().sort((a,b)=>a.t-b.t);
+  const duraciones = {};
+  let anterior = inicioMovilidad;
+  ordenado.forEach(r=>{
+    if(anterior != null) duraciones[r.id] = Math.max(0, Math.round((r.t - anterior)/1000));
+    anterior = r.t;
+  });
+  return duraciones;
+}
+
 function registrarMovilidad(){
   const fechaInfo = obtenerFechaGuayaquil();
-  const items = DATOS.config.movilidad.map(it=>({
-    id: it.id, nombre: it.nombre, categoria: it.categoria,
-    hecho: document.querySelector(`[data-movilidad="${it.id}"]`).checked
-  }));
+  const duraciones = calcularDuracionesMovilidad();
+  const items = DATOS.config.movilidad.map(it=>{
+    const chk = document.querySelector(`[data-movilidad="${it.id}"]`);
+    const hecho = chk ? chk.checked : false;
+    const selDif = document.querySelector(`[data-dificultad="${it.id}"]`);
+    const dificultad = hecho && selDif && selDif.value ? parseInt(selDif.value) : null;
+    return {
+      id: it.id, nombre: it.nombre, categoria: it.categoria, hecho, dificultad,
+      duracionSeg: duraciones[it.id] != null ? duraciones[it.id] : null
+    };
+  });
+  const dificultades = items.filter(i=>i.dificultad != null).map(i=>i.dificultad);
+  const dificultadPromedio = dificultades.length ? Math.round((dificultades.reduce((a,b)=>a+b,0)/dificultades.length)*10)/10 : null;
+
   const sesion = {
     fecha: fechaInfo.fechaISO, diaSemana: fechaInfo.diaSemana,
     bloque:'movilidad',
     molestias: document.getElementById('selMolestiasMov').value,
     molestiasDetalle: document.getElementById('detalleMolestiasMov').value.trim(),
-    movilidad: items
+    movilidad: items, dificultadPromedio
   };
   if(modoSimulacion){
     document.getElementById('vista-simulacion').innerHTML = `
@@ -1354,6 +1506,7 @@ function registrarMovilidad(){
   }
   DATOS.historial.push(sesion);
   guardarDatos();
+  borradorHoy = null;
   mostrarToast('Sesión de movilidad registrada');
   renderHoy();
 }
@@ -1361,10 +1514,15 @@ function registrarMovilidad(){
 function plantillaResumenMovilidad(sesion){
   const hechos = sesion.movilidad.filter(m=>m.hecho).length;
   const total = sesion.movilidad.length;
-  const lista = sesion.movilidad.map(m=>`<div style="padding:4px 0;">${m.hecho ? '✅' : '⬜️'} ${escapeHtml(m.nombre)}</div>`).join('');
+  const lista = sesion.movilidad.map(m=>{
+    const detalles = [];
+    if(m.dificultad != null) detalles.push(`dificultad ${m.dificultad}/5`);
+    if(m.duracionSeg != null) detalles.push(`${m.duracionSeg}s`);
+    return `<div style="padding:4px 0;">${m.hecho ? '✅' : '⬜️'} ${escapeHtml(m.nombre)}${detalles.length ? ' · '+detalles.join(' · ') : ''}</div>`;
+  }).join('');
   return `<div class="card">
     <h2>Movilidad de hoy registrada</h2>
-    <p>${hechos}/${total} ejercicios completados${sesion.molestias && sesion.molestias!=='ninguna' ? ' · Molestias: '+textoMolestias(sesion.molestias) : ''}</p>
+    <p>${hechos}/${total} ejercicios completados${sesion.dificultadPromedio != null ? ' · Dificultad promedio: '+sesion.dificultadPromedio+'/5' : ''}${sesion.molestias && sesion.molestias!=='ninguna' ? ' · Molestias: '+textoMolestias(sesion.molestias) : ''}</p>
     ${lista}
   </div>`;
 }
@@ -1509,10 +1667,16 @@ function construirContextoGeneral(){
   const ultimas = DATOS.historial.slice(-5).map(s=>{
     if(s.bloque === 'movilidad'){
       const hechos = s.movilidad.filter(m=>m.hecho).length;
-      return `- ${s.fecha} (Movilidad): ${hechos}/${s.movilidad.length} ejercicios, molestias ${textoMolestias(s.molestias)}`;
+      return `- ${s.fecha} (Movilidad): ${hechos}/${s.movilidad.length} ejercicios, molestias ${textoMolestias(s.molestias)}${s.dificultadPromedio != null ? ', dificultad promedio ' + s.dificultadPromedio + '/5' : ''}`;
     }
     return `- ${s.fecha} (${NOMBRE_BLOQUE[s.bloque]}${s.penalizado?', sesión de recuperación':''}): sueño ${textoSueno(s.sueno)}, energía ${textoEnergia(s.energia)}, molestias ${textoMolestias(s.molestias)}${s.duracionPromedio != null ? ', duración promedio por serie ' + s.duracionPromedio + 's' : ''}`;
   }).join('\n');
+
+  const movilidadHistorica = DATOS.historial
+    .filter(s => s.bloque === 'movilidad' && s.dificultadPromedio != null)
+    .slice(-6)
+    .map(s => `${s.fecha}: dificultad promedio ${s.dificultadPromedio}/5`)
+    .join(' | ');
 
   return `Eres un preparador físico que acompaña a este atleta. Perfil: ${PERFIL_USUARIO}
 
@@ -1527,6 +1691,8 @@ ${resumenProgreso.join('\n') || 'Todavía no hay progreso registrado.'}
 
 Últimas sesiones registradas:
 ${ultimas || 'Todavía no hay sesiones registradas.'}
+
+Tendencia de dificultad en Movilidad (1=muy fácil, 5=muy difícil; que baje con el tiempo es señal de estar recuperando flexibilidad/equilibrio/movilidad): ${movilidadHistorica || 'sin datos suficientes'}.
 
 Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo.`;
 }

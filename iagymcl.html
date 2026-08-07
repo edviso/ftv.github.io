@@ -326,7 +326,9 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-05 20:11', texto:'Cambiadas las etiquetas de la calificación de Movilidad: 1 Normal, 2 Con cierta dificultad, 3 Con dificultad, 4 Con dificultad y algo de dolor, 5 Con dificultad y mucho dolor. La IA ahora sabe que 4-5 indican dolor, no solo esfuerzo.'},
   {fecha:'2026-08-05', texto:'Movilidad ahora sí llama a la IA al registrar (se dejó de lado el ahorro de tokens por decisión del usuario): evaluación de la sesión, consejo, y chat de seguimiento igual que en fuerza. La IA compara la calificación de hoy contra sesiones recientes y trata con cautela cualquier calificación 4-5 (dolor).'},
   {fecha:'2026-08-05 22:56', texto:'Corrección: en el Consejo de Movilidad la IA inventó "columna" (no reportada) y omitió "tobillo" (sí reportado), infiriendo partes del cuerpo por el tipo de ejercicio en vez de usar las palabras reales. Reforzada la instrucción en los tres prompts de IA (fuerza, movilidad, consulta) para citar las molestias tal cual se reportaron, sin agregar, quitar ni atribuirlas a un ejercicio específico sin base.'},
-  {fecha:'2026-08-06', texto:'Nuevo botón "💾 Guardar acuerdo de esta conversación" en el chat de sesiones de fuerza: le pide a la IA resumir el objetivo final acordado en el chat y actualiza el progreso guardado (con el mismo límite de seguridad de peso), para que quede prellenado la próxima sesión en vez de perderse en la conversación. En fuerza (superior/inferior), calificar cada serie (1 Fácil a 5 Con dificultad y algo de dolor) mediante una ventana emergente al marcar el check — sin detener el cronómetro — igual que ya existía en Movilidad; ese detalle también se le pasa a la IA para el análisis.'}
+  {fecha:'2026-08-06', texto:'Nuevo botón "💾 Guardar acuerdo de esta conversación" en el chat de sesiones de fuerza: le pide a la IA resumir el objetivo final acordado en el chat y actualiza el progreso guardado (con el mismo límite de seguridad de peso), para que quede prellenado la próxima sesión en vez de perderse en la conversación. En fuerza (superior/inferior), calificar cada serie (1 Fácil a 5 Con dificultad y algo de dolor) mediante una ventana emergente al marcar el check — sin detener el cronómetro — igual que ya existía en Movilidad; ese detalle también se le pasa a la IA para el análisis.'},
+  {fecha:'2026-08-06', texto:'La calificación de dificultad en fuerza estaba, pero muy poco visible (solo un número chico junto a la nota). Ahora tiene el mismo tratamiento que la duración: promedio general en la parte superior del resumen (en ámbar si es 4+) y un detalle desplegable "Ver calificación de cada serie".'},
+  {fecha:'2026-08-06 22:38', texto:'Agregada la tendencia dentro de la sesión por ejercicio individual (no solo el promedio general de todos juntos), al prompt de análisis y al detalle desplegable de duración — así la IA puede notar si un ejercicio en particular mejoró o empeoró distinto al resto, en vez de que un promedio general lo esconda.'}
 ];
 
 function mostrarLog(){
@@ -1096,21 +1098,42 @@ function formatearDuracionPorSerie(duraciones, ejercicios){
   });
 }
 
-// Compara, para cada ejercicio con 2+ series medidas, la primera contra la última —
-// y promedia ese cambio porcentual entre todos los ejercicios de la sesión.
-// Positivo = las series finales fueron más lentas (fatiga); negativo = más rápidas.
-function calcularTendenciaDentroSesion(duraciones){
-  if(!duraciones || !duraciones.length) return null;
+function textoCalificacionFuerza(n){ return {1:'Fácil', 2:'Normal', 3:'Con cierta dificultad', 4:'Con dificultad', 5:'Con dificultad y algo de dolor'}[n] || ''; }
+
+// Detalle de calificación de cada serie individual, agrupado por ejercicio (mismo patrón que
+// formatearDuracionPorSerie). Toma los ejercicios ya guardados en la sesión (con .series[].calificacion).
+function formatearCalificacionPorSerie(ejercicios){
+  if(!ejercicios || !ejercicios.length) return null;
+  const resultado = [];
+  ejercicios.forEach(ej=>{
+    const partes = (ej.series||[]).map((s,i)=> s.calificacion!=null ? `S${i+1}=${s.calificacion}/5` : null).filter(Boolean);
+    if(partes.length) resultado.push({exId: ej.id, nombre: ej.nombre, texto: partes.join(', ')});
+  });
+  return resultado.length ? resultado : null;
+}
+
+// Compara, para cada ejercicio con 2+ series medidas, la primera contra la última.
+// Positivo = esa última serie fue más lenta (fatiga); negativo = más rápida.
+function calcularTendenciaPorEjercicio(duraciones){
+  if(!duraciones || !duraciones.length) return {};
   const porEjercicio = {};
   duraciones.forEach(d=>{ (porEjercicio[d.exId] = porEjercicio[d.exId] || []).push(d); });
-  const cambios = [];
-  Object.values(porEjercicio).forEach(arr=>{
-    if(arr.length < 2) return;
-    const ordenado = arr.slice().sort((a,b)=>a.serieIndex-b.serieIndex);
+  const resultado = {};
+  Object.keys(porEjercicio).forEach(exId=>{
+    const ordenado = porEjercicio[exId].slice().sort((a,b)=>a.serieIndex-b.serieIndex);
+    if(ordenado.length < 2) return;
     const primera = ordenado[0].segundos;
     const ultima = ordenado[ordenado.length-1].segundos;
-    if(primera > 0) cambios.push(Math.round(((ultima - primera) / primera) * 100));
+    if(primera > 0) resultado[exId] = Math.round(((ultima - primera) / primera) * 100);
   });
+  return resultado;
+}
+
+// Promedia esa misma tendencia entre todos los ejercicios de la sesión, para tener un solo
+// número de referencia rápida (el detalle por ejercicio se calcula aparte, ver arriba).
+function calcularTendenciaDentroSesion(duraciones){
+  const porEjercicio = calcularTendenciaPorEjercicio(duraciones);
+  const cambios = Object.values(porEjercicio);
   return cambios.length ? Math.round(cambios.reduce((a,b)=>a+b,0)/cambios.length) : null;
 }
 
@@ -1196,6 +1219,7 @@ function recopilarFormulario(bloque){
   const detalle = document.getElementById('detalleMolestias').value.trim();
   const {duraciones, duracionPromedio, duracionPorEjercicio} = calcularDuracionesSerie();
   const tendenciaDentroSesion = calcularTendenciaDentroSesion(duraciones);
+  const tendenciaPorEjercicio = calcularTendenciaPorEjercicio(duraciones);
   const calificacionPorEjercicio = {};
   ejercicios.forEach(ej=>{
     const cals = ej.series.map(s=>s.calificacion).filter(c=>c!=null);
@@ -1208,7 +1232,7 @@ function recopilarFormulario(bloque){
     energia: document.getElementById('selEnergia').value,
     molestias: molestiasSel,
     molestiasDetalle: detalle,
-    duraciones, duracionPromedio, duracionPorEjercicio, tendenciaDentroSesion, calificacionPorEjercicio
+    duraciones, duracionPromedio, duracionPorEjercicio, tendenciaDentroSesion, tendenciaPorEjercicio, calificacionPorEjercicio
   };
 }
 
@@ -1256,6 +1280,7 @@ async function registrarYAnalizar(bloque, penalizado, manual){
       ejercicios: form.ejercicios,
       duraciones: form.duraciones, duracionPromedio: form.duracionPromedio, duracionPorEjercicio: form.duracionPorEjercicio,
       tendenciaDentroSesion: form.tendenciaDentroSesion,
+      tendenciaPorEjercicio: form.tendenciaPorEjercicio,
       calificacionPorEjercicio: form.calificacionPorEjercicio,
       analisis: {
         evaluacion: parsed.evaluacion || respuestaTexto,
@@ -1346,7 +1371,7 @@ DATOS DE HOY (${fechaInfo.fechaISO}, ${bloque === 'superior' ? 'Tren Superior' :
 - Calentamiento: ${calentLinea}
 - Duración promedio de ejecución por serie hoy: ${form.duracionPromedio != null ? form.duracionPromedio+' segundos' : 'sin datos suficientes'} (global). Por ejercicio: ${duracionPorEjercicioLinea}. Sesiones recientes del mismo bloque (promedio global): ${duracionHistorica || 'sin datos previos'}. Si la duración sube respecto a sesiones anteriores, interpreta que las series le están costando más esfuerzo; si baja, que le resultan más fáciles; compara cada ejercicio contra su propio ritmo esperado (no es igual el tiempo de una serie de sentadillas que de elevaciones de talón) y considéralo junto con sueño/energía/molestias al decidir la progresión de cada uno.
 - Duración de cada serie individual (la primerísima serie del día no tiene dato, es la primera y no tiene con qué compararse; el resto sí, incluida la primera serie de cada ejercicio nuevo): ${detalleSerieLinea}. Ten este detalle a mano por si el usuario pregunta por una serie o ejercicio específico en el chat de seguimiento.
-- Tendencia DENTRO de esta sesión (comparando, en cada ejercicio con 2+ series medidas, la primera contra la última, promediado entre ejercicios): hoy ${form.tendenciaDentroSesion != null ? (form.tendenciaDentroSesion>0?'+':'')+form.tendenciaDentroSesion+'%' : 'sin datos suficientes'} (positivo = las series finales fueron más lentas que las iniciales; negativo = más rápidas). Mismo dato en sesiones recientes del mismo bloque: ${tendenciaHistorica || 'sin datos previos'}. Si el porcentaje de hoy es alto, coméntalo en la evaluación como posible fatiga dentro de la sesión (o mejora de ritmo si es negativo). Si ese mismo patrón se repite de forma consistente en varias sesiones seguidas, señálalo explícitamente como algo a investigar (por ejemplo: orden de los ejercicios, tiempo de descanso, o fatiga acumulada entre sesiones) en vez de tratarlo como un dato aislado de hoy.
+- Tendencia DENTRO de esta sesión (comparando, en cada ejercicio con 2+ series medidas, la primera contra la última, promediado entre ejercicios): hoy ${form.tendenciaDentroSesion != null ? (form.tendenciaDentroSesion>0?'+':'')+form.tendenciaDentroSesion+'%' : 'sin datos suficientes'} (positivo = las series finales fueron más lentas que las iniciales; negativo = más rápidas). Mismo dato en sesiones recientes del mismo bloque: ${tendenciaHistorica || 'sin datos previos'}. Desglose por ejercicio de hoy (el promedio de arriba puede esconder diferencias entre ejercicios — usa este detalle si un ejercicio en particular se comportó distinto al resto): ${form.tendenciaPorEjercicio && Object.keys(form.tendenciaPorEjercicio).length ? Object.entries(form.tendenciaPorEjercicio).map(([exId,v])=>`${(form.ejercicios.find(e=>e.id===exId)||{}).nombre||exId}: ${v>0?'+':''}${v}%`).join(', ') : 'sin datos suficientes'}. Si el porcentaje de hoy es alto, coméntalo en la evaluación como posible fatiga dentro de la sesión (o mejora de ritmo si es negativo). Si ese mismo patrón se repite de forma consistente en varias sesiones seguidas, señálalo explícitamente como algo a investigar (por ejemplo: orden de los ejercicios, tiempo de descanso, o fatiga acumulada entre sesiones) en vez de tratarlo como un dato aislado de hoy.
 - Calificación de dificultad por serie (1=fácil, 2=normal, 3=con cierta dificultad, 4=con dificultad, 5=con dificultad y algo de dolor; el detalle de cada serie ya viene junto al peso/reps de cada ejercicio más abajo), promedio por ejercicio hoy: ${calificacionPorEjercicioLinea}. Sesiones recientes del mismo bloque: ${calificacionHistorica || 'sin datos previos'}. Un 5 indica dolor, no solo esfuerzo — trátalo con la misma cautela que una molestia reportada, y nunca lo confundas con simple cansancio.
 
 EJERCICIOS Y SERIES DE HOY (peso en libras):
@@ -1410,7 +1435,7 @@ function plantillaResumenSesion(sesion, sinChat){
     <div class="recom-fila">
       <div>
         <div>${escapeHtml(r.nombre)}</div>
-        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}${dur != null ? ' · '+dur+'s/serie' : ''}${cal != null ? ' · '+cal+'/5' : ''}</small>
+        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}${dur != null ? ' · '+dur+'s/serie' : ''}${cal != null ? ' · '+cal+'/5 ('+textoCalificacionFuerza(Math.round(cal))+')' : ''}</small>
       </div>
       <div class="recom-peso">${r.pesoSugerido} lbs · ${r.repsSugeridos.join('-')}</div>
     </div>`;
@@ -1421,7 +1446,24 @@ function plantillaResumenSesion(sesion, sinChat){
     ? `<details style="margin-top:8px;">
         <summary style="cursor:pointer; color:var(--primary); font-size:13px;">Ver duración de cada serie</summary>
         <div style="margin-top:8px; font-size:13px; font-family:var(--mono); color:var(--text-dim);">
-          ${detalleSerieArr.map(e => `<div style="margin-bottom:4px;"><span style="color:var(--text);">${escapeHtml(e.nombre)}:</span> ${e.texto}</div>`).join('')}
+          ${detalleSerieArr.map(e => {
+            const tend = sesion.tendenciaPorEjercicio && sesion.tendenciaPorEjercicio[e.exId] != null ? sesion.tendenciaPorEjercicio[e.exId] : null;
+            return `<div style="margin-bottom:4px;"><span style="color:var(--text);">${escapeHtml(e.nombre)}:</span> ${e.texto}${tend != null ? ` <span style="color:${tend>15?'var(--amber)':'var(--text-dim)'};">(${tend>0?'+':''}${tend}%)</span>` : ''}</div>`;
+          }).join('')}
+        </div>
+      </details>`
+    : '';
+
+  const todasLasCalificaciones = (sesion.ejercicios||[]).flatMap(ej=>(ej.series||[]).map(s=>s.calificacion)).filter(c=>c!=null);
+  const calificacionPromedioGeneral = todasLasCalificaciones.length
+    ? Math.round((todasLasCalificaciones.reduce((a,b)=>a+b,0)/todasLasCalificaciones.length)*10)/10
+    : null;
+  const detalleCalificacionArr = formatearCalificacionPorSerie(sesion.ejercicios);
+  const detalleCalificacionHtml = detalleCalificacionArr && detalleCalificacionArr.length
+    ? `<details style="margin-top:8px;">
+        <summary style="cursor:pointer; color:var(--primary); font-size:13px;">Ver calificación de cada serie</summary>
+        <div style="margin-top:8px; font-size:13px; font-family:var(--mono); color:var(--text-dim);">
+          ${detalleCalificacionArr.map(e => `<div style="margin-bottom:4px;"><span style="color:var(--text);">${escapeHtml(e.nombre)}:</span> ${e.texto}</div>`).join('')}
         </div>
       </details>`
     : '';
@@ -1432,7 +1474,9 @@ function plantillaResumenSesion(sesion, sinChat){
       <p style="margin-bottom:4px;">Sueño: ${textoSueno(sesion.sueno)} · Energía: ${textoEnergia(sesion.energia)} · Molestias: ${textoMolestias(sesion.molestias)}</p>
       ${sesion.duracionPromedio != null ? `<p style="margin-bottom:0;">Duración promedio por serie: <span style="font-family:var(--mono); color:var(--primary);">${sesion.duracionPromedio}s</span></p>` : ''}
       ${sesion.tendenciaDentroSesion != null ? `<p style="margin-bottom:0;">Tendencia dentro de la sesión (última serie vs primera): <span style="font-family:var(--mono); color:${sesion.tendenciaDentroSesion>15?'var(--amber)':'var(--primary)'};">${sesion.tendenciaDentroSesion>0?'+':''}${sesion.tendenciaDentroSesion}%</span></p>` : ''}
+      ${calificacionPromedioGeneral != null ? `<p style="margin-bottom:0;">Calificación promedio de dificultad: <span style="font-family:var(--mono); color:${calificacionPromedioGeneral>=4?'var(--amber)':'var(--primary)'};">${calificacionPromedioGeneral}/5</span></p>` : ''}
       ${detalleSerieHtml}
+      ${detalleCalificacionHtml}
     </div>
     <div class="card">
       <h2>Análisis de la IA</h2>

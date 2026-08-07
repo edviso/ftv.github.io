@@ -168,6 +168,18 @@
   </div>
 </div>
 
+<div id="modalCalificacionSerie" class="oculto" style="position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:45; display:flex; align-items:center; justify-content:center; padding:16px;">
+  <div class="card" style="max-width:340px; width:100%; margin:0;">
+    <h3 style="margin-bottom:12px;">¿Cómo estuvo esa serie?</h3>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(1)">1 · Fácil</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(2)">2 · Normal</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(3)">3 · Con cierta dificultad</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(4)">4 · Con dificultad</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(5)">5 · Con dificultad y algo de dolor</button>
+    <button type="button" style="background:transparent; color:var(--text-dim); border:none; width:100%; margin-top:4px;" onclick="omitirCalificacionSerie()">Omitir</button>
+  </div>
+</div>
+
 <div class="wrap">
 
   <!-- ===================== VISTA: API KEY ===================== -->
@@ -313,7 +325,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-05', texto:'Corrección importante: los checks y valores del formulario de hoy se borraban al ir a Consulta y volver (se reconstruía todo desde cero). Ahora se guarda un borrador y se restaura, incluyendo los tiempos ya registrados. Agregados dos ejercicios de movilidad (Niño a Cobra, Mariposa sentado). En Movilidad: botón de "Marcar inicio" para medir cuánto toma cada ejercicio (sin cronómetro/alarma) y calificación de dificultad 1-5 por ejercicio al marcarlo hecho; ese detalle ya queda disponible para el chat de Consulta.'},
   {fecha:'2026-08-05 20:11', texto:'Cambiadas las etiquetas de la calificación de Movilidad: 1 Normal, 2 Con cierta dificultad, 3 Con dificultad, 4 Con dificultad y algo de dolor, 5 Con dificultad y mucho dolor. La IA ahora sabe que 4-5 indican dolor, no solo esfuerzo.'},
   {fecha:'2026-08-05', texto:'Movilidad ahora sí llama a la IA al registrar (se dejó de lado el ahorro de tokens por decisión del usuario): evaluación de la sesión, consejo, y chat de seguimiento igual que en fuerza. La IA compara la calificación de hoy contra sesiones recientes y trata con cautela cualquier calificación 4-5 (dolor).'},
-  {fecha:'2026-08-05 22:56', texto:'Corrección: en el Consejo de Movilidad la IA inventó "columna" (no reportada) y omitió "tobillo" (sí reportado), infiriendo partes del cuerpo por el tipo de ejercicio en vez de usar las palabras reales. Reforzada la instrucción en los tres prompts de IA (fuerza, movilidad, consulta) para citar las molestias tal cual se reportaron, sin agregar, quitar ni atribuirlas a un ejercicio específico sin base.'}
+  {fecha:'2026-08-05 22:56', texto:'Corrección: en el Consejo de Movilidad la IA inventó "columna" (no reportada) y omitió "tobillo" (sí reportado), infiriendo partes del cuerpo por el tipo de ejercicio en vez de usar las palabras reales. Reforzada la instrucción en los tres prompts de IA (fuerza, movilidad, consulta) para citar las molestias tal cual se reportaron, sin agregar, quitar ni atribuirlas a un ejercicio específico sin base.'},
+  {fecha:'2026-08-06', texto:'Nuevo botón "💾 Guardar acuerdo de esta conversación" en el chat de sesiones de fuerza: le pide a la IA resumir el objetivo final acordado en el chat y actualiza el progreso guardado (con el mismo límite de seguridad de peso), para que quede prellenado la próxima sesión en vez de perderse en la conversación. En fuerza (superior/inferior), calificar cada serie (1 Fácil a 5 Con dificultad y algo de dolor) mediante una ventana emergente al marcar el check — sin detener el cronómetro — igual que ya existía en Movilidad; ese detalle también se le pasa a la IA para el análisis.'}
 ];
 
 function mostrarLog(){
@@ -689,6 +702,7 @@ function capturarBorradorHoy(){
     fecha: obtenerFechaGuayaquil().fechaISO,
     valores,
     registrosSerie: registrosSerie.slice(),
+    calificacionesSerie: calificacionesSerie.slice(),
     registrosMovilidad: registrosMovilidad.slice(),
     inicioMovilidad
   };
@@ -712,8 +726,9 @@ function aplicarBorradorHoy(){
     if(el.type === 'checkbox') el.checked = valor;
     else el.value = valor;
   });
-  // Restaurar los registros de tiempo (se perderían si no, al reconstruirse el formulario)
+  // Restaurar los registros de tiempo y calificaciones (se perderían si no, al reconstruirse el formulario)
   registrosSerie = (borradorHoy.registrosSerie || []).slice();
+  calificacionesSerie = (borradorHoy.calificacionesSerie || []).slice();
   registrosMovilidad = (borradorHoy.registrosMovilidad || []).slice();
   inicioMovilidad = borradorHoy.inicioMovilidad != null ? borradorHoy.inicioMovilidad : null;
   // Reflejar el botón de "Marcar inicio" si ya se había activado antes de salir
@@ -873,6 +888,8 @@ function plantillaEncabezado(fechaInfo, bloque, penalizado){
 
 function plantillaFormularioRegistro(bloque, fechaInfo, penalizado, manual){
   registrosSerie = [];
+  calificacionesSerie = [];
+  pendienteCalificacion = null;
   const idForm = 'formRegistro';
   const calent = DATOS.config.calentamiento.map(it => `
     <label class="chip"><input type="checkbox" data-calent="${it.id}"> ${escapeHtml(it.nombre)}</label>
@@ -975,6 +992,8 @@ let modoSimulacion = false;
 let temporizadorInterval = null;
 let temporizadorRestante = 0;
 let registrosSerie = []; // {exId, serieIndex, t} — hora de cada check de "serie completada" en la sesión actual
+let calificacionesSerie = []; // {exId, serieIndex, calificacion} — 1-5, cargada vía la ventana emergente
+let pendienteCalificacion = null; // {exId, serieIndex} — serie recién marcada, esperando su calificación
 let registrosMovilidad = []; // {id, t} — hora de cada check de un ejercicio de movilidad
 let inicioMovilidad = null; // hora de "Marcar inicio" en movilidad (sin cronómetro, solo referencia)
 
@@ -983,6 +1002,25 @@ function marcarSerieCompletada(exId, serieIndex){
   if(existente){ existente.t = Date.now(); }
   else{ registrosSerie.push({exId, serieIndex, t: Date.now()}); }
   iniciarTemporizadorDescanso();
+  // El cronómetro sigue corriendo de fondo; la ventana emergente no lo detiene ni lo pausa.
+  pendienteCalificacion = {exId, serieIndex};
+  document.getElementById('modalCalificacionSerie').classList.remove('oculto');
+}
+
+function calificarSerieActual(valor){
+  if(pendienteCalificacion){
+    const {exId, serieIndex} = pendienteCalificacion;
+    const existente = calificacionesSerie.find(c=>c.exId===exId && c.serieIndex===serieIndex);
+    if(existente){ existente.calificacion = valor; }
+    else{ calificacionesSerie.push({exId, serieIndex, calificacion: valor}); }
+  }
+  pendienteCalificacion = null;
+  document.getElementById('modalCalificacionSerie').classList.add('oculto');
+}
+
+function omitirCalificacionSerie(){
+  pendienteCalificacion = null;
+  document.getElementById('modalCalificacionSerie').classList.add('oculto');
 }
 
 // Marca el momento en que arranca la sesión (opcional), para poder calcular también
@@ -1002,6 +1040,9 @@ function reiniciarRegistroHoy(manual, bloque){
   if(!confirm('¿Seguro que quieres reiniciar el registro de hoy? Se borrarán los checks, el cronómetro y los valores que hayas modificado en este formulario.')) return;
   limpiarTemporizador();
   registrosSerie = [];
+  calificacionesSerie = [];
+  pendienteCalificacion = null;
+  document.getElementById('modalCalificacionSerie').classList.add('oculto');
   registrosMovilidad = [];
   inicioMovilidad = null;
   borradorHoy = null;
@@ -1142,9 +1183,11 @@ function recopilarFormulario(bloque){
   const ejercicios = DATOS.config.ejercicios[bloque].map(ej=>{
     const series = [];
     for(let s=0; s<ej.series; s++){
+      const cal = calificacionesSerie.find(c=>c.exId===ej.id && c.serieIndex===s);
       series.push({
         peso: parseFloat(document.getElementById(`${ej.id}_peso_${s}`).value)||0,
-        reps: parseInt(document.getElementById(`${ej.id}_reps_${s}`).value)||0
+        reps: parseInt(document.getElementById(`${ej.id}_reps_${s}`).value)||0,
+        calificacion: cal ? cal.calificacion : null
       });
     }
     return {id:ej.id, nombre:ej.nombre, tipo:ej.tipo, incrementoMax:ej.incrementoMax, series};
@@ -1153,6 +1196,11 @@ function recopilarFormulario(bloque){
   const detalle = document.getElementById('detalleMolestias').value.trim();
   const {duraciones, duracionPromedio, duracionPorEjercicio} = calcularDuracionesSerie();
   const tendenciaDentroSesion = calcularTendenciaDentroSesion(duraciones);
+  const calificacionPorEjercicio = {};
+  ejercicios.forEach(ej=>{
+    const cals = ej.series.map(s=>s.calificacion).filter(c=>c!=null);
+    if(cals.length) calificacionPorEjercicio[ej.id] = Math.round((cals.reduce((a,b)=>a+b,0)/cals.length)*10)/10;
+  });
   return {
     calentamiento: calent,
     ejercicios,
@@ -1160,7 +1208,7 @@ function recopilarFormulario(bloque){
     energia: document.getElementById('selEnergia').value,
     molestias: molestiasSel,
     molestiasDetalle: detalle,
-    duraciones, duracionPromedio, duracionPorEjercicio, tendenciaDentroSesion
+    duraciones, duracionPromedio, duracionPorEjercicio, tendenciaDentroSesion, calificacionPorEjercicio
   };
 }
 
@@ -1208,6 +1256,7 @@ async function registrarYAnalizar(bloque, penalizado, manual){
       ejercicios: form.ejercicios,
       duraciones: form.duraciones, duracionPromedio: form.duracionPromedio, duracionPorEjercicio: form.duracionPorEjercicio,
       tendenciaDentroSesion: form.tendenciaDentroSesion,
+      calificacionPorEjercicio: form.calificacionPorEjercicio,
       analisis: {
         evaluacion: parsed.evaluacion || respuestaTexto,
         recomendaciones: recomendacionesFinal,
@@ -1243,7 +1292,7 @@ async function registrarYAnalizar(bloque, penalizado, manual){
 
 function construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual){
   const lineasEjercicios = form.ejercicios.map(ej =>
-    `- ${ej.nombre} [id:${ej.id}]: ` + ej.series.map((s,i)=>`S${i+1} ${s.peso}lbs x ${s.reps}`).join(', ')
+    `- ${ej.nombre} [id:${ej.id}]: ` + ej.series.map((s,i)=>`S${i+1} ${s.peso}lbs x ${s.reps}${s.calificacion!=null?' (calificación '+s.calificacion+'/5)':''}`).join(', ')
   ).join('\n');
 
   const calentLinea = form.calentamiento.map(c => `${c.nombre}: ${c.hecho ? 'realizado' : 'omitido'}`).join(', ');
@@ -1271,6 +1320,18 @@ function construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual
     .map(s => `${s.fecha}: ${s.tendenciaDentroSesion>0?'+':''}${s.tendenciaDentroSesion}%`)
     .join(' | ');
 
+  const calificacionPorEjercicioLinea = form.calificacionPorEjercicio && Object.keys(form.calificacionPorEjercicio).length
+    ? Object.entries(form.calificacionPorEjercicio)
+        .map(([exId, v]) => `${(form.ejercicios.find(e=>e.id===exId)||{}).nombre || exId}: ${v}/5`)
+        .join(', ')
+    : 'sin datos suficientes';
+
+  const calificacionHistorica = DATOS.historial
+    .filter(s => s.bloque === bloque && s.calificacionPorEjercicio && Object.keys(s.calificacionPorEjercicio).length)
+    .slice(-4)
+    .map(s => `${s.fecha}: ` + Object.entries(s.calificacionPorEjercicio).map(([id,v])=>`${(DATOS.config.ejercicios[bloque].find(e=>e.id===id)||{}).nombre || id} ${v}/5`).join(', '))
+    .join(' | ');
+
   return `Eres un preparador físico especializado en sobrecarga progresiva conservadora. Perfil del atleta: ${PERFIL_USUARIO}
 
 Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este espacio es solo para temas de entrenamiento, técnica, progreso, recuperación y movilidad; si una pregunta de seguimiento no tiene relación con eso, dilo brevemente y no la respondas.
@@ -1286,6 +1347,7 @@ DATOS DE HOY (${fechaInfo.fechaISO}, ${bloque === 'superior' ? 'Tren Superior' :
 - Duración promedio de ejecución por serie hoy: ${form.duracionPromedio != null ? form.duracionPromedio+' segundos' : 'sin datos suficientes'} (global). Por ejercicio: ${duracionPorEjercicioLinea}. Sesiones recientes del mismo bloque (promedio global): ${duracionHistorica || 'sin datos previos'}. Si la duración sube respecto a sesiones anteriores, interpreta que las series le están costando más esfuerzo; si baja, que le resultan más fáciles; compara cada ejercicio contra su propio ritmo esperado (no es igual el tiempo de una serie de sentadillas que de elevaciones de talón) y considéralo junto con sueño/energía/molestias al decidir la progresión de cada uno.
 - Duración de cada serie individual (la primerísima serie del día no tiene dato, es la primera y no tiene con qué compararse; el resto sí, incluida la primera serie de cada ejercicio nuevo): ${detalleSerieLinea}. Ten este detalle a mano por si el usuario pregunta por una serie o ejercicio específico en el chat de seguimiento.
 - Tendencia DENTRO de esta sesión (comparando, en cada ejercicio con 2+ series medidas, la primera contra la última, promediado entre ejercicios): hoy ${form.tendenciaDentroSesion != null ? (form.tendenciaDentroSesion>0?'+':'')+form.tendenciaDentroSesion+'%' : 'sin datos suficientes'} (positivo = las series finales fueron más lentas que las iniciales; negativo = más rápidas). Mismo dato en sesiones recientes del mismo bloque: ${tendenciaHistorica || 'sin datos previos'}. Si el porcentaje de hoy es alto, coméntalo en la evaluación como posible fatiga dentro de la sesión (o mejora de ritmo si es negativo). Si ese mismo patrón se repite de forma consistente en varias sesiones seguidas, señálalo explícitamente como algo a investigar (por ejemplo: orden de los ejercicios, tiempo de descanso, o fatiga acumulada entre sesiones) en vez de tratarlo como un dato aislado de hoy.
+- Calificación de dificultad por serie (1=fácil, 2=normal, 3=con cierta dificultad, 4=con dificultad, 5=con dificultad y algo de dolor; el detalle de cada serie ya viene junto al peso/reps de cada ejercicio más abajo), promedio por ejercicio hoy: ${calificacionPorEjercicioLinea}. Sesiones recientes del mismo bloque: ${calificacionHistorica || 'sin datos previos'}. Un 5 indica dolor, no solo esfuerzo — trátalo con la misma cautela que una molestia reportada, y nunca lo confundas con simple cansancio.
 
 EJERCICIOS Y SERIES DE HOY (peso en libras):
 ${lineasEjercicios}
@@ -1343,11 +1405,12 @@ function aplicarLimitesSeguridad(bloque, form, recomendaciones, penalizado, diaD
 function plantillaResumenSesion(sesion, sinChat){
   const recomHtml = sesion.analisis.recomendaciones.map(r=>{
     const dur = sesion.duracionPorEjercicio && sesion.duracionPorEjercicio[r.id] != null ? sesion.duracionPorEjercicio[r.id] : null;
+    const cal = sesion.calificacionPorEjercicio && sesion.calificacionPorEjercicio[r.id] != null ? sesion.calificacionPorEjercicio[r.id] : null;
     return `
     <div class="recom-fila">
       <div>
         <div>${escapeHtml(r.nombre)}</div>
-        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}${dur != null ? ' · '+dur+'s/serie' : ''}</small>
+        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}${dur != null ? ' · '+dur+'s/serie' : ''}${cal != null ? ' · '+cal+'/5' : ''}</small>
       </div>
       <div class="recom-peso">${r.pesoSugerido} lbs · ${r.repsSugeridos.join('-')}</div>
     </div>`;
@@ -1386,6 +1449,8 @@ function plantillaResumenSesion(sesion, sinChat){
         <input type="text" id="inputPregunta" placeholder="Escribe tu pregunta...">
       </div>
       <button class="btn secundario" id="btnPreguntar" onclick="enviarPregunta('${sesion.fecha}')">Enviar</button>
+      <button class="btn secundario" id="btnGuardarAcuerdo" style="margin-top:6px;" onclick="guardarAcuerdoChat('${sesion.fecha}')">💾 Guardar acuerdo de esta conversación</button>
+      <small class="ayuda">Si en el chat llegaron a un objetivo concreto de peso o reps, esto lo deja prellenado para la próxima sesión.</small>
     </div>`}`;
 }
 
@@ -1648,6 +1713,63 @@ async function enviarPregunta(fecha){
   }
 }
 
+// Le pide a la IA que resuma en JSON el objetivo final acordado en la conversación (peso/reps
+// por ejercicio) y actualiza DATOS.progreso — así lo que se conversó queda prellenado la próxima
+// vez, no solo escrito en el chat. Solo aplica a sesiones de fuerza (tienen peso/reps que ajustar).
+async function guardarAcuerdoChat(fecha){
+  const sesion = DATOS.historial.find(s=>s.fecha===fecha);
+  if(!sesion || !sesion.ejercicios) return;
+  const btn = document.getElementById('btnGuardarAcuerdo');
+  if(btn) btn.disabled = true;
+
+  const promptResumen = `Basándote en TODA la conversación de este chat, resume el objetivo final que quedó acordado para la próxima sesión, ejercicio por ejercicio. Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques de markdown, con esta estructura exacta:
+{"objetivos": [{"id": "<mismo id de ejercicio usado en la sesión original>", "pesoSugerido": <numero>, "repsSugeridos": [<numeros>]}]}
+Incluye solo los ejercicios sobre los que se llegó a un acuerdo concreto y explícito en la conversación. Si no se acordó nada concreto para ningún ejercicio, responde {"objetivos": []}. No inventes un acuerdo que no esté explícito en el chat.`;
+
+  const contents = sesion.geminiHistorial.concat(
+    sesion.chat.map(m=>({role: m.rol==='usuario'?'user':'model', parts:[{text:m.texto}]})),
+    [{role:'user', parts:[{text: promptResumen}]}]
+  );
+
+  try{
+    const respuesta = await llamarGemini(contents);
+    let limpio = respuesta.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+    const parsed = JSON.parse(limpio);
+    const objetivos = Array.isArray(parsed.objetivos) ? parsed.objetivos : [];
+    if(!objetivos.length){
+      mostrarToast('La IA no encontró un acuerdo concreto que guardar en esta conversación');
+      return;
+    }
+    const todosLosEjercicios = DATOS.config.ejercicios.superior.concat(DATOS.config.ejercicios.inferior);
+    const nombresActualizados = [];
+    objetivos.forEach(o=>{
+      const prog = DATOS.progreso[o.id];
+      const cfgEj = todosLosEjercicios.find(e=>e.id===o.id);
+      if(!prog || !cfgEj) return;
+      const pesoBase = prog.pesoUltimaSesion != null ? prog.pesoUltimaSesion : prog.pesoObjetivo;
+      let pesoFinal = typeof o.pesoSugerido === 'number' ? o.pesoSugerido : pesoBase;
+      const delta = Math.max(-cfgEj.incrementoMax, Math.min(cfgEj.incrementoMax, pesoFinal - pesoBase));
+      pesoFinal = Math.round((pesoBase + delta) * 2) / 2;
+      const repsFinal = Array.isArray(o.repsSugeridos) && o.repsSugeridos.length
+        ? o.repsSugeridos.map(n=>Math.max(1, Math.round(n)))
+        : prog.repsObjetivo;
+      prog.pesoObjetivo = pesoFinal;
+      prog.repsObjetivo = repsFinal;
+      nombresActualizados.push(cfgEj.nombre);
+    });
+    if(!nombresActualizados.length){
+      mostrarToast('No se pudo relacionar el acuerdo con ningún ejercicio conocido');
+      return;
+    }
+    guardarDatos();
+    mostrarToast('Objetivo actualizado para: ' + nombresActualizados.join(', '), 5000);
+  }catch(e){
+    mostrarToast('No se pudo guardar el acuerdo: ' + e.message, 5000);
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
 async function llamarGemini(contents){
   const apiKey = obtenerApiKey();
   const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
@@ -1763,147 +1885,4 @@ function construirContextoGeneral(){
 
   return `Eres un preparador físico que acompaña a este atleta. Perfil: ${PERFIL_USUARIO}
 
-Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este chat es exclusivamente para temas de entrenamiento, salud física, movilidad, técnica y el progreso registrado en esta app. Si la pregunta no tiene relación con eso (por ejemplo cocina, tecnología, noticias u otro tema ajeno), respóndelo en una frase indicando que este espacio es solo para consultas de entrenamiento, sin desarrollar el tema pedido.
-
-CONTEXTO ACTUAL:
-Fecha: ${fechaInfo.fechaISO} (${capitalizar(fechaInfo.nombreDiaLargo)}, Guayaquil)
-Hoy corresponde: ${bloqueHoy ? NOMBRE_BLOQUE[bloqueHoy] : 'día de descanso'}
-
-Pesos objetivo actuales por ejercicio:
-${resumenProgreso.join('\n') || 'Todavía no hay progreso registrado.'}
-
-Últimas sesiones registradas:
-${ultimas || 'Todavía no hay sesiones registradas.'}
-
-Tendencia de calificación en Movilidad (1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor; que baje con el tiempo es señal de estar recuperando flexibilidad/equilibrio/movilidad; un 4 o 5 indica dolor, no solo esfuerzo, y merece atención aparte): ${movilidadHistorica || 'sin datos suficientes'}.
-
-Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo. Si mencionas molestias reportadas, usa exactamente las palabras/partes del cuerpo del contexto — no agregues, cambies ni las atribuyas a un ejercicio específico salvo que así conste.`;
-}
-
-async function enviarPreguntaGeneral(){
-  const input = document.getElementById('inputPreguntaGeneral');
-  const pregunta = input.value.trim();
-  if(!pregunta) return;
-  const btn = document.getElementById('btnPreguntarGeneral');
-  btn.disabled = true;
-
-  DATOS.chatGeneral.mensajes.push({rol:'usuario', texto:pregunta});
-  guardarDatos();
-  renderMensajesGeneral();
-  input.value = '';
-
-  // Se reconstruye el contexto en cada pregunta (no se acumula sin límite) y se
-  // agregan solo los últimos intercambios como memoria conversacional reciente.
-  const contexto = construirContextoGeneral();
-  const previos = DATOS.chatGeneral.mensajes.slice(-13, -1);
-  const contents = [
-    {role:'user', parts:[{text: contexto}]},
-    {role:'model', parts:[{text:'Entendido, tengo el contexto de tu entrenamiento. ¿En qué te ayudo?'}]},
-    ...previos.map(m=>({role: m.rol==='usuario'?'user':'model', parts:[{text:m.texto}]})),
-    {role:'user', parts:[{text: pregunta}]}
-  ];
-
-  try{
-    const respuesta = await llamarGemini(contents);
-    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:respuesta});
-  }catch(e){
-    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:'Error: ' + e.message});
-  }finally{
-    guardarDatos();
-    renderMensajesGeneral();
-    btn.disabled = false;
-  }
-}
-
-// ---- 9. Exportar / Importar ----
-function exportarJSON(){
-  // La API key NUNCA se incluye en el respaldo.
-  const blob = new Blob([JSON.stringify(DATOS, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `control-pesas-ia_${obtenerFechaGuayaquil().fechaISO}.json`;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
-function importarJSON(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e=>{
-    try{
-      const contenido = JSON.parse(e.target.result);
-      if(!contenido.config || !contenido.historial) throw new Error('Formato no reconocido');
-      if(!confirm('Esto reemplazará tus datos actuales en este dispositivo. ¿Continuar?')) return;
-      DATOS = contenido;
-      guardarDatos();
-      alert('Historial importado correctamente.');
-      mostrarVista('hoy');
-    }catch(err){
-      alert('El archivo no es un respaldo válido: ' + err.message);
-    }
-    event.target.value = '';
-  };
-  reader.readAsText(file);
-}
-
-// ---- 10. Utilidades ----
-function mostrarToast(mensaje, duracionMs){
-  let toast = document.getElementById('toastMsg');
-  if(!toast){
-    toast = document.createElement('div');
-    toast.id = 'toastMsg';
-    toast.style.cssText = 'position:fixed;left:50%;bottom:74px;transform:translateX(-50%);max-width:88vw;text-align:center;background:var(--primary);color:var(--on-primary);padding:10px 18px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;';
-    document.body.appendChild(toast);
-  }
-  toast.textContent = mensaje;
-  toast.style.opacity = '1';
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(()=>{ toast.style.opacity = '0'; }, duracionMs || 2200);
-}
-
-function uid(){ return Math.random().toString(36).slice(2,10); }
-function capitalizar(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
-function escapeHtml(s){
-  return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function escapeAttr(s){ return escapeHtml(s); }
-function textoSueno(v){ return {excelente:'Excelente', buena:'Buena', regular:'Regular', mala:'Mala'}[v] || v; }
-function textoEnergia(v){ return {alta:'Alta', normal:'Normal', baja:'Baja', muy_baja:'Muy baja'}[v] || v; }
-function textoMolestias(v){ return {ninguna:'Ninguna', leve:'Leve', moderada:'Moderada', debo_parar:'Importante'}[v] || v; }
-function textoDificultadMovilidad(n){ return {1:'Normal', 2:'Con cierta dificultad', 3:'Con dificultad', 4:'Con dificultad y algo de dolor', 5:'Con dificultad y mucho dolor'}[n] || ''; }
-
-function irAVistaSegunEstado(){
-  if(!DATOS.config.setupCompleto){ mostrarVista('setup'); }
-  else{ mostrarVista('ajustes'); }
-}
-
-// ---- Inicio ----
-// ---- Mantener la pantalla encendida mientras se usa la app ----
-let referenciaWakeLock = null;
-async function mantenerPantallaActiva(){
-  try{
-    if('wakeLock' in navigator){
-      referenciaWakeLock = await navigator.wakeLock.request('screen');
-      referenciaWakeLock.addEventListener('release', ()=>{ referenciaWakeLock = null; });
-    }
-  }catch(e){
-    console.error('No se pudo mantener la pantalla activa', e);
-  }
-}
-document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible' && !referenciaWakeLock){
-    mantenerPantallaActiva();
-  }
-});
-
-window.onload = function(){
-  mantenerPantallaActiva();
-  const apiKey = obtenerApiKey();
-  if(!apiKey){ mostrarVista('auth'); return; }
-  DATOS = cargarDatos();
-  irAVistaSegunEstado();
-};
-</script>
-</body>
-</html>
+Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este chat es exclusivamente para temas de entrenamiento, salud física, movilidad, técnica y el progreso registrado en esta app. Si la pregunta no tiene relación con eso (por ejemplo cocina, tecnología, noticias u otro tema ajeno), respóndelo en una 

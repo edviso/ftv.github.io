@@ -1885,4 +1885,147 @@ function construirContextoGeneral(){
 
   return `Eres un preparador físico que acompaña a este atleta. Perfil: ${PERFIL_USUARIO}
 
-Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este chat es exclusivamente para temas de entrenamiento, salud física, movilidad, técnica y el progreso registrado en esta app. Si la pregunta no tiene relación con eso (por ejemplo cocina, tecnología, noticias u otro tema ajeno), respóndelo en una 
+Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este chat es exclusivamente para temas de entrenamiento, salud física, movilidad, técnica y el progreso registrado en esta app. Si la pregunta no tiene relación con eso (por ejemplo cocina, tecnología, noticias u otro tema ajeno), respóndelo en una frase indicando que este espacio es solo para consultas de entrenamiento, sin desarrollar el tema pedido.
+
+CONTEXTO ACTUAL:
+Fecha: ${fechaInfo.fechaISO} (${capitalizar(fechaInfo.nombreDiaLargo)}, Guayaquil)
+Hoy corresponde: ${bloqueHoy ? NOMBRE_BLOQUE[bloqueHoy] : 'día de descanso'}
+
+Pesos objetivo actuales por ejercicio:
+${resumenProgreso.join('\n') || 'Todavía no hay progreso registrado.'}
+
+Últimas sesiones registradas:
+${ultimas || 'Todavía no hay sesiones registradas.'}
+
+Tendencia de calificación en Movilidad (1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor; que baje con el tiempo es señal de estar recuperando flexibilidad/equilibrio/movilidad; un 4 o 5 indica dolor, no solo esfuerzo, y merece atención aparte): ${movilidadHistorica || 'sin datos suficientes'}.
+
+Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo. Si mencionas molestias reportadas, usa exactamente las palabras/partes del cuerpo del contexto — no agregues, cambies ni las atribuyas a un ejercicio específico salvo que así conste.`;
+}
+
+async function enviarPreguntaGeneral(){
+  const input = document.getElementById('inputPreguntaGeneral');
+  const pregunta = input.value.trim();
+  if(!pregunta) return;
+  const btn = document.getElementById('btnPreguntarGeneral');
+  btn.disabled = true;
+
+  DATOS.chatGeneral.mensajes.push({rol:'usuario', texto:pregunta});
+  guardarDatos();
+  renderMensajesGeneral();
+  input.value = '';
+
+  // Se reconstruye el contexto en cada pregunta (no se acumula sin límite) y se
+  // agregan solo los últimos intercambios como memoria conversacional reciente.
+  const contexto = construirContextoGeneral();
+  const previos = DATOS.chatGeneral.mensajes.slice(-13, -1);
+  const contents = [
+    {role:'user', parts:[{text: contexto}]},
+    {role:'model', parts:[{text:'Entendido, tengo el contexto de tu entrenamiento. ¿En qué te ayudo?'}]},
+    ...previos.map(m=>({role: m.rol==='usuario'?'user':'model', parts:[{text:m.texto}]})),
+    {role:'user', parts:[{text: pregunta}]}
+  ];
+
+  try{
+    const respuesta = await llamarGemini(contents);
+    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:respuesta});
+  }catch(e){
+    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:'Error: ' + e.message});
+  }finally{
+    guardarDatos();
+    renderMensajesGeneral();
+    btn.disabled = false;
+  }
+}
+
+// ---- 9. Exportar / Importar ----
+function exportarJSON(){
+  // La API key NUNCA se incluye en el respaldo.
+  const blob = new Blob([JSON.stringify(DATOS, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `control-pesas-ia_${obtenerFechaGuayaquil().fechaISO}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importarJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const contenido = JSON.parse(e.target.result);
+      if(!contenido.config || !contenido.historial) throw new Error('Formato no reconocido');
+      if(!confirm('Esto reemplazará tus datos actuales en este dispositivo. ¿Continuar?')) return;
+      DATOS = contenido;
+      guardarDatos();
+      alert('Historial importado correctamente.');
+      mostrarVista('hoy');
+    }catch(err){
+      alert('El archivo no es un respaldo válido: ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ---- 10. Utilidades ----
+function mostrarToast(mensaje, duracionMs){
+  let toast = document.getElementById('toastMsg');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'toastMsg';
+    toast.style.cssText = 'position:fixed;left:50%;bottom:74px;transform:translateX(-50%);max-width:88vw;text-align:center;background:var(--primary);color:var(--on-primary);padding:10px 18px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = mensaje;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>{ toast.style.opacity = '0'; }, duracionMs || 2200);
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function capitalizar(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+function textoSueno(v){ return {excelente:'Excelente', buena:'Buena', regular:'Regular', mala:'Mala'}[v] || v; }
+function textoEnergia(v){ return {alta:'Alta', normal:'Normal', baja:'Baja', muy_baja:'Muy baja'}[v] || v; }
+function textoMolestias(v){ return {ninguna:'Ninguna', leve:'Leve', moderada:'Moderada', debo_parar:'Importante'}[v] || v; }
+function textoDificultadMovilidad(n){ return {1:'Normal', 2:'Con cierta dificultad', 3:'Con dificultad', 4:'Con dificultad y algo de dolor', 5:'Con dificultad y mucho dolor'}[n] || ''; }
+
+function irAVistaSegunEstado(){
+  if(!DATOS.config.setupCompleto){ mostrarVista('setup'); }
+  else{ mostrarVista('ajustes'); }
+}
+
+// ---- Inicio ----
+// ---- Mantener la pantalla encendida mientras se usa la app ----
+let referenciaWakeLock = null;
+async function mantenerPantallaActiva(){
+  try{
+    if('wakeLock' in navigator){
+      referenciaWakeLock = await navigator.wakeLock.request('screen');
+      referenciaWakeLock.addEventListener('release', ()=>{ referenciaWakeLock = null; });
+    }
+  }catch(e){
+    console.error('No se pudo mantener la pantalla activa', e);
+  }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && !referenciaWakeLock){
+    mantenerPantallaActiva();
+  }
+});
+
+window.onload = function(){
+  mantenerPantallaActiva();
+  const apiKey = obtenerApiKey();
+  if(!apiKey){ mostrarVista('auth'); return; }
+  DATOS = cargarDatos();
+  irAVistaSegunEstado();
+};
+</script>
+</body>
+</html>

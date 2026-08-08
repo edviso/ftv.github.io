@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparación de perfiles de tueste — Blend natural de Loja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --surface:#f8f9fa;
+    --surface-2:#e9ecef;
+    --ink:#17130f;
+    --muted:#6b635a;
+    --line: rgba(0,0,0,0.10);
+    --line-strong: rgba(0,0,0,0.18);
+    --ember:#c1502e;      /* perfil Gemini */
+    --secado:#a7b24a;     /* perfil Claude */
+    --maillard:#c08a4e;
+    --riesgo:#8a3a2b;
+    --font-display:'Space Grotesk',-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:var(--font-display); -webkit-font-smoothing:antialiased;
+  }
+  body{ padding:20px 14px 48px; }
+  .wrap{ max-width:840px; margin:0 auto; }
+
+  .eyebrow{
+    font-family:var(--font-mono); font-size:10.5px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ember); margin:0 0 8px;
+  }
+  h1{ font-size:25px; line-height:1.12; font-weight:700; margin:0 0 8px; letter-spacing:-.01em; }
+  h1 span{ color:var(--maillard); }
+  .sub{ color:var(--muted); font-size:13.5px; line-height:1.5; margin:0 0 22px; max-width:60ch; }
+
+  .panel{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:16px 14px; margin-bottom:14px;
+  }
+  .panel-label{
+    font-family:var(--font-mono); font-size:10px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 12px;
+  }
+
+  svg{ display:block; width:100%; height:auto; overflow:visible; }
+  .grid{ stroke:rgba(0,0,0,.07); stroke-width:1; }
+  .axis-txt{ font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--muted); }
+  .axis-title{ font-family:'IBM Plex Mono',monospace; font-size:10px; fill:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+  .step{ fill:none; stroke-width:2.6; stroke-linejoin:round; stroke-linecap:round; }
+  .pt-label{ font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; }
+  .hold-label{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.06em; }
+  .band-label{ font-family:'IBM Plex Mono',monospace; font-size:9px; fill:#c9836e; letter-spacing:.08em; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:16px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .leg{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); }
+  .swatch{ width:22px; height:0; border-top-width:3px; border-top-style:solid; flex-shrink:0; }
+  .leg small{ color:var(--muted); font-family:var(--font-mono); font-size:11px; }
+
+  .tables{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:620px){ .tables{ grid-template-columns:1fr; } }
+  table{ width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:12.5px; }
+  caption{
+    text-align:left; font-family:var(--font-mono); font-size:10px; letter-spacing:.1em;
+    text-transform:uppercase; padding-bottom:10px; font-weight:600;
+  }
+  thead th{
+    text-align:left; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--muted); font-weight:500; padding:0 6px 8px; border-bottom:1px solid var(--line-strong);
+  }
+  thead th:nth-child(2){ text-align:right; }
+  thead th:nth-child(3){ text-align:center; }
+  tbody td{ padding:7px 6px; border-bottom:1px solid var(--line); }
+  tbody td:nth-child(2){ text-align:right; }
+  tbody td:nth-child(3){ text-align:center; color:var(--muted); }
+  tbody tr:last-child td{ border-bottom:none; }
+  .air-swap{ color:var(--maillard); }
+
+  .note{ font-size:12.5px; line-height:1.6; color:var(--muted); }
+  .note b{ color:var(--ink); font-weight:600; }
+  .note ul{ margin:8px 0 0; padding-left:18px; }
+  .note li{ margin-bottom:6px; }
+
+  @media (prefers-reduced-motion:no-preference){
+    .step{ stroke-dasharray:2400; stroke-dashoffset:2400; animation:draw 1.1s ease-out forwards; }
+    .step.b{ animation-delay:.18s; }
+    @keyframes draw{ to{ stroke-dashoffset:0; } }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Blend natural de Loja · 80 g</p>
+  <h1>Dos rutas hacia el mismo <span>Agtron 62-64</span></h1>
+  <p class="sub">Ambos perfiles se alinean en la descarga (0:00) porque duran distinto. La temperatura no sube en rampa: se mantiene fija en cada escalón hasta el siguiente cambio de dial.</p>
+
+  <div class="panel">
+    <p class="panel-label">Setpoint del dial · tiempo restante</p>
+    <svg id="chart" viewBox="0 0 800 520" role="img"
+         aria-label="Comparación en escalones de dos perfiles de tueste sobre un eje de tiempo restante lineal de 12:00 a 0:00.">
+    </svg>
+    <div class="legend">
+      <div class="leg"><span class="swatch" style="border-top-color:#c1502e"></span>
+        Gemini 3.6 Flash <small>12:00 · 5 escalones</small></div>
+      <div class="leg"><span class="swatch" style="border-top-color:#a7b24a"></span>
+        Claude Opus <small>11:30 · 6 escalones</small></div>
+      <div class="leg"><span class="swatch" style="border-top-color:#8a3a2b;border-top-width:9px;opacity:.65"></span>
+        Zona de estancamiento <small>211-212 °C</small></div>
+    </div>
+  </div>
+
+  <div class="tables">
+    <div class="panel">
+      <table>
+        <caption style="color:#c1502e">Gemini · total 12:00</caption>
+        <thead><tr><th>Restante</th><th>Setpoint</th><th>Aire</th></tr></thead>
+        <tbody>
+          <tr><td>12:00</td><td>195 °C</td><td>V3</td></tr>
+          <tr><td class="air-swap">08:00</td><td class="air-swap">—</td><td class="air-swap">V2</td></tr>
+          <tr><td>09:00</td><td>202 °C</td><td>V3</td></tr>
+          <tr><td>06:00</td><td>207 °C</td><td>V2</td></tr>
+          <tr><td>03:30</td><td>210 °C</td><td>V2</td></tr>
+          <tr><td>02:00</td><td>214 °C</td><td>V2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <table>
+        <caption style="color:#a7b24a">Claude · total 11:30</caption>
+        <thead><tr><th>Restante</th><th>Setpoint</th><th>Aire</th></tr></thead>
+        <tbody>
+          <tr><td>11:30</td><td>193 °C</td><td>V3</td></tr>
+          <tr><td>09:30</td><td>198 °C</td><td>V3</td></tr>
+          <tr><td>07:30</td><td>203 °C</td><td class="air-swap">V2</td></tr>
+          <tr><td>05:15</td><td>207 °C</td><td>V2</td></tr>
+          <tr><td>03:00</td><td>211 °C</td><td>V2</td></tr>
+          <tr><td>01:45</td><td>215 °C</td><td>V2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-label">Qué separa a las dos curvas</p>
+    <div class="note">
+      <ul>
+        <li><b>La zona de riesgo.</b> Gemini salta de 210 a 214 °C y nunca entra en 211-212 °C. Claude se apoya en 211 °C durante 1:15 antes de rematar en 215 °C.</li>
+        <li><b>El arranque.</b> Claude entra 2 °C más frío (193 vs 195 °C) pero cambia de escalón antes, con pasos más cortos.</li>
+        <li><b>El aire.</b> Los dos cambian a V2 al minuto 4:00 transcurrido; en el reloj regresivo eso cae en 8:00 para Gemini y en 7:30 para Claude.</li>
+        <li><b>El remate.</b> Gemini sostiene 214 °C por 2:00; Claude sostiene 215 °C por 1:45.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const TOTAL = 720;                       // 12:00 en segundos: ancho del eje
+  const PAD = { l:58, r:26, t:30, b:54 };
+  const W = 800, H = 520;
+  const PLOT_W = W - PAD.l - PAD.r;
+  const PLOT_H = H - PAD.t - PAD.b;
+  const Y_MIN = 190, Y_MAX = 218;
+
+  // El eje corre de 12:00 restantes (izquierda) a 0:00 (derecha), lineal.
+  const xPix = rem => PAD.l + ((TOTAL - rem) / TOTAL) * PLOT_W;
+  const yPix = t   => PAD.t + ((Y_MAX - t) / (Y_MAX - Y_MIN)) * PLOT_H;
+
+  const fmt = s => Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+
+  // Cada escalón: se mantiene ese setpoint desde 'rem' hasta el siguiente cambio.
+  const GEMINI = [
+    { rem:720, t:195 }, { rem:540, t:202 }, { rem:360, t:207 },
+    { rem:210, t:210 }, { rem:120, t:214 }
+  ];
+  const CLAUDE = [
+    { rem:690, t:193 }, { rem:570, t:198 }, { rem:450, t:203 },
+    { rem:315, t:207 }, { rem:180, t:211 }, { rem:105, t:215 }
+  ];
+
+  const svg = document.getElementById('chart');
+  const NS = 'http://www.w3.org/2000/svg';
+  const make = (tag, attrs, text) => {
+    const el = document.createElementNS(NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (text != null) el.textContent = text;
+    svg.appendChild(el);
+    return el;
+  };
+
+  // --- Banda de estancamiento (211-212 °C) ---
+  make('rect', {
+    x:PAD.l, y:yPix(212), width:PLOT_W, height:yPix(211)-yPix(212),
+    fill:'#8a3a2b', opacity:'0.30'
+  });
+  make('text', { x:PAD.l+7, y:yPix(212)-5, class:'band-label' }, 'ESTANCAMIENTO 211-212 °C');
+
+  // --- Rejilla horizontal cada 5 °C ---
+  for (let t = 190; t <= 215; t += 5){
+    const y = yPix(t);
+    make('line', { x1:PAD.l, y1:y, x2:PAD.l+PLOT_W, y2:y, class:'grid' });
+    make('text', { x:PAD.l-10, y:y+4, class:'axis-txt', 'text-anchor':'end' }, t);
+  }
+
+  // --- Rejilla vertical cada 2:00, escala lineal real ---
+  for (let rem = TOTAL; rem >= 0; rem -= 120){
+    const x = xPix(rem);
+    make('line', { x1:x, y1:PAD.t, x2:x, y2:PAD.t+PLOT_H, class:'grid' });
+    make('text', { x:x, y:PAD.t+PLOT_H+20, class:'axis-txt', 'text-anchor':'middle' }, fmt(rem));
+  }
+
+  make('text', { x:PAD.l-46, y:PAD.t+PLOT_H/2, class:'axis-title',
+                 transform:`rotate(-90 ${PAD.l-46} ${PAD.t+PLOT_H/2})`, 'text-anchor':'middle' }, 'Setpoint °C');
+  make('text', { x:PAD.l+PLOT_W/2, y:H-14, class:'axis-title', 'text-anchor':'middle' }, 'Tiempo restante');
+
+  // --- Trazo en escalera: horizontal en cada setpoint, salto vertical al cambiar ---
+  function stepPath(pts){
+    let d = `M ${xPix(pts[0].rem)} ${yPix(pts[0].t)}`;
+    for (let i = 1; i < pts.length; i++){
+      d += ` L ${xPix(pts[i].rem)} ${yPix(pts[i-1].t)}`;   // se mantiene
+      d += ` L ${xPix(pts[i].rem)} ${yPix(pts[i].t)}`;     // salta
+    }
+    d += ` L ${xPix(0)} ${yPix(pts[pts.length-1].t)}`;     // sostiene hasta la descarga
+    return d;
+  }
+
+  function drawProfile(pts, color, cls, labelAbove){
+    make('path', { d:stepPath(pts), class:'step '+cls, stroke:color });
+    pts.forEach((p, i) => {
+      make('circle', { cx:xPix(p.rem), cy:yPix(p.t), r:4, fill:color, stroke:'#ffffff', 'stroke-width':1.5 });
+      make('text', {
+        x:xPix(p.rem) + (i === 0 ? 8 : 4),
+        y:yPix(p.t) + (labelAbove ? -10 : 18),
+        class:'pt-label', fill:color,
+        'text-anchor':(i === 0 ? 'start' : 'middle')
+      }, p.t + '°');
+    });
+    // Etiqueta del tramo final sostenido, sobre su propia línea
+    const last = pts[pts.length-1];
+    const midX = (xPix(last.rem) + xPix(0)) / 2;
+    make('text', {
+      x:midX, y:yPix(last.t) + (labelAbove ? -26 : 34),
+      class:'hold-label', fill:color, 'text-anchor':'middle'
+    }, `MANTENER ${last.t}° · ${fmt(last.rem)}`);
+  }
+
+  drawProfile(CLAUDE, '#a7b24a', 'b', false);   // etiquetas debajo
+  drawProfile(GEMINI, '#c1502e', 'a', true);    // etiquetas encima
+
+  // --- Marcadores del cambio de aire V3 → V2 (minuto 4:00 transcurrido) ---
+  [{ rem:480, t:202, color:'#c1502e' }, { rem:450, t:203, color:'#a7b24a' }].forEach(m => {
+    make('line', {
+      x1:xPix(m.rem), y1:yPix(m.t)-9, x2:xPix(m.rem), y2:yPix(m.t)+9,
+      stroke:m.color, 'stroke-width':1.5, 'stroke-dasharray':'2,2', opacity:'0.85'
+    });
+  });
+  make('text', { x:xPix(465), y:yPix(203)+34, class:'band-label', fill:'#c08a4e', 'text-anchor':'middle' },
+       'AIRE V3 → V2');
+})();
+</script>
+</body>
+</html>

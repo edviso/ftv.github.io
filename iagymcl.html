@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Control de Pesas &amp; IA</title>
@@ -329,7 +329,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-06', texto:'Nuevo botón "💾 Guardar acuerdo de esta conversación" en el chat de sesiones de fuerza: le pide a la IA resumir el objetivo final acordado en el chat y actualiza el progreso guardado (con el mismo límite de seguridad de peso), para que quede prellenado la próxima sesión en vez de perderse en la conversación. En fuerza (superior/inferior), calificar cada serie (1 Fácil a 5 Con dificultad y algo de dolor) mediante una ventana emergente al marcar el check — sin detener el cronómetro — igual que ya existía en Movilidad; ese detalle también se le pasa a la IA para el análisis.'},
   {fecha:'2026-08-06', texto:'La calificación de dificultad en fuerza estaba, pero muy poco visible (solo un número chico junto a la nota). Ahora tiene el mismo tratamiento que la duración: promedio general en la parte superior del resumen (en ámbar si es 4+) y un detalle desplegable "Ver calificación de cada serie".'},
   {fecha:'2026-08-06 22:38', texto:'Agregada la tendencia dentro de la sesión por ejercicio individual (no solo el promedio general de todos juntos), al prompt de análisis y al detalle desplegable de duración — así la IA puede notar si un ejercicio en particular mejoró o empeoró distinto al resto, en vez de que un promedio general lo esconda.'},
-  {fecha:'2026-08-08 19:44', texto:'Corrección importante: la migración que sumaba "Niño a Cobra" y "Mariposa sentado" se revisaba en cada apertura de la app comprobando solo si el nombre existía, así que si el usuario los borraba, volvían a aparecer en la siguiente apertura. Ahora la migración queda marcada como hecha con una bandera propia y corre una sola vez de verdad; borrar un ejercicio ya se queda borrado.'}
+  {fecha:'2026-08-08 19:44', texto:'Corrección importante: la migración que sumaba "Niño a Cobra" y "Mariposa sentado" se revisaba en cada apertura de la app comprobando solo si el nombre existía, así que si el usuario los borraba, volvían a aparecer en la siguiente apertura. Ahora la migración queda marcada como hecha con una bandera propia y corre una sola vez de verdad; borrar un ejercicio ya se queda borrado.'},
+  {fecha:'2026-08-08 20:59', texto:'Movilidad ahora tiene control numérico de series y objetivo (repeticiones, segundos o pasos, según la unidad de cada ejercicio), igual que fuerza: se prellena con tus valores actuales, muestra lo que hiciste la sesión anterior, y lo que registres queda como base para la próxima. La IA sugiere la progresión por ejercicio, topada por código a máximo +1 serie y +20% del objetivo, y sin subir nada si hubo dolor (4-5), molestias reportadas o si el ejercicio se omitió. Los valores de series/objetivo se pueden editar en Ajustes.'}
 ];
 
 function mostrarLog(){
@@ -375,21 +376,23 @@ function semillaConfig(){
 
 function semillaMovilidad(){
   return [
-    {id:uid(), categoria:'Movilidad articular', nombre:'Gato-camello', detalle:'8-10 repeticiones, en cuadrupedia'},
-    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos de cadera y tobillos', detalle:'10 círculos hacia cada lado'},
-    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos suaves de hombros', detalle:'10 adelante y 10 atrás, sin molestia'},
-    {id:uid(), categoria:'Movilidad articular', nombre:'Niño a Cobra (flexión-extensión de columna)', detalle:'Desde cuadrupedia, siéntate sobre los talones con el tronco al piso y brazos extendidos (postura del niño); vuelve a cuadrupedia y baja cadera y pelvis con brazos extendidos mirando hacia arriba (extensión). Repite con control.'},
-    {id:uid(), categoria:'Equilibrio', nombre:'Postura sobre una pierna', detalle:'20-30 segundos, 2-3 series por pierna, cerca de una pared o silla'},
-    {id:uid(), categoria:'Equilibrio', nombre:'Caminata talón-punta', detalle:'10-12 pasos en línea recta'},
-    {id:uid(), categoria:'Flexibilidad', nombre:'Isquiotibiales sentado', detalle:'20-30 segundos por pierna, espalda recta'},
-    {id:uid(), categoria:'Flexibilidad', nombre:'Pectoral en marco de puerta', detalle:'20 segundos por lado, estiramiento suave'},
-    {id:uid(), categoria:'Flexibilidad', nombre:'Pantorrillas en pared', detalle:'20-30 segundos por pierna'},
-    {id:uid(), categoria:'Flexibilidad', nombre:'Mariposa sentado (caída de rodillas)', detalle:'Sentado, pies fuera de la colchoneta y rodillas dobladas ~90°, manos atrás para equilibrio; lleva cada rodilla hacia la colchoneta tratando de tocarla, alternando lados, sin forzar.'}
+    {id:uid(), categoria:'Movilidad articular', nombre:'Gato-camello', series:1, objetivo:10, unidad:'reps', detalle:'8-10 repeticiones, en cuadrupedia'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos de cadera y tobillos', series:1, objetivo:10, unidad:'reps por lado', detalle:'10 círculos hacia cada lado'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos suaves de hombros', series:1, objetivo:10, unidad:'reps por lado', detalle:'10 adelante y 10 atrás, sin molestia'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Niño a Cobra (flexión-extensión de columna)', series:3, objetivo:10, unidad:'reps', detalle:'Desde cuadrupedia, siéntate sobre los talones con el tronco al piso y brazos extendidos (postura del niño); vuelve a cuadrupedia y baja cadera y pelvis con brazos extendidos mirando hacia arriba (extensión). Repite con control.'},
+    {id:uid(), categoria:'Equilibrio', nombre:'Postura sobre una pierna', series:2, objetivo:25, unidad:'seg por lado', detalle:'20-30 segundos, 2-3 series por pierna, cerca de una pared o silla'},
+    {id:uid(), categoria:'Equilibrio', nombre:'Caminata talón-punta', series:1, objetivo:12, unidad:'pasos', detalle:'10-12 pasos en línea recta'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Isquiotibiales sentado', series:1, objetivo:25, unidad:'seg por lado', detalle:'20-30 segundos por pierna, espalda recta'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Pectoral en marco de puerta', series:1, objetivo:20, unidad:'seg por lado', detalle:'20 segundos por lado, estiramiento suave'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Pantorrillas en pared', series:1, objetivo:25, unidad:'seg por lado', detalle:'20-30 segundos por pierna'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Mariposa sentado (caída de rodillas)', series:2, objetivo:10, unidad:'reps por lado', detalle:'Sentado, pies fuera de la colchoneta y rodillas dobladas ~90°, manos atrás para equilibrio; lleva cada rodilla hacia la colchoneta tratando de tocarla, alternando lados, sin forzar.'}
   ];
 }
 
+const UNIDADES_MOVILIDAD = ['reps', 'reps por lado', 'seg', 'seg por lado', 'pasos'];
+
 function datosVacios(){
-  return { version:1, config:semillaConfig(), progreso:{}, historial:[], chatGeneral:{mensajes:[]} };
+  return { version:1, config:semillaConfig(), progreso:{}, progresoMovilidad:{}, historial:[], chatGeneral:{mensajes:[]} };
 }
 
 // ---- 2. Persistencia ----
@@ -421,6 +424,17 @@ function cargarDatos(){
       });
       datos.config._migracionEjerciciosNuevos = true;
     }
+    if(!datos.progresoMovilidad) datos.progresoMovilidad = {};
+    // migración: dar series/objetivo/unidad a los ejercicios de movilidad que no los tengan.
+    // Si el nombre coincide con uno de la semilla, se usan sus valores; si no, un default editable.
+    const semilla = semillaMovilidad();
+    datos.config.movilidad.forEach(it=>{
+      if(it.series != null && it.objetivo != null) return;
+      const base = semilla.find(s=>s.nombre === it.nombre);
+      it.series = base ? base.series : 1;
+      it.objetivo = base ? base.objetivo : 10;
+      it.unidad = base ? base.unidad : 'reps';
+    });
     return datos;
   } catch(e){ return datosVacios(); }
 }
@@ -574,7 +588,11 @@ function renderHorarioEditor(){
 
 function renderMovilidadEditor(){
   const cont = document.getElementById('movilidadEditor');
-  cont.innerHTML = borradorConfig.movilidad.map((it,i)=>`
+  cont.innerHTML = borradorConfig.movilidad.map((it,i)=>{
+    const prog = DATOS.progresoMovilidad ? DATOS.progresoMovilidad[it.id] : null;
+    const series = prog && prog.series != null ? prog.series : it.series;
+    const objetivo = prog && prog.objetivo != null ? prog.objetivo : it.objetivo;
+    return `
     <div class="exercise-edit-row">
       <label>Nombre</label>
       <input type="text" value="${escapeAttr(it.nombre)}" oninput="borradorConfig.movilidad[${i}].nombre=this.value">
@@ -584,13 +602,28 @@ function renderMovilidadEditor(){
         <option value="Equilibrio" ${it.categoria==='Equilibrio'?'selected':''}>Equilibrio</option>
         <option value="Flexibilidad" ${it.categoria==='Flexibilidad'?'selected':''}>Flexibilidad</option>
       </select>
-      <label>Guía (repeticiones o segundos)</label>
+      <div class="fila">
+        <div>
+          <label>${prog ? 'Series actuales' : 'N.º series'}</label>
+          <input type="number" min="1" max="10" value="${series}" oninput="borradorConfig.movilidad[${i}].series=Math.max(1,parseInt(this.value)||1)">
+        </div>
+        <div>
+          <label>${prog ? 'Objetivo actual' : 'Objetivo por serie'}</label>
+          <input type="number" min="1" value="${objetivo}" oninput="borradorConfig.movilidad[${i}].objetivo=Math.max(1,parseInt(this.value)||1)">
+        </div>
+      </div>
+      <label>Unidad</label>
+      <select onchange="borradorConfig.movilidad[${i}].unidad=this.value">
+        ${UNIDADES_MOVILIDAD.map(u=>`<option value="${u}" ${it.unidad===u?'selected':''}>${u}</option>`).join('')}
+      </select>
+      <label>Guía / notas de ejecución</label>
       <input type="text" value="${escapeAttr(it.detalle)}" oninput="borradorConfig.movilidad[${i}].detalle=this.value">
       <button class="btn chico peligro" onclick="borradorConfig.movilidad.splice(${i},1); renderMovilidadEditor();">Eliminar</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function agregarMovilidad(){
-  borradorConfig.movilidad.push({id:uid(), categoria:'Movilidad articular', nombre:'Nuevo ejercicio', detalle:''});
+  borradorConfig.movilidad.push({id:uid(), categoria:'Movilidad articular', nombre:'Nuevo ejercicio', series:1, objetivo:10, unidad:'reps', detalle:''});
   renderMovilidadEditor();
 }
 
@@ -671,9 +704,19 @@ function guardarConfiguracion(){
       };
     });
   });
+  const nuevoProgresoMovilidad = {};
+  borradorConfig.movilidad.forEach(it=>{
+    nuevoProgresoMovilidad[it.id] = {
+      series: it.series,
+      objetivo: it.objetivo,
+      seriesUltimaSesion: it.series,
+      objetivoUltimaSesion: it.objetivo
+    };
+  });
   borradorConfig.setupCompleto = true;
   DATOS.config = borradorConfig;
   DATOS.progreso = nuevoProgreso;
+  DATOS.progresoMovilidad = nuevoProgresoMovilidad;
   const guardadoOk = guardarDatos();
   if(!guardadoOk){
     mostrarToast('No se pudo guardar' + (ultimoErrorAlmacenamiento ? ': ' + ultimoErrorAlmacenamiento : ' (almacenamiento bloqueado o sin espacio)'), 8000);
@@ -1516,12 +1559,34 @@ function plantillaFormularioMovilidad(){
   const secciones = Object.keys(categorias).map(cat => `
     <h3>${escapeHtml(cat)}</h3>
     <div class="chip-lista">
-      ${categorias[cat].map(it => `
-        <label class="chip" style="flex-direction:column; align-items:flex-start; gap:2px;">
+      ${categorias[cat].map(it => {
+        const prog = DATOS.progresoMovilidad[it.id] || {};
+        const seriesBase = prog.series != null ? prog.series : (it.series != null ? it.series : 1);
+        const objetivoBase = prog.objetivo != null ? prog.objetivo : (it.objetivo != null ? it.objetivo : 10);
+        const previo = (prog.seriesUltimaSesion != null && prog.objetivoUltimaSesion != null)
+          ? `Sesión anterior: ${prog.seriesUltimaSesion} × ${prog.objetivoUltimaSesion} ${it.unidad||'reps'}`
+          : '';
+        return `
+        <label class="chip" style="flex-direction:column; align-items:flex-start; gap:2px; width:100%;">
           <span style="display:flex; align-items:center; gap:8px;">
             <input type="checkbox" data-movilidad="${it.id}" onchange="marcarMovilidadHecha('${it.id}', this.checked)"> ${escapeHtml(it.nombre)}
           </span>
           <small class="ayuda" style="margin:0;">${escapeHtml(it.detalle)}</small>
+          ${previo ? `<small class="ayuda" style="margin:0; color:var(--primary);">${previo}</small>` : ''}
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px; width:100%;">
+            <div class="stepper" style="flex:0.9;">
+              <button type="button" onclick="ajustarValor('${it.id}_series', -1)">−</button>
+              <input type="number" step="1" min="1" id="${it.id}_series" value="${seriesBase}">
+              <button type="button" onclick="ajustarValor('${it.id}_series', 1)">+</button>
+              <span class="unidad">series</span>
+            </div>
+            <div class="stepper" style="flex:1.1;">
+              <button type="button" onclick="ajustarValor('${it.id}_objetivo', -1)">−</button>
+              <input type="number" step="1" min="1" id="${it.id}_objetivo" value="${objetivoBase}">
+              <button type="button" onclick="ajustarValor('${it.id}_objetivo', 1)">+</button>
+              <span class="unidad" style="width:auto;">${escapeHtml(it.unidad||'reps')}</span>
+            </div>
+          </div>
           <select data-dificultad="${it.id}" class="oculto" style="margin-top:4px;">
             <option value="">Calificación de hoy...</option>
             <option value="1">1 - Normal</option>
@@ -1530,8 +1595,8 @@ function plantillaFormularioMovilidad(){
             <option value="4">4 - Con dificultad y algo de dolor</option>
             <option value="5">5 - Con dificultad y mucho dolor</option>
           </select>
-        </label>
-      `).join('')}
+        </label>`;
+      }).join('')}
     </div>`).join('');
 
   return `
@@ -1542,7 +1607,7 @@ function plantillaFormularioMovilidad(){
         <button type="button" class="btn chico secundario" id="btnIniciarMovilidad" onclick="iniciarSesionMovilidad()">▶ Marcar inicio</button>
         <button type="button" class="btn chico peligro" onclick="reiniciarRegistroHoy(false, 'movilidad')">Reiniciar registro</button>
       </div>
-      <small class="ayuda">"Marcar inicio" es opcional: mide cuánto te toma cada ejercicio (sin cronómetro ni alarma). Al marcar uno como hecho, elige qué tan difícil te resultó hoy.</small>
+      <small class="ayuda">Cada ejercicio viene prellenado con tus series y objetivo actuales. Ajústalos si hoy haces más o menos — lo que registres queda como base para la próxima sesión.</small>
       ${secciones}
     </div>
     <div class="card">
@@ -1594,7 +1659,7 @@ function calcularDuracionesMovilidad(){
 
 function construirPromptMovilidad(fechaInfo, form){
   const lineas = form.items.map(it =>
-    `- ${it.nombre} (${it.categoria}): ${it.hecho ? 'hecho' : 'omitido'}${it.dificultad != null ? ', calificación ' + it.dificultad + '/5 (' + textoDificultadMovilidad(it.dificultad) + ')' : ''}${it.duracionSeg != null ? ', ' + it.duracionSeg + 's' : ''}`
+    `- ${it.nombre} (${it.categoria}) [id:${it.id}]: ${it.hecho ? 'hecho' : 'omitido'}, hoy ${it.series} series × ${it.objetivo} ${it.unidad}${it.seriesPrevias != null ? ' (sesión anterior: '+it.seriesPrevias+' × '+it.objetivoPrevio+')' : ''}${it.dificultad != null ? ', calificación ' + it.dificultad + '/5 (' + textoDificultadMovilidad(it.dificultad) + ')' : ''}${it.duracionSeg != null ? ', ' + it.duracionSeg + 's' : ''}`
   ).join('\n');
 
   const historica = DATOS.historial
@@ -1604,6 +1669,8 @@ function construirPromptMovilidad(fechaInfo, form){
     .join(' | ');
 
   return `Eres un preparador físico especializado en movilidad, equilibrio y flexibilidad para un atleta mayor. Perfil: ${PERFIL_USUARIO}
+
+Contexto importante: el usuario ha perdido rango de movimiento respecto a meses atrás y quiere recuperarlo de forma medible, no hacer estos ejercicios como relleno. Por eso ahora registra series y objetivo (repeticiones o segundos) de cada ejercicio.
 
 Sé concreto y breve para ahorrar tokens: máximo 2-3 frases por sección, sin relleno. Este espacio es solo para temas de entrenamiento; si hay una pregunta de seguimiento ajena al tema, no la respondas.
 
@@ -1618,9 +1685,12 @@ INSTRUCCIONES:
 Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques de markdown, con esta estructura exacta:
 {
   "evaluacion": "máximo 2-3 frases sobre cómo le fue hoy, comparando con la tendencia reciente si hay datos para eso",
+  "recomendaciones": [
+    {"id": "<mismo id del ejercicio>", "series": <numero>, "objetivo": <numero>, "nota": "máximo 1 frase corta"}
+  ],
   "consejoGeneral": "máximo 2-3 frases de consejo — si algún ejercicio calificó 4 o 5 (dolor), coméntalo con cautela y sugiere consultar a un profesional si el dolor persiste o empeora; si la tendencia mejora, dilo con ánimo pero sin exagerar"
 }
-Nunca minimices el dolor reportado ni lo confundas con simple esfuerzo o dificultad.`;
+Reglas para las recomendaciones: usa exactamente los mismos "id" entre corchetes e incluye TODOS los ejercicios de la lista. Los aumentos deben ser mínimos y sostenibles (por ejemplo +1 serie, o unas pocas repeticiones/segundos), nunca agresivos. Si un ejercicio calificó 1 o 2 y no hubo dolor, puedes sugerir un aumento pequeño. Si calificó 4 o 5, o se reportaron molestias relevantes, o el ejercicio fue omitido, mantén exactamente los mismos valores de hoy o sugiere reducir. Nunca minimices el dolor reportado ni lo confundas con simple esfuerzo o dificultad.`;
 }
 
 async function registrarMovilidad(){
@@ -1631,8 +1701,16 @@ async function registrarMovilidad(){
     const hecho = chk ? chk.checked : false;
     const selDif = document.querySelector(`[data-dificultad="${it.id}"]`);
     const dificultad = hecho && selDif && selDif.value ? parseInt(selDif.value) : null;
+    const inpSeries = document.getElementById(`${it.id}_series`);
+    const inpObjetivo = document.getElementById(`${it.id}_objetivo`);
+    const prog = DATOS.progresoMovilidad[it.id] || {};
     return {
       id: it.id, nombre: it.nombre, categoria: it.categoria, hecho, dificultad,
+      series: inpSeries ? Math.max(1, parseInt(inpSeries.value)||1) : (it.series||1),
+      objetivo: inpObjetivo ? Math.max(1, parseInt(inpObjetivo.value)||1) : (it.objetivo||10),
+      unidad: it.unidad || 'reps',
+      seriesPrevias: prog.seriesUltimaSesion != null ? prog.seriesUltimaSesion : null,
+      objetivoPrevio: prog.objetivoUltimaSesion != null ? prog.objetivoUltimaSesion : null,
       duracionSeg: duraciones[it.id] != null ? duraciones[it.id] : null
     };
   });
@@ -1655,13 +1733,18 @@ async function registrarMovilidad(){
     const prompt = construirPromptMovilidad(fechaInfo, form);
     const respuestaTexto = await llamarGemini([{role:'user', parts:[{text:prompt}]}]);
     const parsed = parsearRespuestaIA(respuestaTexto);
+    const recomendacionesFinal = aplicarLimitesMovilidad(form, parsed.recomendaciones || []);
 
     const sesion = {
       fecha: fechaInfo.fechaISO, diaSemana: fechaInfo.diaSemana,
       bloque:'movilidad',
       molestias: form.molestias, molestiasDetalle: form.molestiasDetalle,
       movilidad: items, dificultadPromedio,
-      analisis: { evaluacion: parsed.evaluacion || respuestaTexto, consejoGeneral: parsed.consejoGeneral || '' },
+      analisis: {
+        evaluacion: parsed.evaluacion || respuestaTexto,
+        recomendaciones: recomendacionesFinal,
+        consejoGeneral: parsed.consejoGeneral || ''
+      },
       geminiHistorial: [
         {role:'user', parts:[{text:prompt}]},
         {role:'model', parts:[{text:respuestaTexto}]}
@@ -1678,6 +1761,17 @@ async function registrarMovilidad(){
         ${plantillaResumenMovilidad(sesion, true)}`;
       return;
     }
+    // Actualizar el progreso: lo hecho hoy queda como referencia y la recomendación como próximo objetivo
+    recomendacionesFinal.forEach(r=>{
+      const hoy = items.find(i=>i.id===r.id);
+      if(!hoy) return;
+      DATOS.progresoMovilidad[r.id] = {
+        series: r.series,
+        objetivo: r.objetivo,
+        seriesUltimaSesion: hoy.series,
+        objetivoUltimaSesion: hoy.objetivo
+      };
+    });
     DATOS.historial.push(sesion);
     guardarDatos();
     borradorHoy = null;
@@ -1690,19 +1784,60 @@ async function registrarMovilidad(){
   }
 }
 
+// Capa de seguridad determinística para movilidad: nunca se confía en la IA para el número final.
+// Aumentos topados a +1 serie y +20% del objetivo; y se mantiene lo de hoy si hubo dolor (4-5),
+// molestias reportadas, o si el ejercicio no se hizo.
+function aplicarLimitesMovilidad(form, recomendaciones){
+  const mapa = {};
+  recomendaciones.forEach(r=> mapa[r.id] = r);
+  const molestiasReportadas = form.molestias !== 'ninguna';
+
+  return form.items.map(it=>{
+    const sugerida = mapa[it.id];
+    const debeMantener = !it.hecho || molestiasReportadas || (it.dificultad != null && it.dificultad >= 4);
+    if(debeMantener || !sugerida){
+      return {
+        id: it.id, nombre: it.nombre, series: it.series, objetivo: it.objetivo, unidad: it.unidad,
+        nota: sugerida && sugerida.nota ? sugerida.nota : 'Se mantiene igual para consolidar.'
+      };
+    }
+    const seriesTope = it.series + 1;
+    const objetivoTope = Math.max(it.objetivo + 1, Math.round(it.objetivo * 1.2));
+    const series = Math.max(1, Math.min(seriesTope, Math.round(sugerida.series ?? it.series)));
+    const objetivo = Math.max(1, Math.min(objetivoTope, Math.round(sugerida.objetivo ?? it.objetivo)));
+    return {id: it.id, nombre: it.nombre, series, objetivo, unidad: it.unidad, nota: sugerida.nota || ''};
+  });
+}
+
 function plantillaResumenMovilidad(sesion, sinChat){
   const hechos = sesion.movilidad.filter(m=>m.hecho).length;
   const total = sesion.movilidad.length;
   const lista = sesion.movilidad.map(m=>{
     const detalles = [];
+    if(m.series != null && m.objetivo != null) detalles.push(`${m.series} × ${m.objetivo} ${m.unidad||'reps'}`);
     if(m.dificultad != null) detalles.push(`${m.dificultad}/5 · ${textoDificultadMovilidad(m.dificultad)}`);
     if(m.duracionSeg != null) detalles.push(`${m.duracionSeg}s`);
     return `<div style="padding:4px 0;">${m.hecho ? '✅' : '⬜️'} ${escapeHtml(m.nombre)}${detalles.length ? ' · '+detalles.join(' · ') : ''}</div>`;
   }).join('');
+  const recomHtml = (sesion.analisis && sesion.analisis.recomendaciones && sesion.analisis.recomendaciones.length)
+    ? `<h3 style="margin-top:12px;">Objetivo para la próxima sesión</h3>` + sesion.analisis.recomendaciones.map(r=>{
+        const hoy = sesion.movilidad.find(m=>m.id===r.id);
+        const subio = hoy && (r.series > hoy.series || r.objetivo > hoy.objetivo);
+        return `
+        <div class="recom-fila">
+          <div>
+            <div>${escapeHtml(r.nombre)}</div>
+            <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}</small>
+          </div>
+          <div class="recom-peso" style="color:${subio?'var(--green)':'var(--primary)'};">${r.series} × ${r.objetivo} ${escapeHtml(r.unidad||'reps')}</div>
+        </div>`;
+      }).join('')
+    : '';
   const analisisHtml = sesion.analisis ? `
     <div class="card">
       <h2>Análisis de la IA</h2>
       <div class="resultado-caja">${escapeHtml(sesion.analisis.evaluacion)}</div>
+      ${recomHtml}
       ${sesion.analisis.consejoGeneral ? `<h3 style="margin-top:12px;">Consejo</h3><div class="resultado-caja">${escapeHtml(sesion.analisis.consejoGeneral)}</div>` : ''}
     </div>` : '';
   const chatHtml = (sinChat || !sesion.analisis) ? '' : `

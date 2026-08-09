@@ -1287,4 +1287,20 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
   });
 
   // Seguimiento dentro del modal de IA (repreguntar sin perder contexto)
-  document.getElementB
+  document.getElementById('ia-followup-btn').addEventListener('click', enviarSeguimiento);
+  document.getElementById('ia-followup-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      enviarSeguimiento();
+    }
+  });
+
+  // Cerrar el modal de Log si se hace clic fuera del contenido
+  document.getElementById('log-modal').addEventListener('click', function(e) {
+    if(e.target === this) cerrarModalLog();
+  });
+
+})();
+</script>
+</body>
+</html>

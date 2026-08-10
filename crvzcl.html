@@ -230,6 +230,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-10 03:05 (Ecuador)", t:"Versión 1.8. Corregido el botón Aplicar reparto a cero: solo reponía granos y lúpulos, dejando el nombre, el volumen y los objetivos viejos. Ahora repone la receta completa."},
   {f:"2026-08-10 02:40 (Ecuador)", t:"Versión 1.7. La receta 1 pasa a ser la réplica del Lote 53 ya probado: 17 L, 3600 g de Pilsen y 300 g de Cara 20, Simcoe 7 g @30 y Cascade 13 g al whirlpool. Rebalanceo del resto para que las cuatro maltas sigan en cero: 100 g más de Pilsen en la APA, y 100 g menos de Cara 20 con 100 g más de Pilsen en Märzen, Irish Red y Munich Amber. Ajustado el tueste de cada receta al nuevo grano."},
   {f:"2026-08-10 02:05 (Ecuador)", t:"Versión 1.6. Botón Copiar todo en la cabecera del chat: copia la conversación completa con fecha y hora, además del botón de copiar de cada respuesta."},
   {f:"2026-08-10 01:30 (Ecuador)", t:"Versión 1.5. Nueva pestaña Plan: calendario de los 8 lotes repartiendo las neveras en el tiempo, con la cerveza siempre bajo control de temperatura (fermentación, carbonatación a 21-22 y maduración a 11-12, seguidas). Configurable el número de neveras y fermentadores, las duraciones y la fecha de inicio. Muestra qué toca hoy, la próxima cocción, la edad que tendrá la malta en cada lote y hasta cuándo alcanza la vida útil de cada insumo. El chat recibe el calendario ya calculado."},
@@ -1508,7 +1509,7 @@ function vAjustes(){
   </div>
   <div class="card">
     <p class="eyebrow">Plan balanceado</p>
-    <div class="tiny dim" style="margin-bottom:6px">Reescribe los granos y los lúpulos de las 8 recetas pendientes con el reparto que deja las cuatro maltas en cero, incluida la Pilsen tostada de cada una. No toca lotes ni recetas ya elaboradas.</div>
+    <div class="tiny dim" style="margin-bottom:6px">Repone por completo las 8 recetas pendientes: granos, lúpulos, volumen, nombre y objetivos, con el reparto que deja las cuatro maltas en cero. No toca lotes ni recetas ya elaboradas.</div>
     <button class="btn sec sm" onclick="aplicarPlan()">Aplicar reparto a cero</button>
   </div>
   <div class="card">
@@ -1543,16 +1544,16 @@ function guardarCalc(){
   save(); toast("Parámetros guardados"); render();
 }
 function aplicarPlan(){
-  if(!confirm("Reemplaza los granos y lúpulos de las 8 recetas pendientes por el reparto balanceado. ¿Seguir?")) return;
+  if(!confirm("Repone las 8 recetas pendientes con el plan balanceado: granos, lúpulos, volumen, nombre y objetivos. ¿Seguir?")) return;
   const base=seed().recetas; let n=0;
   base.forEach(b=>{
-    const r=DB.recetas.find(x=>x.n===b.n && x.estado==="pendiente");
-    if(!r) return;
-    r.granos=JSON.parse(JSON.stringify(b.granos));
-    r.lupulos=JSON.parse(JSON.stringify(b.lupulos));
-    r.notas=b.notas; n++;
+    const i=DB.recetas.findIndex(x=>x.n===b.n && x.estado==="pendiente");
+    if(i<0) return;
+    const id=DB.recetas[i].id;
+    DB.recetas[i]=Object.assign(JSON.parse(JSON.stringify(b)),{id:id,estado:"pendiente"});
+    n++;
   });
-  save(); toast(n+" recetas actualizadas"); go("recetas");
+  save(); toast(n+" recetas repuestas"); go("recetas");
 }
 function exportar(){
   const blob=new Blob([JSON.stringify(DB,null,1)],{type:"application/json"});

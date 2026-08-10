@@ -230,6 +230,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-10 02:05 (Ecuador)", t:"Versión 1.6. Botón Copiar todo en la cabecera del chat: copia la conversación completa con fecha y hora, además del botón de copiar de cada respuesta."},
   {f:"2026-08-10 01:30 (Ecuador)", t:"Versión 1.5. Nueva pestaña Plan: calendario de los 8 lotes repartiendo las neveras en el tiempo, con la cerveza siempre bajo control de temperatura (fermentación, carbonatación a 21-22 y maduración a 11-12, seguidas). Configurable el número de neveras y fermentadores, las duraciones y la fecha de inicio. Muestra qué toca hoy, la próxima cocción, la edad que tendrá la malta en cada lote y hasta cuándo alcanza la vida útil de cada insumo. El chat recibe el calendario ya calculado."},
   {f:"2026-08-10 00:40 (Ecuador)", t:"Versión 1.4. Alfa-ácidos reales cargados: Cascade 8,9 % y Simcoe 13,7 %. Con esos valores las recetas quedaban 50-80 % por encima del amargor buscado, así que se recalcularon las adiciones de Simcoe: las ocho vuelven a caer dentro de su rango de IBU. El Cascade del whirlpool no se toca. Sobran 304 g de Simcoe."},
   {f:"2026-08-10 00:05 (Ecuador)", t:"Versión 1.3. Reparto balanceado: las 8 recetas dejan las cuatro maltas exactamente en cero (Pilsen 19.500, Munich 3.500, Pale Ale 4.400, Cara 20 4.750). Siete lotes de 4.000 g y el #8 de 4.150 g. Cada receta que lo necesita lleva su porción de Pilsen tostada en línea aparte, con su color propio, descontándose igual del stock de Pilsen. Botón en Ajustes para aplicar el reparto sobre datos ya guardados."},
@@ -1353,7 +1354,10 @@ function vChat(){
       ${vacio?`<p class="eyebrow">Asistente</p><h1>Chat cervecero</h1>
         <p class="sub">Conoce tu equipo, tus insumos, tus 8 recetas y el lote en curso. Responde según la guía BJCP.</p>`
         :`<div class="spread"><p class="eyebrow" style="margin:0">Chat cervecero</p>
-          <button class="chip" onclick="limpiarChat()">Limpiar</button></div>`}
+          <div class="row" style="gap:6px">
+            <button class="chip a" onclick="copiarTodo()">⧉ Copiar todo</button>
+            <button class="chip" onclick="limpiarChat()">Limpiar</button>
+          </div></div>`}
       ${ok?"":`<div class="card" style="border-color:#4A3820;margin-top:8px"><div class="mini">Falta tu API key de Gemini.</div>
         <button class="btn sm" onclick="go('ajustes')">Ir a Ajustes</button></div>`}
       ${vacio?`<div class="qrow">
@@ -1389,6 +1393,14 @@ function fmt(t){
     .replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
     .replace(/^\s{0,8}[\*\-\u2022]\s+/gm,"• ")
     .replace(/\*/g,"");
+}
+function copiarTodo(){
+  if(!DB.chat.length) return toast("No hay conversación que copiar");
+  const txt="CHAT CERVECERO — "+ahoraEC()+"\n\n"+
+    DB.chat.map(m=>(m.r==="u"?"PREGUNTA:\n":"RESPUESTA:\n")+m.t).join("\n\n")+"\n";
+  navigator.clipboard.writeText(txt)
+    .then(()=>toast(DB.chat.length+" mensajes copiados"))
+    .catch(()=>toast("No se pudo copiar"));
 }
 function copiarPar(i){
   let q=""; for(let k=i-1;k>=0;k--){ if(DB.chat[k].r==="u"){q=DB.chat[k].t;break;} }

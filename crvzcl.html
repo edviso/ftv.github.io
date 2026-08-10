@@ -230,6 +230,8 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-10 15:10 (Ecuador)", t:"Versión 2.0. Contexto ampliado: tabla con los rangos BJCP 2021 de los diez estilos del plan (el modelo los recordaba mal), guía de defectos ligada al equipo y al clima de Guayaquil, y prohibición de suponer perfil de agua. La bitácora de cada lote pasa ahora completa al chat (8 notas en vez de 3). Nueva regla: distinguir lo que viene del contexto de lo que sale de su memoria, y preferir decir que no sabe antes que rellenar."},
+  {f:"2026-08-10 14:30 (Ecuador)", t:"Versión 1.9. Maceración de la réplica del Lote 53 subida a 68 °C para recuperar cuerpo y espuma. Contexto del chat reforzado: nuevo bloque de experiencia y restricciones (lote aprobado, amargor real mayor que el calculado por la isomerización nocturna, historial de avena y trigo, tope de compra de 5 kg) y seis reglas nuevas contra los fallos detectados: no contradecirse dentro de la conversación, no negar riesgos clásicos, cuantificar todo cambio de lúpulo antes de proponerlo, no mezclar el veredicto de la app con el rango BJCP, no tocar recetas ya aprobadas y no sugerir insumos que sobrarían."},
   {f:"2026-08-10 03:05 (Ecuador)", t:"Versión 1.8. Corregido el botón Aplicar reparto a cero: solo reponía granos y lúpulos, dejando el nombre, el volumen y los objetivos viejos. Ahora repone la receta completa."},
   {f:"2026-08-10 02:40 (Ecuador)", t:"Versión 1.7. La receta 1 pasa a ser la réplica del Lote 53 ya probado: 17 L, 3600 g de Pilsen y 300 g de Cara 20, Simcoe 7 g @30 y Cascade 13 g al whirlpool. Rebalanceo del resto para que las cuatro maltas sigan en cero: 100 g más de Pilsen en la APA, y 100 g menos de Cara 20 con 100 g más de Pilsen en Märzen, Irish Red y Munich Amber. Ajustado el tueste de cada receta al nuevo grano."},
   {f:"2026-08-10 02:05 (Ecuador)", t:"Versión 1.6. Botón Copiar todo en la cabecera del chat: copia la conversación completa con fecha y hora, además del botón de copiar de cada respuesta."},
@@ -273,7 +275,7 @@ function seed(){
        granos:[{n:"Pilsen",g:3600},{n:"Cara 20",g:300}],
        og:1.051,fgMin:1.011,fgMax:1.013,abv:5.2,ebcMin:8,ebcMax:10,ibuMin:11,ibuMax:15,co2:2.3,
        lupulos:[{n:"Simcoe",g:7,min:30},{n:"Cascade",g:13,min:"wp"}],
-       proc:P({}),notas:"Réplica del Lote 53, ya probado y aprobado. 17 L."},
+       proc:P({macTemp:"68"}),probada:true,notas:"Réplica del Lote 53, ya probado y aprobado por la familia. 17 L. Maceración subida a 68 °C para dar más cuerpo y espuma."},
       {id:"r2",n:2,nombre:"APA cítrica",bjcp:"18B American Pale Ale",litros:16,estado:"pendiente",
        granos:[{n:"Pilsen",g:2850},{n:"Pilsen",g:50,lov:150,ppg:33,nota:"tostada en casa"},{n:"Pale Ale",g:900},{n:"Cara 20",g:300}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:12,ebcMax:16,ibuMin:38,ibuMax:40,co2:2.3,
@@ -1302,6 +1304,36 @@ function guardarPlan(){
 /* ============================================================
    CHAT (Gemini)
    ============================================================ */
+const BJCP = `RANGOS BJCP 2021 DE LOS ESTILOS RELEVANTES PARA ESTE PLAN (usa estos números, no los de tu memoria):
+5B Kölsch: OG 1.044-1.050 | FG 1.007-1.011 | ABV 4,4-5,2 % | IBU 18-30 | 6-10 EBC
+5D German Pils: OG 1.044-1.050 | FG 1.008-1.013 | ABV 4,4-5,2 % | IBU 22-40 | 4-10 EBC
+6A Märzen: OG 1.054-1.060 | FG 1.010-1.014 | ABV 5,8-6,3 % | IBU 18-24 | 16-33 EBC
+13C English Porter: OG 1.040-1.052 | FG 1.008-1.014 | ABV 4,0-5,4 % | IBU 18-35 | 39-59 EBC
+15A Irish Red Ale: OG 1.036-1.046 | FG 1.010-1.014 | ABV 3,8-5,0 % | IBU 18-28 | 18-28 EBC
+18A Blonde Ale: OG 1.038-1.054 | FG 1.008-1.013 | ABV 3,8-5,5 % | IBU 15-28 | 6-12 EBC
+18B American Pale Ale: OG 1.045-1.060 | FG 1.010-1.015 | ABV 4,5-6,2 % | IBU 30-50 | 10-20 EBC
+19A American Amber Ale: OG 1.045-1.060 | FG 1.010-1.015 | ABV 4,5-6,2 % | IBU 25-40 | 20-33 EBC
+20A American Porter: OG 1.050-1.070 | FG 1.012-1.018 | ABV 4,8-6,5 % | IBU 25-50 | 43-79 EBC
+20B American Stout: OG 1.050-1.075 | FG 1.010-1.022 | ABV 5,0-7,0 % | IBU 35-75 | 59-79 EBC
+Si te preguntan por un estilo que no está en esta tabla, responde con lo que sepas pero avisa expresamente que ese dato sale de tu memoria y conviene verificarlo en la guía.`;
+
+const DEFECTOS = `PUNTOS DE RIESGO PROPIOS DE ESTE EQUIPO Y CLIMA (Guayaquil, 26-31 °C ambiente):
+- DMS (maíz cocido): el enfriado lento nocturno lo genera; el hervido de 10 min del Día 2 lo elimina. Si aparece, sospecha de un Día 2 demasiado corto o de haber tapado el hervidor durante el hervido.
+- Alcoholes de fusel (solvente, calor): riesgo real si la fermentación se pasa de 24 °C. La levadura genera calor propio los primeros 5-7 días. Es el defecto más probable en su clima.
+- Diacetilo (mantequilla): su descanso de "final de primaria" a 21-22 °C lo previene. Si aparece, alargar ese descanso antes del cold crash.
+- Oxidación (cartón, jerez): riesgo en el trasvase al fermentador y al embotellar. Se agrava con el calor y el tiempo.
+- Infección: el punto crítico es la noche entre el Día 1 y el Día 2, con el mosto pasando por 20-50 °C. El hervidor bien sellado y el hervido del Día 2 lo cubren.
+- Sobrecarbonatación: peligro físico real en botella de vidrio. Verificar FG estable antes de embotellar y no exceder el priming calculado.
+No tienes datos del agua de maceración: no supongas un perfil de agua ni recomiendes sales sin pedirle primero un análisis o los datos de su proveedor.`;
+
+const HISTORIAL = `EXPERIENCIA Y RESTRICCIONES DEL USUARIO (dalo por cierto, viene de sus propios lotes):
+- El Lote 53 "Pilsen Ale" (3.600 g Pilsen + 300 g Cara 20, 17 L, Simcoe 7 g @30', Cascade 13 g al final) salió muy bien y fue aprobado por sus hijos y sus amigos. La receta 1 del plan es su réplica y NO debe modificarse salvo que él lo pida.
+- Su software (BeerSmith 3) daba 10,8 IBU para ese lote y la app calcula 14. Ninguno de los dos cuenta la isomerización que sigue ocurriendo durante las ~10 h que el mosto pasa tapado y caliente entre el Día 1 y el Día 2. El amargor REAL de sus cervezas es mayor que el calculado, probablemente entre un 25 y un 50 % más. Cuando hables de amargor, usa el número de la app pero recuerda esta salvedad.
+- Antes añadía 150 g de copos de avena y 150 g de trigo a todas sus cervezas y obtenía una espuma densa de unos 2 cm, persistente y con buen encaje en el vaso. Dejó de usarlos por seguir la ley de pureza alemana y notó que la espuma bajó. Con la avena el recirculado a veces se ralentizaba y la cerveza salía menos transparente.
+- Está probando subir la maceración de la réplica a 68 °C para recuperar cuerpo y espuma, sin agregar avena por ahora. Es un cambio de una sola variable: no le sugieras cambiar otra cosa a la vez.
+- Ya botó unos 40 kg de maltas caducadas, incluidos 4,5 kg de chocolate. Por eso el plan está cuadrado a cero. Las maltas especiales se venden en sacos de 5 kg como mínimo, así que no le propongas comprar una malta nueva sin advertirle que le sobraría.
+- Cata sus cervezas semana a semana: comprobó que la Pilsen a los 14 días sigue inmadura y recién a la cuarta semana queda redondeada.`;
+
 function contextoTexto(){
   const c=consumoPendiente();
   const saldoM=DB.insumos.maltas.map(x=>`${x.n}: stock ${x.g} g, comprometido ${c.m[x.n]||0} g, saldo ${x.g-(c.m[x.n]||0)} g (ficha: ${x.ppg} PPG, ${x.lov} °L)`).join("; ");
@@ -1311,7 +1343,7 @@ function contextoTexto(){
   const par = `PARÁMETROS DE CÁLCULO DE LA APP: eficiencia ${DB.cfg.eficiencia} %, volumen de hervido ${DB.cfg.vHervido} L, whirlpool al ${Math.round(DB.cfg.factorWP*100)} % de la utilización a hervor, hervido partido ${DB.cfg.boil1}+${DB.cfg.boil2} min. OG por extracto y eficiencia, IBU por Tinseth, color por Morey, atenuación 75–82 %.`;
   const rec = "RECETAS DEL PLAN:\n"+DB.recetas.map(r=>{
     const K=calc(r);
-    return `#${r.n} ${r.nombre} [${r.estado}] — ${r.litros} L. Ref. BJCP anotada por el usuario: ${r.bjcp}. `
+    return `#${r.n} ${r.nombre} [${r.estado}${r.probada?", PROBADA Y APROBADA - no proponer cambios":""}] — ${r.litros} L. Ref. BJCP anotada por el usuario: ${r.bjcp}. `
     +`Granos: ${r.granos.map(g=>`${g.n} ${g.g} g`).join(", ")} (total ${K.granoTotal} g). `
     +`Lúpulos: ${r.lupulos.map(h=>`${h.n} ${h.g} g @${h.min==="wp"?"whirlpool":h.min+" min"}`).join(", ")}. `
     +`Objetivos anotados: OG ${r.og}, FG ${r.fgMin}–${r.fgMax}, ABV ~${r.abv}%, ${r.ebcMin}–${r.ebcMax} EBC, ${r.ibuMin}–${r.ibuMax} IBU, ${r.co2} vol CO2. `
@@ -1322,7 +1354,7 @@ function contextoTexto(){
   const lot = DB.lotes.length? "LOTES EN CURSO:\n"+DB.lotes.map(l=>{
       const s=estadoLote(l);
       return `Lote ${l.numero} ${l.nombre}, inicio ${l.fecha}, día ${s.dia} de ${s.total}, etapa actual "${l.etapas[s.idx].n}" (día ${s.dentro} de ${l.etapas[s.idx].d}, ${l.etapas[s.idx].t}), OG ${l.og||"?"}, FG ${l.fg||"sin medir"}, EBC ${l.ebc}.`
-      +(l.notas.length?` Últimas notas: ${l.notas.slice(0,3).map(n=>n.f+" "+n.t).join(" | ")}`:"");
+      +(l.notas.length?` Bitácora: ${l.notas.slice(0,8).map(n=>n.f+" "+n.t).join(" | ")}`:"");
     }).join("\n") : "LOTES EN CURSO: ninguno.";
   const coc = DB.coccion? `COCCIÓN ABIERTA: receta "${(DB.recetas.find(r=>r.id===DB.coccion.recetaId)||{}).nombre}", Día ${DB.coccion.dia}.` : "COCCIÓN ABIERTA: ninguna.";
   const P=DB.plan, prog=programar();
@@ -1330,7 +1362,7 @@ function contextoTexto(){
     +`${P.neveras} nevera(s) y ${P.fermentadores} fermentador(es); cada lote ocupa nevera ${P.fer} d fermentando, ${P.carb} d carbonatando a 21-22 °C y ${P.mad} d madurando a 11-12 °C, sin salir nunca al ambiente; luego ${P.servir} d a 5 °C en la nevera grande antes de consumir. `
     +`Las maltas se compraron en ${P.compraMaltas} y se estiman ${P.vidaMaltas} meses de vida útil en clima húmedo.\n`
     +prog.map((p,i)=>`${i+1}. ${p.r.nombre}: cocción Día 1 el ${fLargo(diaAFecha(p.s-1))}, madura hasta ${fLargo(diaAFecha(p.fin))}, consumible ${fLargo(diaAFecha(p.fin+P.servir))}; la malta tendrá ${edadMalta(p.s)} meses.`).join("\n");
-  return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${par}\n\n${inv}\n\n${rec}\n\n${cal}\n\n${lot}\n${coc}`;
+  return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${HISTORIAL}\n\n${BJCP}\n\n${DEFECTOS}\n\n${par}\n\n${inv}\n\n${rec}\n\n${cal}\n\n${lot}\n${coc}`;
 }
 function sistema(){
   return `Eres el asistente cervecero de Edgar, cervecero casero en Guayaquil, Ecuador. Respondes en español, tuteando, directo y sin relleno.
@@ -1345,6 +1377,13 @@ REGLAS
 7. Si algo tiene riesgo sanitario o de seguridad (infección, sobrecarbonatación, botellas), dilo primero y sin rodeos.
 8. Respuestas cortas por defecto (móvil). Amplía solo si te lo piden.
 9. Entrega la respuesta final directamente. Nunca escribas tu plan, tu esquema, ni frases sobre lo que vas a presentar ("voy a mostrar…", "estructura de la respuesta"). Si la pregunta pide una receta, arranca con la receta.
+10. No te contradigas con lo que dijiste antes en esta misma conversación. Antes de responder, revisa si algo que afirmaste choca con lo que vas a decir. Si cambias de opinión, dilo abiertamente ("antes te dije X, me corrijo") en vez de sostener las dos cosas.
+11. Cuando digas que algo NO tiene un riesgo, sé especialmente cuidadoso: es donde más daño hace equivocarse. Los riesgos clásicos existen aunque el equipo del usuario los mitigue — nómbralos y explica por qué su equipo los reduce, nunca los niegues. Ejemplo: la avena, el trigo y el centeno sin maltear SÍ tienden a atascar el lauter por betaglucanos; la funda de maceración ayuda, pero no lo elimina.
+12. Antes de recomendar cualquier cambio de lúpulo, calcula su efecto con Tinseth usando los parámetros de la app y di el número. Recuerda que un hervido de 10 min tiene una utilización muy baja: mover amargor al Día 2 exigiría más del doble de lúpulo. No propongas cambios cuyo costo no hayas cuantificado.
+13. La comparación "coincide / no coincide" que muestra la app enfrenta lo calculado contra el objetivo anotado del usuario, NO contra el rango del estilo BJCP. Son dos comparaciones distintas: no las mezcles ni inventes un veredicto de la app. Si además quieres comentar el encaje con el estilo, hazlo aparte y dilo así.
+14. No propongas cambios a una receta marcada como probada y aprobada salvo que el usuario lo pida. Si el usuario menciona un defecto, propón el cambio en otra receta del plan o avísale que estaría arriesgando un resultado que ya funciona.
+15. Marca de dónde sale cada dato cuando importe: los del contexto son firmes; lo que venga de tu conocimiento general dilo así ("esto lo digo de memoria, verifícalo"). Ante una duda que no puedas resolver con el contexto, prefiere decir que no lo sabes o pedir el dato que falta antes que rellenar con algo plausible. El usuario tiene solo 20 consultas al día: una respuesta corta y honesta vale más que una larga e inventada.
+16. El usuario compra solo lo que va a usar: ya botó unos 40 kg de malta caducada. No le propongas insumos que no tenga sin advertirle la restricción de compra (las maltas especiales se venden por 5 kg mínimo, y le sobrarían). Lo que se consigue en supermercado, como los copos de avena, sí es viable en cualquier cantidad.
 
 CONTEXTO ACTUAL
 ${contextoTexto()}`;

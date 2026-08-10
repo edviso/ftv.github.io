@@ -153,16 +153,24 @@ td:first-child{text-align:left;font-family:var(--sans)}
 .stage.now .stdot{background:var(--amber);box-shadow:0 0 0 3px rgba(232,163,61,.2)}
 
 /* chat */
-#chatwrap{display:flex;flex-direction:column;height:100%}
-.msg{margin-bottom:12px;font-size:14px;line-height:1.55}
-.msg.u{background:var(--surface2);border:1px solid var(--line);border-radius:12px 12px 4px 12px;padding:10px 12px;margin-left:28px}
+main.chatmode{overflow:hidden;padding:14px 14px 0}
+#chatwrap{display:flex;flex-direction:column;height:100%;min-height:0}
+#chathead{flex-shrink:0}
+#msgs{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 0 8px;-webkit-overflow-scrolling:touch}
+.msg{margin-bottom:14px;font-size:14px;line-height:1.55}
+.msg.u{background:var(--surface2);border:1px solid var(--line);border-radius:12px 12px 4px 12px;padding:10px 12px;margin-left:24px}
 .msg.a{border-left:2px solid var(--amber);padding:2px 0 2px 11px}
 .msg.a b{color:var(--amber)}
 .msg pre{white-space:pre-wrap;font-family:inherit}
-.copy{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--dim);margin-top:6px;text-transform:uppercase}
-#chatform{display:flex;gap:8px;align-items:flex-end;padding-top:10px;border-top:1px solid var(--line);background:var(--bg);position:sticky;bottom:0}
-#chatin{flex:1;max-height:120px}
-#send{background:var(--amber);color:#1A1206;border-radius:10px;padding:11px 14px;font-weight:800}
+.copy{
+  display:inline-flex;align-items:center;gap:7px;margin-top:10px;min-height:40px;
+  padding:9px 14px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);
+  font-size:12px;font-weight:700;color:var(--muted)
+}
+#chatform{display:flex;gap:8px;align-items:flex-end;flex-shrink:0;
+  padding:9px 0 calc(9px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg)}
+#chatin{flex:1;max-height:110px}
+#send{background:var(--amber);color:#1A1206;border-radius:10px;padding:0 16px;height:44px;font-weight:800;font-size:18px}
 .qbtn{border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:11.5px;color:var(--muted);margin:0 6px 6px 0;white-space:nowrap}
 .qrow{display:flex;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .qrow::-webkit-scrollbar{display:none}
@@ -209,6 +217,7 @@ td:first-child{text-align:left;font-family:var(--sans)}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-09 22:41 (Ecuador)", t:"Versión 1.1. Chat rehecho: los mensajes tienen su propio scroll y el campo de escritura ya no tapa el último mensaje. Botón Copiar más grande. Se descartan los bloques de razonamiento del modelo (antes se colaba su borrador en vez de la respuesta), se limita el pensamiento y se avisa si la respuesta se corta por falta de espacio. Botón Limpiar conversación."},
   {f:"2026-08-09 18:44 (Ecuador)", t:"Versión 1.0. App nueva: insumos con saldo proyectado, 8 recetas cargadas, editor de recetas, guía de cocción en 2 días con temporizadores y avisos de lúpulo, seguimiento de fermentación por lote y chat con Gemini (BJCP + equipo propio en contexto)."}
 ];
 
@@ -316,7 +325,8 @@ function save(){
 }
 let DB = load() || seed();
 if(!DB.cfg) DB.cfg={apiKey:"",model:"gemini-3.6-flash",boil1:55,boil2:10,tempGolpe:"72–74"};
-if(!DB.log) DB.log=CAMBIOS.slice();
+if(!DB.log) DB.log=[];
+CAMBIOS.slice().reverse().forEach(c=>{ if(!DB.log.some(x=>x.f===c.f)) DB.log.unshift(c); });
 
 /* ---------- Utilidades ---------- */
 const $=s=>document.querySelector(s);
@@ -408,6 +418,7 @@ function go(t,c){
 }
 function render(){
   const v=$("#view");
+  v.classList.toggle("chatmode", tab==="chat");
   if(tab==="insumos") v.innerHTML=vInsumos();
   else if(tab==="recetas") v.innerHTML = ctx.id? vReceta(ctx.id) : vRecetas();
   else if(tab==="coccion") v.innerHTML=vCoccion();
@@ -957,33 +968,41 @@ function sistema(){
 REGLAS
 1. La referencia de estilos es la Guía de Estilos BJCP (edición 2021 salvo que se indique otra). Cuando clasifiques una receta, da el código y nombre del estilo y los rangos del estilo (OG, FG, ABV, IBU, SRM/EBC) y compáralos punto por punto con los números de la receta, señalando lo que queda fuera de rango.
 2. Razonas siempre sobre el equipo real descrito abajo, no sobre un equipo genérico. Si una sugerencia no es viable con 3 ollas (20/20/17 L), 2 bombas, control por relé y hervido partido en dos días, dilo.
-3. Distingue explícitamente entre DATO (lo que está en el contexto), CÁLCULO (lo que derivas con una fórmula, indicando cuál), y ESTIMACIÓN o HIPÓTESIS (lo que supones). No inventes cifras de alfa-ácidos, atenuación ni rendimiento: si no las tienes, dilo y pide el dato o usa un rango típico marcándolo como estimación.
+3. No inventes cifras de alfa-ácidos, atenuación ni rendimiento. Si no las tienes, usa un rango típico y escribe entre paréntesis que es un supuesto, o pide el dato. Cuando algo sea un cálculo tuyo, muestra la fórmula y los números; cuando sea una suposición, dilo en la misma frase, sin etiquetas ni encabezados aparte.
 4. Para cambios de lúpulo calcula el efecto sobre IBU con la fórmula de Tinseth, escribiendo los supuestos (alfa-ácidos, gravedad del hervido, volumen). Recuerda que el hervido está partido: ${DB.cfg.boil1} min el Día 1 y ${DB.cfg.boil2} min el Día 2, y que el whirlpool a 80 °C con reposo largo también aporta amargor (isomerización parcial).
 5. Sé concreto con cantidades, tiempos y temperaturas, en gramos, litros y grados Celsius. Cuando propongas una receta, respeta el stock disponible y avisa si no alcanza.
 6. Si algo tiene riesgo sanitario o de seguridad (infección, sobrecarbonatación, botellas), dilo primero y sin rodeos.
 7. Respuestas cortas por defecto (móvil). Amplía solo si te lo piden.
+8. Entrega la respuesta final directamente. Nunca escribas tu plan, tu esquema, ni frases sobre lo que vas a presentar ("voy a mostrar…", "estructura de la respuesta"). Si la pregunta pide una receta, arranca con la receta.
 
 CONTEXTO ACTUAL
 ${contextoTexto()}`;
 }
 function vChat(){
-  const ok=!!DB.cfg.apiKey;
+  const ok=!!DB.cfg.apiKey, vacio=!DB.chat.length;
   return `<div id="chatwrap">
-    <p class="eyebrow">Asistente</p>
-    <h1>Chat cervecero</h1>
-    <p class="sub">Conoce tu equipo, tus insumos, tus 8 recetas y el lote en curso. Responde según la guía BJCP.</p>
-    ${ok?"":`<div class="card" style="border-color:#4A3820"><div class="mini">Falta tu API key de Gemini.</div>
-      <button class="btn sm" onclick="go('ajustes')">Ir a Ajustes</button></div>`}
-    <div class="qrow">
-      ${["¿A qué estilo BJCP corresponde la receta 3?","Si muevo los 8 g de Simcoe del minuto 20 al 60, ¿cuánto sube el IBU?","Con lo que me sobra de stock, propóneme una receta","¿Es riesgoso partir el hervido en dos días?","¿Qué reviso hoy en el lote en curso?"]
-        .map(q=>`<button class="qbtn" onclick="usarSugerencia(${JSON.stringify(q).replace(/"/g,"&quot;")})">${esc(q)}</button>`).join("")}
+    <div id="chathead">
+      ${vacio?`<p class="eyebrow">Asistente</p><h1>Chat cervecero</h1>
+        <p class="sub">Conoce tu equipo, tus insumos, tus 8 recetas y el lote en curso. Responde según la guía BJCP.</p>`
+        :`<div class="spread"><p class="eyebrow" style="margin:0">Chat cervecero</p>
+          <button class="chip" onclick="limpiarChat()">Limpiar</button></div>`}
+      ${ok?"":`<div class="card" style="border-color:#4A3820;margin-top:8px"><div class="mini">Falta tu API key de Gemini.</div>
+        <button class="btn sm" onclick="go('ajustes')">Ir a Ajustes</button></div>`}
+      ${vacio?`<div class="qrow">
+        ${["¿A qué estilo BJCP corresponde la receta 3?","Si muevo los 8 g de Simcoe del minuto 20 al 60, ¿cuánto sube el IBU?","Con lo que me sobra de stock, propóneme una receta","¿Es riesgoso partir el hervido en dos días?","¿Qué reviso hoy en el lote en curso?"]
+          .map(q=>`<button class="qbtn" onclick="usarSugerencia(${JSON.stringify(q).replace(/"/g,"&quot;")})">${esc(q)}</button>`).join("")}
+        </div>`:""}
     </div>
-    <div id="msgs" style="margin-top:12px"></div>
+    <div id="msgs"></div>
     <div id="chatform">
       <textarea id="chatin" rows="1" placeholder="Pregunta lo que sea..." oninput="autosize(this)"></textarea>
       <button id="send" onclick="enviar()">↑</button>
     </div>
   </div>`;
+}
+function limpiarChat(){
+  if(!confirm("¿Borrar la conversación?")) return;
+  DB.chat=[]; save(); render();
 }
 function autosize(el){el.style.height="auto";el.style.height=Math.min(120,el.scrollHeight)+"px";}
 function usarSugerencia(q){ $("#chatin").value=q; autosize($("#chatin")); $("#chatin").focus(); }
@@ -991,13 +1010,17 @@ function pintarChat(){
   const m=$("#msgs"); if(!m) return;
   m.innerHTML = DB.chat.length? DB.chat.map((x,i)=>x.r==="u"
     ? `<div class="msg u">${esc(x.t)}</div>`
-    : `<div class="msg a"><pre>${fmt(x.t)}</pre><button class="copy" onclick="copiarPar(${i})">⧉ Copiar pregunta y respuesta</button></div>`).join("")
+    : `<div class="msg a"><pre>${fmt(x.t)}</pre><button class="copy" onclick="copiarPar(${i})">⧉ Copiar</button></div>`).join("")
     : `<div class="empty">Pregúntale lo que quieras sobre tu proceso, tus recetas o el estilo BJCP.</div>`;
-  m.scrollIntoView({block:"end"});
-  $("#view").scrollTop=$("#view").scrollHeight;
+  m.scrollTop=m.scrollHeight;
 }
+function abajo(){ const m=$("#msgs"); if(m) m.scrollTop=m.scrollHeight; }
 function fmt(t){
-  return esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/^\s*[\*\-]\s+/gm,"• ");
+  return esc(t)
+    .replace(/^\s{0,6}#{1,6}\s*(.+)$/gm,"<b>$1</b>")
+    .replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
+    .replace(/^\s{0,8}[\*\-\u2022]\s+/gm,"• ")
+    .replace(/\*/g,"");
 }
 function copiarPar(i){
   let q=""; for(let k=i-1;k>=0;k--){ if(DB.chat[k].r==="u"){q=DB.chat[k].t;break;} }
@@ -1016,6 +1039,18 @@ function pedirRecetaIA(){
   go("chat"); setTimeout(()=>usarSugerencia("Con el stock que me queda, propóneme una receta de 16 L. Quiero que sea "),50);
 }
 let cargando=false;
+/* Los modelos con razonamiento devuelven partes marcadas thought:true.
+   Se descartan: son el borrador interno, no la respuesta. */
+async function llamarGemini(gen){
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(DB.cfg.model)}:generateContent?key=${encodeURIComponent(DB.cfg.apiKey)}`;
+  const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    systemInstruction:{parts:[{text:sistema()}]},
+    contents:DB.chat.map(x=>({role:x.r==="u"?"user":"model",parts:[{text:x.t}]})),
+    generationConfig:gen
+  })});
+  const data=await res.json().catch(()=>({}));
+  return {ok:res.ok, status:res.status, data:data};
+}
 async function enviar(){
   const el=$("#chatin"), txt=el.value.trim();
   if(!txt||cargando) return;
@@ -1023,23 +1058,36 @@ async function enviar(){
   el.value=""; autosize(el);
   DB.chat.push({r:"u",t:txt}); save(); pintarChat();
   cargando=true;
-  const m=$("#msgs"); m.insertAdjacentHTML("beforeend",`<div class="msg a" id="load"><span class="dim">Pensando…</span></div>`);
-  $("#view").scrollTop=$("#view").scrollHeight;
+  $("#msgs").insertAdjacentHTML("beforeend",`<div class="msg a"><span class="dim">Pensando…</span></div>`);
+  abajo();
+
+  const base={temperature:0.6,maxOutputTokens:6144};
+  const intentos=[
+    Object.assign({},base,{thinkingConfig:{thinkingLevel:"low",includeThoughts:false}}),
+    Object.assign({},base,{thinkingConfig:{thinkingBudget:512,includeThoughts:false}}),
+    base
+  ];
+  let r=null;
   try{
-    const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(DB.cfg.model)}:generateContent?key=${encodeURIComponent(DB.cfg.apiKey)}`;
-    const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-      systemInstruction:{parts:[{text:sistema()}]},
-      contents:DB.chat.map(x=>({role:x.r==="u"?"user":"model",parts:[{text:x.t}]})),
-      generationConfig:{temperature:0.6,maxOutputTokens:2048}
-    })});
-    const data=await res.json();
-    if(!res.ok){
-      const msg=(data && data.error && data.error.message)||("Error "+res.status);
-      throw new Error(msg);
+    for(let i=0;i<intentos.length;i++){
+      r=await llamarGemini(intentos[i]);
+      if(r.ok) break;
+      const msg=(r.data.error&&r.data.error.message)||"";
+      const campoDesconocido = r.status===400 && /thinking|unknown name|Invalid JSON payload/i.test(msg);
+      if(!campoDesconocido) break;
     }
-    const cand=data.candidates && data.candidates[0];
-    const out=(cand && cand.content && cand.content.parts||[]).map(p=>p.text||"").join("").trim();
-    DB.chat.push({r:"a",t: out || "La respuesta llegó vacía. Reformula la pregunta o revisa el nombre del modelo en Ajustes."});
+    if(!r.ok) throw new Error((r.data.error&&r.data.error.message)||("Error "+r.status));
+
+    const cand=(r.data.candidates||[])[0]||{};
+    const partes=((cand.content||{}).parts)||[];
+    const out=partes.filter(p=>!p.thought && typeof p.text==="string").map(p=>p.text).join("").trim();
+    if(out) DB.chat.push({r:"a",t:out});
+    else if(cand.finishReason==="MAX_TOKENS")
+      DB.chat.push({r:"a",t:"El modelo se quedó sin espacio antes de escribir la respuesta (gastó el presupuesto pensando). Vuelve a preguntar de forma más concreta, o baja el tamaño de la pregunta."});
+    else if(cand.finishReason && cand.finishReason!=="STOP")
+      DB.chat.push({r:"a",t:"La respuesta se detuvo ("+cand.finishReason+"). Reformula la pregunta."});
+    else
+      DB.chat.push({r:"a",t:"La respuesta llegó vacía. Revisa el nombre del modelo en Ajustes."});
   }catch(e){
     DB.chat.push({r:"a",t:"No se pudo consultar a Gemini: "+e.message+"\n\nRevisa la API key, el nombre del modelo en Ajustes y tu conexión."});
   }

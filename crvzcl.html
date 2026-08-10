@@ -58,12 +58,24 @@ main{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:14px 14px 22px;-
 
 /* ---------- Nav ---------- */
 nav{
-  display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);
   background:var(--surface);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);
 }
-nav button{padding:9px 2px 8px;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.04em}
-nav button b{display:block;font-size:17px;font-weight:400;line-height:1.2;margin-bottom:1px}
+nav button{padding:9px 1px 8px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:.02em}
+nav button b{display:block;font-size:16px;font-weight:400;line-height:1.2;margin-bottom:1px}
 nav button.on{color:var(--amber)}
+
+/* calendario */
+.fase{display:flex;gap:8px;align-items:center;padding:5px 0;font-size:12px}
+.fbar{width:6px;height:26px;border-radius:3px;flex-shrink:0}
+.fase .fn{flex:1;color:var(--muted)}
+.fase .fd{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap}
+.hoy{border-color:var(--amber)}
+.hoy .stitle{color:var(--amber)}
+.badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700}
+.b-ok{background:#1E2E14;color:var(--hop)}
+.b-warn{background:#3A2318;color:var(--alert)}
+.b-mid{background:#33290F;color:var(--amber)}
 
 /* ---------- Blocks ---------- */
 .eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
@@ -205,6 +217,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
 <nav id="nav">
   <button data-t="insumos" onclick="go('insumos')"><b>▤</b>Insumos</button>
   <button data-t="recetas" onclick="go('recetas')"><b>◈</b>Recetas</button>
+  <button data-t="plan"    onclick="go('plan')"><b>▦</b>Plan</button>
   <button data-t="coccion" onclick="go('coccion')"><b>◐</b>Cocción</button>
   <button data-t="lotes"   onclick="go('lotes')"><b>◉</b>Lotes</button>
   <button data-t="chat"    onclick="go('chat')"><b>✦</b>Chat</button>
@@ -217,6 +230,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-10 01:30 (Ecuador)", t:"Versión 1.5. Nueva pestaña Plan: calendario de los 8 lotes repartiendo las neveras en el tiempo, con la cerveza siempre bajo control de temperatura (fermentación, carbonatación a 21-22 y maduración a 11-12, seguidas). Configurable el número de neveras y fermentadores, las duraciones y la fecha de inicio. Muestra qué toca hoy, la próxima cocción, la edad que tendrá la malta en cada lote y hasta cuándo alcanza la vida útil de cada insumo. El chat recibe el calendario ya calculado."},
   {f:"2026-08-10 00:40 (Ecuador)", t:"Versión 1.4. Alfa-ácidos reales cargados: Cascade 8,9 % y Simcoe 13,7 %. Con esos valores las recetas quedaban 50-80 % por encima del amargor buscado, así que se recalcularon las adiciones de Simcoe: las ocho vuelven a caer dentro de su rango de IBU. El Cascade del whirlpool no se toca. Sobran 304 g de Simcoe."},
   {f:"2026-08-10 00:05 (Ecuador)", t:"Versión 1.3. Reparto balanceado: las 8 recetas dejan las cuatro maltas exactamente en cero (Pilsen 19.500, Munich 3.500, Pale Ale 4.400, Cara 20 4.750). Siete lotes de 4.000 g y el #8 de 4.150 g. Cada receta que lo necesita lleva su porción de Pilsen tostada en línea aparte, con su color propio, descontándose igual del stock de Pilsen. Botón en Ajustes para aplicar el reparto sobre datos ya guardados."},
   {f:"2026-08-09 23:20 (Ecuador)", t:"Versión 1.2. Calculadora propia en JavaScript: OG por extracto y eficiencia, IBU por Tinseth (contando los dos tramos del hervido y el whirlpool), color por Morey y FG/ABV por atenuación. Cada receta muestra lo calculado junto al objetivo y marca las diferencias. Fichas editables de maltas (PPG y °L) y lúpulos (% alfa) en Insumos; eficiencia, volumen de hervido y factor de whirlpool en Ajustes. El chat ahora recibe los números y los saldos ya calculados, con instrucción de no rehacer la aritmética y de cuadrar toda tabla antes de responder."},
@@ -294,6 +308,11 @@ function seed(){
        proc:P({macTemp:"67"}),notas:"Carga de grano mayor: 4.150 g."}
     ],
     lotes:[],
+    plan:{inicio:"2026-08-11", neveras:2, fermentadores:1, fer:18, carb:14, mad:28, servir:7,
+          orden:["r1","r2","r8","r4","r3","r5","r6","r7"],
+          compraMaltas:"2026-01", vidaMaltas:12,
+          compraLupulos:"2026-01", vidaLupulos:24,
+          compraLevadura:"2026-01", vidaLevadura:24},
     coccion:null,          // {recetaId, dia, hechos:{}, inicio}
     chat:[],
     log:CAMBIOS.slice()
@@ -344,6 +363,11 @@ if(!DB.cfg.aaReal){
 if(DB.cfg.eficiencia==null) DB.cfg.eficiencia=72.5;
 if(DB.cfg.vHervido==null) DB.cfg.vHervido=18;
 if(DB.cfg.factorWP==null) DB.cfg.factorWP=0.25;
+if(!DB.plan){
+  DB.plan=seed().plan;
+  const ids=DB.recetas.map(r=>r.id);
+  DB.plan.orden=DB.plan.orden.filter(id=>ids.includes(id)).concat(ids.filter(id=>!DB.plan.orden.includes(id)));
+}
 if(!DB.log) DB.log=[];
 CAMBIOS.slice().reverse().forEach(c=>{ if(!DB.log.some(x=>x.f===c.f)) DB.log.unshift(c); });
 
@@ -516,6 +540,7 @@ function render(){
   if(tab==="insumos") v.innerHTML=vInsumos();
   else if(tab==="recetas") v.innerHTML = ctx.id? vReceta(ctx.id) : vRecetas();
   else if(tab==="coccion") v.innerHTML=vCoccion();
+  else if(tab==="plan") v.innerHTML=vPlan();
   else if(tab==="lotes") v.innerHTML = ctx.id? vLote(ctx.id) : vLotes();
   else if(tab==="chat"){ v.innerHTML=vChat(); pintarChat(); }
   else if(tab==="ajustes") v.innerHTML=vAjustes();
@@ -1108,6 +1133,170 @@ function borrarLote(id){
 }
 
 /* ============================================================
+   PLAN — reparto de las neveras en el tiempo
+   Cada lote necesita fermentación + carbonación + maduración
+   seguidas sin huecos: la cerveza nunca sale al ambiente.
+   ============================================================ */
+function diaAFecha(n){
+  const d=new Date(DB.plan.inicio+"T00:00:00");
+  d.setDate(d.getDate()+1+n);   // día 0 = entra al fermentador, un día después de la cocción
+  return d;
+}
+const fFecha=d=>d.toLocaleDateString("es-EC",{day:"2-digit",month:"short"});
+const fLargo=d=>d.toLocaleDateString("es-EC",{day:"2-digit",month:"short",year:"2-digit"});
+function programar(){
+  const P=DB.plan;
+  const recetas=P.orden.map(id=>DB.recetas.find(r=>r.id===id)).filter(Boolean);
+  const nev=Array.from({length:Math.max(1,P.neveras)},()=>[]);
+  const fer=new Array(Math.max(1,P.fermentadores)).fill(0);
+  const libre=(r,a,b)=>r.every(([x,y])=>b<=x||a>=y);
+  const out=[]; let prev=-1;
+  recetas.forEach(r=>{
+    const mad=(r.madDias!=null?r.madDias:P.mad);
+    const bloques=[P.fer,P.carb,mad];
+    let s=prev+1;
+    for(let guard=0; guard<4000; guard++, s++){
+      if(!fer.some(f=>f<=s)) continue;
+      const copia=nev.map(x=>x.slice()); let t=s, cabe=true;
+      for(const d of bloques){
+        const i=copia.findIndex(x=>libre(x,t,t+d));
+        if(i<0){cabe=false;break;}
+        copia[i].push([t,t+d]); t+=d;
+      }
+      if(!cabe) continue;
+      let u=s; const tramos=[];
+      bloques.forEach(d=>{ const i=nev.findIndex(x=>libre(x,u,u+d)); nev[i].push([u,u+d]); tramos.push({ini:u,fin:u+d,nevera:i+1}); u+=d; });
+      fer[fer.findIndex(f=>f<=s)]=s+P.fer;
+      out.push({r,s,mad,tramos,fin:u});
+      prev=s; break;
+    }
+  });
+  return out;
+}
+function edadMalta(diaIdx){
+  const c=new Date(DB.plan.compraMaltas+"-15T00:00:00");
+  return Math.round((diaAFecha(diaIdx)-c)/86400000/30.44);
+}
+function vPlan(){
+  const P=DB.plan, prog=programar();
+  if(!prog.length) return `<p class="eyebrow">Calendario</p><h1>Plan</h1><div class="empty">No hay recetas en el plan.</div>`;
+  const hoy=hoy0(), d0=diaAFecha(0);
+  const diaHoy=Math.floor((hoy-d0)/86400000);
+  const fin=Math.max(...prog.map(p=>p.fin));
+  const ultima=prog[prog.length-1];
+  const vencidos=prog.filter(p=>edadMalta(p.s)>P.vidaMaltas).length;
+
+  const ahora=[];
+  prog.forEach(p=>{
+    const nom=["Fermentación","Carbonatación 21–22 °C","Maduración 11–12 °C"];
+    p.tramos.forEach((t,i)=>{ if(diaHoy>=t.ini && diaHoy<t.fin)
+      ahora.push(`${p.r.nombre}: ${nom[i]}, día ${diaHoy-t.ini+1} de ${t.fin-t.ini} (nevera ${t.nevera})`); });
+    if(diaHoy===p.s-1) ahora.push(`${p.r.nombre}: hoy es el Día 1 de cocción`);
+  });
+  const prox=prog.find(p=>p.s-1>diaHoy);
+
+  return `
+  <p class="eyebrow">Calendario</p>
+  <h1>Plan de ${prog.length} lotes</h1>
+  <p class="sub">${P.neveras} nevera${P.neveras>1?"s":""} · ${P.fermentadores} fermentador${P.fermentadores>1?"es":""} · ciclo ${Math.round((ultima.s-prog[0].s)/(prog.length-1))} días</p>
+
+  <div class="card ${ahora.length?"hoy":""}">
+    <p class="eyebrow" style="margin-bottom:6px">Hoy</p>
+    ${ahora.length? `<div class="mini">${ahora.map(esc).join("<br>")}</div>`
+      : `<div class="mini dim">${diaHoy<0?"El plan arranca el "+fLargo(diaAFecha(-1)):"Sin actividad programada."}</div>`}
+    ${prox?`<div class="tiny dim" style="margin-top:8px">Próxima cocción: <b>${esc(prox.r.nombre)}</b> el ${fLargo(diaAFecha(prox.s-1))} (en ${prox.s-1-diaHoy} días)</div>`:""}
+  </div>
+
+  <div class="card">
+    <div class="spread"><span class="tiny dim">ÚLTIMA COCCIÓN</span><span class="mini num">${fLargo(diaAFecha(ultima.s-1))}</span></div>
+    <div class="spread" style="margin-top:4px"><span class="tiny dim">TODO CONSUMIBLE</span><span class="mini num">${fLargo(diaAFecha(fin+P.servir))}</span></div>
+    <div class="spread" style="margin-top:4px"><span class="tiny dim">MALTA MÁS VIEJA</span>
+      <span class="badge ${edadMalta(ultima.s)>P.vidaMaltas?"b-warn":(edadMalta(ultima.s)>P.vidaMaltas-3?"b-mid":"b-ok")}">${edadMalta(ultima.s)} meses</span></div>
+    ${vencidos?`<div class="tiny warn" style="margin-top:8px">${vencidos} lote${vencidos>1?"s":""} se cocinaría${vencidos>1?"n":""} con malta de más de ${P.vidaMaltas} meses.</div>`:
+      `<div class="tiny ok" style="margin-top:8px">Todos los lotes caen dentro de la vida útil de la malta.</div>`}
+    <button class="btn sec sm" onclick="editarPlan()">Ajustar el plan</button>
+  </div>
+
+  ${prog.map((p,i)=>{
+    const col=["#8FB25A","#E8A33D","#6FA8C7"], nom=["Fermenta","Carbonata 21–22 °C","Madura 11–12 °C"];
+    const activo=p.tramos.some(t=>diaHoy>=t.ini&&diaHoy<t.fin)||diaHoy===p.s-1;
+    const ed=edadMalta(p.s);
+    return `<div class="card ${activo?"hoy":""}">
+      <div class="spread">
+        <div class="stitle">${i+1}. ${esc(p.r.nombre)}</div>
+        <span class="badge ${ed>P.vidaMaltas?"b-warn":(ed>P.vidaMaltas-3?"b-mid":"b-ok")}">malta ${ed} m</span>
+      </div>
+      <div class="tiny dim" style="margin:2px 0 6px">Cocción Día 1: <b>${fLargo(diaAFecha(p.s-1))}</b> · Día 2 el ${fFecha(diaAFecha(p.s))}</div>
+      ${p.tramos.map((t,k)=>`<div class="fase">
+        <div class="fbar" style="background:${col[k]}"></div>
+        <div class="fn">${nom[k]} <span class="dim">· nevera ${t.nevera}</span></div>
+        <div class="fd">${fFecha(diaAFecha(t.ini))} → ${fFecha(diaAFecha(t.fin))}</div>
+      </div>`).join("")}
+      <div class="tiny ok" style="margin-top:4px">Consumible tras ${P.servir} d a 5 °C: <b>${fLargo(diaAFecha(p.fin+P.servir))}</b></div>
+      <div class="btns2" style="margin-top:8px">
+        <button class="btn sec sm" style="margin:0" onclick="go('recetas',{id:'${p.r.id}'})">Ver receta</button>
+        <button class="btn sec sm" style="margin:0" onclick="moverEnPlan('${p.r.id}',-1)">Subir en el orden</button>
+      </div>
+    </div>`;
+  }).join("")}
+
+  <div class="card">
+    <p class="eyebrow">Vida útil de los insumos</p>
+    ${[["Maltas",P.compraMaltas,P.vidaMaltas],["Lúpulos",P.compraLupulos,P.vidaLupulos],["Levadura",P.compraLevadura,P.vidaLevadura]]
+      .map(([n,c,v])=>{
+        const lim=new Date(c+"-15T00:00:00"); lim.setMonth(lim.getMonth()+v);
+        const ok=diaAFecha(ultima.s)<=lim;
+        return `<div class="spread" style="padding:5px 0;border-top:1px solid var(--line)">
+          <span class="mini">${n} <span class="dim">· ${c}</span></span>
+          <span class="badge ${ok?"b-ok":"b-warn"}">hasta ${fLargo(lim)}</span></div>`;
+      }).join("")}
+    <div class="tiny dim" style="margin-top:6px">La malta es la que manda: en clima húmedo pierde antes que el lúpulo refrigerado.</div>
+  </div>`;
+}
+function moverEnPlan(id,d){
+  const o=DB.plan.orden, i=o.indexOf(id);
+  if(i<0) return;
+  const j=Math.max(0,Math.min(o.length-1,i+d));
+  o.splice(j,0,o.splice(i,1)[0]);
+  save(); render();
+}
+function editarPlan(){
+  const P=DB.plan;
+  sheet("Ajustar el plan",`
+    <label class="f">Cocción Día 1 del primer lote</label><input type="date" id="p_ini" value="${P.inicio}">
+    <div class="grid2">
+      <div><label class="f">Neveras</label><input inputmode="numeric" id="p_nev" value="${P.neveras}"></div>
+      <div><label class="f">Fermentadores</label><input inputmode="numeric" id="p_fer" value="${P.fermentadores}"></div>
+    </div>
+    <div class="grid3">
+      <div><label class="f">Fermenta d</label><input inputmode="numeric" id="p_df" value="${P.fer}"></div>
+      <div><label class="f">Carbonata d</label><input inputmode="numeric" id="p_dc" value="${P.carb}"></div>
+      <div><label class="f">Madura d</label><input inputmode="numeric" id="p_dm" value="${P.mad}"></div>
+    </div>
+    <label class="f">Días a 5 °C antes de servir</label><input inputmode="numeric" id="p_ds" value="${P.servir}">
+    <hr>
+    <div class="grid2">
+      <div><label class="f">Maltas compradas</label><input id="p_cm" value="${P.compraMaltas}" placeholder="2026-01"></div>
+      <div><label class="f">Vida útil (meses)</label><input inputmode="numeric" id="p_vm" value="${P.vidaMaltas}"></div>
+      <div><label class="f">Lúpulos comprados</label><input id="p_cl" value="${P.compraLupulos}"></div>
+      <div><label class="f">Vida útil (meses)</label><input inputmode="numeric" id="p_vl" value="${P.vidaLupulos}"></div>
+      <div><label class="f">Levadura comprada</label><input id="p_cy" value="${P.compraLevadura}"></div>
+      <div><label class="f">Vida útil (meses)</label><input inputmode="numeric" id="p_vy" value="${P.vidaLevadura}"></div>
+    </div>
+    <button class="btn" onclick="guardarPlan()">Guardar plan</button>`);
+}
+function guardarPlan(){
+  const P=DB.plan, n=(id,def)=>{const v=parseInt($(id).value); return isNaN(v)?def:v;};
+  P.inicio=$("#p_ini").value||P.inicio;
+  P.neveras=Math.max(1,n("#p_nev",P.neveras)); P.fermentadores=Math.max(1,n("#p_fer",P.fermentadores));
+  P.fer=n("#p_df",P.fer); P.carb=n("#p_dc",P.carb); P.mad=n("#p_dm",P.mad); P.servir=n("#p_ds",P.servir);
+  P.compraMaltas=$("#p_cm").value.trim()||P.compraMaltas; P.vidaMaltas=n("#p_vm",P.vidaMaltas);
+  P.compraLupulos=$("#p_cl").value.trim()||P.compraLupulos; P.vidaLupulos=n("#p_vl",P.vidaLupulos);
+  P.compraLevadura=$("#p_cy").value.trim()||P.compraLevadura; P.vidaLevadura=n("#p_vy",P.vidaLevadura);
+  save(); closeSheet(); render(); toast("Plan actualizado");
+}
+
+/* ============================================================
    CHAT (Gemini)
    ============================================================ */
 function contextoTexto(){
@@ -1133,7 +1322,12 @@ function contextoTexto(){
       +(l.notas.length?` Últimas notas: ${l.notas.slice(0,3).map(n=>n.f+" "+n.t).join(" | ")}`:"");
     }).join("\n") : "LOTES EN CURSO: ninguno.";
   const coc = DB.coccion? `COCCIÓN ABIERTA: receta "${(DB.recetas.find(r=>r.id===DB.coccion.recetaId)||{}).nombre}", Día ${DB.coccion.dia}.` : "COCCIÓN ABIERTA: ninguna.";
-  return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${par}\n\n${inv}\n\n${rec}\n\n${lot}\n${coc}`;
+  const P=DB.plan, prog=programar();
+  const cal = "CALENDARIO YA CALCULADO POR LA APP (no lo recalcules). "
+    +`${P.neveras} nevera(s) y ${P.fermentadores} fermentador(es); cada lote ocupa nevera ${P.fer} d fermentando, ${P.carb} d carbonatando a 21-22 °C y ${P.mad} d madurando a 11-12 °C, sin salir nunca al ambiente; luego ${P.servir} d a 5 °C en la nevera grande antes de consumir. `
+    +`Las maltas se compraron en ${P.compraMaltas} y se estiman ${P.vidaMaltas} meses de vida útil en clima húmedo.\n`
+    +prog.map((p,i)=>`${i+1}. ${p.r.nombre}: cocción Día 1 el ${fLargo(diaAFecha(p.s-1))}, madura hasta ${fLargo(diaAFecha(p.fin))}, consumible ${fLargo(diaAFecha(p.fin+P.servir))}; la malta tendrá ${edadMalta(p.s)} meses.`).join("\n");
+  return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${par}\n\n${inv}\n\n${rec}\n\n${cal}\n\n${lot}\n${coc}`;
 }
 function sistema(){
   return `Eres el asistente cervecero de Edgar, cervecero casero en Guayaquil, Ecuador. Respondes en español, tuteando, directo y sin relleno.

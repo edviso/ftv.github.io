@@ -131,6 +131,11 @@
   .msg-chat.usuario{color:var(--text);}
   .msg-chat.usuario b{color:var(--primary);}
   .msg-chat.ia b{color:var(--amber);}
+  .btn-copiar{
+    background:transparent; border:1px solid var(--border); color:var(--text-dim);
+    border-radius:7px; padding:5px 10px; font-size:12px; margin:-4px 0 12px;
+  }
+  .btn-copiar:active{opacity:.7;}
   .error-msg{color:var(--error); font-size:13px; margin-top:-4px; margin-bottom:10px;}
   .exercise-edit-row{border:1px solid var(--border); border-radius:9px; padding:12px; margin-bottom:10px; background:var(--bg);}
   .exercise-edit-row .fila{margin-bottom:0;}
@@ -331,7 +336,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-06 22:38', texto:'Agregada la tendencia dentro de la sesión por ejercicio individual (no solo el promedio general de todos juntos), al prompt de análisis y al detalle desplegable de duración — así la IA puede notar si un ejercicio en particular mejoró o empeoró distinto al resto, en vez de que un promedio general lo esconda.'},
   {fecha:'2026-08-08 19:44', texto:'Corrección importante: la migración que sumaba "Niño a Cobra" y "Mariposa sentado" se revisaba en cada apertura de la app comprobando solo si el nombre existía, así que si el usuario los borraba, volvían a aparecer en la siguiente apertura. Ahora la migración queda marcada como hecha con una bandera propia y corre una sola vez de verdad; borrar un ejercicio ya se queda borrado.'},
   {fecha:'2026-08-08 20:59', texto:'Movilidad ahora tiene control numérico de series y objetivo (repeticiones, segundos o pasos, según la unidad de cada ejercicio), igual que fuerza: se prellena con tus valores actuales, muestra lo que hiciste la sesión anterior, y lo que registres queda como base para la próxima. La IA sugiere la progresión por ejercicio, topada por código a máximo +1 serie y +20% del objetivo, y sin subir nada si hubo dolor (4-5), molestias reportadas o si el ejercicio se omitió. Los valores de series/objetivo se pueden editar en Ajustes.'},
-  {fecha:'2026-08-10 16:59', texto:'Ahora se registra el tiempo total de cada sesión, medido con las marcas de tiempo reales de cada check (no estimado): total, ejecución pura y descanso real. Se muestra en el resumen y se le pasa a la IA junto con el contexto del descanso programado de 2:30 entre series. En Movilidad también se registra el tiempo total de la sesión.'}
+  {fecha:'2026-08-10 16:59', texto:'Ahora se registra el tiempo total de cada sesión, medido con las marcas de tiempo reales de cada check (no estimado): total, ejecución pura y descanso real. Se muestra en el resumen y se le pasa a la IA junto con el contexto del descanso programado de 2:30 entre series. En Movilidad también se registra el tiempo total de la sesión.'},
+  {fecha:'2026-08-10 17:30', texto:'Botones de copiar en los chats de IA (tanto en el de cada sesión como en Consulta): uno arriba para copiar toda la conversación, y uno bajo cada respuesta para copiar solo ese par de pregunta y respuesta.'}
 ];
 
 function mostrarLog(){
@@ -1917,12 +1923,62 @@ function plantillaResumenMovilidad(sesion, sinChat){
   ${chatHtml}`;
 }
 
+// ---- Copiar al portapapeles (con respaldo para navegadores que no permiten la API moderna) ----
+async function copiarAlPortapapeles(texto, mensajeOk){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(texto);
+    }else{
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.cssText = 'position:fixed; left:-9999px; top:0;';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    mostrarToast(mensajeOk || 'Copiado');
+  }catch(e){
+    mostrarToast('No se pudo copiar: ' + e.message, 5000);
+  }
+}
+
+// Guarda las conversaciones activas para que los botones de copiar tengan de dónde leer,
+// sin depender de recorrer el DOM ni de re-escapar el texto ya renderizado.
+let chatCopiables = { sesion: [], general: [] };
+
+function copiarParChat(cual, indiceRespuesta){
+  const msgs = chatCopiables[cual] || [];
+  const respuesta = msgs[indiceRespuesta];
+  if(!respuesta) return;
+  const pregunta = indiceRespuesta > 0 && msgs[indiceRespuesta-1].rol === 'usuario' ? msgs[indiceRespuesta-1] : null;
+  const texto = (pregunta ? 'Pregunta: ' + pregunta.texto + '\n\n' : '') + 'Respuesta: ' + respuesta.texto;
+  copiarAlPortapapeles(texto, 'Pregunta y respuesta copiadas');
+}
+
+function copiarConversacion(cual){
+  const msgs = chatCopiables[cual] || [];
+  if(!msgs.length){ mostrarToast('No hay conversación que copiar'); return; }
+  const texto = msgs.map(m => (m.rol==='usuario' ? 'Pregunta: ' : 'Respuesta: ') + m.texto).join('\n\n');
+  copiarAlPortapapeles(texto, 'Conversación completa copiada');
+}
+
+// Construye el HTML de una lista de mensajes con botón de copiar bajo cada respuesta de la IA.
+function htmlMensajesChat(mensajes, cual){
+  return mensajes.map((m,i) => `
+    <div class="msg-chat ${m.rol==='usuario'?'usuario':'ia'}"><b>${m.rol==='usuario'?'Tú':'IA'}:</b> ${escapeHtml(m.texto)}</div>
+    ${m.rol!=='usuario' ? `<button type="button" class="btn-copiar" onclick="copiarParChat('${cual}', ${i})">📋 Copiar pregunta y respuesta</button>` : ''}
+  `).join('');
+}
+
 function renderChatEnDom(sesion){
   const cont = document.getElementById('listaChat');
   if(!cont) return;
-  cont.innerHTML = sesion.chat.map(m => `
-    <div class="msg-chat ${m.rol==='usuario'?'usuario':'ia'}"><b>${m.rol==='usuario'?'Tú':'IA'}:</b> ${escapeHtml(m.texto)}</div>
-  `).join('');
+  chatCopiables.sesion = sesion.chat.slice();
+  const botonTodo = sesion.chat.length
+    ? `<button type="button" class="btn chico secundario" style="margin-bottom:10px;" onclick="copiarConversacion('sesion')">📋 Copiar toda la conversación</button>`
+    : '';
+  cont.innerHTML = botonTodo + htmlMensajesChat(sesion.chat, 'sesion');
 }
 
 async function enviarPregunta(fecha){
@@ -2089,13 +2145,13 @@ function renderConsulta(){
 function renderMensajesGeneral(){
   const cont = document.getElementById('listaConsultaGeneral');
   if(!cont) return;
+  chatCopiables.general = DATOS.chatGeneral.mensajes.slice();
   if(DATOS.chatGeneral.mensajes.length === 0){
     cont.innerHTML = `<small class="ayuda">Aún no hay preguntas. Por ejemplo: "¿cómo va mi progreso este mes?" o "¿debería bajar el ritmo esta semana?".</small>`;
     return;
   }
-  cont.innerHTML = DATOS.chatGeneral.mensajes.map(m=>`
-    <div class="msg-chat ${m.rol==='usuario'?'usuario':'ia'}"><b>${m.rol==='usuario'?'Tú':'IA'}:</b> ${escapeHtml(m.texto)}</div>
-  `).join('');
+  cont.innerHTML = `<button type="button" class="btn chico secundario" style="margin-bottom:10px;" onclick="copiarConversacion('general')">📋 Copiar toda la conversación</button>`
+    + htmlMensajesChat(DATOS.chatGeneral.mensajes, 'general');
 }
 
 // Arma un resumen fresco del estado actual (horario, pesos objetivo, últimas sesiones)

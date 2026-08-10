@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#14110E">
+<title>Cervecería · Control integral</title>
+<style>
+:root{
+  --bg:#14110E; --surface:#1E1A16; --surface2:#262019; --line:#332B23;
+  --text:#F2EDE4; --muted:#A2968A; --dim:#7A6E62;
+  --amber:#E8A33D; --hop:#8FB25A; --alert:#D9694E; --cold:#6FA8C7;
+  --r:12px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--sans);
+  font-size:15px;line-height:1.45;
+  display:flex;flex-direction:column;overflow:hidden;
+  padding-top:env(safe-area-inset-top);
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+button:active{opacity:.7}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ---------- Header ---------- */
+header{
+  display:flex;align-items:center;gap:8px;padding:10px 14px 8px;
+  border-bottom:1px solid var(--line);background:var(--bg);flex-shrink:0;
+}
+.brand{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+.brand small{display:block;font-size:10px;letter-spacing:.08em;color:var(--dim);font-weight:600}
+.hbtns{margin-left:auto;display:flex;gap:6px}
+.hbtn{
+  border:1px solid var(--line);border-radius:8px;padding:5px 9px;
+  font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;
+}
+
+/* ---------- Timer bar ---------- */
+#timerbar{
+  display:none;align-items:center;gap:10px;padding:8px 14px;
+  background:var(--surface2);border-bottom:1px solid var(--line);flex-shrink:0;
+}
+#timerbar.on{display:flex}
+#tb-time{font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:-.02em}
+#tb-label{font-size:11px;color:var(--muted);flex:1;line-height:1.2}
+#tb-stop{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--alert)}
+#timerbar.ring{background:#3A2018;animation:pulse .9s infinite}
+@keyframes pulse{50%{background:#5A2C1E}}
+@media (prefers-reduced-motion:reduce){#timerbar.ring{animation:none}}
+
+/* ---------- Main ---------- */
+main{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:14px 14px 22px;-webkit-overflow-scrolling:touch}
+
+/* ---------- Nav ---------- */
+nav{
+  display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);
+  background:var(--surface);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{padding:9px 2px 8px;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.04em}
+nav button b{display:block;font-size:17px;font-weight:400;line-height:1.2;margin-bottom:1px}
+nav button.on{color:var(--amber)}
+
+/* ---------- Blocks ---------- */
+.eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+h1{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:3px}
+h2{font-size:15px;font-weight:700;margin-bottom:6px}
+.sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.card.tap{display:block;width:100%;text-align:left}
+.row{display:flex;align-items:center;gap:10px}
+.spread{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.dim{color:var(--dim)}
+.tiny{font-size:11px}
+.mini{font-size:12px}
+.warn{color:var(--alert)}
+.ok{color:var(--hop)}
+hr{border:none;border-top:1px solid var(--line);margin:12px 0}
+
+.chip{
+  display:inline-block;border:1px solid var(--line);border-radius:999px;
+  padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--muted)
+}
+.chip.a{color:var(--amber);border-color:#4A3820}
+.chip.g{color:var(--hop);border-color:#37421F}
+.chip.c{color:var(--cold);border-color:#22404E}
+
+/* color de cerveza: firma visual */
+.swatch{width:34px;height:44px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 -8px 12px rgba(0,0,0,.35), inset 0 6px 8px rgba(255,255,255,.12)}
+.swatch.sm{width:14px;height:18px;border-radius:3px}
+
+.btn{
+  display:block;width:100%;text-align:center;background:var(--amber);color:#1A1206;
+  border-radius:10px;padding:12px;font-weight:800;font-size:14px;letter-spacing:.01em;margin-top:10px
+}
+.btn.sec{background:none;border:1px solid var(--line);color:var(--text);font-weight:700}
+.btn.danger{background:none;border:1px solid #4A2A22;color:var(--alert)}
+.btn.sm{padding:9px;font-size:12px}
+.btns2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+label.f{display:block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:10px 0 4px}
+input,select,textarea{
+  width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:9px;
+  padding:10px;font-family:var(--mono);font-size:14px
+}
+input:focus,select,textarea:focus{outline:none;border-color:var(--amber)}
+textarea{font-family:var(--sans);resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+
+.stepper{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:4px}
+.stepper button{width:34px;height:32px;font-size:18px;font-weight:700;color:var(--amber);border-radius:6px;background:var(--surface)}
+.stepper span{flex:1;text-align:center;font-family:var(--mono);font-weight:700}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);text-align:right;font-weight:800;padding:0 0 6px}
+th:first-child{text-align:left}
+td{padding:5px 0;border-top:1px solid var(--line);text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td:first-child{text-align:left;font-family:var(--sans)}
+
+/* pasos de cocción */
+.step{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.step:first-child{border-top:none}
+.stepno{
+  width:26px;height:26px;border-radius:50%;border:1px solid var(--line);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--dim)
+}
+.step.done .stepno{background:var(--hop);border-color:var(--hop);color:#16200A}
+.step.done .stitle{color:var(--dim);text-decoration:line-through}
+.stitle{font-weight:700;font-size:14px;margin-bottom:2px}
+.sbody{font-size:12.5px;color:var(--muted);line-height:1.5}
+.sbody b{color:var(--text);font-family:var(--mono);font-weight:700}
+.stimer{margin-top:7px;border:1px solid #4A3820;color:var(--amber);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;letter-spacing:.05em}
+
+/* etapas de fermentación */
+.stage{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.stbar{flex:1}
+.bar{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--hop);border-radius:3px;transition:width .5s}
+.bar.big{height:8px}
+.bar.big i{background:var(--amber)}
+.stage.now .stname{color:var(--amber);font-weight:800}
+.stname{font-size:13px;font-weight:600}
+.stdot{width:8px;height:8px;border-radius:50%;background:var(--line);flex-shrink:0}
+.stage.done .stdot{background:var(--hop)}
+.stage.now .stdot{background:var(--amber);box-shadow:0 0 0 3px rgba(232,163,61,.2)}
+
+/* chat */
+#chatwrap{display:flex;flex-direction:column;height:100%}
+.msg{margin-bottom:12px;font-size:14px;line-height:1.55}
+.msg.u{background:var(--surface2);border:1px solid var(--line);border-radius:12px 12px 4px 12px;padding:10px 12px;margin-left:28px}
+.msg.a{border-left:2px solid var(--amber);padding:2px 0 2px 11px}
+.msg.a b{color:var(--amber)}
+.msg pre{white-space:pre-wrap;font-family:inherit}
+.copy{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--dim);margin-top:6px;text-transform:uppercase}
+#chatform{display:flex;gap:8px;align-items:flex-end;padding-top:10px;border-top:1px solid var(--line);background:var(--bg);position:sticky;bottom:0}
+#chatin{flex:1;max-height:120px}
+#send{background:var(--amber);color:#1A1206;border-radius:10px;padding:11px 14px;font-weight:800}
+.qbtn{border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:11.5px;color:var(--muted);margin:0 6px 6px 0;white-space:nowrap}
+.qrow{display:flex;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.qrow::-webkit-scrollbar{display:none}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(8,6,4,.72);display:flex;align-items:flex-end;z-index:50}
+.sheet{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-height:88vh;overflow-y:auto;padding:16px 14px calc(18px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.grab{width:36px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:78px;background:var(--surface2);border:1px solid var(--line);
+  color:var(--text);padding:9px 14px;border-radius:999px;font-size:12.5px;z-index:80;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.empty{text-align:center;color:var(--dim);font-size:13px;padding:30px 10px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Cervecería<small id="hsub">control integral</small></div>
+  <div class="hbtns">
+    <button class="hbtn" onclick="openLog()">LOG</button>
+    <button class="hbtn" onclick="go('ajustes')">AJUSTES</button>
+  </div>
+</header>
+
+<div id="timerbar">
+  <div id="tb-time">00:00</div>
+  <div id="tb-label"></div>
+  <button id="tb-stop" onclick="stopTimer()">Detener</button>
+</div>
+
+<main id="view"></main>
+
+<nav id="nav">
+  <button data-t="insumos" onclick="go('insumos')"><b>▤</b>Insumos</button>
+  <button data-t="recetas" onclick="go('recetas')"><b>◈</b>Recetas</button>
+  <button data-t="coccion" onclick="go('coccion')"><b>◐</b>Cocción</button>
+  <button data-t="lotes"   onclick="go('lotes')"><b>◉</b>Lotes</button>
+  <button data-t="chat"    onclick="go('chat')"><b>✦</b>Chat</button>
+</nav>
+
+<script>
+/* ============================================================
+   CERVECERÍA — app de un solo archivo
+   Datos en localStorage. Sin dependencias externas.
+   ============================================================ */
+
+const CAMBIOS = [
+  {f:"2026-08-09 18:44 (Ecuador)", t:"Versión 1.0. App nueva: insumos con saldo proyectado, 8 recetas cargadas, editor de recetas, guía de cocción en 2 días con temporizadores y avisos de lúpulo, seguimiento de fermentación por lote y chat con Gemini (BJCP + equipo propio en contexto)."}
+];
+
+const EQUIPO = `EQUIPO DEL CERVECERO (Edgar, Guayaquil, Ecuador) — 3 recipientes:
+- Olla 1 (20 L): calentamiento de agua, hornilla eléctrica con control de temperatura por relé (setpoint fijo).
+- Olla 2 (20 L): macerador, hornilla eléctrica con control de temperatura por relé (setpoint mínimo y máximo, banda típica de 1 °C). Maceración mixta: fondo falso metálico perforado que deja ~2 cm de cámara bajo la funda de maceración; el grano va dentro de la funda. Con este arreglo no se atasca al recircular y filtra bien.
+- Olla 3 (17 L): hervidor, hornilla a gas de control manual.
+- Bomba 1: lleva agua caliente de Olla 1 al macerador; también impulsa el agua helada al serpentín durante el enfriado.
+- Bomba 2: recirculado del mosto en maceración; secundariamente trasvasa el mosto macerado al hervidor.
+- Serpentín de cobre de casi toda la altura del hervidor, con tapa por donde salen las dos puntas.
+- Enfriado (método propio): tras el hervido llena la Olla 1 con hielo y algo de agua; la Bomba 1 mete agua helada al serpentín y el retorno cae en la misma Olla 1. En ~30 min el mosto llega a temperatura de siembra y aún quedan hielos flotando. No desperdicia agua: al día siguiente vuelve a congelar esa misma agua en moldes y la reutiliza durante ~1 año.
+- Proceso partido en 2 días (para no hacer 8 horas seguidas): DÍA 1 (~4 h, termina cerca de las 22:00) hasta el hervido de ~55 min; tapa el hervidor bien sellado. DÍA 2 a las 08:00: hervido corto de 10 min para eliminar cualquier patógeno y los DMS formados, whirlpool, enfriado y siembra. Lo ha hecho varias veces y la cerveza sale muy bien.
+- Volumen habitual: 16 L por lote. Levadura: ale limpia seca, ~11 g por lote.`;
+
+/* ---------- Semilla ---------- */
+function seed(){
+  const P = (o)=>Object.assign({
+    macAgua:13, macTemp:"66–67", macMin:60, recirc:20, lavadoL:7, lavadoTemp:"75–78",
+    hervido:60, topupMin:40, topupL:2, wpTemp:80, reposo:"20–30", enfriar:"18–19", levaduraG:11
+  },o||{});
+  return {
+    v:1,
+    cfg:{apiKey:"", model:"gemini-3.6-flash", boil1:55, boil2:10, tempGolpe:"72–74"},
+    insumos:{
+      maltas:[{n:"Pilsen",g:19500},{n:"Munich",g:3500},{n:"Pale Ale",g:4400},{n:"Cara 20",g:4750}],
+      lupulos:[{n:"Cascade",g:500},{n:"Simcoe",g:400}],
+      levadura:[{n:"Ale limpia seca",sobres:8}]
+    },
+    recetas:[
+      {id:"r1",n:1,nombre:"Pilsner SMaSH cítrica",bjcp:"18A Blonde Ale / 5B Kölsch (sugerido — SMaSH con levadura ale)",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:4000,pct:100}],
+       og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:8,ebcMax:10,ibuMin:20,ibuMax:22,co2:2.3,
+       lupulos:[{n:"Simcoe",g:10,min:60},{n:"Simcoe",g:8,min:20},{n:"Cascade",g:32,min:"wp"}],
+       proc:P({}),notas:""},
+      {id:"r2",n:2,nombre:"APA cítrica",bjcp:"18B American Pale Ale",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:2800,pct:70},{n:"Pale Ale",g:900,pct:22.5},{n:"Cara 20",g:300,pct:7.5}],
+       og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:12,ebcMax:16,ibuMin:38,ibuMax:40,co2:2.3,
+       lupulos:[{n:"Simcoe",g:15,min:60},{n:"Simcoe",g:10,min:20},{n:"Cascade",g:40,min:"wp"}],
+       proc:P({}),notas:""},
+      {id:"r3",n:3,nombre:"American Amber Ale",bjcp:"19A American Amber Ale",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:2400,pct:60},{n:"Munich",g:700,pct:17.5},{n:"Pale Ale",g:300,pct:7.5},{n:"Cara 20",g:600,pct:15}],
+       og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:25,ebcMax:30,ibuMin:30,ibuMax:32,co2:2.2,
+       lupulos:[{n:"Simcoe",g:14,min:60},{n:"Simcoe",g:8,min:20},{n:"Cascade",g:35,min:"wp"}],
+       proc:P({macTemp:"67"}),notas:""},
+      {id:"r4",n:4,nombre:"Märzen Ale",bjcp:"6A Märzen (interpretado con levadura ale)",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:2300,pct:57.5},{n:"Munich",g:600,pct:15},{n:"Pale Ale",g:300,pct:7.5},{n:"Cara 20",g:800,pct:20}],
+       og:1.057,fgMin:1.011,fgMax:1.013,abv:5.8,ebcMin:22,ebcMax:28,ibuMin:22,ibuMax:24,co2:2.2,
+       lupulos:[{n:"Simcoe",g:12,min:60},{n:"Simcoe",g:5,min:20},{n:"Cascade",g:30,min:"wp"}],
+       proc:P({macTemp:"67"}),notas:""},
+      {id:"r5",n:5,nombre:"Irish Red Ale",bjcp:"15A Irish Red Ale",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:2300,pct:57.5},{n:"Munich",g:300,pct:7.5},{n:"Pale Ale",g:500,pct:12.5},{n:"Cara 20",g:900,pct:22.5}],
+       og:1.055,fgMin:1.011,fgMax:1.013,abv:5.6,ebcMin:25,ebcMax:30,ibuMin:22,ibuMax:24,co2:2.1,
+       lupulos:[{n:"Simcoe",g:12,min:60},{n:"Simcoe",g:5,min:20},{n:"Cascade",g:25,min:"wp"}],
+       proc:P({macTemp:"67"}),notas:""},
+      {id:"r6",n:6,nombre:"Porter",bjcp:"13C English Porter / 20A American Porter",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:2350,pct:58,nota:"500 g de estos van tostados en casa"},{n:"Munich",g:400,pct:9.9},{n:"Pale Ale",g:700,pct:17.3},{n:"Cara 20",g:600,pct:14.8}],
+       og:1.058,fgMin:1.012,fgMax:1.014,abv:6.0,ebcMin:45,ebcMax:55,ibuMin:28,ibuMax:32,co2:2.1,
+       lupulos:[{n:"Simcoe",g:15,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:30,min:"wp"}],
+       proc:P({macTemp:"67"}),notas:"Tostar 500 g de Pilsen y dejarla enfriar por completo antes de incorporarla."},
+      {id:"r7",n:7,nombre:"Stout",bjcp:"20B American Stout",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:2400,pct:59.3,nota:"700 g de estos van tostados en casa"},{n:"Munich",g:300,pct:7.4},{n:"Pale Ale",g:1000,pct:24.7},{n:"Cara 20",g:350,pct:8.6}],
+       og:1.060,fgMin:1.012,fgMax:1.014,abv:6.2,ebcMin:60,ebcMax:70,ibuMin:35,ibuMax:38,co2:2.05,
+       lupulos:[{n:"Simcoe",g:20,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:30,min:"wp"}],
+       proc:P({}),notas:"Tostar 700 g de Pilsen y dejarla enfriar por completo antes de incorporarla."},
+      {id:"r8",n:8,nombre:"Munich Amber Ale",bjcp:"19A American Amber / 6A Märzen (híbrido)",litros:16,estado:"pendiente",
+       granos:[{n:"Pilsen",g:950,pct:21.8},{n:"Munich",g:1200,pct:27.6},{n:"Pale Ale",g:1000,pct:23.0},{n:"Cara 20",g:1200,pct:27.6}],
+       og:1.060,fgMin:1.011,fgMax:1.013,abv:6.0,ebcMin:28,ebcMax:32,ibuMin:21,ibuMax:23,co2:2.2,
+       lupulos:[{n:"Simcoe",g:13,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:32,min:"wp"}],
+       proc:P({macTemp:"67"}),notas:"Carga de grano mayor: 4.350 g."}
+    ],
+    lotes:[],
+    coccion:null,          // {recetaId, dia, hechos:{}, inicio}
+    chat:[],
+    log:CAMBIOS.slice()
+  };
+}
+
+const ETAPAS_BASE = [
+  {n:"Arranque limpio",d:2,t:"20–21 °C"},
+  {n:"Fermentación vigorosa",d:4,t:"20–21 °C"},
+  {n:"Final de primaria + descanso",d:3,t:"21–22 °C"},
+  {n:"Maduración cálida",d:4,t:"20–21 °C"},
+  {n:"Cold crash",d:4,t:"4–5 °C"},
+  {n:"Embotellado + priming",d:1,t:"20–21 °C"},
+  {n:"Carbonatación en botella",d:14,t:"21–22 °C"},
+  {n:"Maduración en botella",d:14,t:"11–12 °C"}
+];
+
+/* ---------- Almacenamiento ---------- */
+const KEY="cerv1";
+let mem=null, memOnly=false;
+function load(){
+  try{const s=localStorage.getItem(KEY); if(s) return JSON.parse(s);}catch(e){memOnly=true}
+  return null;
+}
+function save(){
+  DB.chat = DB.chat.slice(-24);
+  if(memOnly) return true;
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); return true; }
+  catch(e){
+    memOnly=true;
+    toast("Sin espacio para guardar en este navegador. Exporta el JSON antes de cerrar.",5000);
+    return false;
+  }
+}
+let DB = load() || seed();
+if(!DB.cfg) DB.cfg={apiKey:"",model:"gemini-3.6-flash",boil1:55,boil2:10,tempGolpe:"72–74"};
+if(!DB.log) DB.log=CAMBIOS.slice();
+
+/* ---------- Utilidades ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const gr=n=>Number(n).toLocaleString("es-EC");
+const uid=()=>Math.random().toString(36).slice(2,9);
+function toast(m,ms){
+  const d=document.createElement("div");d.className="toast";d.textContent=m;document.body.appendChild(d);
+  setTimeout(()=>d.remove(), ms||2200);
+}
+function ebcColor(ebc){
+  const srm=(Number(ebc)||4)*0.508;
+  let r=255*Math.pow(0.975,srm), g=245*Math.pow(0.88,srm), b=220*Math.pow(0.7,srm);
+  if(srm>24){const k=Math.max(.35,1-(srm-24)*0.035); r*=k; g*=k; b*=k;}
+  const c=v=>Math.round(Math.min(255,Math.max(0,v)));
+  return `rgb(${c(r)},${c(g)},${c(b)})`;
+}
+function abvCalc(og,fg){ if(!og||!fg) return null; return ((og-fg)*131.25); }
+function hoy0(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function diasDesde(fecha){
+  if(!fecha) return 1;
+  const i=new Date(fecha+"T00:00:00"); i.setHours(0,0,0,0);
+  return Math.floor((hoy0()-i)/86400000)+1;
+}
+function fechaMas(fecha,dias){
+  const d=new Date(fecha+"T00:00:00"); d.setDate(d.getDate()+dias);
+  return d.toLocaleDateString("es-EC",{day:"2-digit",month:"short"});
+}
+function ahoraEC(){
+  const d=new Date(), p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/* ---------- Temporizador ---------- */
+let T=null, ringing=false, ac=null, wake=null;
+function startTimer(min,label,avisos){
+  T={end:Date.now()+min*60000,label:label,total:min*60000,avisos:(avisos||[]).map(a=>({...a,fired:false}))};
+  ringing=false; $("#timerbar").classList.remove("ring");
+  keepAwake(); tick();
+}
+function stopTimer(){ T=null; ringing=false; $("#timerbar").classList.remove("ring","on"); if(ac){try{ac.close()}catch(e){}; ac=null;} }
+function tick(){
+  const bar=$("#timerbar");
+  if(!T){bar.classList.remove("on");return;}
+  bar.classList.add("on");
+  let left=T.end-Date.now();
+  if(left<=0){
+    left=0;
+    if(!ringing){ringing=true;bar.classList.add("ring");alarma();}
+    $("#tb-time").textContent="00:00";
+    $("#tb-label").innerHTML="<b>Listo:</b> "+esc(T.label);
+  }else{
+    const s=Math.round(left/1000), m=Math.floor(s/60), ss=s%60;
+    $("#tb-time").textContent=String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+    $("#tb-label").textContent=T.label;
+    const minLeft=left/60000;
+    T.avisos.forEach(a=>{
+      if(!a.fired && minLeft<=a.at){ a.fired=true; beep(2); toast("⏱ "+a.txt,5000); }
+    });
+  }
+}
+setInterval(tick,500);
+function beep(n){
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    for(let i=0;i<(n||1);i++){
+      const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+i*0.28;
+      o.frequency.value=880; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.22); o.start(t); o.stop(t+0.24);
+    }
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([180,90,180]);
+}
+function alarma(){ beep(4); setTimeout(()=>{if(ringing)beep(4)},1600); }
+async function keepAwake(){
+  try{ if("wakeLock" in navigator && !wake){ wake=await navigator.wakeLock.request("screen");
+    wake.addEventListener("release",()=>{wake=null}); } }catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible" && T) keepAwake(); });
+
+/* ---------- Router ---------- */
+let tab="lotes", ctx={};
+function go(t,c){
+  tab=t; ctx=c||{};
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  $("#view").scrollTop=0;
+  render();
+}
+function render(){
+  const v=$("#view");
+  if(tab==="insumos") v.innerHTML=vInsumos();
+  else if(tab==="recetas") v.innerHTML = ctx.id? vReceta(ctx.id) : vRecetas();
+  else if(tab==="coccion") v.innerHTML=vCoccion();
+  else if(tab==="lotes") v.innerHTML = ctx.id? vLote(ctx.id) : vLotes();
+  else if(tab==="chat"){ v.innerHTML=vChat(); pintarChat(); }
+  else if(tab==="ajustes") v.innerHTML=vAjustes();
+}
+
+/* ============================================================
+   INSUMOS
+   ============================================================ */
+function consumoPendiente(){
+  const m={},l={}; let sobres=0;
+  DB.recetas.filter(r=>r.estado==="pendiente").forEach(r=>{
+    r.granos.forEach(g=>m[g.n]=(m[g.n]||0)+Number(g.g||0));
+    r.lupulos.forEach(h=>l[h.n]=(l[h.n]||0)+Number(h.g||0));
+    sobres+=1;
+  });
+  return {m,l,sobres};
+}
+function vInsumos(){
+  const c=consumoPendiente();
+  const fila=(it,uso,unidad)=>{
+    const saldo=Number(it.g!=null?it.g:it.sobres)-uso;
+    const cls=saldo<0?"warn":(saldo===0?"ok":"");
+    return `<tr><td>${esc(it.n)}</td><td>${gr(it.g!=null?it.g:it.sobres)}</td><td class="dim">${gr(uso)}</td>
+      <td class="${cls}">${saldo<0?"−":""}${gr(Math.abs(saldo))}</td></tr>`;
+  };
+  const alerta = (()=>{
+    const faltan=[];
+    DB.insumos.maltas.forEach(x=>{const s=x.g-(c.m[x.n]||0); if(s<0) faltan.push(`${x.n}: faltan ${gr(-s)} g`)});
+    DB.insumos.lupulos.forEach(x=>{const s=x.g-(c.l[x.n]||0); if(s<0) faltan.push(`${x.n}: faltan ${gr(-s)} g`)});
+    DB.insumos.levadura.forEach(x=>{const s=x.sobres-c.sobres; if(s<0) faltan.push(`${x.n}: faltan ${-s} sobres`)});
+    if(!faltan.length) return `<div class="card"><div class="tiny ok">✓ El stock alcanza para las ${DB.recetas.filter(r=>r.estado==="pendiente").length} recetas pendientes.</div></div>`;
+    return `<div class="card" style="border-color:#4A2A22">
+      <div class="eyebrow warn" style="margin-bottom:6px">No alcanza</div>
+      <div class="mini">${faltan.map(esc).join("<br>")}</div>
+      <div class="tiny dim" style="margin-top:8px">Ajusta el stock, cambia la receta o pregúntale al chat cómo redistribuir.</div></div>`;
+  })();
+
+  return `
+  <p class="eyebrow">Bodega</p>
+  <h1>Insumos</h1>
+  <p class="sub">Stock actual, lo que comprometen las recetas pendientes y el saldo que quedaría.</p>
+  ${alerta}
+  <div class="card">
+    <h2>Maltas <span class="dim tiny">gramos</span></h2>
+    <table><thead><tr><th>Malta</th><th>Stock</th><th>Comprom.</th><th>Saldo</th></tr></thead><tbody>
+    ${DB.insumos.maltas.map(x=>fila(x,c.m[x.n]||0)).join("")}
+    </tbody></table>
+    <button class="btn sec sm" onclick="editarInsumos('maltas')">Ajustar stock de maltas</button>
+  </div>
+  <div class="card">
+    <h2>Lúpulos <span class="dim tiny">gramos</span></h2>
+    <table><thead><tr><th>Lúpulo</th><th>Stock</th><th>Comprom.</th><th>Saldo</th></tr></thead><tbody>
+    ${DB.insumos.lupulos.map(x=>fila(x,c.l[x.n]||0)).join("")}
+    </tbody></table>
+    <button class="btn sec sm" onclick="editarInsumos('lupulos')">Ajustar stock de lúpulos</button>
+  </div>
+  <div class="card">
+    <h2>Levadura <span class="dim tiny">sobres</span></h2>
+    <table><thead><tr><th>Levadura</th><th>Stock</th><th>Comprom.</th><th>Saldo</th></tr></thead><tbody>
+    ${DB.insumos.levadura.map(x=>fila(x,c.sobres)).join("")}
+    </tbody></table>
+    <button class="btn sec sm" onclick="editarInsumos('levadura')">Ajustar stock de levadura</button>
+  </div>
+  <p class="tiny dim">El stock se descuenta solo cuando marcas una receta como elaborada (al crear el lote).</p>`;
+}
+function editarInsumos(tipo){
+  const arr=DB.insumos[tipo], u=tipo==="levadura"?"sobres":"g";
+  sheet(`Stock de ${tipo}`,`
+    ${arr.map((x,i)=>`<label class="f">${esc(x.n)} (${u})</label>
+      <input inputmode="decimal" id="ins${i}" value="${x.g!=null?x.g:x.sobres}">`).join("")}
+    <label class="f">Agregar otro (nombre)</label><input id="insNew" placeholder="opcional">
+    <label class="f">Cantidad (${u})</label><input inputmode="decimal" id="insNewQ" placeholder="0">
+    <button class="btn" onclick="guardarInsumos('${tipo}')">Guardar stock</button>`);
+}
+function guardarInsumos(tipo){
+  const arr=DB.insumos[tipo], k=tipo==="levadura"?"sobres":"g";
+  arr.forEach((x,i)=>{const v=parseFloat($("#ins"+i).value); if(!isNaN(v)) x[k]=v;});
+  const nn=$("#insNew").value.trim(), nq=parseFloat($("#insNewQ").value);
+  if(nn && !isNaN(nq)){const o={n:nn}; o[k]=nq; arr.push(o);}
+  save(); closeSheet(); render(); toast("Stock actualizado");
+}
+
+/* ============================================================
+   RECETAS
+   ============================================================ */
+function vRecetas(){
+  return `
+  <p class="eyebrow">Diseño</p>
+  <h1>Recetas</h1>
+  <p class="sub">Plan de ${DB.recetas.length} lotes de 16 L. Toca una para ver la ficha completa, editarla o llevarla a cocción.</p>
+  ${DB.recetas.map(r=>{
+    const col=ebcColor((r.ebcMin+r.ebcMax)/2);
+    return `<button class="card tap" onclick="go('recetas',{id:'${r.id}'})">
+      <div class="row">
+        <div class="swatch" style="background:${col}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="spread"><h2 style="margin:0">${esc(r.nombre)}</h2>
+            <span class="chip ${r.estado==="elaborada"?"g":""}">${r.estado==="elaborada"?"ELABORADA":"N.º "+r.n}</span></div>
+          <div class="tiny dim" style="margin:2px 0 6px">${esc(r.bjcp)}</div>
+          <div class="tiny num muted">OG ${r.og.toFixed(3)} · ${r.abv}% ABV · ${r.ibuMin}–${r.ibuMax} IBU · ${r.ebcMin}–${r.ebcMax} EBC</div>
+        </div>
+      </div></button>`;
+  }).join("")}
+  <div class="btns2">
+    <button class="btn sec sm" onclick="nuevaReceta()">Nueva receta</button>
+    <button class="btn sec sm" onclick="pedirRecetaIA()">Pedir receta a la IA</button>
+  </div>`;
+}
+function vReceta(id){
+  const r=DB.recetas.find(x=>x.id===id); if(!r) return vRecetas();
+  const col=ebcColor((r.ebcMin+r.ebcMax)/2);
+  const totalG=r.granos.reduce((a,g)=>a+Number(g.g||0),0);
+  const b1=DB.cfg.boil1;
+  const hop=h=>{
+    if(h.min==="wp") return `whirlpool a ${r.proc.wpTemp} °C, reposo ${r.proc.reposo} min`;
+    const marca=Math.max(0,b1-Number(h.min));
+    return `@${h.min}' de hervido → minuto <b>${marca}</b> del hervido del Día 1${Number(h.min)>b1?" (entra al inicio)":""}`;
+  };
+  return `
+  <button class="chip" onclick="go('recetas')">← Recetas</button>
+  <div class="row" style="margin:14px 0 4px">
+    <div class="swatch" style="background:${col};width:44px;height:56px"></div>
+    <div><h1 style="margin:0">${esc(r.nombre)}</h1>
+      <div class="tiny dim">${esc(r.bjcp)}</div></div>
+  </div>
+  <p class="sub">${r.litros} L · ${gr(totalG)} g de grano · levadura ${r.proc.levaduraG} g</p>
+
+  <div class="card">
+    <p class="eyebrow">Objetivos</p>
+    <div class="grid3">
+      ${[["OG",r.og.toFixed(3)],["FG",r.fgMin.toFixed(3)+"–"+r.fgMax.toFixed(3)],["ABV","~"+r.abv+" %"],
+         ["Color",r.ebcMin+"–"+r.ebcMax+" EBC"],["Amargor",r.ibuMin+"–"+r.ibuMax+" IBU"],["CO₂",r.co2+" vol"]]
+        .map(([k,v])=>`<div><div class="tiny dim">${k}</div><div class="num" style="font-weight:700">${v}</div></div>`).join("")}
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Granos</p>
+    <table><tbody>
+    ${r.granos.map(g=>`<tr><td>${esc(g.n)}${g.nota?`<div class="tiny dim">${esc(g.nota)}</div>`:""}</td>
+      <td>${gr(g.g)} g</td><td class="dim">${(Number(g.g)/totalG*100).toFixed(1)} %</td></tr>`).join("")}
+    </tbody></table>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Lúpulos</p>
+    ${r.lupulos.map(h=>`<div style="padding:6px 0;border-top:1px solid var(--line)">
+      <div class="spread"><b>${esc(h.n)}</b><span class="num">${h.g} g</span></div>
+      <div class="tiny muted">${hop(h)}</div></div>`).join("")}
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Proceso</p>
+    <div class="mini muted" style="line-height:1.7">
+      Maceración <b class="num">${r.proc.macAgua} L</b> a <b class="num">${r.proc.macTemp} °C</b> por ${r.proc.macMin} min<br>
+      Recirculado ${r.proc.recirc} min · Lavado <b class="num">${r.proc.lavadoL} L</b> a ${r.proc.lavadoTemp} °C<br>
+      Hervido total ${r.proc.hervido} min, partido en ${DB.cfg.boil1} + ${DB.cfg.boil2} min<br>
+      Al minuto ${r.proc.topupMin}: agregar ${r.proc.topupL} L de agua muy caliente si corresponde<br>
+      Whirlpool a ${r.proc.wpTemp} °C · Enfriar a ${r.proc.enfriar} °C · Carbonatar a ${r.co2} vol
+    </div>
+    ${r.notas?`<div class="mini" style="margin-top:8px;color:var(--amber)">${esc(r.notas)}</div>`:""}
+  </div>
+
+  <button class="btn" onclick="iniciarCoccion('${r.id}')">Llevar a cocción</button>
+  <div class="btns2" style="margin-top:8px">
+    <button class="btn sec sm" onclick="editarReceta('${r.id}')">Editar receta</button>
+    <button class="btn sec sm" onclick="preguntarSobre('${r.id}')">Preguntar a la IA</button>
+  </div>
+  <button class="btn sec sm" onclick="duplicarReceta('${r.id}')">Duplicar como base</button>`;
+}
+
+function editarReceta(id){
+  const r=DB.recetas.find(x=>x.id===id);
+  sheet("Editar receta",`
+    <label class="f">Nombre</label><input id="e_nom" value="${esc(r.nombre)}">
+    <label class="f">Referencia BJCP</label><input id="e_bjcp" value="${esc(r.bjcp)}">
+    <div class="grid2">
+      <div><label class="f">Litros</label><input inputmode="decimal" id="e_lit" value="${r.litros}"></div>
+      <div><label class="f">OG</label><input inputmode="decimal" id="e_og" value="${r.og}"></div>
+      <div><label class="f">EBC mín</label><input inputmode="decimal" id="e_ebc1" value="${r.ebcMin}"></div>
+      <div><label class="f">EBC máx</label><input inputmode="decimal" id="e_ebc2" value="${r.ebcMax}"></div>
+      <div><label class="f">IBU mín</label><input inputmode="decimal" id="e_ibu1" value="${r.ibuMin}"></div>
+      <div><label class="f">IBU máx</label><input inputmode="decimal" id="e_ibu2" value="${r.ibuMax}"></div>
+    </div>
+    <label class="f">Granos — un renglón por malta: nombre, gramos</label>
+    <textarea id="e_gr" rows="5">${r.granos.map(g=>g.n+", "+g.g).join("\n")}</textarea>
+    <label class="f">Lúpulos — nombre, gramos, minuto (o wp)</label>
+    <textarea id="e_lu" rows="4">${r.lupulos.map(h=>h.n+", "+h.g+", "+h.min).join("\n")}</textarea>
+    <label class="f">Notas</label><textarea id="e_no" rows="2">${esc(r.notas||"")}</textarea>
+    <button class="btn" onclick="guardarReceta('${id}')">Guardar receta</button>
+    <button class="btn danger sm" onclick="borrarReceta('${id}')">Eliminar receta</button>`);
+}
+function parseLineas(txt,campos){
+  return txt.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{
+    const p=l.split(",").map(s=>s.trim());
+    const o={n:p[0]||"?"};
+    if(campos>=2) o.g=parseFloat(p[1])||0;
+    if(campos>=3) o.min=(p[2]||"").toLowerCase()==="wp"?"wp":(parseFloat(p[2])||0);
+    return o;
+  });
+}
+function guardarReceta(id){
+  const r=DB.recetas.find(x=>x.id===id);
+  r.nombre=$("#e_nom").value.trim()||r.nombre;
+  r.bjcp=$("#e_bjcp").value.trim();
+  r.litros=parseFloat($("#e_lit").value)||r.litros;
+  r.og=parseFloat($("#e_og").value)||r.og;
+  r.ebcMin=parseFloat($("#e_ebc1").value); r.ebcMax=parseFloat($("#e_ebc2").value);
+  r.ibuMin=parseFloat($("#e_ibu1").value); r.ibuMax=parseFloat($("#e_ibu2").value);
+  const gs=parseLineas($("#e_gr").value,2); if(gs.length) r.granos=gs;
+  const ls=parseLineas($("#e_lu").value,3); if(ls.length) r.lupulos=ls;
+  r.notas=$("#e_no").value.trim();
+  save(); closeSheet(); render(); toast("Receta guardada");
+}
+function borrarReceta(id){
+  if(!confirm("¿Eliminar esta receta?")) return;
+  DB.recetas=DB.recetas.filter(r=>r.id!==id); save(); closeSheet(); go("recetas");
+}
+function duplicarReceta(id){
+  const r=DB.recetas.find(x=>x.id===id);
+  const c=JSON.parse(JSON.stringify(r));
+  c.id=uid(); c.n=DB.recetas.length+1; c.nombre=r.nombre+" (variante)"; c.estado="pendiente";
+  DB.recetas.push(c); save(); go("recetas",{id:c.id}); toast("Copia creada");
+}
+function nuevaReceta(){
+  const base=JSON.parse(JSON.stringify(DB.recetas[1]||DB.recetas[0]));
+  base.id=uid(); base.n=DB.recetas.length+1; base.nombre="Receta nueva"; base.estado="pendiente"; base.notas="";
+  DB.recetas.push(base); save(); go("recetas",{id:base.id}); editarReceta(base.id);
+}
+
+/* ============================================================
+   COCCIÓN
+   ============================================================ */
+function pasosDia1(r){
+  const b1=DB.cfg.boil1;
+  const hopsHervido=r.lupulos.filter(h=>h.min!=="wp")
+    .map(h=>({...h,marca:Math.max(0,b1-Number(h.min))})).sort((a,b)=>a.marca-b.marca);
+  const avisos=hopsHervido.map(h=>({at:b1-h.marca,txt:`${h.n} ${h.g} g (minuto ${h.marca})`}))
+    .concat([{at:b1-r.proc.topupMin,txt:`Minuto ${r.proc.topupMin}: agregar ${r.proc.topupL} L de agua caliente si hace falta`}]);
+  return [
+    {t:"Limpiar y sanitizar",b:`Ollas 1, 2 y 3, fondo falso, funda de maceración, mangueras y las dos bombas. Purga las bombas antes de arrancar.`},
+    {t:"Pesar los granos",b:r.granos.map(g=>`${g.n} <b>${gr(g.g)} g</b>`).join(" · ")+(r.notas?`<br><span style="color:var(--amber)">${esc(r.notas)}</span>`:"")},
+    {t:"Calentar el agua de maceración",b:`Olla 1 con <b>${r.proc.macAgua} L</b>. Control 1 en <b>${DB.cfg.tempGolpe} °C</b> (temperatura de golpe) para caer en ${r.proc.macTemp} °C al empastar.`},
+    {t:"Trasvasar al macerador",b:`Bomba 1 lleva el agua de Olla 1 a Olla 2. Fija el control 2 en <b>${r.proc.macTemp} °C</b> con banda de 1 °C.`},
+    {t:"Empastar",b:`Funda sobre el fondo falso, agrega el grano poco a poco removiendo. Verifica que estabilice en ${r.proc.macTemp} °C.`},
+    {t:`Maceración — ${r.proc.macMin} min`,b:`Mientras tanto, calienta en Olla 1 los <b>${r.proc.lavadoL} L</b> de lavado a ${r.proc.lavadoTemp} °C.`,timer:r.proc.macMin},
+    {t:`Recirculado — ${r.proc.recirc} min`,b:`Bomba 2 en circuito cerrado hasta que el mosto salga claro.`,timer:r.proc.recirc},
+    {t:"Lavado",b:`<b>${r.proc.lavadoL} L</b> a ${r.proc.lavadoTemp} °C, rociando sobre la cama de grano.`},
+    {t:"Trasvase al hervidor",b:`Bomba 2 pasa el mosto a la Olla 3 (17 L). Enciende la hornilla de gas.`},
+    {t:`Hervido Día 1 — ${b1} min`,
+     b:hopsHervido.map(h=>`Minuto <b>${h.marca}</b>: ${h.n} <b>${h.g} g</b> <span class="dim">(nominal @${h.min}')</span>`).join("<br>")
+       +`<br>Minuto <b>${r.proc.topupMin}</b>: ${r.proc.topupL} L de agua muy caliente si corresponde.`,
+     timer:b1, avisos:avisos},
+    {t:"Tapar y sellar",b:`Apaga, tapa el hervidor bien sellado y déjalo reposar hasta mañana. Meta: terminar cerca de las 22:00.`}
+  ];
+}
+function pasosDia2(r){
+  const wp=r.lupulos.filter(h=>h.min==="wp");
+  return [
+    {t:`Hervido de seguridad — ${DB.cfg.boil2} min`,b:`Elimina cualquier patógeno y los DMS formados durante la noche.`,timer:DB.cfg.boil2},
+    {t:`Whirlpool a ${r.proc.wpTemp} °C`,b:`Baja a ${r.proc.wpTemp} °C y agrega ${wp.map(h=>`${h.n} <b>${h.g} g</b>`).join(" · ")||"—"}. Remueve 20–30 s.`,timer:1},
+    {t:`Reposo — ${r.proc.reposo} min a ${r.proc.wpTemp} °C`,b:`Tapado, sin remover. Aquí se extrae el aroma del whirlpool.`,timer:25},
+    {t:"Enfriar con el serpentín",b:`Olla 1 con hielo y algo de agua. Bomba 1 → serpentín → retorno a la misma Olla 1. Objetivo: <b>${r.proc.enfriar} °C</b> en el mosto.`,timer:30},
+    {t:"Medir densidad inicial (OG)",b:`Objetivo de la receta: <b>${r.og.toFixed(3)}</b>. Corrige por temperatura si tu densímetro lo pide.`},
+    {t:"Trasvasar y oxigenar",b:`Pasa el mosto al fermentador dejando atrás el trub. Airea bien antes de sembrar.`},
+    {t:"Sembrar la levadura",b:`<b>${r.proc.levaduraG} g</b> de ale limpia seca, con el mosto a ${r.proc.enfriar} °C.`},
+    {t:"Recuperar el agua del deshielo",b:`Guárdala para volver a congelarla en los moldes: es la misma agua que reutilizas todo el año.`},
+    {t:"Abrir el lote",b:`Registra el lote y arranca el conteo de fermentación.`,accion:"crearLote"}
+  ];
+}
+function iniciarCoccion(id){
+  DB.coccion={recetaId:id,dia:1,hechos:{},inicio:new Date().toISOString()};
+  save(); go("coccion");
+}
+function vCoccion(){
+  const c=DB.coccion;
+  if(!c) return `
+    <p class="eyebrow">Día de cocción</p><h1>Cocción</h1>
+    <p class="sub">Guía paso a paso para tu equipo, partida en dos días.</p>
+    <div class="empty">No hay ninguna cocción abierta.<br>Elige una receta y toca <b>Llevar a cocción</b>.</div>
+    <button class="btn" onclick="go('recetas')">Ver recetas</button>`;
+  const r=DB.recetas.find(x=>x.id===c.recetaId);
+  if(!r){DB.coccion=null;save();return vCoccion();}
+  const pasos = c.dia===1? pasosDia1(r) : pasosDia2(r);
+  const hechos = c.hechos[c.dia]||[];
+  const done = pasos.filter((_,i)=>hechos.includes(i)).length;
+  return `
+  <p class="eyebrow">Día de cocción</p>
+  <h1>${esc(r.nombre)}</h1>
+  <p class="sub">${c.dia===1?"Día 1 — arranque hasta el hervido de "+DB.cfg.boil1+" min":"Día 2 — hervido corto, whirlpool, enfriado y siembra"}</p>
+  <div class="card">
+    <div class="spread"><span class="tiny dim">AVANCE</span><span class="num tiny">${done}/${pasos.length}</span></div>
+    <div class="bar big" style="margin-top:6px"><i style="width:${done/pasos.length*100}%"></i></div>
+    <div class="btns2" style="margin-top:10px">
+      <button class="btn sec sm" style="margin:0" onclick="cambiarDia(1)" ${c.dia===1?'disabled style="opacity:.4;margin:0"':""}>Día 1</button>
+      <button class="btn sec sm" style="margin:0" onclick="cambiarDia(2)" ${c.dia===2?'disabled style="opacity:.4;margin:0"':""}>Día 2</button>
+    </div>
+  </div>
+  <div class="card">
+  ${pasos.map((p,i)=>`
+    <div class="step ${hechos.includes(i)?"done":""}">
+      <button class="stepno" onclick="togglePaso(${i})">${hechos.includes(i)?"✓":i+1}</button>
+      <div style="flex:1">
+        <div class="stitle">${esc(p.t)}</div>
+        <div class="sbody">${p.b}</div>
+        ${p.timer?`<button class="stimer" onclick='startTimer(${p.timer},${JSON.stringify(p.t)},${JSON.stringify(p.avisos||[])})'>▶ Temporizador ${p.timer} min</button>`:""}
+        ${p.accion==="crearLote"?`<button class="btn sm" onclick="crearLoteDesdeCoccion()">Crear lote y arrancar fermentación</button>`:""}
+      </div>
+    </div>`).join("")}
+  </div>
+  <div class="btns2">
+    <button class="btn sec sm" onclick="preguntarSobre('${r.id}')">Preguntar a la IA</button>
+    <button class="btn danger sm" onclick="cerrarCoccion()">Cerrar cocción</button>
+  </div>`;
+}
+function togglePaso(i){
+  const c=DB.coccion, h=c.hechos[c.dia]||[];
+  const k=h.indexOf(i); if(k>=0) h.splice(k,1); else h.push(i);
+  c.hechos[c.dia]=h; save(); render();
+}
+function cambiarDia(d){ DB.coccion.dia=d; save(); render(); }
+function cerrarCoccion(){ if(confirm("¿Cerrar la cocción en curso?")){DB.coccion=null;save();render();} }
+
+/* ============================================================
+   LOTES / FERMENTACIÓN
+   ============================================================ */
+function crearLoteDesdeCoccion(){
+  const r=DB.recetas.find(x=>x.id===DB.coccion.recetaId);
+  nuevoLote(r.id);
+}
+function nuevoLote(recetaId){
+  const r=DB.recetas.find(x=>x.id===recetaId)||DB.recetas[0];
+  const hoy=new Date().toISOString().slice(0,10);
+  const num=(DB.lotes.length?Math.max(...DB.lotes.map(l=>parseInt(l.numero)||0)):0)+1;
+  sheet("Abrir lote",`
+    <label class="f">Receta</label>
+    <select id="l_rec">${DB.recetas.map(x=>`<option value="${x.id}" ${x.id===r.id?"selected":""}>${esc(x.nombre)}</option>`).join("")}</select>
+    <div class="grid2">
+      <div><label class="f">N.º de lote</label><input id="l_num" value="${num}"></div>
+      <div><label class="f">Inicio fermentación</label><input type="date" id="l_fec" value="${hoy}"></div>
+      <div><label class="f">OG medida</label><input inputmode="decimal" id="l_og" placeholder="${r.og.toFixed(3)}"></div>
+      <div><label class="f">Color EBC</label><input inputmode="decimal" id="l_ebc" placeholder="${r.ebcMin}"></div>
+    </div>
+    <label class="f">Cold crash (días)</label>${stepperHTML("cc",4)}
+    <label class="f">Maduración en botella (días)</label>${stepperHTML("mb",14)}
+    <label class="f">Descontar insumos del stock</label>
+    <select id="l_desc"><option value="1" selected>Sí, descontar</option><option value="0">No</option></select>
+    <button class="btn" onclick="guardarLote()">Abrir lote</button>`);
+}
+function stepperHTML(id,val){
+  return `<div class="stepper"><button onclick="stp('${id}',-1)">−</button><span id="stp_${id}">${val}</span><button onclick="stp('${id}',1)">+</button></div>`;
+}
+function stp(id,d){
+  const el=$("#stp_"+id); el.textContent=Math.max(0,parseInt(el.textContent)+d);
+}
+function guardarLote(){
+  const rid=$("#l_rec").value, r=DB.recetas.find(x=>x.id===rid);
+  const cc=parseInt($("#stp_cc").textContent), mb=parseInt($("#stp_mb").textContent);
+  const etapas=ETAPAS_BASE.map(e=>({...e}));
+  etapas[4].d=cc; etapas[7].d=mb;
+  const lote={
+    id:uid(), recetaId:rid, nombre:r.nombre,
+    numero:$("#l_num").value.trim()||"1",
+    fecha:$("#l_fec").value,
+    og:parseFloat($("#l_og").value)||r.og,
+    fg:null,
+    ebc:parseFloat($("#l_ebc").value)||((r.ebcMin+r.ebcMax)/2),
+    etapas, notas:[]
+  };
+  if($("#l_desc").value==="1") descontar(r);
+  r.estado="elaborada";
+  DB.lotes.unshift(lote);
+  if(DB.coccion && DB.coccion.recetaId===rid) DB.coccion=null;
+  save(); closeSheet(); go("lotes",{id:lote.id}); toast("Lote abierto");
+}
+function descontar(r){
+  r.granos.forEach(g=>{const m=DB.insumos.maltas.find(x=>x.n===g.n); if(m) m.g-=Number(g.g||0);});
+  r.lupulos.forEach(h=>{const l=DB.insumos.lupulos.find(x=>x.n===h.n); if(l) l.g-=Number(h.g||0);});
+  if(DB.insumos.levadura[0]) DB.insumos.levadura[0].sobres-=1;
+}
+function estadoLote(l){
+  const total=l.etapas.reduce((a,e)=>a+e.d,0);
+  let dia=Math.max(1,diasDesde(l.fecha));
+  let acum=0, idx=l.etapas.length-1, dentro=0, fin=false;
+  if(dia>total){fin=true; dentro=l.etapas[idx].d;}
+  else for(let i=0;i<l.etapas.length;i++){
+    const ini=acum+1, f=acum+l.etapas[i].d;
+    if(dia>=ini && dia<=f){idx=i; dentro=dia-ini+1; break;}
+    acum=f;
+  }
+  return {total,dia:Math.min(dia,total),idx,dentro,fin,pct:Math.min(100,Math.round(dia/total*100))};
+}
+function vLotes(){
+  if(!DB.lotes.length) return `
+    <p class="eyebrow">Fermentador y botella</p><h1>Lotes</h1>
+    <p class="sub">Seguimiento diario desde que entra al fermentador hasta que está listo para tomar.</p>
+    <div class="empty">Todavía no hay lotes abiertos.</div>
+    <button class="btn" onclick="nuevoLote(DB.recetas[0].id)">Abrir lote</button>`;
+  return `
+  <p class="eyebrow">Fermentador y botella</p>
+  <h1>Lotes</h1>
+  <p class="sub">${DB.lotes.length} lote${DB.lotes.length>1?"s":""} en seguimiento.</p>
+  ${DB.lotes.map(l=>{
+    const s=estadoLote(l);
+    return `<button class="card tap" onclick="go('lotes',{id:'${l.id}'})">
+      <div class="row" style="align-items:flex-start">
+        <div class="swatch" style="background:${ebcColor(l.ebc)}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="spread"><h2 style="margin:0">${esc(l.nombre)}</h2><span class="chip a">LOTE ${esc(l.numero)}</span></div>
+          <div class="tiny ${s.fin?"ok":"muted"}" style="margin:3px 0 7px">
+            ${s.fin?"Listo para disfrutar 🍺":esc(l.etapas[s.idx].n)+" · día "+s.dentro+" de "+l.etapas[s.idx].d}</div>
+          <div class="bar"><i style="width:${s.pct}%"></i></div>
+          <div class="tiny dim num" style="margin-top:4px">Día ${s.dia} de ${s.total} · ${s.pct} %</div>
+        </div>
+      </div></button>`;
+  }).join("")}
+  <button class="btn sec sm" onclick="nuevoLote(DB.recetas[0].id)">Abrir otro lote</button>`;
+}
+function vLote(id){
+  const l=DB.lotes.find(x=>x.id===id); if(!l) return vLotes();
+  const s=estadoLote(l), r=DB.recetas.find(x=>x.id===l.recetaId);
+  const abv=abvCalc(l.og,l.fg);
+  let acum=0;
+  return `
+  <button class="chip" onclick="go('lotes')">← Lotes</button>
+  <div class="row" style="margin:14px 0 4px">
+    <div class="swatch" style="background:${ebcColor(l.ebc)};width:44px;height:56px"></div>
+    <div><h1 style="margin:0">${esc(l.nombre)}</h1><div class="tiny dim">Lote ${esc(l.numero)} · desde ${esc(l.fecha)}</div></div>
+  </div>
+  <div class="card">
+    <div class="spread"><span class="tiny dim">${s.fin?"PROCESO COMPLETO":"AVANCE TOTAL"}</span><span class="num tiny">${s.pct} %</span></div>
+    <div class="bar big" style="margin:6px 0 8px"><i style="width:${s.pct}%"></i></div>
+    <div class="mini ${s.fin?"ok":"muted"}">${s.fin?"Listo para disfrutar 🍺":"Hoy: <b>"+esc(l.etapas[s.idx].n)+"</b>, día "+s.dentro+" de "+l.etapas[s.idx].d+" a "+l.etapas[s.idx].t}</div>
+  </div>
+  <div class="card">
+    <p class="eyebrow">Etapas</p>
+    ${l.etapas.map((e,i)=>{
+      const ini=acum+1; acum+=e.d;
+      const done=s.dia>acum, now=i===s.idx&&!s.fin;
+      const dentro= done? e.d : (now? s.dentro : 0);
+      return `<div class="stage ${done?"done":""} ${now?"now":""}">
+        <div class="stdot"></div>
+        <div class="stbar">
+          <div class="spread"><span class="stname">${esc(e.n)}</span>
+            <span class="tiny dim num">${dentro}/${e.d} d</span></div>
+          <div class="bar" style="margin:4px 0 2px"><i style="width:${dentro/e.d*100}%"></i></div>
+          <div class="tiny dim">${e.t} · termina ${fechaMas(l.fecha,acum)}</div>
+        </div>
+        <div class="stepper" style="padding:2px">
+          <button onclick="ajustarEtapa('${l.id}',${i},-1)">−</button>
+          <button onclick="ajustarEtapa('${l.id}',${i},1)">+</button>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>
+  <div class="card">
+    <p class="eyebrow">Mediciones</p>
+    <div class="grid3">
+      <div><div class="tiny dim">OG</div><div class="num" style="font-weight:700">${l.og?l.og.toFixed(3):"—"}</div></div>
+      <div><div class="tiny dim">FG</div><div class="num" style="font-weight:700">${l.fg?l.fg.toFixed(3):"—"}</div></div>
+      <div><div class="tiny dim">ABV</div><div class="num" style="font-weight:700">${abv?abv.toFixed(1)+" %":"—"}</div></div>
+    </div>
+    <button class="btn sec sm" onclick="editarLote('${l.id}')">Editar mediciones</button>
+  </div>
+  <div class="card">
+    <p class="eyebrow">Bitácora</p>
+    ${l.notas.length? l.notas.map(n=>`<div style="padding:6px 0;border-top:1px solid var(--line)">
+      <div class="tiny dim num">${esc(n.f)}</div><div class="mini">${esc(n.t)}</div></div>`).join("")
+      : `<div class="tiny dim">Sin anotaciones todavía.</div>`}
+    <button class="btn sec sm" onclick="anotar('${l.id}')">Anotar algo</button>
+  </div>
+  <div class="btns2">
+    <button class="btn sec sm" onclick="preguntarLote('${l.id}')">Preguntar a la IA</button>
+    <button class="btn danger sm" onclick="borrarLote('${l.id}')">Eliminar lote</button>
+  </div>`;
+}
+function ajustarEtapa(id,i,d){
+  const l=DB.lotes.find(x=>x.id===id);
+  l.etapas[i].d=Math.max(0,l.etapas[i].d+d); save(); render();
+}
+function editarLote(id){
+  const l=DB.lotes.find(x=>x.id===id);
+  sheet("Mediciones del lote",`
+    <div class="grid2">
+      <div><label class="f">OG</label><input inputmode="decimal" id="m_og" value="${l.og||""}"></div>
+      <div><label class="f">FG</label><input inputmode="decimal" id="m_fg" value="${l.fg||""}"></div>
+      <div><label class="f">Color EBC</label><input inputmode="decimal" id="m_ebc" value="${l.ebc||""}"></div>
+      <div><label class="f">Inicio</label><input type="date" id="m_fec" value="${l.fecha}"></div>
+    </div>
+    <button class="btn" onclick="guardarMed('${id}')">Guardar</button>`);
+}
+function guardarMed(id){
+  const l=DB.lotes.find(x=>x.id===id);
+  l.og=parseFloat($("#m_og").value)||null;
+  l.fg=parseFloat($("#m_fg").value)||null;
+  l.ebc=parseFloat($("#m_ebc").value)||l.ebc;
+  l.fecha=$("#m_fec").value||l.fecha;
+  save(); closeSheet(); render(); toast("Mediciones guardadas");
+}
+function anotar(id){
+  sheet("Anotar en la bitácora",`
+    <label class="f">¿Qué observaste?</label>
+    <textarea id="an_t" rows="4" placeholder="Ej: krausen alto, aroma a lúpulo, temperatura del cuarto 23 °C"></textarea>
+    <button class="btn" onclick="guardarNota('${id}')">Guardar nota</button>`);
+}
+function guardarNota(id){
+  const t=$("#an_t").value.trim(); if(!t) return closeSheet();
+  const l=DB.lotes.find(x=>x.id===id);
+  l.notas.unshift({f:ahoraEC(),t:t}); save(); closeSheet(); render();
+}
+function borrarLote(id){
+  if(!confirm("¿Eliminar este lote y su bitácora?")) return;
+  DB.lotes=DB.lotes.filter(x=>x.id!==id); save(); go("lotes");
+}
+
+/* ============================================================
+   CHAT (Gemini)
+   ============================================================ */
+function contextoTexto(){
+  const c=consumoPendiente();
+  const inv = "INSUMOS EN STOCK — maltas (g): "+DB.insumos.maltas.map(x=>`${x.n} ${x.g}`).join(", ")
+    +" | lúpulos (g): "+DB.insumos.lupulos.map(x=>`${x.n} ${x.g}`).join(", ")
+    +" | levadura: "+DB.insumos.levadura.map(x=>`${x.n} ${x.sobres} sobres`).join(", ")
+    +". Comprometido por recetas pendientes — maltas: "+Object.entries(c.m).map(([k,v])=>`${k} ${v}`).join(", ")
+    +" | lúpulos: "+Object.entries(c.l).map(([k,v])=>`${k} ${v}`).join(", ")+".";
+  const rec = "RECETAS DEL PLAN:\n"+DB.recetas.map(r=>
+    `#${r.n} ${r.nombre} [${r.estado}] — ${r.litros} L. Ref. BJCP anotada por el usuario: ${r.bjcp}. `
+    +`Granos: ${r.granos.map(g=>`${g.n} ${g.g} g`).join(", ")}. `
+    +`Lúpulos: ${r.lupulos.map(h=>`${h.n} ${h.g} g @${h.min==="wp"?"whirlpool":h.min+" min"}`).join(", ")}. `
+    +`Objetivos: OG ${r.og}, FG ${r.fgMin}–${r.fgMax}, ABV ~${r.abv}%, ${r.ebcMin}–${r.ebcMax} EBC, ${r.ibuMin}–${r.ibuMax} IBU, ${r.co2} vol CO2. `
+    +`Proceso: maceración ${r.proc.macAgua} L a ${r.proc.macTemp} °C ${r.proc.macMin} min, recirculado ${r.proc.recirc} min, lavado ${r.proc.lavadoL} L a ${r.proc.lavadoTemp} °C, hervido ${r.proc.hervido} min (partido ${DB.cfg.boil1}+${DB.cfg.boil2}), whirlpool a ${r.proc.wpTemp} °C, reposo ${r.proc.reposo} min, enfriar a ${r.proc.enfriar} °C.`
+    +(r.notas?` Nota: ${r.notas}`:"")).join("\n");
+  const lot = DB.lotes.length? "LOTES EN CURSO:\n"+DB.lotes.map(l=>{
+      const s=estadoLote(l);
+      return `Lote ${l.numero} ${l.nombre}, inicio ${l.fecha}, día ${s.dia} de ${s.total}, etapa actual "${l.etapas[s.idx].n}" (día ${s.dentro} de ${l.etapas[s.idx].d}, ${l.etapas[s.idx].t}), OG ${l.og||"?"}, FG ${l.fg||"sin medir"}, EBC ${l.ebc}.`
+      +(l.notas.length?` Últimas notas: ${l.notas.slice(0,3).map(n=>n.f+" "+n.t).join(" | ")}`:"");
+    }).join("\n") : "LOTES EN CURSO: ninguno.";
+  const coc = DB.coccion? `COCCIÓN ABIERTA: receta "${(DB.recetas.find(r=>r.id===DB.coccion.recetaId)||{}).nombre}", Día ${DB.coccion.dia}.` : "COCCIÓN ABIERTA: ninguna.";
+  return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${inv}\n\n${rec}\n\n${lot}\n${coc}`;
+}
+function sistema(){
+  return `Eres el asistente cervecero de Edgar, cervecero casero en Guayaquil, Ecuador. Respondes en español, tuteando, directo y sin relleno.
+
+REGLAS
+1. La referencia de estilos es la Guía de Estilos BJCP (edición 2021 salvo que se indique otra). Cuando clasifiques una receta, da el código y nombre del estilo y los rangos del estilo (OG, FG, ABV, IBU, SRM/EBC) y compáralos punto por punto con los números de la receta, señalando lo que queda fuera de rango.
+2. Razonas siempre sobre el equipo real descrito abajo, no sobre un equipo genérico. Si una sugerencia no es viable con 3 ollas (20/20/17 L), 2 bombas, control por relé y hervido partido en dos días, dilo.
+3. Distingue explícitamente entre DATO (lo que está en el contexto), CÁLCULO (lo que derivas con una fórmula, indicando cuál), y ESTIMACIÓN o HIPÓTESIS (lo que supones). No inventes cifras de alfa-ácidos, atenuación ni rendimiento: si no las tienes, dilo y pide el dato o usa un rango típico marcándolo como estimación.
+4. Para cambios de lúpulo calcula el efecto sobre IBU con la fórmula de Tinseth, escribiendo los supuestos (alfa-ácidos, gravedad del hervido, volumen). Recuerda que el hervido está partido: ${DB.cfg.boil1} min el Día 1 y ${DB.cfg.boil2} min el Día 2, y que el whirlpool a 80 °C con reposo largo también aporta amargor (isomerización parcial).
+5. Sé concreto con cantidades, tiempos y temperaturas, en gramos, litros y grados Celsius. Cuando propongas una receta, respeta el stock disponible y avisa si no alcanza.
+6. Si algo tiene riesgo sanitario o de seguridad (infección, sobrecarbonatación, botellas), dilo primero y sin rodeos.
+7. Respuestas cortas por defecto (móvil). Amplía solo si te lo piden.
+
+CONTEXTO ACTUAL
+${contextoTexto()}`;
+}
+function vChat(){
+  const ok=!!DB.cfg.apiKey;
+  return `<div id="chatwrap">
+    <p class="eyebrow">Asistente</p>
+    <h1>Chat cervecero</h1>
+    <p class="sub">Conoce tu equipo, tus insumos, tus 8 recetas y el lote en curso. Responde según la guía BJCP.</p>
+    ${ok?"":`<div class="card" style="border-color:#4A3820"><div class="mini">Falta tu API key de Gemini.</div>
+      <button class="btn sm" onclick="go('ajustes')">Ir a Ajustes</button></div>`}
+    <div class="qrow">
+      ${["¿A qué estilo BJCP corresponde la receta 3?","Si muevo los 8 g de Simcoe del minuto 20 al 60, ¿cuánto sube el IBU?","Con lo que me sobra de stock, propóneme una receta","¿Es riesgoso partir el hervido en dos días?","¿Qué reviso hoy en el lote en curso?"]
+        .map(q=>`<button class="qbtn" onclick="usarSugerencia(${JSON.stringify(q).replace(/"/g,"&quot;")})">${esc(q)}</button>`).join("")}
+    </div>
+    <div id="msgs" style="margin-top:12px"></div>
+    <div id="chatform">
+      <textarea id="chatin" rows="1" placeholder="Pregunta lo que sea..." oninput="autosize(this)"></textarea>
+      <button id="send" onclick="enviar()">↑</button>
+    </div>
+  </div>`;
+}
+function autosize(el){el.style.height="auto";el.style.height=Math.min(120,el.scrollHeight)+"px";}
+function usarSugerencia(q){ $("#chatin").value=q; autosize($("#chatin")); $("#chatin").focus(); }
+function pintarChat(){
+  const m=$("#msgs"); if(!m) return;
+  m.innerHTML = DB.chat.length? DB.chat.map((x,i)=>x.r==="u"
+    ? `<div class="msg u">${esc(x.t)}</div>`
+    : `<div class="msg a"><pre>${fmt(x.t)}</pre><button class="copy" onclick="copiarPar(${i})">⧉ Copiar pregunta y respuesta</button></div>`).join("")
+    : `<div class="empty">Pregúntale lo que quieras sobre tu proceso, tus recetas o el estilo BJCP.</div>`;
+  m.scrollIntoView({block:"end"});
+  $("#view").scrollTop=$("#view").scrollHeight;
+}
+function fmt(t){
+  return esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/^\s*[\*\-]\s+/gm,"• ");
+}
+function copiarPar(i){
+  let q=""; for(let k=i-1;k>=0;k--){ if(DB.chat[k].r==="u"){q=DB.chat[k].t;break;} }
+  const txt=(q?"PREGUNTA:\n"+q+"\n\n":"")+"RESPUESTA:\n"+DB.chat[i].t;
+  navigator.clipboard.writeText(txt).then(()=>toast("Copiado")).catch(()=>toast("No se pudo copiar"));
+}
+function preguntarSobre(id){
+  const r=DB.recetas.find(x=>x.id===id);
+  go("chat"); setTimeout(()=>usarSugerencia(`Sobre la receta "${r.nombre}": `),50);
+}
+function preguntarLote(id){
+  const l=DB.lotes.find(x=>x.id===id);
+  go("chat"); setTimeout(()=>usarSugerencia(`Sobre el lote ${l.numero} (${l.nombre}): `),50);
+}
+function pedirRecetaIA(){
+  go("chat"); setTimeout(()=>usarSugerencia("Con el stock que me queda, propóneme una receta de 16 L. Quiero que sea "),50);
+}
+let cargando=false;
+async function enviar(){
+  const el=$("#chatin"), txt=el.value.trim();
+  if(!txt||cargando) return;
+  if(!DB.cfg.apiKey){ toast("Falta la API key en Ajustes"); return; }
+  el.value=""; autosize(el);
+  DB.chat.push({r:"u",t:txt}); save(); pintarChat();
+  cargando=true;
+  const m=$("#msgs"); m.insertAdjacentHTML("beforeend",`<div class="msg a" id="load"><span class="dim">Pensando…</span></div>`);
+  $("#view").scrollTop=$("#view").scrollHeight;
+  try{
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(DB.cfg.model)}:generateContent?key=${encodeURIComponent(DB.cfg.apiKey)}`;
+    const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      systemInstruction:{parts:[{text:sistema()}]},
+      contents:DB.chat.map(x=>({role:x.r==="u"?"user":"model",parts:[{text:x.t}]})),
+      generationConfig:{temperature:0.6,maxOutputTokens:2048}
+    })});
+    const data=await res.json();
+    if(!res.ok){
+      const msg=(data && data.error && data.error.message)||("Error "+res.status);
+      throw new Error(msg);
+    }
+    const cand=data.candidates && data.candidates[0];
+    const out=(cand && cand.content && cand.content.parts||[]).map(p=>p.text||"").join("").trim();
+    DB.chat.push({r:"a",t: out || "La respuesta llegó vacía. Reformula la pregunta o revisa el nombre del modelo en Ajustes."});
+  }catch(e){
+    DB.chat.push({r:"a",t:"No se pudo consultar a Gemini: "+e.message+"\n\nRevisa la API key, el nombre del modelo en Ajustes y tu conexión."});
+  }
+  cargando=false; save(); pintarChat();
+}
+
+/* ============================================================
+   AJUSTES / LOG / EXPORTAR
+   ============================================================ */
+function vAjustes(){
+  return `
+  <p class="eyebrow">Configuración</p>
+  <h1>Ajustes</h1>
+  <p class="sub">La API key se guarda solo en este teléfono. Nunca sale de aquí salvo hacia Google al consultar.</p>
+  <div class="card">
+    <label class="f">API key de Gemini</label>
+    <input id="a_key" type="password" value="${esc(DB.cfg.apiKey)}" placeholder="AIza...">
+    <label class="f">Modelo</label>
+    <input id="a_mod" value="${esc(DB.cfg.model)}" placeholder="gemini-3.6-flash">
+    <div class="tiny dim" style="margin-top:4px">Si el chat responde “modelo no encontrado”, cambia aquí el nombre exacto del modelo.</div>
+    <div class="grid2" style="margin-top:6px">
+      <div><label class="f">Hervido Día 1 (min)</label><input inputmode="numeric" id="a_b1" value="${DB.cfg.boil1}"></div>
+      <div><label class="f">Hervido Día 2 (min)</label><input inputmode="numeric" id="a_b2" value="${DB.cfg.boil2}"></div>
+    </div>
+    <label class="f">Temperatura de golpe (°C)</label><input id="a_tg" value="${esc(DB.cfg.tempGolpe)}">
+    <button class="btn" onclick="guardarCfg()">Guardar ajustes</button>
+  </div>
+  <div class="card">
+    <p class="eyebrow">Respaldo</p>
+    <div class="tiny dim" style="margin-bottom:4px">Exporta antes de limpiar el navegador o cambiar de teléfono.</div>
+    <div class="btns2">
+      <button class="btn sec sm" style="margin:0" onclick="exportar()">Exportar JSON</button>
+      <button class="btn sec sm" style="margin:0" onclick="document.getElementById('fin').click()">Importar JSON</button>
+    </div>
+    <input type="file" id="fin" accept=".json" style="display:none" onchange="importar(event)">
+  </div>
+  <div class="card">
+    <p class="eyebrow">Reinicio</p>
+    <button class="btn danger sm" onclick="reset()">Volver a los datos de fábrica</button>
+    <div class="tiny dim" style="margin-top:6px">Restaura el inventario original y las 8 recetas. Borra lotes y chat.</div>
+  </div>
+  <p class="tiny dim">${memOnly?"⚠ Este navegador bloqueó el almacenamiento: los cambios se pierden al cerrar. Exporta el JSON.":"Datos guardados en este dispositivo."}</p>`;
+}
+function guardarCfg(){
+  DB.cfg.apiKey=$("#a_key").value.trim();
+  DB.cfg.model=$("#a_mod").value.trim()||"gemini-3.6-flash";
+  DB.cfg.boil1=parseInt($("#a_b1").value)||55;
+  DB.cfg.boil2=parseInt($("#a_b2").value)||10;
+  DB.cfg.tempGolpe=$("#a_tg").value.trim()||"72–74";
+  save(); toast("Ajustes guardados"); render();
+}
+function exportar(){
+  const blob=new Blob([JSON.stringify(DB,null,1)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`cerveceria_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+}
+function importar(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d.recetas) throw new Error("archivo sin recetas");
+      DB=d; if(!DB.log) DB.log=CAMBIOS.slice();
+      save(); go("recetas"); toast("Datos importados");
+    }catch(err){ toast("Archivo inválido: "+err.message,3500); }
+    ev.target.value="";
+  };
+  rd.readAsText(f);
+}
+function reset(){
+  if(!confirm("Esto borra lotes, chat y cambios de receta. ¿Continuar?")) return;
+  DB=seed(); save(); go("recetas"); toast("Datos de fábrica restaurados");
+}
+function openLog(){
+  sheet("Registro de cambios", DB.log.map(c=>
+    `<div style="padding:8px 0;border-top:1px solid var(--line)">
+      <div class="tiny num" style="color:var(--amber)">${esc(c.f)}</div>
+      <div class="mini muted">${esc(c.t)}</div></div>`).join("")
+    +`<button class="btn sec sm" onclick="closeSheet()">Cerrar</button>`);
+}
+
+/* ---------- Sheet ---------- */
+function sheet(titulo,html){
+  const d=document.createElement("div");
+  d.className="modal"; d.id="sheet";
+  d.innerHTML=`<div class="sheet"><div class="grab"></div><h2 style="margin-bottom:2px">${esc(titulo)}</h2>${html}</div>`;
+  d.addEventListener("click",e=>{ if(e.target===d) closeSheet(); });
+  document.body.appendChild(d);
+}
+function closeSheet(){ const s=$("#sheet"); if(s) s.remove(); }
+
+/* ---------- Arranque ---------- */
+go("lotes");
+</script>
+</body>
+</html>

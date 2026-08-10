@@ -217,6 +217,9 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-10 00:40 (Ecuador)", t:"Versión 1.4. Alfa-ácidos reales cargados: Cascade 8,9 % y Simcoe 13,7 %. Con esos valores las recetas quedaban 50-80 % por encima del amargor buscado, así que se recalcularon las adiciones de Simcoe: las ocho vuelven a caer dentro de su rango de IBU. El Cascade del whirlpool no se toca. Sobran 304 g de Simcoe."},
+  {f:"2026-08-10 00:05 (Ecuador)", t:"Versión 1.3. Reparto balanceado: las 8 recetas dejan las cuatro maltas exactamente en cero (Pilsen 19.500, Munich 3.500, Pale Ale 4.400, Cara 20 4.750). Siete lotes de 4.000 g y el #8 de 4.150 g. Cada receta que lo necesita lleva su porción de Pilsen tostada en línea aparte, con su color propio, descontándose igual del stock de Pilsen. Botón en Ajustes para aplicar el reparto sobre datos ya guardados."},
+  {f:"2026-08-09 23:20 (Ecuador)", t:"Versión 1.2. Calculadora propia en JavaScript: OG por extracto y eficiencia, IBU por Tinseth (contando los dos tramos del hervido y el whirlpool), color por Morey y FG/ABV por atenuación. Cada receta muestra lo calculado junto al objetivo y marca las diferencias. Fichas editables de maltas (PPG y °L) y lúpulos (% alfa) en Insumos; eficiencia, volumen de hervido y factor de whirlpool en Ajustes. El chat ahora recibe los números y los saldos ya calculados, con instrucción de no rehacer la aritmética y de cuadrar toda tabla antes de responder."},
   {f:"2026-08-09 22:41 (Ecuador)", t:"Versión 1.1. Chat rehecho: los mensajes tienen su propio scroll y el campo de escritura ya no tapa el último mensaje. Botón Copiar más grande. Se descartan los bloques de razonamiento del modelo (antes se colaba su borrador en vez de la respuesta), se limita el pensamiento y se avisa si la respuesta se corta por falta de espacio. Botón Limpiar conversación."},
   {f:"2026-08-09 18:44 (Ecuador)", t:"Versión 1.0. App nueva: insumos con saldo proyectado, 8 recetas cargadas, editor de recetas, guía de cocción en 2 días con temporizadores y avisos de lúpulo, seguimiento de fermentación por lote y chat con Gemini (BJCP + equipo propio en contexto)."}
 ];
@@ -240,53 +243,55 @@ function seed(){
   },o||{});
   return {
     v:1,
-    cfg:{apiKey:"", model:"gemini-3.6-flash", boil1:55, boil2:10, tempGolpe:"72–74"},
+    cfg:{apiKey:"", model:"gemini-3.6-flash", boil1:55, boil2:10, tempGolpe:"72–74",
+         eficiencia:72.5, vHervido:18, factorWP:0.25},
     insumos:{
-      maltas:[{n:"Pilsen",g:19500},{n:"Munich",g:3500},{n:"Pale Ale",g:4400},{n:"Cara 20",g:4750}],
-      lupulos:[{n:"Cascade",g:500},{n:"Simcoe",g:400}],
+      maltas:[{n:"Pilsen",g:19500,ppg:37,lov:1.8},{n:"Munich",g:3500,ppg:36,lov:10},
+              {n:"Pale Ale",g:4400,ppg:37,lov:3},{n:"Cara 20",g:4750,ppg:34,lov:10.2}],
+      lupulos:[{n:"Cascade",g:500,aa:8.9},{n:"Simcoe",g:400,aa:13.7}],
       levadura:[{n:"Ale limpia seca",sobres:8}]
     },
     recetas:[
       {id:"r1",n:1,nombre:"Pilsner SMaSH cítrica",bjcp:"18A Blonde Ale / 5B Kölsch (sugerido — SMaSH con levadura ale)",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:4000,pct:100}],
+       granos:[{n:"Pilsen",g:4000}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:8,ebcMax:10,ibuMin:20,ibuMax:22,co2:2.3,
-       lupulos:[{n:"Simcoe",g:10,min:60},{n:"Simcoe",g:8,min:20},{n:"Cascade",g:32,min:"wp"}],
+       lupulos:[{n:"Simcoe",g:5,min:60},{n:"Simcoe",g:4,min:20},{n:"Cascade",g:32,min:"wp"}],
        proc:P({}),notas:""},
       {id:"r2",n:2,nombre:"APA cítrica",bjcp:"18B American Pale Ale",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:2800,pct:70},{n:"Pale Ale",g:900,pct:22.5},{n:"Cara 20",g:300,pct:7.5}],
+       granos:[{n:"Pilsen",g:2745},{n:"Pilsen",g:55,lov:150,ppg:33,nota:"tostada en casa"},{n:"Pale Ale",g:900},{n:"Cara 20",g:300}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:12,ebcMax:16,ibuMin:38,ibuMax:40,co2:2.3,
-       lupulos:[{n:"Simcoe",g:15,min:60},{n:"Simcoe",g:10,min:20},{n:"Cascade",g:40,min:"wp"}],
+       lupulos:[{n:"Simcoe",g:10,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:40,min:"wp"}],
        proc:P({}),notas:""},
       {id:"r3",n:3,nombre:"American Amber Ale",bjcp:"19A American Amber Ale",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:2400,pct:60},{n:"Munich",g:700,pct:17.5},{n:"Pale Ale",g:300,pct:7.5},{n:"Cara 20",g:600,pct:15}],
+       granos:[{n:"Pilsen",g:2195},{n:"Pilsen",g:205,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:700},{n:"Pale Ale",g:300},{n:"Cara 20",g:600}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:25,ebcMax:30,ibuMin:30,ibuMax:32,co2:2.2,
-       lupulos:[{n:"Simcoe",g:14,min:60},{n:"Simcoe",g:8,min:20},{n:"Cascade",g:35,min:"wp"}],
+       lupulos:[{n:"Simcoe",g:8,min:60},{n:"Simcoe",g:5,min:20},{n:"Cascade",g:35,min:"wp"}],
        proc:P({macTemp:"67"}),notas:""},
       {id:"r4",n:4,nombre:"Märzen Ale",bjcp:"6A Märzen (interpretado con levadura ale)",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:2300,pct:57.5},{n:"Munich",g:600,pct:15},{n:"Pale Ale",g:300,pct:7.5},{n:"Cara 20",g:800,pct:20}],
+       granos:[{n:"Pilsen",g:2135},{n:"Pilsen",g:165,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:600},{n:"Pale Ale",g:300},{n:"Cara 20",g:800}],
        og:1.057,fgMin:1.011,fgMax:1.013,abv:5.8,ebcMin:22,ebcMax:28,ibuMin:22,ibuMax:24,co2:2.2,
-       lupulos:[{n:"Simcoe",g:12,min:60},{n:"Simcoe",g:5,min:20},{n:"Cascade",g:30,min:"wp"}],
+       lupulos:[{n:"Simcoe",g:6,min:60},{n:"Simcoe",g:3,min:20},{n:"Cascade",g:30,min:"wp"}],
        proc:P({macTemp:"67"}),notas:""},
       {id:"r5",n:5,nombre:"Irish Red Ale",bjcp:"15A Irish Red Ale",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:2300,pct:57.5},{n:"Munich",g:300,pct:7.5},{n:"Pale Ale",g:500,pct:12.5},{n:"Cara 20",g:900,pct:22.5}],
+       granos:[{n:"Pilsen",g:2090},{n:"Pilsen",g:210,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:300},{n:"Pale Ale",g:500},{n:"Cara 20",g:900}],
        og:1.055,fgMin:1.011,fgMax:1.013,abv:5.6,ebcMin:25,ebcMax:30,ibuMin:22,ibuMax:24,co2:2.1,
-       lupulos:[{n:"Simcoe",g:12,min:60},{n:"Simcoe",g:5,min:20},{n:"Cascade",g:25,min:"wp"}],
+       lupulos:[{n:"Simcoe",g:7,min:60},{n:"Simcoe",g:3,min:20},{n:"Cascade",g:25,min:"wp"}],
        proc:P({macTemp:"67"}),notas:""},
       {id:"r6",n:6,nombre:"Porter",bjcp:"13C English Porter / 20A American Porter",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:2350,pct:58,nota:"500 g de estos van tostados en casa"},{n:"Munich",g:400,pct:9.9},{n:"Pale Ale",g:700,pct:17.3},{n:"Cara 20",g:600,pct:14.8}],
+       granos:[{n:"Pilsen",g:1700},{n:"Pilsen",g:700,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:400},{n:"Pale Ale",g:600},{n:"Cara 20",g:600}],
        og:1.058,fgMin:1.012,fgMax:1.014,abv:6.0,ebcMin:45,ebcMax:55,ibuMin:28,ibuMax:32,co2:2.1,
-       lupulos:[{n:"Simcoe",g:15,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:30,min:"wp"}],
-       proc:P({macTemp:"67"}),notas:"Tostar 500 g de Pilsen y dejarla enfriar por completo antes de incorporarla."},
+       lupulos:[{n:"Simcoe",g:9,min:60},{n:"Simcoe",g:4,min:20},{n:"Cascade",g:30,min:"wp"}],
+       proc:P({macTemp:"67"}),notas:"Tostar 700 g de Pilsen hasta color castaño oscuro (~150 °L) y dejarla enfriar por completo."},
       {id:"r7",n:7,nombre:"Stout",bjcp:"20B American Stout",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:2400,pct:59.3,nota:"700 g de estos van tostados en casa"},{n:"Munich",g:300,pct:7.4},{n:"Pale Ale",g:1000,pct:24.7},{n:"Cara 20",g:350,pct:8.6}],
+       granos:[{n:"Pilsen",g:1910},{n:"Pilsen",g:540,lov:300,ppg:33,nota:"tostada en casa"},{n:"Munich",g:300},{n:"Pale Ale",g:900},{n:"Cara 20",g:350}],
        og:1.060,fgMin:1.012,fgMax:1.014,abv:6.2,ebcMin:60,ebcMax:70,ibuMin:35,ibuMax:38,co2:2.05,
-       lupulos:[{n:"Simcoe",g:20,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:30,min:"wp"}],
-       proc:P({}),notas:"Tostar 700 g de Pilsen y dejarla enfriar por completo antes de incorporarla."},
+       lupulos:[{n:"Simcoe",g:12,min:60},{n:"Simcoe",g:4,min:20},{n:"Cascade",g:30,min:"wp"}],
+       proc:P({}),notas:"Tostar 540 g de Pilsen hasta casi color de grano de café (~300 °L) y dejarla enfriar por completo."},
       {id:"r8",n:8,nombre:"Munich Amber Ale",bjcp:"19A American Amber / 6A Märzen (híbrido)",litros:16,estado:"pendiente",
-       granos:[{n:"Pilsen",g:950,pct:21.8},{n:"Munich",g:1200,pct:27.6},{n:"Pale Ale",g:1000,pct:23.0},{n:"Cara 20",g:1200,pct:27.6}],
+       granos:[{n:"Pilsen",g:660},{n:"Pilsen",g:190,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:1200},{n:"Pale Ale",g:900},{n:"Cara 20",g:1200}],
        og:1.060,fgMin:1.011,fgMax:1.013,abv:6.0,ebcMin:28,ebcMax:32,ibuMin:21,ibuMax:23,co2:2.2,
-       lupulos:[{n:"Simcoe",g:13,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:32,min:"wp"}],
-       proc:P({macTemp:"67"}),notas:"Carga de grano mayor: 4.350 g."}
+       lupulos:[{n:"Simcoe",g:6,min:60},{n:"Simcoe",g:3,min:20},{n:"Cascade",g:32,min:"wp"}],
+       proc:P({macTemp:"67"}),notas:"Carga de grano mayor: 4.150 g."}
     ],
     lotes:[],
     coccion:null,          // {recetaId, dia, hechos:{}, inicio}
@@ -325,6 +330,20 @@ function save(){
 }
 let DB = load() || seed();
 if(!DB.cfg) DB.cfg={apiKey:"",model:"gemini-3.6-flash",boil1:55,boil2:10,tempGolpe:"72–74"};
+/* Fichas por defecto para datos guardados con la versión 1.0 */
+const PPG_DEF={"Pilsen":37,"Pale Ale":37,"Munich":36,"Cara 20":34};
+const LOV_DEF={"Pilsen":1.8,"Pale Ale":3,"Munich":10,"Cara 20":10.2};
+const AA_DEF={"Cascade":8.9,"Simcoe":13.7};
+DB.insumos.maltas.forEach(m=>{ if(m.ppg==null) m.ppg=PPG_DEF[m.n]||35; if(m.lov==null) m.lov=LOV_DEF[m.n]!=null?LOV_DEF[m.n]:5; });
+DB.insumos.lupulos.forEach(h=>{ if(h.aa==null) h.aa=AA_DEF[h.n]||6; });
+/* Alfa-ácidos reales del paquete de Edgar; solo sustituye los valores supuestos de la v1.2 */
+if(!DB.cfg.aaReal){
+  DB.insumos.lupulos.forEach(h=>{ if(h.n==="Cascade"&&h.aa===6) h.aa=8.9; if(h.n==="Simcoe"&&h.aa===12.5) h.aa=13.7; });
+  DB.cfg.aaReal=1;
+}
+if(DB.cfg.eficiencia==null) DB.cfg.eficiencia=72.5;
+if(DB.cfg.vHervido==null) DB.cfg.vHervido=18;
+if(DB.cfg.factorWP==null) DB.cfg.factorWP=0.25;
 if(!DB.log) DB.log=[];
 CAMBIOS.slice().reverse().forEach(c=>{ if(!DB.log.some(x=>x.f===c.f)) DB.log.unshift(c); });
 
@@ -345,6 +364,81 @@ function ebcColor(ebc){
   return `rgb(${c(r)},${c(g)},${c(b)})`;
 }
 function abvCalc(og,fg){ if(!og||!fg) return null; return ((og-fg)*131.25); }
+
+/* ============================================================
+   CALCULADORA — OG por eficiencia, IBU por Tinseth, color por Morey
+   Todo se calcula aquí, en JavaScript. La IA recibe estos números ya
+   hechos: interpreta, no hace la aritmética.
+   ============================================================ */
+function fichaMalta(g){
+  const n=typeof g==="string"?g:g.n;
+  const m=DB.insumos.maltas.find(x=>x.n===n);
+  const o={ppg:(m&&m.ppg!=null)?m.ppg:35, lov:(m&&m.lov!=null)?m.lov:5, hay:!!m};
+  if(typeof g==="object"){ if(g.ppg!=null) o.ppg=g.ppg; if(g.lov!=null){o.lov=g.lov; o.hay=true;} }
+  return o;
+}
+function fichaLupulo(n){
+  const h=DB.insumos.lupulos.find(x=>x.n===n);
+  return {aa:(h&&h.aa!=null)?h.aa:6, hay:!!h};
+}
+function calc(r){
+  const V=Number(r.litros)||16;
+  const ef=(Number(DB.cfg.eficiencia)||72.5)/100;
+  const vH=Number(DB.cfg.vHervido)||18;
+  const fWP=DB.cfg.factorWP!=null?Number(DB.cfg.factorWP):0.25;
+  const avisos=[];
+
+  /* Extracto → puntos de gravedad. PPG × 8,3454 = puntos·L/kg */
+  let ptsL=0, mcuSum=0, granoTotal=0;
+  r.granos.forEach(g=>{
+    const f=fichaMalta(g), peso=Number(g.g||0);
+    if(!f.hay) avisos.push(`${g.n}: sin ficha en Insumos, se asumió 35 PPG / 5 °L`);
+    ptsL += peso/1000 * f.ppg*8.3454 * ef;
+    mcuSum += peso*f.lov;
+    granoTotal += peso;
+  });
+  const ogPts = ptsL/V;
+  const og = 1 + ogPts/1000;
+
+  /* Color: MCU = Σ(g × °L) × 0,008345 / L ; SRM = 1,4922 × MCU^0,6859 (Morey) */
+  const mcu = mcuSum*0.008345/V;
+  const srm = mcu>0 ? 1.4922*Math.pow(mcu,0.6859) : 0;
+  const ebc = srm*1.97;
+
+  /* Tinseth. Gravedad media del hervido a partir del extracto total. */
+  const gb = 1 + (ogPts*V/vH)/1000;
+  const bigness = 1.65*Math.pow(0.000125, gb-1);
+  const det=[]; let ibu=0;
+  r.lupulos.forEach(h=>{
+    const f=fichaLupulo(h.n), peso=Number(h.g||0);
+    if(!f.hay) avisos.push(`${h.n}: sin % de alfa-ácidos, se asumió 6 %`);
+    let t, factor=1, txt;
+    if(h.min==="wp"){
+      t=parseInt(String(r.proc.reposo))||20; factor=fWP;
+      txt=`whirlpool ${t} min a ${r.proc.wpTemp} °C (${Math.round(fWP*100)} % de utilización)`;
+    }else{
+      const marca=Math.max(0, DB.cfg.boil1-Number(h.min));
+      t=(DB.cfg.boil1-marca)+DB.cfg.boil2;
+      txt=`entra en el minuto ${marca} del Día 1 → ${t} min efectivos (incluye los ${DB.cfg.boil2} del Día 2)`;
+    }
+    const util=bigness*((1-Math.exp(-0.04*t))/4.15)*factor;
+    const mgl=(f.aa/100)*peso*1000/V;
+    const x=util*mgl; ibu+=x;
+    det.push({n:h.n,g:peso,aa:f.aa,t:t,util:util,ibu:x,txt:txt});
+  });
+
+  /* Atenuación aparente típica de ale seca limpia: 75–82 % */
+  const fgAlta = og - (og-1)*0.75, fgBaja = og - (og-1)*0.82;
+  return {V,ef,vH,og,ogPts,ebc,srm,mcu,ibu,det,avisos,granoTotal,gb,
+          fgMin:fgBaja, fgMax:fgAlta,
+          abvMin:(og-fgAlta)*131.25, abvMax:(og-fgBaja)*131.25};
+}
+function delta(calcV,min,max,tol){
+  if(min==null) return "";
+  const lo=max==null?min:Math.min(min,max), hi=max==null?min:Math.max(min,max);
+  if(calcV>=lo-(tol||0) && calcV<=hi+(tol||0)) return `<span class="ok">coincide</span>`;
+  return `<span class="warn">${calcV>hi?"↑":"↓"} objetivo ${lo===hi?lo:lo+"–"+hi}</span>`;
+}
 function hoy0(){const d=new Date();d.setHours(0,0,0,0);return d;}
 function diasDesde(fecha){
   if(!fecha) return 1;
@@ -489,19 +583,41 @@ function vInsumos(){
 }
 function editarInsumos(tipo){
   const arr=DB.insumos[tipo], u=tipo==="levadura"?"sobres":"g";
-  sheet(`Stock de ${tipo}`,`
-    ${arr.map((x,i)=>`<label class="f">${esc(x.n)} (${u})</label>
-      <input inputmode="decimal" id="ins${i}" value="${x.g!=null?x.g:x.sobres}">`).join("")}
+  const extra=(x,i)=>{
+    if(tipo==="maltas") return `<div class="grid2">
+      <div><label class="f">Extracto (PPG)</label><input inputmode="decimal" id="pp${i}" value="${x.ppg}"></div>
+      <div><label class="f">Color (°L)</label><input inputmode="decimal" id="lv${i}" value="${x.lov}"></div></div>`;
+    if(tipo==="lupulos") return `<label class="f">Alfa-ácidos (%)</label><input inputmode="decimal" id="aa${i}" value="${x.aa}">`;
+    return "";
+  };
+  sheet(`Stock y fichas de ${tipo}`,`
+    ${arr.map((x,i)=>`<div style="padding-bottom:8px;border-bottom:1px solid var(--line)">
+      <label class="f">${esc(x.n)} — cantidad (${u})</label>
+      <input inputmode="decimal" id="ins${i}" value="${x.g!=null?x.g:x.sobres}">
+      ${extra(x,i)}</div>`).join("")}
     <label class="f">Agregar otro (nombre)</label><input id="insNew" placeholder="opcional">
     <label class="f">Cantidad (${u})</label><input inputmode="decimal" id="insNewQ" placeholder="0">
-    <button class="btn" onclick="guardarInsumos('${tipo}')">Guardar stock</button>`);
+    ${tipo==="maltas"?`<div class="tiny dim" style="margin-top:6px">El color en °L manda sobre el EBC calculado. Si tu Cara 20 está rotulada en EBC, divide entre 1,97 para pasarla a °L.</div>`:""}
+    ${tipo==="lupulos"?`<div class="tiny dim" style="margin-top:6px">El % de alfa-ácidos viene impreso en el paquete y cambia con cada cosecha. Es el dato que más mueve el IBU.</div>`:""}
+    <button class="btn" onclick="guardarInsumos('${tipo}')">Guardar</button>`);
 }
 function guardarInsumos(tipo){
   const arr=DB.insumos[tipo], k=tipo==="levadura"?"sobres":"g";
-  arr.forEach((x,i)=>{const v=parseFloat($("#ins"+i).value); if(!isNaN(v)) x[k]=v;});
+  arr.forEach((x,i)=>{
+    const v=parseFloat($("#ins"+i).value); if(!isNaN(v)) x[k]=v;
+    if(tipo==="maltas"){
+      const p=parseFloat($("#pp"+i).value), l=parseFloat($("#lv"+i).value);
+      if(!isNaN(p)) x.ppg=p; if(!isNaN(l)) x.lov=l;
+    }
+    if(tipo==="lupulos"){ const a=parseFloat($("#aa"+i).value); if(!isNaN(a)) x.aa=a; }
+  });
   const nn=$("#insNew").value.trim(), nq=parseFloat($("#insNewQ").value);
-  if(nn && !isNaN(nq)){const o={n:nn}; o[k]=nq; arr.push(o);}
-  save(); closeSheet(); render(); toast("Stock actualizado");
+  if(nn && !isNaN(nq)){
+    const o={n:nn}; o[k]=nq;
+    if(tipo==="maltas"){o.ppg=35;o.lov=5;} if(tipo==="lupulos") o.aa=6;
+    arr.push(o);
+  }
+  save(); closeSheet(); render(); toast("Guardado");
 }
 
 /* ============================================================
@@ -534,6 +650,7 @@ function vReceta(id){
   const r=DB.recetas.find(x=>x.id===id); if(!r) return vRecetas();
   const col=ebcColor((r.ebcMin+r.ebcMax)/2);
   const totalG=r.granos.reduce((a,g)=>a+Number(g.g||0),0);
+  const K=calc(r);
   const b1=DB.cfg.boil1;
   const hop=h=>{
     if(h.min==="wp") return `whirlpool a ${r.proc.wpTemp} °C, reposo ${r.proc.reposo} min`;
@@ -556,6 +673,21 @@ function vReceta(id){
          ["Color",r.ebcMin+"–"+r.ebcMax+" EBC"],["Amargor",r.ibuMin+"–"+r.ibuMax+" IBU"],["CO₂",r.co2+" vol"]]
         .map(([k,v])=>`<div><div class="tiny dim">${k}</div><div class="num" style="font-weight:700">${v}</div></div>`).join("")}
     </div>
+  </div>
+
+  <div class="card">
+    <div class="spread"><p class="eyebrow" style="margin:0">Calculado por la app</p>
+      <span class="chip a" onclick="verSupuestos('${r.id}')" style="cursor:pointer">SUPUESTOS</span></div>
+    <table style="margin-top:8px"><thead><tr><th></th><th>Calculado</th><th>Objetivo</th></tr></thead><tbody>
+      <tr><td>OG</td><td>${K.og.toFixed(3)}</td><td class="dim">${delta(K.og,r.og,null,0.003)}</td></tr>
+      <tr><td>FG estimada</td><td>${K.fgMin.toFixed(3)}–${K.fgMax.toFixed(3)}</td><td class="dim">${r.fgMin.toFixed(3)}–${r.fgMax.toFixed(3)}</td></tr>
+      <tr><td>ABV</td><td>${K.abvMin.toFixed(1)}–${K.abvMax.toFixed(1)} %</td><td class="dim">~${r.abv} %</td></tr>
+      <tr><td>Amargor</td><td>${K.ibu.toFixed(0)} IBU</td><td class="dim">${delta(K.ibu,r.ibuMin,r.ibuMax,1)}</td></tr>
+      <tr><td>Color</td><td>${K.ebc.toFixed(0)} EBC · ${K.srm.toFixed(1)} SRM</td><td class="dim">${delta(K.ebc,r.ebcMin,r.ebcMax,1)}</td></tr>
+    </tbody></table>
+    ${K.det.map(d=>`<div class="tiny dim" style="margin-top:6px">${esc(d.n)} ${d.g} g (${d.aa} % AA) · ${esc(d.txt)} → <b class="num">${d.ibu.toFixed(1)} IBU</b></div>`).join("")}
+    ${K.avisos.length?`<div class="tiny warn" style="margin-top:8px">${K.avisos.map(esc).join("<br>")}</div>`:""}
+    <button class="btn sec sm" onclick="adoptarCalculo('${r.id}')">Usar lo calculado como objetivo</button>
   </div>
 
   <div class="card">
@@ -593,6 +725,32 @@ function vReceta(id){
   <button class="btn sec sm" onclick="duplicarReceta('${r.id}')">Duplicar como base</button>`;
 }
 
+function verSupuestos(id){
+  const r=DB.recetas.find(x=>x.id===id), K=calc(r);
+  sheet("Supuestos del cálculo",`
+    <div class="mini muted" style="line-height:1.8">
+      Volumen final <b class="num">${K.V} L</b> · volumen de hervido <b class="num">${K.vH} L</b><br>
+      Eficiencia de casa <b class="num">${(K.ef*100).toFixed(1)} %</b><br>
+      Gravedad media del hervido <b class="num">${K.gb.toFixed(3)}</b><br>
+      Hervido partido <b class="num">${DB.cfg.boil1} + ${DB.cfg.boil2} min</b>: una adición nominal de 60' entra al inicio del Día 1 y sigue isomerizando los ${DB.cfg.boil2} min del Día 2<br>
+      Whirlpool: <b class="num">${Math.round(DB.cfg.factorWP*100)} %</b> de la utilización que tendría a hervor<br>
+      Atenuación aparente <b class="num">75–82 %</b><br>
+      MCU <b class="num">${K.mcu.toFixed(1)}</b>
+    </div>
+    <hr>
+    <div class="tiny dim">OG por extracto y eficiencia · IBU por Tinseth · color por Morey. Los % de alfa-ácidos, PPG y °L salen de las fichas que puedes editar en <b>Insumos</b>; la eficiencia y los volúmenes, de <b>Ajustes</b>.</div>
+    <button class="btn sec sm" onclick="closeSheet()">Cerrar</button>`);
+}
+function adoptarCalculo(id){
+  const r=DB.recetas.find(x=>x.id===id), K=calc(r);
+  if(!confirm("Reemplaza los objetivos de esta receta por los valores calculados. ¿Seguir?")) return;
+  r.og=Math.round(K.og*1000)/1000;
+  r.fgMin=Math.round(K.fgMin*1000)/1000; r.fgMax=Math.round(K.fgMax*1000)/1000;
+  r.abv=Math.round((K.abvMin+K.abvMax)/2*10)/10;
+  r.ibuMin=Math.round(K.ibu-2); r.ibuMax=Math.round(K.ibu+2);
+  r.ebcMin=Math.round(K.ebc-2); r.ebcMax=Math.round(K.ebc+2);
+  save(); render(); toast("Objetivos actualizados");
+}
 function editarReceta(id){
   const r=DB.recetas.find(x=>x.id===id);
   sheet("Editar receta",`
@@ -606,8 +764,8 @@ function editarReceta(id){
       <div><label class="f">IBU mín</label><input inputmode="decimal" id="e_ibu1" value="${r.ibuMin}"></div>
       <div><label class="f">IBU máx</label><input inputmode="decimal" id="e_ibu2" value="${r.ibuMax}"></div>
     </div>
-    <label class="f">Granos — un renglón por malta: nombre, gramos</label>
-    <textarea id="e_gr" rows="5">${r.granos.map(g=>g.n+", "+g.g).join("\n")}</textarea>
+    <label class="f">Granos — nombre, gramos[, °L si es una malta especial]</label>
+    <textarea id="e_gr" rows="5">${r.granos.map(g=>g.n+", "+g.g+(g.lov!=null?", "+g.lov:"")).join("\n")}</textarea>
     <label class="f">Lúpulos — nombre, gramos, minuto (o wp)</label>
     <textarea id="e_lu" rows="4">${r.lupulos.map(h=>h.n+", "+h.g+", "+h.min).join("\n")}</textarea>
     <label class="f">Notas</label><textarea id="e_no" rows="2">${esc(r.notas||"")}</textarea>
@@ -619,10 +777,22 @@ function parseLineas(txt,campos){
     const p=l.split(",").map(s=>s.trim());
     const o={n:p[0]||"?"};
     if(campos>=2) o.g=parseFloat(p[1])||0;
-    if(campos>=3) o.min=(p[2]||"").toLowerCase()==="wp"?"wp":(parseFloat(p[2])||0);
+    if(campos===3) o.min=(p[2]||"").toLowerCase()==="wp"?"wp":(parseFloat(p[2])||0);
+    if(campos===2 && p[2]!=null && p[2]!==""){ const v=parseFloat(p[2]); if(!isNaN(v)) o.lov=v; }
     return o;
   });
 }
+/* Datos guardados en 1.0/1.1: separar la malta tostada en su propia línea */
+DB.recetas.forEach(r=>{
+  const i=r.granos.findIndex(g=>/tostad/i.test(g.nota||"") && g.lov==null);
+  if(i<0) return;
+  const g=r.granos[i], m=(g.nota||"").match(/(\d+)\s*g/);
+  const t=m?parseInt(m[1]):0;
+  if(t>0 && t<Number(g.g)){
+    g.g=Number(g.g)-t; delete g.nota;
+    r.granos.splice(i+1,0,{n:g.n,g:t,lov:150,ppg:33,nota:"tostada en casa"});
+  }
+});
 function guardarReceta(id){
   const r=DB.recetas.find(x=>x.id===id);
   r.nombre=$("#e_nom").value.trim()||r.nombre;
@@ -942,25 +1112,28 @@ function borrarLote(id){
    ============================================================ */
 function contextoTexto(){
   const c=consumoPendiente();
-  const inv = "INSUMOS EN STOCK — maltas (g): "+DB.insumos.maltas.map(x=>`${x.n} ${x.g}`).join(", ")
-    +" | lúpulos (g): "+DB.insumos.lupulos.map(x=>`${x.n} ${x.g}`).join(", ")
-    +" | levadura: "+DB.insumos.levadura.map(x=>`${x.n} ${x.sobres} sobres`).join(", ")
-    +". Comprometido por recetas pendientes — maltas: "+Object.entries(c.m).map(([k,v])=>`${k} ${v}`).join(", ")
-    +" | lúpulos: "+Object.entries(c.l).map(([k,v])=>`${k} ${v}`).join(", ")+".";
-  const rec = "RECETAS DEL PLAN:\n"+DB.recetas.map(r=>
-    `#${r.n} ${r.nombre} [${r.estado}] — ${r.litros} L. Ref. BJCP anotada por el usuario: ${r.bjcp}. `
-    +`Granos: ${r.granos.map(g=>`${g.n} ${g.g} g`).join(", ")}. `
+  const saldoM=DB.insumos.maltas.map(x=>`${x.n}: stock ${x.g} g, comprometido ${c.m[x.n]||0} g, saldo ${x.g-(c.m[x.n]||0)} g (ficha: ${x.ppg} PPG, ${x.lov} °L)`).join("; ");
+  const saldoL=DB.insumos.lupulos.map(x=>`${x.n}: stock ${x.g} g, comprometido ${c.l[x.n]||0} g, saldo ${x.g-(c.l[x.n]||0)} g (${x.aa} % alfa)`).join("; ");
+  const saldoY=DB.insumos.levadura.map(x=>`${x.n}: ${x.sobres} sobres, comprometidos ${c.sobres}, saldo ${x.sobres-c.sobres}`).join("; ");
+  const inv = `SALDOS YA CALCULADOS POR LA APP (no los recalcules).\nMaltas — ${saldoM}.\nLúpulos — ${saldoL}.\nLevadura — ${saldoY}.\nUn saldo negativo significa que el plan pide más de lo que hay.`;
+  const par = `PARÁMETROS DE CÁLCULO DE LA APP: eficiencia ${DB.cfg.eficiencia} %, volumen de hervido ${DB.cfg.vHervido} L, whirlpool al ${Math.round(DB.cfg.factorWP*100)} % de la utilización a hervor, hervido partido ${DB.cfg.boil1}+${DB.cfg.boil2} min. OG por extracto y eficiencia, IBU por Tinseth, color por Morey, atenuación 75–82 %.`;
+  const rec = "RECETAS DEL PLAN:\n"+DB.recetas.map(r=>{
+    const K=calc(r);
+    return `#${r.n} ${r.nombre} [${r.estado}] — ${r.litros} L. Ref. BJCP anotada por el usuario: ${r.bjcp}. `
+    +`Granos: ${r.granos.map(g=>`${g.n} ${g.g} g`).join(", ")} (total ${K.granoTotal} g). `
     +`Lúpulos: ${r.lupulos.map(h=>`${h.n} ${h.g} g @${h.min==="wp"?"whirlpool":h.min+" min"}`).join(", ")}. `
-    +`Objetivos: OG ${r.og}, FG ${r.fgMin}–${r.fgMax}, ABV ~${r.abv}%, ${r.ebcMin}–${r.ebcMax} EBC, ${r.ibuMin}–${r.ibuMax} IBU, ${r.co2} vol CO2. `
-    +`Proceso: maceración ${r.proc.macAgua} L a ${r.proc.macTemp} °C ${r.proc.macMin} min, recirculado ${r.proc.recirc} min, lavado ${r.proc.lavadoL} L a ${r.proc.lavadoTemp} °C, hervido ${r.proc.hervido} min (partido ${DB.cfg.boil1}+${DB.cfg.boil2}), whirlpool a ${r.proc.wpTemp} °C, reposo ${r.proc.reposo} min, enfriar a ${r.proc.enfriar} °C.`
-    +(r.notas?` Nota: ${r.notas}`:"")).join("\n");
+    +`Objetivos anotados: OG ${r.og}, FG ${r.fgMin}–${r.fgMax}, ABV ~${r.abv}%, ${r.ebcMin}–${r.ebcMax} EBC, ${r.ibuMin}–${r.ibuMax} IBU, ${r.co2} vol CO2. `
+    +`CALCULADO POR LA APP: OG ${K.og.toFixed(3)}, FG ${K.fgMin.toFixed(3)}–${K.fgMax.toFixed(3)}, ABV ${K.abvMin.toFixed(1)}–${K.abvMax.toFixed(1)} %, ${K.ibu.toFixed(1)} IBU (${K.det.map(d=>`${d.n} ${d.g} g ${d.t} min → ${d.ibu.toFixed(1)}`).join("; ")}), ${K.ebc.toFixed(0)} EBC / ${K.srm.toFixed(1)} SRM. `
+    +`Proceso: maceración ${r.proc.macAgua} L a ${r.proc.macTemp} °C ${r.proc.macMin} min, recirculado ${r.proc.recirc} min, lavado ${r.proc.lavadoL} L a ${r.proc.lavadoTemp} °C, whirlpool a ${r.proc.wpTemp} °C, reposo ${r.proc.reposo} min, enfriar a ${r.proc.enfriar} °C.`
+    +(r.notas?` Nota: ${r.notas}`:"");
+  }).join("\n");
   const lot = DB.lotes.length? "LOTES EN CURSO:\n"+DB.lotes.map(l=>{
       const s=estadoLote(l);
       return `Lote ${l.numero} ${l.nombre}, inicio ${l.fecha}, día ${s.dia} de ${s.total}, etapa actual "${l.etapas[s.idx].n}" (día ${s.dentro} de ${l.etapas[s.idx].d}, ${l.etapas[s.idx].t}), OG ${l.og||"?"}, FG ${l.fg||"sin medir"}, EBC ${l.ebc}.`
       +(l.notas.length?` Últimas notas: ${l.notas.slice(0,3).map(n=>n.f+" "+n.t).join(" | ")}`:"");
     }).join("\n") : "LOTES EN CURSO: ninguno.";
   const coc = DB.coccion? `COCCIÓN ABIERTA: receta "${(DB.recetas.find(r=>r.id===DB.coccion.recetaId)||{}).nombre}", Día ${DB.coccion.dia}.` : "COCCIÓN ABIERTA: ninguna.";
-  return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${inv}\n\n${rec}\n\n${lot}\n${coc}`;
+  return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${par}\n\n${inv}\n\n${rec}\n\n${lot}\n${coc}`;
 }
 function sistema(){
   return `Eres el asistente cervecero de Edgar, cervecero casero en Guayaquil, Ecuador. Respondes en español, tuteando, directo y sin relleno.
@@ -969,11 +1142,12 @@ REGLAS
 1. La referencia de estilos es la Guía de Estilos BJCP (edición 2021 salvo que se indique otra). Cuando clasifiques una receta, da el código y nombre del estilo y los rangos del estilo (OG, FG, ABV, IBU, SRM/EBC) y compáralos punto por punto con los números de la receta, señalando lo que queda fuera de rango.
 2. Razonas siempre sobre el equipo real descrito abajo, no sobre un equipo genérico. Si una sugerencia no es viable con 3 ollas (20/20/17 L), 2 bombas, control por relé y hervido partido en dos días, dilo.
 3. No inventes cifras de alfa-ácidos, atenuación ni rendimiento. Si no las tienes, usa un rango típico y escribe entre paréntesis que es un supuesto, o pide el dato. Cuando algo sea un cálculo tuyo, muestra la fórmula y los números; cuando sea una suposición, dilo en la misma frase, sin etiquetas ni encabezados aparte.
-4. Para cambios de lúpulo calcula el efecto sobre IBU con la fórmula de Tinseth, escribiendo los supuestos (alfa-ácidos, gravedad del hervido, volumen). Recuerda que el hervido está partido: ${DB.cfg.boil1} min el Día 1 y ${DB.cfg.boil2} min el Día 2, y que el whirlpool a 80 °C con reposo largo también aporta amargor (isomerización parcial).
-5. Sé concreto con cantidades, tiempos y temperaturas, en gramos, litros y grados Celsius. Cuando propongas una receta, respeta el stock disponible y avisa si no alcanza.
-6. Si algo tiene riesgo sanitario o de seguridad (infección, sobrecarbonatación, botellas), dilo primero y sin rodeos.
-7. Respuestas cortas por defecto (móvil). Amplía solo si te lo piden.
-8. Entrega la respuesta final directamente. Nunca escribas tu plan, tu esquema, ni frases sobre lo que vas a presentar ("voy a mostrar…", "estructura de la respuesta"). Si la pregunta pide una receta, arranca con la receta.
+4. La app ya calcula OG, FG, ABV, IBU (Tinseth) y color (Morey) de cada receta del plan, y ya calcula los saldos de insumos. Usa esos números tal cual; no los recalcules ni los contradigas. Si crees que un número de la app está mal, dilo explicando por qué, pero no lo reemplaces en silencio. Para una receta NUEVA que tú propongas, sí debes calcular, y entonces escribe la fórmula y los supuestos (alfa-ácidos, eficiencia ${DB.cfg.eficiencia} %, volumen, gravedad de hervido).
+5. Antes de dar cualquier lista de cantidades, suma columna por columna y comprueba que el total cuadre con el dato de partida. Si no cuadra, corrígelo antes de responder. Nunca presentes una tabla cuyas sumas no den. Recuerda que el hervido está partido: ${DB.cfg.boil1} min el Día 1 y ${DB.cfg.boil2} min el Día 2, y una adición nominal de 60' recibe los dos tramos.
+6. Sé concreto con cantidades, tiempos y temperaturas, en gramos, litros y grados Celsius. Cuando propongas una receta, respeta el stock disponible y avisa si no alcanza.
+7. Si algo tiene riesgo sanitario o de seguridad (infección, sobrecarbonatación, botellas), dilo primero y sin rodeos.
+8. Respuestas cortas por defecto (móvil). Amplía solo si te lo piden.
+9. Entrega la respuesta final directamente. Nunca escribas tu plan, tu esquema, ni frases sobre lo que vas a presentar ("voy a mostrar…", "estructura de la respuesta"). Si la pregunta pide una receta, arranca con la receta.
 
 CONTEXTO ACTUAL
 ${contextoTexto()}`;
@@ -1116,6 +1290,21 @@ function vAjustes(){
     <button class="btn" onclick="guardarCfg()">Guardar ajustes</button>
   </div>
   <div class="card">
+    <p class="eyebrow">Parámetros de cálculo</p>
+    <div class="grid3">
+      <div><label class="f">Eficiencia %</label><input inputmode="decimal" id="a_ef" value="${DB.cfg.eficiencia}"></div>
+      <div><label class="f">Hervido L</label><input inputmode="decimal" id="a_vh" value="${DB.cfg.vHervido}"></div>
+      <div><label class="f">Whirlpool %</label><input inputmode="decimal" id="a_wp" value="${Math.round(DB.cfg.factorWP*100)}"></div>
+    </div>
+    <div class="tiny dim" style="margin-top:6px">Eficiencia: cuánto extracto sacas de verdad. 72,5 % es lo que se deduce de tus 8 recetas. Whirlpool: qué fracción de la utilización a hervor rinde tu reposo a 80 °C.</div>
+    <button class="btn sec sm" onclick="guardarCalc()">Guardar parámetros</button>
+  </div>
+  <div class="card">
+    <p class="eyebrow">Plan balanceado</p>
+    <div class="tiny dim" style="margin-bottom:6px">Reescribe los granos y los lúpulos de las 8 recetas pendientes con el reparto que deja las cuatro maltas en cero, incluida la Pilsen tostada de cada una. No toca lotes ni recetas ya elaboradas.</div>
+    <button class="btn sec sm" onclick="aplicarPlan()">Aplicar reparto a cero</button>
+  </div>
+  <div class="card">
     <p class="eyebrow">Respaldo</p>
     <div class="tiny dim" style="margin-bottom:4px">Exporta antes de limpiar el navegador o cambiar de teléfono.</div>
     <div class="btns2">
@@ -1138,6 +1327,25 @@ function guardarCfg(){
   DB.cfg.boil2=parseInt($("#a_b2").value)||10;
   DB.cfg.tempGolpe=$("#a_tg").value.trim()||"72–74";
   save(); toast("Ajustes guardados"); render();
+}
+function guardarCalc(){
+  const ef=parseFloat($("#a_ef").value), vh=parseFloat($("#a_vh").value), wp=parseFloat($("#a_wp").value);
+  if(!isNaN(ef)) DB.cfg.eficiencia=ef;
+  if(!isNaN(vh)) DB.cfg.vHervido=vh;
+  if(!isNaN(wp)) DB.cfg.factorWP=wp/100;
+  save(); toast("Parámetros guardados"); render();
+}
+function aplicarPlan(){
+  if(!confirm("Reemplaza los granos y lúpulos de las 8 recetas pendientes por el reparto balanceado. ¿Seguir?")) return;
+  const base=seed().recetas; let n=0;
+  base.forEach(b=>{
+    const r=DB.recetas.find(x=>x.n===b.n && x.estado==="pendiente");
+    if(!r) return;
+    r.granos=JSON.parse(JSON.stringify(b.granos));
+    r.lupulos=JSON.parse(JSON.stringify(b.lupulos));
+    r.notas=b.notas; n++;
+  });
+  save(); toast(n+" recetas actualizadas"); go("recetas");
 }
 function exportar(){
   const blob=new Blob([JSON.stringify(DB,null,1)],{type:"application/json"});

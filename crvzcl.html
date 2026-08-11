@@ -234,6 +234,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-10 22:10 (Ecuador)", t:"Versión 2.6. Corregido el botón Copiar todo: la cabecera del chat no se redibujaba al enviar el primer mensaje, así que los botones no aparecían hasta cambiar de pestaña. Tres reglas nuevas tras probar preguntas sobre la Stout: no escalar IBU ni color proporcionalmente al cambiar el volumen, usar la tasa real de evaporación del equipo (1,85 L/h) para calcular tiempos de hervido, y distinguir el número de receta del orden de elaboración."},
   {f:"2026-08-10 21:20 (Ecuador)", t:"Versión 2.5. Tres ajustes al contexto salidos de una prueba con la American Amber: se advierte que la eficiencia del 72,5 % está medida con 13 L de maceración y 7 L de lavado y que cae si se lava menos (el modelo calculaba OG altas suponiéndola constante); obligación de comparar todo cambio de receta contra el rango BJCP del estilo y avisar si lo saca de estilo; y obligación de revisar los puntos de riesgo cuando un cambio suba la densidad o el estrés de la levadura."},
   {f:"2026-08-10 20:25 (Ecuador)", t:"Versión 2.4. El marco de la muestra pasa a blanco puro y 3 px, para que el color se lea igual que en la carta del manual BJCP."},
   {f:"2026-08-10 20:05 (Ecuador)", t:"Versión 2.3. La muestra de color va ahora enmarcada en claro: sobre el fondo casi negro de la app las cervezas oscuras se confundían con el propio fondo y el ajuste anterior no se apreciaba. Es el mismo principio de las cartas de color cerveceras, que se leen contra blanco."},
@@ -1411,7 +1412,10 @@ REGLAS
 15. Marca de dónde sale cada dato cuando importe: los del contexto son firmes; lo que venga de tu conocimiento general dilo así ("esto lo digo de memoria, verifícalo"). Ante una duda que no puedas resolver con el contexto, prefiere decir que no lo sabes o pedir el dato que falta antes que rellenar con algo plausible. El usuario tiene solo 20 consultas al día: una respuesta corta y honesta vale más que una larga e inventada.
 16. Siempre que propongas o evalúes un cambio de receta, compara el resultado contra el rango BJCP del estilo que tiene anotado y di expresamente si lo saca de estilo y en qué se convertiría. Un cambio que sube el alcohol por encima del techo del estilo no es un detalle menor: dilo.
 17. Cuando un cambio suba la OG, la temperatura de fermentación o el estrés de la levadura, revisa el bloque de puntos de riesgo y menciona lo que aplique. En su clima, subir la densidad sin reforzar la siembra ni el control de temperatura es la vía directa a los alcoholes de fusel.
-18. El usuario compra solo lo que va a usar: ya botó unos 40 kg de malta caducada. No le propongas insumos que no tenga sin advertirle la restricción de compra (las maltas especiales se venden por 5 kg mínimo, y le sobrarían). Lo que se consigue en supermercado, como los copos de avena, sí es viable en cualquier cantidad.
+18. Al concentrar o diluir un mosto, el IBU y el color NO escalan de forma proporcional al volumen. El color sigue una potencia (Morey) y el amargor baja de utilización al subir la gravedad del hervido. Si necesitas esos números para un volumen distinto al de la receta, dilo como estimación y explica que la app los recalcula al cambiar los litros; nunca multipliques por la razón de volúmenes.
+19. Para cualquier cambio de volumen por evaporación, usa la tasa real de este equipo: pasa de ${DB.cfg.vHervido} L a ${DB.cfg.vHervido-2} L en ${DB.cfg.boil1+DB.cfg.boil2} min de hervido, o sea unos 1,85 L/h. Calcula los minutos con esa tasa. Recuerda además que los 2 L de recarga del minuto 40 son opcionales: omitirlos ahorra casi una hora de hervido extra. Y avisa siempre cuántos litros de cerveza se pierden.
+20. Cuidado con los dos numeraciones: cada receta tiene su número propio (#1 a #8) y el plan tiene un ORDEN DE ELABORACIÓN distinto. Di siempre el nombre de la receta y aclara a cuál de las dos numeraciones te refieres.
+21. El usuario compra solo lo que va a usar: ya botó unos 40 kg de malta caducada. No le propongas insumos que no tenga sin advertirle la restricción de compra (las maltas especiales se venden por 5 kg mínimo, y le sobrarían). Lo que se consigue en supermercado, como los copos de avena, sí es viable en cualquier cantidad.
 
 CONTEXTO ACTUAL
 ${contextoTexto()}`;
@@ -1505,7 +1509,10 @@ async function enviar(){
   if(!txt||cargando) return;
   if(!DB.cfg.apiKey){ toast("Falta la API key en Ajustes"); return; }
   el.value=""; autosize(el);
-  DB.chat.push({r:"u",t:txt}); save(); pintarChat();
+  DB.chat.push({r:"u",t:txt}); save();
+  /* Con el primer mensaje la cabecera cambia (aparecen Copiar todo y
+     Limpiar), así que hay que rehacer la vista, no solo los mensajes. */
+  if(DB.chat.length===1) render(); else pintarChat();
   cargando=true;
   $("#msgs").insertAdjacentHTML("beforeend",`<div class="msg a"><span class="dim">Pensando…</span></div>`);
   abajo();

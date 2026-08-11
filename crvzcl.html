@@ -105,7 +105,7 @@ hr{border:none;border-top:1px solid var(--line);margin:12px 0}
 
 /* color de cerveza: firma visual */
 .swatch{width:34px;height:44px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.14);
-  box-shadow:inset 0 -8px 12px rgba(0,0,0,.35), inset 0 6px 8px rgba(255,255,255,.12)}
+  box-shadow:inset 0 -6px 10px rgba(0,0,0,.22), inset 0 4px 6px rgba(255,255,255,.10)}
 .swatch.sm{width:14px;height:18px;border-radius:3px}
 
 .btn{
@@ -230,6 +230,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-10 19:30 (Ecuador)", t:"Versión 2.1. Corregido el color de las muestras: la fórmula exponencial dejaba las cervezas claras y ámbar demasiado rojas (le faltaba verde) y hacía que la Amber, la Märzen, la Irish Red y la Munich Amber se vieran casi iguales entre sí. Ahora se interpola sobre la tabla SRM de referencia. Suavizado el brillo interior de la muestra, que aplanaba las diferencias."},
   {f:"2026-08-10 15:10 (Ecuador)", t:"Versión 2.0. Contexto ampliado: tabla con los rangos BJCP 2021 de los diez estilos del plan (el modelo los recordaba mal), guía de defectos ligada al equipo y al clima de Guayaquil, y prohibición de suponer perfil de agua. La bitácora de cada lote pasa ahora completa al chat (8 notas en vez de 3). Nueva regla: distinguir lo que viene del contexto de lo que sale de su memoria, y preferir decir que no sabe antes que rellenar."},
   {f:"2026-08-10 14:30 (Ecuador)", t:"Versión 1.9. Maceración de la réplica del Lote 53 subida a 68 °C para recuperar cuerpo y espuma. Contexto del chat reforzado: nuevo bloque de experiencia y restricciones (lote aprobado, amargor real mayor que el calculado por la isomerización nocturna, historial de avena y trigo, tope de compra de 5 kg) y seis reglas nuevas contra los fallos detectados: no contradecirse dentro de la conversación, no negar riesgos clásicos, cuantificar todo cambio de lúpulo antes de proponerlo, no mezclar el veredicto de la app con el rango BJCP, no tocar recetas ya aprobadas y no sugerir insumos que sobrarían."},
   {f:"2026-08-10 03:05 (Ecuador)", t:"Versión 1.8. Corregido el botón Aplicar reparto a cero: solo reponía granos y lúpulos, dejando el nombre, el volumen y los objetivos viejos. Ahora repone la receta completa."},
@@ -385,12 +386,25 @@ function toast(m,ms){
   const d=document.createElement("div");d.className="toast";d.textContent=m;document.body.appendChild(d);
   setTimeout(()=>d.remove(), ms||2200);
 }
+/* Tabla SRM de referencia (1 a 40), interpolada. Sustituye a la
+   aproximación exponencial anterior, que dejaba las cervezas
+   claras y ámbar demasiado rojas por falta de verde. */
+const SRM_REF=["FFE699","FFD878","FFCA5A","FFBF42","FBB123","F8A733","F39C00","EA8F00","E58500","DE7C00",
+"D77200","CF6900","CB6200","C35900","BB5100","B54C00","B04500","A63E00","A13700","9B3200",
+"952D00","8E2900","882300","821E00","7B1A00","771900","701400","6A0E00","660D00","5E0B00",
+"5A0A02","560903","520907","4C0505","470606","440607","3F0708","3B0607","3A070B","36080A"];
 function ebcColor(ebc){
-  const srm=(Number(ebc)||4)*0.508;
-  let r=255*Math.pow(0.975,srm), g=245*Math.pow(0.88,srm), b=220*Math.pow(0.7,srm);
-  if(srm>24){const k=Math.max(.35,1-(srm-24)*0.035); r*=k; g*=k; b*=k;}
-  const c=v=>Math.round(Math.min(255,Math.max(0,v)));
-  return `rgb(${c(r)},${c(g)},${c(b)})`;
+  const srm=Math.max(0.5,(Number(ebc)||4)*0.508);
+  const hex=i=>{const s=SRM_REF[Math.max(0,Math.min(39,i))];
+    return [parseInt(s.slice(0,2),16),parseInt(s.slice(2,4),16),parseInt(s.slice(4,6),16)];};
+  if(srm>=40){ // más oscuro que la tabla: se acerca al negro
+    const k=Math.max(0.35,1-(srm-40)*0.02), c=hex(39);
+    return `rgb(${Math.round(c[0]*k)},${Math.round(c[1]*k)},${Math.round(c[2]*k)})`;
+  }
+  const lo=Math.floor(srm)-1, t=srm-Math.floor(srm);
+  const a=hex(lo), b=hex(lo+1);
+  const m=i=>Math.round(a[i]+(b[i]-a[i])*t);
+  return `rgb(${m(0)},${m(1)},${m(2)})`;
 }
 function abvCalc(og,fg){ if(!og||!fg) return null; return ((og-fg)*131.25); }
 

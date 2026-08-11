@@ -136,6 +136,12 @@
     border-radius:7px; padding:5px 10px; font-size:12px; margin:-4px 0 12px;
   }
   .btn-copiar:active{opacity:.7;}
+  .spinner-ia{
+    width:56px; height:56px; display:block;
+    animation: girar-ia 1.6s linear infinite;
+  }
+  @keyframes girar-ia{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .spinner-ia{ animation:none; } }
   .error-msg{color:var(--error); font-size:13px; margin-top:-4px; margin-bottom:10px;}
   .exercise-edit-row{border:1px solid var(--border); border-radius:9px; padding:12px; margin-bottom:10px; background:var(--bg);}
   .exercise-edit-row .fila{margin-bottom:0;}
@@ -303,6 +309,17 @@ const DIAS_CORTOS = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
 const NOMBRE_BLOQUE = {superior:'Tren Superior', inferior:'Tren Inferior', movilidad:'Movilidad'};
 
 // Perfil fijo del atleta, usado en todos los prompts de IA (análisis y consulta general).
+// Imagen del indicador de "IA pensando" (incrustada para que el archivo siga siendo uno solo).
+// La imagen es estática, así que la animación de giro se hace por CSS (.spinner-ia).
+const IMG_PENSANDO = 'data:image/webp;base64,UklGRrAMAABXRUJQVlA4WAoAAAAgAAAAxwAAxwAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDggwgoAABA2AJ0BKsgAyAA+bTSWSKQioiEklgmYgA2JTdwt5B/TA/wHb4Xq7T+Rv5O/M/YH7B+DPye6Gw4vXH+U/qH5N/Nv++eo/7lfcA/UH+8/z7rG/t76gP55/a/2g94n/Afqb7oPqA+QD+q/4D//9gt6AH7N+mf+4XwQ/1v/bfst8CH7P/+PrAP/f1g/Uj/AdsX6l5Lhtnoq/XO8Ha53QfxnmBxt/77wN/pXqAeTD/Q/+TyL/m3+19gb9ePRl9dP7pexv+tv/0IC5O7u7u7u7u7u7u7u7u7ufroYtgFBBPyTufzXwZpQu+PRT5Q5e4TAAPWnliWnihpJOMyYfz8yrdRIQ7v5ExEYMGExocwE03OkkEE/US5NA3sUpvkD5K49A1CeONj2W6MwKSsFWZ3yAJNfScjNSQyJCDhtIMcwdqyd4S/0G6pnnk3aEsmYmWzeWEj3sl7240tW6g4MNjdtkoEDmUHfd0y4kHgF/Soi944UlU3WzK1LVEZWOQORJoDpXbBevrn2SuiDiA5J3dMTXRfc2lYdovmRw1o+sRiOw0/i87u7vY25rPxFhJuPhJ0TnSSMJLFKBcJ+Sd3MAAD+/pq5rnJtAAAA84JN/Wu4pRsF8h5ZIBizGAdkU9ffXPw3WOgg9LAabY9agaR0hBRGTzpACSrgKq+Y3KvyfrXSzVqvtFbAzL2J6CsgqrRnVszgwaHvBJv613U8Doe6Q8J1nIX17Y/uuRs4fJKBTRJMC8wnnALsP8g9LTOWylv4Pp4f9hRj/wvq28gqMMpOXydhP0OQnNodL9MQaBf6zOOyGPiXaoe0oczuNu2kFZN/yRIH9byNwuN5gpzPo+WOKWoLP0FAepEC761WDGScdLoHnz9rB922KbnzvdUWZgFnNagJ5WjM1bcRb8OAmuPfjn5yjM/243kGn1z2ANimAO78Ihs+dld0lNvWnXilvPDaFeMTCAio+PKc+bj/84dTNvhFFvZ7J0RnO2BpLS6KEw82OtIAIlYsggMaKCKqeh4axWZ26vIwsTOJfHyFJVKwFew9B0sLgCW6k1n9tVuAuYIr8Sfj5xU4Lybb3CDU4TscE4MMp+6rQQaI8K+i8/fJoJN4gCi35QTxl/zx0fjdcfb0HyOwfC1zcvrEnP6a2J1v/ViqND17aqptHQzl+rIuX5sr26vq4YO9orlBR+reIAdjLxh0yKtfQdjuGkE0j8pCcEYIHviYIpbPc8I4M3XlBdRS6Hv0szIqVTWE1hl9bg+0EVol4x1lDds0qmTr4xaJ4hhb6Zzs8n0TPdgr76KMLg6CfhC67Kx+dVE+SE4tNZQBqX5r8yeOPl9gWQCMWYpmVw/2+Den2DaXpnGyc+/5T8dxuLc/1C+5UEjLNjQEITefSkoCVxLPDlofUra1gkjb+52h/qEfQ1uTAwIgiLTs0s+6CMkQnmO9LZXsFxcxUJj4KikH7rzNOYzw42kmmgAISWP8rKnmTaujjihqyvztPpAnhyI/aBlU8o1YFgYafgy9nZum7m32/VQFH4tdpNQ6IbeR0fZKlNMz1jDIS4iP5gq+Bfv6GnSVIJinasjnAs43BnPyOh4jgrDbV6bzX34C+BfaLJn3pK3/MijMeufJCuUFNnaml5v/cCM7N39qankN9oijcjMgJktsOzOacxiDbk+w+Sw4NDsWZDI7jK+5hhAqrDhAddbIawOYE9Q8hVzjhEyPGCqv9N0OfFO7wmMxbB90p5Ldps1s3iRocKfsFZZZyGMzAp71aZdV9e3P8SW3kF9dev93XanTE3D9tROlTcI7KLQQinYToMEycv2RmsPG4BH4pNHgAVadJFdV7SHXqEWwusRhkaUKCEu5Gy9sqkAoL90Huj2n9Lfl+DRCBKf+Q+n0+yGqfP4WZJk3O5gLnyIUkoPxrFlY3WdU6ciJVJDRyDY70ss6vQW/xdUaY4VNGW4JwrfgBa+1Lyqmoj12e8Smhk/MHPilbbgTAXMfe5mH8ZzIHsbME5B5/He6CCnPvkjOm7Se6Azfgk86aYfZLGaOcT2JlOfX/IdVtOjB1NqHSkVo8wSj09xSleUjJOfi5FVWMDFKWPoOzYe9N5eF7ceNNKkdT4A8Vg9DvI+ZUn1773EgbyPADIBxDmo36u7/6Sncxvbv/9QaDdBat7DE5lwj7PO5kuVJTbKBifsFNrqXfPH3tzvGOvmPnJl71GCp2jUJv6rSe1FAbO/MP3AZ7Jn9pURXLFPA9gGWGWQr8Qx2TAvR+nCcjIRjHHiROHdbyYwbDaFwn04CFZWuFtB/YweAchBWZH7W4rF5qwy81jPG7W62ix18N3JOLKyVL5ys+qeKt+M4i5wqj6la2SfDITEwU88YJHMFpzjV23IbqyVdODYIXJypu14fFt8AqGULVvSO3+z0nut6PZhDMsMrjnXeWqxSyN+SnljDLOJJ2EFpUPpwS/e2GT0iYB6ajh90ddfKPXjZQvNdeiKPqpjDxPnAZiTGIl7gnzNr4kO+LfOCoBQutz6HgqaZhcqIrl9LzC9wxmlSBx3vjfHBwTLmXCpaxZUBzOHKzCRHmfIwAGJmgSru+kgFaXy53bqFlM65NU8wUerguK1p6X2YS38ThaQjpCpdyhgAUn0HcLNkp3W3sqvcJYGDjjbiDeSCcCdezJlEgf9MC4vSkH4w3uaq+jyyzxtuabSD2/FJ9q7XtHC8BIJFBGl4635uMWENjZmM8/mmm/+Gx5tYxhmzRt4ZklNFKB8Heh18e4lcPyIOi7dt71+cmfpfsSM7MuXKorkCc8s1uoS7LVa1j4FvnKk9Up2idXOoQcYT9UrnLjIplFAblokqr48UTc6Oq2aNDZHmVJKZF/qW8rpS14Aso6S4rIYG13BTdw0+VqnLz++dJx/kLWZ86RTdhpENycPT1ojlI8YSPwLs/9NAT6SHFI+VtsLacHqgl5a62RbTwDoUXOGa40zNDqnmRqUwZFKXmPhg6fRtf3fApIfwZi0O+kBVBVqGv4gqhAlp9RO8ILYtXHoASl1Gpts4IY08MPLzMWY+PQUfSLPhTKPnp6R0+bYHgwZff8sSUCDsqDDd+rsbCwoShJlMyNjOiZrSTzCo+a8Y1n0SZaDJu5hnK4kkU+ROLlhAgqKNUaI7pgZGAIfPV4Xv8NRH3Aek6br9Glvf+uKjoyaFXW1PACQaozB9JBGdRzX0onP0DzDSfwoz7E2+sne0zN0BRUi4cNjvvaOqLBBhFj66G2Enq0yGi/S/+I8kTlLBVzdpu5YG2jiwuYzxAGyDZANBPZLB+QAAp9vGuS2zzQ8/cMqRVrkglIm2vGG/aOhya7E+bl69n6ocrA68v6NMBZCp5CbbrP6445cpai+wFt8cFgzJ9Fsysa6eE2P2spjpP0mNTnPPp2G680/A+doPhrY2medx8FHZERVRcCmMn3ZJquQ+jRyM/ZMG9IEpvvxHVfvlVWeA5Ma4CRChOjAphgeL6OrIVLYNWt2zdPELU/VASGQRMa70OIj8RqEJotzjTNSHa79di0EJFAqiJQtg5/AFkoBjPs0e8XiPfmjCfK2AAcrmBYATKXRnzOx48rORM6jxKOIuTduJJ659OK1tIBQMhbIlqHEglIy9719r4NsGNV7WoIv1iwPdR+Nnf0SD6RNNbK4pYSf9wBAZvHB6CP4S7HIf3Ukr26Dsq92xGkgAAAAAAA==';
+
+function htmlPensando(texto){
+  return `<div style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:6px 0;">
+    <img src="${IMG_PENSANDO}" class="spinner-ia" alt="">
+    <span style="color:var(--text-dim); font-size:14px;">${texto}</span>
+  </div>`;
+}
+
 const PERFIL_USUARIO = 'Hombre de 68 años que goza de buena salud. Entrena en casa con equipo limitado (máquina multifunción, barra, ligas), nunca al fallo muscular, con antecedente de una lesión de hombro. Prioriza la calidad y seguridad de la técnica por sobre el volumen de esfuerzo sin control. Objetivo a 1 año: ganar unas 10 libras de masa muscular de forma sostenible.';
 
 // ---- Registro de cambios de la app (changelog) ----
@@ -337,7 +354,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-08 19:44', texto:'Corrección importante: la migración que sumaba "Niño a Cobra" y "Mariposa sentado" se revisaba en cada apertura de la app comprobando solo si el nombre existía, así que si el usuario los borraba, volvían a aparecer en la siguiente apertura. Ahora la migración queda marcada como hecha con una bandera propia y corre una sola vez de verdad; borrar un ejercicio ya se queda borrado.'},
   {fecha:'2026-08-08 20:59', texto:'Movilidad ahora tiene control numérico de series y objetivo (repeticiones, segundos o pasos, según la unidad de cada ejercicio), igual que fuerza: se prellena con tus valores actuales, muestra lo que hiciste la sesión anterior, y lo que registres queda como base para la próxima. La IA sugiere la progresión por ejercicio, topada por código a máximo +1 serie y +20% del objetivo, y sin subir nada si hubo dolor (4-5), molestias reportadas o si el ejercicio se omitió. Los valores de series/objetivo se pueden editar en Ajustes.'},
   {fecha:'2026-08-10 16:59', texto:'Ahora se registra el tiempo total de cada sesión, medido con las marcas de tiempo reales de cada check (no estimado): total, ejecución pura y descanso real. Se muestra en el resumen y se le pasa a la IA junto con el contexto del descanso programado de 2:30 entre series. En Movilidad también se registra el tiempo total de la sesión.'},
-  {fecha:'2026-08-10 17:30', texto:'Botones de copiar en los chats de IA (tanto en el de cada sesión como en Consulta): uno arriba para copiar toda la conversación, y uno bajo cada respuesta para copiar solo ese par de pregunta y respuesta.'}
+  {fecha:'2026-08-10 17:30', texto:'Botones de copiar en los chats de IA (tanto en el de cada sesión como en Consulta): uno arriba para copiar toda la conversación, y uno bajo cada respuesta para copiar solo ese par de pregunta y respuesta.'},
+  {fecha:'2026-08-11 09:39', texto:'Indicador visual mientras la IA piensa: la imagen queda incrustada dentro del propio archivo (para que siga siendo uno solo) y gira por animación, ya que la imagen original es estática. Aparece al analizar una sesión de fuerza o de movilidad, y también al hacer una pregunta en cualquiera de los dos chats, donde antes no había ninguna señal de espera.'}
 ];
 
 function mostrarLog(){
@@ -1032,7 +1050,7 @@ function plantillaFormularioRegistro(bloque, fechaInfo, penalizado, manual){
 
     <div class="card">
       <button class="btn" id="btnRegistrar" onclick="registrarYAnalizar('${bloque}', ${penalizado ? 'true':'false'}, ${manual ? 'true':'false'})">Registrar y analizar con IA</button>
-      <div id="loadingRegistro" class="oculto" style="text-align:center; color:var(--text-dim);">⏳ Analizando tu sesión...</div>
+      <div id="loadingRegistro" class="oculto"></div>
       <div id="errorRegistro" class="error-msg oculto"></div>
     </div>`;
 }
@@ -1325,6 +1343,7 @@ async function registrarYAnalizar(bloque, penalizado, manual){
   const errDiv = document.getElementById('errorRegistro');
   errDiv.classList.add('oculto');
   btn.disabled = true;
+  loading.innerHTML = htmlPensando('Analizando tu sesión...');
   loading.classList.remove('oculto');
 
   try{
@@ -1675,7 +1694,7 @@ function plantillaFormularioMovilidad(){
     </div>
     <div class="card">
       <button class="btn" id="btnRegistrarMovilidad" onclick="registrarMovilidad()">Registrar y analizar con IA</button>
-      <div id="loadingMovilidad" class="oculto" style="text-align:center; color:var(--text-dim);">⏳ Analizando tu sesión de movilidad...</div>
+      <div id="loadingMovilidad" class="oculto"></div>
       <div id="errorMovilidad" class="error-msg oculto"></div>
     </div>`;
 }
@@ -1791,6 +1810,7 @@ async function registrarMovilidad(){
   const errDiv = document.getElementById('errorMovilidad');
   errDiv.classList.add('oculto');
   btn.disabled = true;
+  loading.innerHTML = htmlPensando('Analizando tu sesión de movilidad...');
   loading.classList.remove('oculto');
 
   try{
@@ -1992,6 +2012,8 @@ async function enviarPregunta(fecha){
   sesion.chat.push({rol:'usuario', texto:pregunta});
   renderChatEnDom(sesion);
   input.value = '';
+  const listaChat = document.getElementById('listaChat');
+  if(listaChat) listaChat.insertAdjacentHTML('beforeend', `<div id="pensandoChat">${htmlPensando('La IA está pensando...')}</div>`);
 
   const contents = sesion.geminiHistorial.concat(
     sesion.chat.slice(0,-1).map(m=>({role: m.rol==='usuario'?'user':'model', parts:[{text:m.texto}]})),
@@ -2212,6 +2234,8 @@ async function enviarPreguntaGeneral(){
   guardarDatos();
   renderMensajesGeneral();
   input.value = '';
+  const listaGeneral = document.getElementById('listaConsultaGeneral');
+  if(listaGeneral) listaGeneral.insertAdjacentHTML('beforeend', `<div id="pensandoGeneral">${htmlPensando('La IA está pensando...')}</div>`);
 
   // Se reconstruye el contexto en cada pregunta (no se acumula sin límite) y se
   // agregan solo los últimos intercambios como memoria conversacional reciente.

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#14110E">
@@ -265,6 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-12 12:15 (Ecuador)", t:"Versión 3.5. Corregido un fallo grave: al confirmar el aviso de fin de temporizador la app bajaba la bandera pero no apagaba el temporizador, así que medio segundo después lo volvía a lanzar. La alerta se reabría sin fin y su capa tapaba la pantalla, impidiendo marcar los pasos. Ahora el OK apaga el temporizador, cada temporizador avisa una sola vez, no se encolan avisos repetidos y tocar fuera de la alerta también la cierra."},
   {f:"2026-08-11 16:00 (Ecuador)", t:"Versión 3.4. Eficiencia corregida de 72,5 % a 56 %, medida sobre el Lote 53 real (OG 1.042 con densímetro en 16 L, FG 1.010, 4,2 % ABV). El modelo reproduce ese lote exacto. La réplica vuelve a 16 L y sus objetivos pasan a OG 1.042 y 4,2 % ABV. Todas las recetas del plan se recalculan: salen alrededor de 1.042 en vez de los 1.056 que suponía el plan original."},
   {f:"2026-08-11 15:15 (Ecuador)", t:"Versión 3.3. Volumen real corregido: el objetivo de la receta es ahora lo que entra al FERMENTADOR (14 L en la réplica), y el paso de completar el volumen calcula solo cuánto cerrar en la olla sumando 1 L de pérdidas del Día 2 (medio litro de evaporación en el hervido corto y medio de trub). Con la medición del 11 ago (1.052 en 17 L) la eficiencia real resultó 73,9 %, muy cerca del 72,5 % supuesto."},
   {f:"2026-08-11 14:30 (Ecuador)", t:"Versión 3.2. Registro de volúmenes: litros de cada trasvase con suma automática y aviso si se pasa del tope de 17 L del hervidor, litros que quedan tras el hervido y agua de reposición para cerrar en el volumen objetivo. La app calcula el balance y la tasa de evaporación real de cada cocción. Las alertas de proceso (adiciones de lúpulo y fin de temporizador) ya no desaparecen solas: quedan en pantalla sonando y vibrando cada 5 segundos hasta que se confirman con OK. Corregida la tasa de evaporación en el contexto: 3,3 L/h medidos, no 1,85 estimados."},
@@ -451,8 +452,10 @@ function toast(m,ms){
 /* Alerta de proceso: NO se va sola. Suena hasta que se confirma con OK,
    porque durante la cocción el teléfono está lejos y el aviso se pierde. */
 let colaAlertas=[], sonAlerta=null;
-function alerta(titulo,texto){
-  colaAlertas.push({t:titulo,x:texto||""});
+function alerta(titulo,texto,accion){
+  if(colaAlertas.some(a=>a.t===titulo&&a.x===(texto||""))) return;   /* nunca duplicar el mismo aviso */
+  if(colaAlertas.length>6) return;
+  colaAlertas.push({t:titulo,x:texto||"",accion:accion||null});
   if(!$("#alerta")) mostrarAlerta();
 }
 function mostrarAlerta(){
@@ -466,6 +469,7 @@ function mostrarAlerta(){
     ${colaAlertas.length>1?`<div class="tiny dim" style="margin-top:6px">y ${colaAlertas.length-1} aviso${colaAlertas.length>2?"s":""} más</div>`:""}
     <button class="btn" onclick="cerrarAlerta()">OK, entendido</button>
   </div>`;
+  d.addEventListener("click",e=>{ if(e.target===d) cerrarAlerta(); });
   document.body.appendChild(d);
   if(navigator.vibrate) navigator.vibrate([250,120,250]);
   beep(3);
@@ -475,9 +479,11 @@ function mostrarAlerta(){
 function cerrarAlerta(){
   clearInterval(sonAlerta); sonAlerta=null;
   const d=$("#alerta"); if(d) d.remove();
-  colaAlertas.shift();
+  const a=colaAlertas.shift();
+  /* El aviso de fin de temporizador apaga el temporizador al confirmarse.
+     Antes solo bajaba la bandera y tick() lo volvía a lanzar: ciclo infinito. */
+  if(a && a.accion==="stop") stopTimer();
   if(colaAlertas.length) mostrarAlerta();
-  else if(ringing){ ringing=false; $("#timerbar").classList.remove("ring"); }
 }
 /* Tabla SRM de referencia (1 a 40), interpolada. Sustituye a la
    aproximación exponencial anterior, que dejaba las cervezas
@@ -596,7 +602,7 @@ function ahoraEC(){
 /* ---------- Temporizador ---------- */
 let T=null, ringing=false, ac=null, wake=null;
 function startTimer(min,label,avisos){
-  T={end:Date.now()+min*60000,label:label,total:min*60000,avisos:(avisos||[]).map(a=>({...a,fired:false}))};
+  T={end:Date.now()+min*60000,label:label,total:min*60000,alertado:false,avisos:(avisos||[]).map(a=>({...a,fired:false}))};
   ringing=false; $("#timerbar").classList.remove("ring");
   keepAwake(); tick();
 }
@@ -608,7 +614,7 @@ function tick(){
   let left=T.end-Date.now();
   if(left<=0){
     left=0;
-    if(!ringing){ringing=true;bar.classList.add("ring");alerta("Terminó el temporizador",esc(T.label));}
+    if(!T.alertado){T.alertado=true;ringing=true;bar.classList.add("ring");alerta("Terminó el temporizador",esc(T.label),"stop");}
     $("#tb-time").textContent="00:00";
     $("#tb-label").innerHTML="<b>Listo:</b> "+esc(T.label);
   }else{

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#14110E">
@@ -265,6 +265,9 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-12 22:00 (Ecuador)", t:"Versión 3.9. Análisis automático del lote: al abrirlo la app compara lo medido contra lo planeado y saca conclusiones — densidad frente al objetivo, alcohol proyectado, equilibrio amargor/malta, eficiencia real, corrección de volumen para el próximo lote y, cuando la densidad lo justifica, propone bajar la temperatura de las dos primeras etapas con un botón que lo aplica. Todo calculado en la app, no por la IA. Botón para ampliar el análisis con la IA y temperaturas de cada etapa editables tocándolas."},
+  {f:"2026-08-12 21:15 (Ecuador)", t:"Versión 3.8. Objetivos de la réplica actualizados a la realidad medida: OG 1.050 y 4,8 % ABV para 16 L con la eficiencia del 66,5 %. Antes decían 1.042, valores del Lote 53 que suponían una eficiencia menor."},
+  {f:"2026-08-12 20:30 (Ecuador)", t:"Versión 3.7. Eficiencia subida a 66,5 % con el dato del lote del 12 ago: OG 1.058 medida con densímetro sobre 13,72 L, volumen obtenido pesando el mosto (32 lb netas). No coincide con el 56 % que daba el Lote 53 y hará falta un tercer lote para fijarla. Curva de enfriamiento del hervidor calibrada con datos reales: de 100 a 80 grados son 104 min con la olla tapada y 47 min con la tapa entreabierta tres dedos, a 31 grados de ambiente."},
   {f:"2026-08-12 18:10 (Ecuador)", t:"Versión 3.6. Nuevo campo para anotar los litros que entran de verdad al fermentador, en el paso del trasvase. Con ese dato la app calcula la pérdida real del Día 1 al fermentador y dice cuánta agua agregar de más o de menos en el hervido del Día 2 del próximo lote. La eficiencia real pasa a calcularse con la OG del densímetro y el volumen del fermentador cuando existen, que es más fiable que el refractómetro."},
   {f:"2026-08-12 12:15 (Ecuador)", t:"Versión 3.5. Corregido un fallo grave: al confirmar el aviso de fin de temporizador la app bajaba la bandera pero no apagaba el temporizador, así que medio segundo después lo volvía a lanzar. La alerta se reabría sin fin y su capa tapaba la pantalla, impidiendo marcar los pasos. Ahora el OK apaga el temporizador, cada temporizador avisa una sola vez, no se encolan avisos repetidos y tocar fuera de la alerta también la cierra."},
   {f:"2026-08-11 16:00 (Ecuador)", t:"Versión 3.4. Eficiencia corregida de 72,5 % a 56 %, medida sobre el Lote 53 real (OG 1.042 con densímetro en 16 L, FG 1.010, 4,2 % ABV). El modelo reproduce ese lote exacto. La réplica vuelve a 16 L y sus objetivos pasan a OG 1.042 y 4,2 % ABV. Todas las recetas del plan se recalculan: salen alrededor de 1.042 en vez de los 1.056 que suponía el plan original."},
@@ -319,7 +322,7 @@ function seed(){
   return {
     v:1,
     cfg:{apiKey:"", model:"gemini-3.6-flash", boil1:55, boil2:10, tempGolpe:"72–74",
-         eficiencia:56, vHervido:17, factorWP:0.25},
+         eficiencia:66.5, vHervido:17, factorWP:0.25},
     insumos:{
       maltas:[{n:"Pilsen",g:19500,ppg:37,lov:1.8},{n:"Munich",g:3500,ppg:36,lov:10},
               {n:"Pale Ale",g:4400,ppg:37,lov:3},{n:"Cara 20",g:4750,ppg:34,lov:10.2}],
@@ -329,9 +332,9 @@ function seed(){
     recetas:[
       {id:"r1",n:1,nombre:"Pilsen Ale (réplica Lote 53)",bjcp:"18A Blonde Ale (por OG y amargor reales; 5D German Pils era la referencia de diseño)",litros:16,estado:"pendiente",
        granos:[{n:"Pilsen",g:3600},{n:"Cara 20",g:300}],
-       og:1.042,fgMin:1.010,fgMax:1.012,abv:4.2,ebcMin:8,ebcMax:10,ibuMin:14,ibuMax:18,co2:2.3,
+       og:1.050,fgMin:1.012,fgMax:1.015,abv:4.8,ebcMin:8,ebcMax:10,ibuMin:13,ibuMax:17,co2:2.3,
        lupulos:[{n:"Simcoe",g:7,min:30},{n:"Cascade",g:13,min:"wp"}],
-       proc:P({macTemp:"68"}),clarificante:{n:"Irish Moss",g:2},probada:true,notas:"Réplica del Lote 53, ya probado y aprobado por la familia: midió OG 1.042 y FG 1.010 en 16 L, o sea 4,2 % ABV. Para repetirlo hay que cerrar en 16 L en el fermentador. Maceración subida a 68 °C para dar más cuerpo y espuma."},
+       proc:P({macTemp:"68"}),clarificante:{n:"Irish Moss",g:2},probada:true,notas:"Basada en el Lote 53 (que midió OG 1.042 y FG 1.010 en 16 L, 4,2 % ABV). El lote del 12 ago 2026 salió a 1.058 en 13,72 L por menos volumen y más eficiencia. Objetivos ajustados a 16 L con la eficiencia medida del 66,5 %. Maceración subida a 68 °C para dar más cuerpo y espuma."},
       {id:"r2",n:2,nombre:"APA cítrica",bjcp:"18B American Pale Ale",litros:16,estado:"pendiente",
        granos:[{n:"Pilsen",g:2850},{n:"Pilsen",g:50,lov:150,ppg:33,nota:"tostada en casa"},{n:"Pale Ale",g:900},{n:"Cara 20",g:300}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:12,ebcMax:16,ibuMin:38,ibuMax:40,co2:2.3,
@@ -422,7 +425,7 @@ if(!DB.cfg.aaReal){
   DB.cfg.aaReal=1;
 }
 if(DB.cfg.eficiencia==null) DB.cfg.eficiencia=56;
-if(DB.cfg.eficiencia===72.5) DB.cfg.eficiencia=56;   /* medida real del Lote 53: 1.042 en 16 L */
+if(DB.cfg.eficiencia===72.5||DB.cfg.eficiencia===56) DB.cfg.eficiencia=66.5;   /* lote 12 ago: 1.058 en 13,72 L pesados */
 if(DB.cfg.vHervido==null) DB.cfg.vHervido=17;
 if(DB.cfg.vHervido===18) DB.cfg.vHervido=17;   /* dato real del equipo */
 if(DB.cfg.factorWP==null) DB.cfg.factorWP=0.25;
@@ -1344,7 +1347,7 @@ function vLote(id){
           <div class="spread"><span class="stname">${esc(e.n)}</span>
             <span class="tiny dim num">${dentro}/${e.d} d</span></div>
           <div class="bar" style="margin:4px 0 2px"><i style="width:${dentro/e.d*100}%"></i></div>
-          <div class="tiny dim">${e.t} · termina ${fechaMas(l.fecha,acum)}</div>
+          <div class="tiny dim"><button onclick="editarTempEtapa('${l.id}',${i})" style="color:var(--amber);font:inherit;padding:0">${e.t}</button> · termina ${fechaMas(l.fecha,acum)}</div>
         </div>
         <div class="stepper" style="padding:2px">
           <button onclick="ajustarEtapa('${l.id}',${i},-1)">−</button>
@@ -1372,6 +1375,7 @@ function vLote(id){
     ${l.fg && l.og ? `<div class="tiny ok" style="margin-top:8px">Atenuación aparente: <b class="num">${((l.og-l.fg)/(l.og-1)*100).toFixed(0)} %</b></div>`:""}
     <button class="btn sec sm" onclick="editarLote('${l.id}')">Editar mediciones</button>
   </div>
+  ${vAnalisis(l)}
   <div class="card">
     <p class="eyebrow">Bitácora</p>
     ${l.notas.length? l.notas.map(n=>`<div style="padding:6px 0;border-top:1px solid var(--line)">
@@ -1383,6 +1387,102 @@ function vLote(id){
     <button class="btn sec sm" onclick="preguntarLote('${l.id}')">Preguntar a la IA</button>
     <button class="btn danger sm" onclick="borrarLote('${l.id}')">Eliminar lote</button>
   </div>`;
+}
+/* ============================================================
+   ANÁLISIS DEL LOTE — reglas deterministas en JavaScript.
+   Compara lo MEDIDO contra lo planeado y propone ajustes.
+   No inventa: si falta un dato, no opina sobre él.
+   ============================================================ */
+function analizarLote(l){
+  const r=DB.recetas.find(x=>x.id===l.recetaId);
+  const f=[];
+  if(!r) return f;
+  const K=calc(r), med=l.med||{};
+  const vf=med.vferm&&med.vferm.litros;
+  const og=l.og, pts=og?(og-1)*1000:null;
+
+  /* --- densidad frente a lo previsto --- */
+  if(og){
+    const d=og-r.og;
+    if(Math.abs(d)>=0.004){
+      f.push({t:d>0?"aviso":"aviso",
+        n:`Densidad ${d>0?"por encima":"por debajo"} de lo previsto`,
+        x:`Mediste <b>${og.toFixed(3)}</b> contra ${r.og.toFixed(3)} de la receta: ${d>0?"+":""}${(d*1000).toFixed(0)} puntos.`
+          +(vf?` Con ${String(vf).replace(".",",")} L en el fermentador contra ${r.litros} L previstos, el volumen explica buena parte.`:"")});
+    }else f.push({t:"ok",n:"Densidad en lo previsto",x:`${og.toFixed(3)} contra ${r.og.toFixed(3)} de la receta.`});
+
+    /* --- ABV proyectado con la atenuación típica --- */
+    const fgE=og-(og-1)*0.78;
+    f.push({t:"ok",n:"Alcohol proyectado",
+      x:`Con 78 % de atenuación, FG alrededor de <b>${fgE.toFixed(3)}</b> y <b>${((og-fgE)*131.25).toFixed(1)} % ABV</b>. Se confirma al medir la FG el día de embotellar.`});
+
+    /* --- temperatura de fermentación según densidad --- */
+    let rec=null;
+    if(pts>=62) rec={t:"18–19 °C",lev:"Considera sembrar sobre y medio de levadura: a esta densidad un solo sobre queda justo."};
+    else if(pts>=54) rec={t:"19–20 °C",lev:null};
+    if(rec && l.etapas[0].t!==rec.t){
+      f.push({t:"accion",n:"Baja la temperatura de arranque",
+        x:`Con OG ${og.toFixed(3)} hay más azúcar que fermentar, así que la levadura genera más calor propio: el mosto puede ir 2 o 3 °C por encima del setpoint. Para no pasar de 24 °C y evitar alcoholes de fusel, pon <b>${rec.t}</b> en el arranque y la fermentación vigorosa, y sigue con tus temperaturas normales desde el descanso.`
+          +(rec.lev?`<br>${rec.lev}`:""),
+        btn:`Aplicar ${rec.t} a las dos primeras etapas`, fn:`aplicarTemp('${l.id}','${rec.t}')`});
+    }
+
+    /* --- equilibrio amargor/malta --- */
+    const bugu=K.ibu/pts;
+    const eq = bugu<0.35?"claramente maltosa y dulce": bugu<0.5?"con la malta por delante": bugu<0.7?"equilibrada":"con el lúpulo por delante";
+    f.push({t:"ok",n:"Equilibrio esperado en boca",
+      x:`Relación amargor/densidad de <b>${bugu.toFixed(2)}</b> (${K.ibu.toFixed(0)} IBU sobre ${pts.toFixed(0)} puntos): saldrá <b>${eq}</b>.`});
+  }
+
+  /* --- volumen y corrección para el próximo lote --- */
+  if(vf){
+    const d=r.litros-vf;
+    if(Math.abs(d)>=0.3) f.push({t:"accion",n:"Ajuste de volumen para el próximo lote",
+      x:`Entraron ${String(vf).replace(".",",")} L contra ${r.litros} L previstos. Agrega <b>${Math.abs(d).toFixed(1).replace(".",",")} L ${d>0?"más":"menos"}</b> de agua durante el hervido del Día 2 la próxima vez.`});
+    else f.push({t:"ok",n:"Volumen clavado",x:`${String(vf).replace(".",",")} L contra ${r.litros} L previstos.`});
+  }
+
+  /* --- eficiencia medida --- */
+  if(og&&vf){
+    const ef=eficienciaReal(r,og,vf);
+    if(ef){
+      const d=ef-DB.cfg.eficiencia;
+      f.push({t:Math.abs(d)<4?"ok":"accion", n:"Eficiencia de esta cocción",
+        x:`<b>${ef.toFixed(1)} %</b> por densímetro y volumen real. La app calcula con ${DB.cfg.eficiencia} %.`
+          +(Math.abs(d)>=4?` Difieren ${Math.abs(d).toFixed(1)} puntos: conviene revisarlo con el próximo lote antes de darlo por bueno.`:""),
+        btn:Math.abs(d)>=4?`Usar ${ef.toFixed(1)} % de aquí en adelante`:null, fn:`adoptarEficiencia(${ef.toFixed(1)})`});
+    }
+  }
+
+  /* --- riesgo propio del clima --- */
+  if(pts&&pts>=54) f.push({t:"aviso",n:"Vigila la temperatura los primeros días",
+    x:`En Guayaquil el punto de riesgo es la fermentación vigorosa. Si el mosto pasa de 24 °C aparecen alcoholes de fusel, que dan sabor a solvente y ya no se van con la maduración.`});
+  return f;
+}
+function aplicarTemp(id,t){
+  const l=DB.lotes.find(x=>x.id===id);
+  l.etapas[0].t=t; l.etapas[1].t=t;
+  save(); render(); toast("Temperaturas ajustadas");
+}
+function vAnalisis(l){
+  const f=analizarLote(l);
+  if(!f.length) return "";
+  const ic={ok:"✓",aviso:"⚠",accion:"◆"}, col={ok:"var(--hop)",aviso:"var(--alert)",accion:"var(--amber)"};
+  return `<div class="card">
+    <div class="spread"><p class="eyebrow" style="margin:0">Análisis del lote</p>
+      <button class="chip a" onclick="analizarConIA('${l.id}')">Ampliar con IA</button></div>
+    ${f.map(x=>`<div style="padding:8px 0;border-top:1px solid var(--line)">
+      <div class="mini" style="font-weight:700;color:${col[x.t]}">${ic[x.t]} ${esc(x.n)}</div>
+      <div class="tiny muted" style="line-height:1.6;margin-top:2px">${x.x}</div>
+      ${x.btn?`<button class="stimer" onclick="${x.fn}">${esc(x.btn)}</button>`:""}
+    </div>`).join("")}
+    <div class="tiny dim" style="margin-top:8px">Calculado por la app con tus mediciones, no por la IA.</div>
+  </div>`;
+}
+function analizarConIA(id){
+  const l=DB.lotes.find(x=>x.id===id);
+  go("chat");
+  setTimeout(()=>usarSugerencia(`Analiza el lote ${l.numero} (${l.nombre}) con las mediciones que ya tienes: qué esperar en el vaso, qué vigilar durante la fermentación y qué cambiarías en el próximo lote. `),50);
 }
 function botonMedLote(id,k){
   const l=DB.lotes.find(x=>x.id===id), v=(l.med||{})[k];
@@ -1409,6 +1509,19 @@ function guardarMedLote(id,k){
 function ajustarEtapa(id,i,d){
   const l=DB.lotes.find(x=>x.id===id);
   l.etapas[i].d=Math.max(0,l.etapas[i].d+d); save(); render();
+}
+function editarTempEtapa(id,i){
+  const l=DB.lotes.find(x=>x.id===id), e=l.etapas[i];
+  sheet(esc(e.n),`
+    <label class="f">Temperatura de esta etapa</label>
+    <input id="te_t" value="${esc(e.t)}" placeholder="20–21 °C">
+    <div class="tiny dim" style="margin-top:4px">Solo cambia este lote; el plan y las demás recetas quedan igual.</div>
+    <button class="btn" onclick="guardarTempEtapa('${id}',${i})">Guardar</button>`);
+}
+function guardarTempEtapa(id,i){
+  const l=DB.lotes.find(x=>x.id===id);
+  l.etapas[i].t=$("#te_t").value.trim()||l.etapas[i].t;
+  save(); closeSheet(); render(); toast("Temperatura actualizada");
 }
 function editarLote(id){
   const l=DB.lotes.find(x=>x.id===id);
@@ -1649,7 +1762,7 @@ function contextoTexto(){
   const saldoY=DB.insumos.levadura.map(x=>`${x.n}: ${x.sobres} sobres, comprometidos ${c.sobres}, saldo ${x.sobres-c.sobres}`).join("; ");
   const inv = `SALDOS YA CALCULADOS POR LA APP (no los recalcules).\nMaltas — ${saldoM}.\nLúpulos — ${saldoL}.\nLevadura — ${saldoY}.\nUn saldo negativo significa que el plan pide más de lo que hay.`;
   const par = `PARÁMETROS DE CÁLCULO DE LA APP: eficiencia ${DB.cfg.eficiencia} %, volumen de hervido ${DB.cfg.vHervido} L, whirlpool al ${Math.round(DB.cfg.factorWP*100)} % de la utilización a hervor, hervido partido ${DB.cfg.boil1}+${DB.cfg.boil2} min. OG por extracto y eficiencia, IBU por Tinseth, color por Morey, atenuación 75–82 %.
-Esa eficiencia del 56 % NO es un supuesto: sale de su Lote 53 real, que midió OG 1.042 con densímetro en 16 L usando 3.600 g de Pilsen y 300 g de Cara 20. El modelo la reproduce exacta. Es baja para un equipo casero y lo más probable es que la causa sea la molienda del grano; si alguna vez muele más fino, la eficiencia subirá y habrá que volver a medirla.
+Esa eficiencia NO es un supuesto, pero tampoco está firme: hay dos medidas reales que no coinciden. El Lote 53 dio OG 1.042 con densímetro en 16 L, lo que implica 56 %. El lote del 12 ago 2026, con el mismo grano, dio OG 1.058 en 13,72 L (volumen obtenido pesando el mosto: 32 lb netas divididas por la densidad), lo que implica 66,5 %. Se usa el 66,5 % porque en ese lote el volumen se pesó en lugar de estimarse, pero un tercer lote medido hará falta para fijarlo. Al hablar de OG previstas, advierte que pueden desviarse mientras la eficiencia no esté confirmada.
 ATENCIÓN: esa eficiencia está medida con SU proceso habitual, 13 L de maceración y 7 L de lavado. No es una constante del equipo. Si se reduce el agua de lavado queda azúcar sin enjuagar en la cama de grano y la eficiencia CAE, típicamente de 6 a 10 puntos con un lavado de 4 L. Nunca calcules una OG más alta manteniendo la eficiencia cuando baja el agua de lavado: el resultado real será bastante menor. Concentrar hirviendo más tiempo sí conserva el extracto, porque el lavado se hace completo y solo se pierde agua.`;
   const rec = "RECETAS DEL PLAN:\n"+DB.recetas.map(r=>{
     const K=calc(r);
@@ -1701,7 +1814,8 @@ REGLAS
 18. Al concentrar un mosto SUBEN las tres cosas: la densidad, el amargor y el color. Nunca digas que el amargor baja al concentrar. Ocurren dos efectos opuestos —el lúpulo queda en menos litros (sube el IBU) y la mayor densidad reduce la utilización (baja el IBU)— y el primero manda siempre; el neto es un aumento, pero menor que la razón de volúmenes. El color sube por una potencia (Morey), también menos que proporcional. Nunca multipliques por la razón de volúmenes ni restes por la caída de utilización: da el sentido correcto, márcalo como estimación y di que la app calcula el valor exacto al cambiar los litros de la receta.
 19. CONSTANTES DE ESTE EQUIPO PARA CÁLCULO RÁPIDO (úsalas, no estimes):
    - Azúcar de mesa (sacarosa): 100 g en 16 L aportan 2,4 puntos de OG y unos +0,31 % de ABV, sin subir la FG. Para subir 1 punto porcentual de ABV en 16 L hacen falta unos 325 g. Calcula siempre la cantidad con esta constante y verifica el ABV resultante antes de darlo.
-   - Evaporación: unos 3,3 L/h medidos en su equipo (3 L en los 55 min del Día 1). Los minutos EXTRA de hervido son (litros a evaporar x 18). No confundas minutos extra con minutos totales: los totales son esos más los 55 habituales del Día 1.
+   - Evaporación: unos 3,3 L/h medidos en su equipo (3 L en los 55 min del Día 1). Los minutos EXTRA de hervido son (litros a evaporar x 18).
+   - Enfriado del hervidor tras apagar, con 31 °C de ambiente y unos 16 L: de 100 a 80 °C son 104 min con la olla tapada y 47 min con la tapa entreabierta tres dedos (destapar acelera 2,2 veces). Con la tapa entreabierta: 95 °C a los 10 min, 90 °C a los 22, 85 °C a los 34, 80 °C a los 47. Destapar ese rato cuesta unos 0,6 L evaporados. No confundas minutos extra con minutos totales: los totales son esos más los 55 habituales del Día 1.
    - Concentrar la Stout de 16 a 13 L, por ejemplo, deja OG ~1.067, unos 41 IBU y unos 75 EBC.
 20. Para cualquier cambio de volumen por evaporación, usa la tasa real de este equipo: pasa de ${DB.cfg.vHervido} L a unos 14 L en los ${DB.cfg.boil1} min del Día 1, o sea unos 3,3 L/h. Calcula los minutos con esa tasa. Recuerda además que los 2 L de recarga del minuto 40 son opcionales: omitirlos ahorra casi una hora de hervido extra. Y avisa siempre cuántos litros de cerveza se pierden.
 21. Cuidado con las dos numeraciones: cada receta tiene su número propio (#1 a #8) y el plan tiene un ORDEN DE ELABORACIÓN distinto. Di siempre el nombre de la receta y aclara a cuál de las dos numeraciones te refieres.

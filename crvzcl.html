@@ -185,6 +185,27 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
 }
 #chatform{display:flex;gap:8px;align-items:flex-end;flex-shrink:0;
   padding:9px 0 calc(9px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg)}
+
+/* indicador de carga: vaso con burbujas subiendo */
+.pensando{display:flex;align-items:center;gap:10px}
+.vaso{width:26px;height:34px;flex-shrink:0;overflow:visible}
+.v-cuerpo{fill:none;stroke:var(--dim);stroke-width:1.3;stroke-linejoin:round}
+.v-liquido{fill:var(--amber);opacity:.5}
+.v-espuma{fill:#F5EDDD;opacity:.85}
+.burbuja{fill:#FFF6E0;opacity:0;animation:sube 1.9s ease-in infinite}
+.b2{animation-delay:.45s} .b3{animation-delay:.9s} .b4{animation-delay:1.35s}
+@keyframes sube{
+  0%{transform:translateY(0);opacity:0}
+  15%{opacity:.9}
+  75%{opacity:.8}
+  100%{transform:translateY(-19px);opacity:0}
+}
+.pensando span{animation:latido 1.6s ease-in-out infinite}
+@keyframes latido{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){
+  .burbuja{animation:none;opacity:.7}
+  .pensando span{animation:none}
+}
 #chatin{flex:1;max-height:110px}
 #send{background:var(--amber);color:#1A1206;border-radius:10px;padding:0 16px;height:44px;font-weight:800;font-size:18px}
 .qbtn{border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:11.5px;color:var(--muted);margin:0 6px 6px 0;white-space:nowrap}
@@ -234,6 +255,8 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-11 12:20 (Ecuador)", t:"Versión 2.9. El chat muestra ahora un vaso de cerveza con burbujas subiendo mientras la IA responde, en lugar del texto suelto."},
+  {f:"2026-08-11 00:10 (Ecuador)", t:"Versión 2.8. Las recetas admiten un clarificante con su cantidad; aparece en la ficha, se edita en el editor, entra como paso del hervido del Día 2 en la guía de cocción y pasa al contexto del chat. La réplica del Lote 53 lleva 2 g de Irish Moss."},
   {f:"2026-08-10 23:40 (Ecuador)", t:"Versión 2.7. Corregida una sobrecorrección: la regla anterior llevó al modelo a decir que el amargor BAJA al concentrar, cuando sube. Añadidas constantes de cálculo rápido del equipo (100 g de azúcar = 2,4 puntos de OG en 16 L; minutos extra de hervido = litros x 32,4) para que deje de estimar, y ampliada la comprobación BJCP a todos los parámetros, no solo el ABV."},
   {f:"2026-08-10 22:10 (Ecuador)", t:"Versión 2.6. Corregido el botón Copiar todo: la cabecera del chat no se redibujaba al enviar el primer mensaje, así que los botones no aparecían hasta cambiar de pestaña. Tres reglas nuevas tras probar preguntas sobre la Stout: no escalar IBU ni color proporcionalmente al cambiar el volumen, usar la tasa real de evaporación del equipo (1,85 L/h) para calcular tiempos de hervido, y distinguir el número de receta del orden de elaboración."},
   {f:"2026-08-10 21:20 (Ecuador)", t:"Versión 2.5. Tres ajustes al contexto salidos de una prueba con la American Amber: se advierte que la eficiencia del 72,5 % está medida con 13 L de maceración y 7 L de lavado y que cae si se lava menos (el modelo calculaba OG altas suponiéndola constante); obligación de comparar todo cambio de receta contra el rango BJCP del estilo y avisar si lo saca de estilo; y obligación de revisar los puntos de riesgo cuando un cambio suba la densidad o el estrés de la levadura."},
@@ -286,7 +309,7 @@ function seed(){
        granos:[{n:"Pilsen",g:3600},{n:"Cara 20",g:300}],
        og:1.051,fgMin:1.011,fgMax:1.013,abv:5.2,ebcMin:8,ebcMax:10,ibuMin:11,ibuMax:15,co2:2.3,
        lupulos:[{n:"Simcoe",g:7,min:30},{n:"Cascade",g:13,min:"wp"}],
-       proc:P({macTemp:"68"}),probada:true,notas:"Réplica del Lote 53, ya probado y aprobado por la familia. 17 L. Maceración subida a 68 °C para dar más cuerpo y espuma."},
+       proc:P({macTemp:"68"}),clarificante:{n:"Irish Moss",g:2},probada:true,notas:"Réplica del Lote 53, ya probado y aprobado por la familia. 17 L. Maceración subida a 68 °C para dar más cuerpo y espuma."},
       {id:"r2",n:2,nombre:"APA cítrica",bjcp:"18B American Pale Ale",litros:16,estado:"pendiente",
        granos:[{n:"Pilsen",g:2850},{n:"Pilsen",g:50,lov:150,ppg:33,nota:"tostada en casa"},{n:"Pale Ale",g:900},{n:"Cara 20",g:300}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:12,ebcMax:16,ibuMin:38,ibuMax:40,co2:2.3,
@@ -762,6 +785,12 @@ function vReceta(id){
       <div class="tiny muted">${hop(h)}</div></div>`).join("")}
   </div>
 
+  ${r.clarificante?`<div class="card">
+    <p class="eyebrow">Clarificante</p>
+    <div class="spread"><b>${esc(r.clarificante.n)}</b><span class="num">${r.clarificante.g} g</span></div>
+    <div class="tiny muted">Al inicio del hervido de ${DB.cfg.boil2} min del Día 2 · necesita hervir para activarse</div>
+  </div>`:""}
+
   <div class="card">
     <p class="eyebrow">Proceso</p>
     <div class="mini muted" style="line-height:1.7">
@@ -825,6 +854,8 @@ function editarReceta(id){
     <textarea id="e_gr" rows="5">${r.granos.map(g=>g.n+", "+g.g+(g.lov!=null?", "+g.lov:"")).join("\n")}</textarea>
     <label class="f">Lúpulos — nombre, gramos, minuto (o wp)</label>
     <textarea id="e_lu" rows="4">${r.lupulos.map(h=>h.n+", "+h.g+", "+h.min).join("\n")}</textarea>
+    <label class="f">Clarificante — nombre, gramos (vacío para ninguno)</label>
+    <input id="e_cl" value="${r.clarificante?esc(r.clarificante.n)+", "+r.clarificante.g:""}" placeholder="Irish Moss, 2">
     <label class="f">Notas</label><textarea id="e_no" rows="2">${esc(r.notas||"")}</textarea>
     <button class="btn" onclick="guardarReceta('${id}')">Guardar receta</button>
     <button class="btn danger sm" onclick="borrarReceta('${id}')">Eliminar receta</button>`);
@@ -860,6 +891,9 @@ function guardarReceta(id){
   r.ibuMin=parseFloat($("#e_ibu1").value); r.ibuMax=parseFloat($("#e_ibu2").value);
   const gs=parseLineas($("#e_gr").value,2); if(gs.length) r.granos=gs;
   const ls=parseLineas($("#e_lu").value,3); if(ls.length) r.lupulos=ls;
+  const cl=$("#e_cl").value.trim();
+  if(cl){const q=cl.split(","); r.clarificante={n:(q[0]||"").trim()||"Irish Moss",g:parseFloat(q[1])||2};}
+  else delete r.clarificante;
   r.notas=$("#e_no").value.trim();
   save(); closeSheet(); render(); toast("Receta guardada");
 }
@@ -908,7 +942,10 @@ function pasosDia1(r){
 function pasosDia2(r){
   const wp=r.lupulos.filter(h=>h.min==="wp");
   return [
-    {t:`Hervido de seguridad — ${DB.cfg.boil2} min`,b:`Elimina cualquier patógeno y los DMS formados durante la noche.`,timer:DB.cfg.boil2},
+    {t:`Hervido de seguridad — ${DB.cfg.boil2} min`,
+     b:`Elimina cualquier patógeno y los DMS formados durante la noche.`
+       +(r.clarificante?`<br>Al romper el hervor agrega <b>${r.clarificante.g} g de ${esc(r.clarificante.n)}</b>: necesita hervir para activarse.`:""),
+     timer:DB.cfg.boil2},
     {t:`Whirlpool a ${r.proc.wpTemp} °C`,b:`Baja a ${r.proc.wpTemp} °C y agrega ${wp.map(h=>`${h.n} <b>${h.g} g</b>`).join(" · ")||"—"}. Remueve 20–30 s.`,timer:1},
     {t:`Reposo — ${r.proc.reposo} min a ${r.proc.wpTemp} °C`,b:`Tapado, sin remover. Aquí se extrae el aroma del whirlpool.`,timer:25},
     {t:"Enfriar con el serpentín",b:`Olla 1 con hielo y algo de agua. Bomba 1 → serpentín → retorno a la misma Olla 1. Objetivo: <b>${r.proc.enfriar} °C</b> en el mosto.`,timer:30},
@@ -1377,7 +1414,7 @@ ATENCIÓN: esa eficiencia está medida con SU proceso habitual, 13 L de maceraci
     +`Objetivos anotados: OG ${r.og}, FG ${r.fgMin}–${r.fgMax}, ABV ~${r.abv}%, ${r.ebcMin}–${r.ebcMax} EBC, ${r.ibuMin}–${r.ibuMax} IBU, ${r.co2} vol CO2. `
     +`CALCULADO POR LA APP: OG ${K.og.toFixed(3)}, FG ${K.fgMin.toFixed(3)}–${K.fgMax.toFixed(3)}, ABV ${K.abvMin.toFixed(1)}–${K.abvMax.toFixed(1)} %, ${K.ibu.toFixed(1)} IBU (${K.det.map(d=>`${d.n} ${d.g} g ${d.t} min → ${d.ibu.toFixed(1)}`).join("; ")}), ${K.ebc.toFixed(0)} EBC / ${K.srm.toFixed(1)} SRM. `
     +`Proceso: maceración ${r.proc.macAgua} L a ${r.proc.macTemp} °C ${r.proc.macMin} min, recirculado ${r.proc.recirc} min, lavado ${r.proc.lavadoL} L a ${r.proc.lavadoTemp} °C, whirlpool a ${r.proc.wpTemp} °C, reposo ${r.proc.reposo} min, enfriar a ${r.proc.enfriar} °C.`
-    +(r.notas?` Nota: ${r.notas}`:"");
+    +(r.clarificante?` Clarificante: ${r.clarificante.g} g de ${r.clarificante.n} al inicio del hervido del Día 2.`:"")+(r.notas?` Nota: ${r.notas}`:"");
   }).join("\n");
   const lot = DB.lotes.length? "LOTES EN CURSO:\n"+DB.lotes.map(l=>{
       const s=estadoLote(l);
@@ -1519,7 +1556,22 @@ async function enviar(){
      Limpiar), así que hay que rehacer la vista, no solo los mensajes. */
   if(DB.chat.length===1) render(); else pintarChat();
   cargando=true;
-  $("#msgs").insertAdjacentHTML("beforeend",`<div class="msg a"><span class="dim">Pensando…</span></div>`);
+  $("#msgs").insertAdjacentHTML("beforeend",`<div class="msg a" id="cargando">
+    <div class="pensando">
+      <svg class="vaso" viewBox="0 0 26 34" aria-hidden="true">
+        <path class="v-cuerpo" d="M4 4 h18 l-2 26 a2 2 0 0 1 -2 2 h-10 a2 2 0 0 1 -2 -2 z"/>
+        <clipPath id="cp"><path d="M5 12 h16 l-1.8 18 a2 2 0 0 1 -2 2 h-8.4 a2 2 0 0 1 -2 -2 z"/></clipPath>
+        <g clip-path="url(#cp)">
+          <rect class="v-liquido" x="5" y="12" width="16" height="20"/>
+          <circle class="burbuja b1" cx="9"  cy="30" r="1.5"/>
+          <circle class="burbuja b2" cx="13" cy="30" r="1.1"/>
+          <circle class="burbuja b3" cx="17" cy="30" r="1.7"/>
+          <circle class="burbuja b4" cx="11" cy="30" r="1.2"/>
+        </g>
+        <ellipse class="v-espuma" cx="13" cy="11" rx="9" ry="3.4"/>
+      </svg>
+      <span class="dim">Pensando…</span>
+    </div></div>`);
   abajo();
 
   const base={temperature:0.6,maxOutputTokens:6144};

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#14110E">
@@ -265,6 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-12 18:10 (Ecuador)", t:"Versión 3.6. Nuevo campo para anotar los litros que entran de verdad al fermentador, en el paso del trasvase. Con ese dato la app calcula la pérdida real del Día 1 al fermentador y dice cuánta agua agregar de más o de menos en el hervido del Día 2 del próximo lote. La eficiencia real pasa a calcularse con la OG del densímetro y el volumen del fermentador cuando existen, que es más fiable que el refractómetro."},
   {f:"2026-08-12 12:15 (Ecuador)", t:"Versión 3.5. Corregido un fallo grave: al confirmar el aviso de fin de temporizador la app bajaba la bandera pero no apagaba el temporizador, así que medio segundo después lo volvía a lanzar. La alerta se reabría sin fin y su capa tapaba la pantalla, impidiendo marcar los pasos. Ahora el OK apaga el temporizador, cada temporizador avisa una sola vez, no se encolan avisos repetidos y tocar fuera de la alerta también la cierra."},
   {f:"2026-08-11 16:00 (Ecuador)", t:"Versión 3.4. Eficiencia corregida de 72,5 % a 56 %, medida sobre el Lote 53 real (OG 1.042 con densímetro en 16 L, FG 1.010, 4,2 % ABV). El modelo reproduce ese lote exacto. La réplica vuelve a 16 L y sus objetivos pasan a OG 1.042 y 4,2 % ABV. Todas las recetas del plan se recalculan: salen alrededor de 1.042 en vez de los 1.056 que suponía el plan original."},
   {f:"2026-08-11 15:15 (Ecuador)", t:"Versión 3.3. Volumen real corregido: el objetivo de la receta es ahora lo que entra al FERMENTADOR (14 L en la réplica), y el paso de completar el volumen calcula solo cuánto cerrar en la olla sumando 1 L de pérdidas del Día 2 (medio litro de evaporación en el hervido corto y medio de trub). Con la medición del 11 ago (1.052 en 17 L) la eficiencia real resultó 73,9 %, muy cerca del 72,5 % supuesto."},
@@ -1024,7 +1025,7 @@ function pasosDia2(r){
     {t:`Whirlpool a ${r.proc.wpTemp} °C`,b:`Baja a ${r.proc.wpTemp} °C y agrega ${wp.map(h=>`${h.n} <b>${h.g} g</b>`).join(" · ")||"—"}. Remueve 20–30 s.`,timer:1},
     {t:`Reposo — ${r.proc.reposo} min a ${r.proc.wpTemp} °C`,b:`Tapado, sin remover. Aquí se extrae el aroma del whirlpool.`,timer:25},
     {t:"Enfriar con el serpentín",b:`Olla 1 con hielo y algo de agua. Bomba 1 → serpentín → retorno a la misma Olla 1. Objetivo: <b>${r.proc.enfriar} °C</b> en el mosto.`,timer:30},
-    {t:"Trasvasar al fermentador",b:`Pasa el mosto al fermentador dejando atrás el trub.`},
+    {t:"Trasvasar al fermentador",b:`Pasa el mosto al fermentador dejando atrás el trub. Anota los litros que entraron de verdad: es el dato que fija cuánta agua agregar en el hervido del Día 2 del próximo lote.`,med:"vferm"},
     {t:"Medir densidad inicial (OG)",b:`Ya en el fermentador, con el <b>densímetro</b>: es la primera medida principal y la que sirve para todos los cálculos. Objetivo de la receta: <b>${r.og.toFixed(3)}</b>.`,med:"og"},
     {t:"Oxigenar y sembrar",b:`Airea bien y siembra <b>${r.proc.levaduraG} g</b> de ale limpia seca, con el mosto a ${r.proc.enfriar} °C.`},
     {t:"Recuperar el agua del deshielo",b:`Guárdala para volver a congelarla en los moldes: es la misma agua que reutilizas todo el año.`},
@@ -1038,6 +1039,7 @@ const MED={
   m3:{n:"Mosto completo",d:"Los litros ya juntos en el hervidor, antes de hervir",inst:"refractómetro",litros:17,vol:true,suma:true},
   vpost:{n:"Volumen tras el hervido",d:"Lo que queda en el hervidor al terminar los 55 min del Día 1",inst:null,litros:14,soloVol:true},
   vagua:{n:"Agua de reposición",d:"Lo que agregas para cerrar en el volumen objetivo",inst:null,litros:1,soloVol:true},
+  vferm:{n:"Litros en el fermentador",d:"Lo que realmente entró, ya sin el trub que quedó en la olla",inst:null,litros:16,soloVol:true},
   og:{n:"OG — densidad inicial",d:"Mosto ya en el fermentador, antes de oxigenar y sembrar",inst:"densímetro",litros:null},
   fg:{n:"FG — densidad final",d:"Al terminar la fermentación, en el momento de embotellar",inst:"densímetro",litros:null}
 };
@@ -1063,6 +1065,8 @@ function pedirMedicion(k){
     <label class="f">Litros</label>
     <input inputmode="decimal" id="md_l" value="${v.litros!=null?v.litros:""}" placeholder="${m.litros}">
     ${k==="vpost"&&med.m3&&med.m3.litros?`<div class="tiny dim" style="margin-top:4px">Entraron ${String(med.m3.litros).replace(".",",")} L al hervidor.</div>`:""}
+    ${k==="vferm"?(()=>{const dif=objetivo?null:null;
+      return `<div class="tiny dim" style="margin-top:4px">Objetivo de la receta: <b>${objetivo} L</b>. Si entra menos, ese faltante es lo que hay que agregar durante el hervido del Día 2 la próxima vez.</div>`;})():""}
     ${k==="vagua"?(()=>{const rr=DB.recetas.find(x=>x.id===DB.coccion.recetaId)||{},pe=(rr.proc&&rr.proc.perdidasDia2)||1,meta=objetivo+pe;
       return `<div class="tiny dim" style="margin-top:4px">Cerrar la olla en <b>${meta.toFixed(1).replace(".",",")} L</b> (${objetivo} L en el fermentador + ${pe} L de pérdidas del Día 2)${med.vpost&&med.vpost.litros?` · quedaron ${String(med.vpost.litros).replace(".",",")} L, faltan ${(meta-med.vpost.litros).toFixed(1).replace(".",",")} L`:""}</div>`;})():""}
     <label class="f">Nota (opcional)</label><input id="md_n" value="${esc(v.nota||"")}">
@@ -1125,7 +1129,9 @@ function vMediciones(){
   const ks=Object.keys(MED).filter(k=>med[k]);
   if(!ks.length) return "";
   const r=DB.recetas.find(x=>x.id===c.recetaId);
-  const m3=med.m3, ef=m3?eficienciaReal(r,m3.sg,m3.litros):null;
+  const m3=med.m3, vf=med.vferm&&med.vferm.litros, og=med.og;
+  const ef = (og&&vf)? eficienciaReal(r,og.sg,vf) : (m3?eficienciaReal(r,m3.sg,m3.litros):null);
+  const efFuente = (og&&vf)? "densímetro en el fermentador" : "refractómetro en el hervidor";
   return `<div class="card">
     <p class="eyebrow">Mediciones de este lote</p>
     <table><thead><tr><th>Punto</th><th>SG</th><th>°Bx</th><th>L</th></tr></thead><tbody>
@@ -1139,10 +1145,18 @@ function vMediciones(){
       const f=[];
       if(l1&&l2) f.push(`Trasvases: ${String(l1).replace(".",",")} + ${String(l2).replace(".",",")} = <b class="num">${(l1+l2).toFixed(1).replace(".",",")} L</b>${(l1+l2)>CAP_HERVIDOR-MARGEN_HERVIDOR?' <span class="warn">(sobre el tope de '+(CAP_HERVIDOR-MARGEN_HERVIDOR)+' L)</span>':""}`);
       if(lt&&vp) f.push(`Evaporados en el hervido: <b class="num">${(lt-vp).toFixed(1).replace(".",",")} L</b> en ${DB.cfg.boil1} min = <b class="num">${((lt-vp)/DB.cfg.boil1*60).toFixed(2).replace(".",",")} L/h</b>`);
-      if(vp&&va) f.push(`Cierre: ${String(vp).replace(".",",")} + ${String(va).replace(".",",")} = <b class="num">${(vp+va).toFixed(1).replace(".",",")} L</b>`);
+      if(vp&&va) f.push(`Cierre del Día 1: ${String(vp).replace(".",",")} + ${String(va).replace(".",",")} = <b class="num">${(vp+va).toFixed(1).replace(".",",")} L</b>`);
+      const vf=med.vferm&&med.vferm.litros;
+      if(vf){
+        const obj=r.litros, d=obj-vf;
+        f.push(`En el fermentador: <b class="num">${String(vf).replace(".",",")} L</b> de ${obj} L previstos`);
+        if(vp&&va) f.push(`Perdidos del Día 1 al fermentador: <b class="num">${((vp+va)-vf).toFixed(1).replace(".",",")} L</b> entre evaporación del hervido corto, destape y trub`);
+        if(Math.abs(d)>=0.2) f.push(`<span class="${d>0?"warn":"ok"}">Próximo lote: agrega <b class="num">${Math.abs(d).toFixed(1).replace(".",",")} L</b> ${d>0?"más":"menos"} de agua durante el hervido del Día 2.</span>`);
+        else f.push(`<span class="ok">Volumen clavado: no hace falta corregir el próximo lote.</span>`);
+      }
       return f.length?`<div class="mini muted" style="margin-top:8px;line-height:1.7">${f.join("<br>")}</div>`:"";
     })()}
-    ${ef?`<div class="mini" style="margin-top:8px">Eficiencia real de esta cocción: <b class="${Math.abs(ef-DB.cfg.eficiencia)<4?"ok":"warn"}">${ef.toFixed(1)} %</b>
+    ${ef?`<div class="mini" style="margin-top:8px">Eficiencia real de esta cocción: <b class="${Math.abs(ef-DB.cfg.eficiencia)<4?"ok":"warn"}">${ef.toFixed(1)} %</b> <span class="dim">(por ${efFuente})</span>
       <span class="dim">· la app calcula con ${DB.cfg.eficiencia} %</span></div>
       ${Math.abs(ef-DB.cfg.eficiencia)>=4?`<button class="btn sec sm" onclick="adoptarEficiencia(${ef.toFixed(1)})">Usar ${ef.toFixed(1)} % de aquí en adelante</button>`:""}`:""}
   </div>`;
@@ -1347,10 +1361,10 @@ function vLote(id){
       <div><div class="tiny dim">ABV</div><div class="num" style="font-weight:700">${abv?abv.toFixed(1)+" %":"—"}</div></div>
     </div>
     ${(()=>{
-      const m=l.med||{}, prev=["m1","m2","m3"].filter(k=>m[k]);
+      const m=l.med||{}, prev=["m1","m2","m3","vpost","vagua","vferm"].filter(k=>m[k]);
       if(!prev.length) return "";
-      return `<div class="tiny dim" style="margin-top:8px;line-height:1.7">Refractómetro del día de cocción:<br>
-        ${prev.map(k=>`${MED[k].n}: <b class="num">${Number(m[k].sg).toFixed(3)}</b>${m[k].litros?` en ${String(m[k].litros).replace(".",",")} L`:""}`).join("<br>")}</div>`;
+      return `<div class="tiny dim" style="margin-top:8px;line-height:1.7">Del día de cocción:<br>
+        ${prev.map(k=>`${MED[k].n}: ${m[k].sg!=null?`<b class="num">${Number(m[k].sg).toFixed(3)}</b>`:""}${m[k].litros?`${m[k].sg!=null?" en ":""}<b class="num">${String(m[k].litros).replace(".",",")} L</b>`:""}`).join("<br>")}</div>`;
     })()}
     ${!l.fg && s.idx>=5 ? `<div class="mini" style="margin-top:8px;color:var(--amber)">Toca embotellar: mide la densidad final antes de agregar el priming.</div>`
       +botonMedLote(l.id,"fg") : ""}

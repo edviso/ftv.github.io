@@ -167,6 +167,11 @@
     background:var(--surface-alt); color:var(--text-dim); border:1px solid var(--border);
     border-radius:20px; padding:6px 14px; font-size:12px; font-weight:700;
   }
+  #estadoPantalla{
+    position:fixed; top:12px; left:12px; z-index:25;
+    background:var(--surface-alt); border:1px solid var(--border);
+    border-radius:20px; padding:6px 14px; font-size:11px; font-weight:700;
+  }
   .log-item{border-top:1px solid var(--border); padding:10px 0;}
   .log-item:first-child{border-top:none;}
   .log-fecha{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
@@ -176,6 +181,7 @@
 <body>
 
 <button id="btnLogFlotante" onclick="mostrarLog()" title="Registro de cambios de la app">Log</button>
+<span id="estadoPantalla" class="oculto" title="Estado del bloqueo de pantalla activa"></span>
 
 <div id="modalLog" class="oculto" style="position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:40; overflow-y:auto;">
   <div style="max-width:640px; margin:0 auto; padding:16px;">
@@ -375,7 +381,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-10 16:59', texto:'Ahora se registra el tiempo total de cada sesión, medido con las marcas de tiempo reales de cada check (no estimado): total, ejecución pura y descanso real. Se muestra en el resumen y se le pasa a la IA junto con el contexto del descanso programado de 2:30 entre series. En Movilidad también se registra el tiempo total de la sesión.'},
   {fecha:'2026-08-10 17:30', texto:'Botones de copiar en los chats de IA (tanto en el de cada sesión como en Consulta): uno arriba para copiar toda la conversación, y uno bajo cada respuesta para copiar solo ese par de pregunta y respuesta.'},
   {fecha:'2026-08-11 09:39', texto:'Indicador visual mientras la IA piensa: la imagen queda incrustada dentro del propio archivo (para que siga siendo uno solo) y gira por animación, ya que la imagen original es estática. Aparece al analizar una sesión de fuerza o de movilidad, y también al hacer una pregunta en cualquiera de los dos chats, donde antes no había ninguna señal de espera.'},
-  {fecha:'2026-08-13 09:47', texto:'La app vuelve a abrir en la pantalla "Hoy" en vez de en Ajustes. En "Editar rutina y horario", las secciones de Calentamiento, Movilidad, Tren Superior y Tren Inferior ahora son desplegables y arrancan colapsadas, cada una mostrando cuántos ejercicios tiene — así ya no hay que recorrer un listado largo para llegar al final.'}
+  {fecha:'2026-08-13 09:47', texto:'La app vuelve a abrir en la pantalla "Hoy" en vez de en Ajustes. En "Editar rutina y horario", las secciones de Calentamiento, Movilidad, Tren Superior y Tren Inferior ahora son desplegables y arrancan colapsadas, cada una mostrando cuántos ejercicios tiene — así ya no hay que recorrer un listado largo para llegar al final.'},
+  {fecha:'2026-08-13', texto:'Tres correcciones: (1) el bloqueo de pantalla ahora muestra un indicador visible ("🔒 Pantalla activa" / "⚠️ Pantalla sin bloquear") en vez de fallar en silencio, y se reintenta cada 20s como red de seguridad; (2) "Reiniciar registro" se movió al final del formulario (junto a "Registrar y analizar"), lejos de la zona superior donde se toca la pantalla para mantenerla activa, para reducir el riesgo de un reinicio accidental; (3) duraciones de serie sospechosamente cortas (menos de 8s, típico de un registro apurado) ya no se usan para calcular la tendencia dentro de la sesión, y se le avisa explícitamente a la IA para que no las interprete como buen ritmo.'}
 ];
 
 function mostrarLog(){
@@ -1044,9 +1051,8 @@ function plantillaFormularioRegistro(bloque, fechaInfo, penalizado, manual){
     <form id="${idForm}" class="card" onsubmit="return false;">
       <div class="fila" style="margin-bottom:6px;">
         <button type="button" class="btn chico secundario" id="btnIniciarSesion" onclick="iniciarSesionEntrenamiento()">▶ Marcar inicio</button>
-        <button type="button" class="btn chico peligro" onclick="reiniciarRegistroHoy(${manual ? 'true' : 'false'}, '${bloque}')">Reiniciar registro</button>
       </div>
-      <small class="ayuda" style="margin-bottom:14px;">"Marcar inicio" es opcional: tócalo justo antes de tu primera serie para que también se mida su duración. "Reiniciar" borra los checks y el cronómetro de este formulario si te confundiste.</small>
+      <small class="ayuda" style="margin-bottom:14px;">Opcional: tócalo justo antes de tu primera serie para que también se mida su duración.</small>
 
       <h2>Calentamiento</h2>
       <div class="chip-lista">${calent}</div>
@@ -1091,6 +1097,8 @@ function plantillaFormularioRegistro(bloque, fechaInfo, penalizado, manual){
       <button class="btn" id="btnRegistrar" onclick="registrarYAnalizar('${bloque}', ${penalizado ? 'true':'false'}, ${manual ? 'true':'false'})">Registrar y analizar con IA</button>
       <div id="loadingRegistro" class="oculto"></div>
       <div id="errorRegistro" class="error-msg oculto"></div>
+      <button type="button" class="btn secundario" style="margin-top:10px;" onclick="reiniciarRegistroHoy(${manual ? 'true' : 'false'}, '${bloque}')">Reiniciar registro</button>
+      <small class="ayuda">Borra los checks, el cronómetro y los valores de este formulario si te confundiste.</small>
     </div>`;
 }
 
@@ -1250,8 +1258,14 @@ function formatearCalificacionPorSerie(ejercicios){
   return resultado.length ? resultado : null;
 }
 
+// Por debajo de este umbral, una serie casi seguro no se ejecutó de verdad — fue un check
+// apurado (por ejemplo para "ponerse al día" tras una interrupción), no la serie en sí.
+const DURACION_MINIMA_PLAUSIBLE = 8;
+
 // Compara, para cada ejercicio con 2+ series medidas, la primera contra la última.
 // Positivo = esa última serie fue más lenta (fatiga); negativo = más rápida.
+// Si la primera o la última son sospechosamente rápidas, no calcula tendencia para ese
+// ejercicio — comparar contra un dato irreal daría un porcentaje falso (ver DURACION_MINIMA_PLAUSIBLE).
 function calcularTendenciaPorEjercicio(duraciones){
   if(!duraciones || !duraciones.length) return {};
   const porEjercicio = {};
@@ -1262,9 +1276,19 @@ function calcularTendenciaPorEjercicio(duraciones){
     if(ordenado.length < 2) return;
     const primera = ordenado[0].segundos;
     const ultima = ordenado[ordenado.length-1].segundos;
+    if(primera < DURACION_MINIMA_PLAUSIBLE || ultima < DURACION_MINIMA_PLAUSIBLE) return;
     if(primera > 0) resultado[exId] = Math.round(((ultima - primera) / primera) * 100);
   });
   return resultado;
+}
+
+// Duraciones por debajo del umbral plausible, para avisarle a la IA que no las interprete
+// como buen ritmo — probablemente fueron un registro apurado, no la ejecución real.
+function detectarDuracionesSospechosas(duraciones, ejercicios){
+  if(!duraciones || !duraciones.length) return [];
+  return duraciones
+    .filter(d => d.segundos < DURACION_MINIMA_PLAUSIBLE)
+    .map(d => `${(ejercicios.find(e=>e.id===d.exId)||{}).nombre || d.exId} S${d.serieIndex+1} (${d.segundos}s)`);
 }
 
 // Promedia esa misma tendencia entre todos los ejercicios de la sesión, para tener un solo
@@ -1481,6 +1505,8 @@ function construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual
     ? detalleSerieArr.map(e => `${e.nombre}: ${e.texto}`).join(' | ')
     : 'sin datos suficientes';
 
+  const sospechosas = detectarDuracionesSospechosas(form.duraciones, form.ejercicios);
+
   const tendenciaHistorica = DATOS.historial
     .filter(s => s.bloque === bloque && s.tendenciaDentroSesion != null)
     .slice(-4)
@@ -1524,6 +1550,7 @@ DATOS DE HOY (${fechaInfo.fechaISO}, ${bloque === 'superior' ? 'Tren Superior' :
 - Calentamiento: ${calentLinea}
 - Duración promedio de ejecución por serie hoy: ${form.duracionPromedio != null ? form.duracionPromedio+' segundos' : 'sin datos suficientes'} (global). Por ejercicio: ${duracionPorEjercicioLinea}. Sesiones recientes del mismo bloque (promedio global): ${duracionHistorica || 'sin datos previos'}. Si la duración sube respecto a sesiones anteriores, interpreta que las series le están costando más esfuerzo; si baja, que le resultan más fáciles; compara cada ejercicio contra su propio ritmo esperado (no es igual el tiempo de una serie de sentadillas que de elevaciones de talón) y considéralo junto con sueño/energía/molestias al decidir la progresión de cada uno.
 - Duración de cada serie individual (la primerísima serie del día no tiene dato, es la primera y no tiene con qué compararse; el resto sí, incluida la primera serie de cada ejercicio nuevo): ${detalleSerieLinea}. Ten este detalle a mano por si el usuario pregunta por una serie o ejercicio específico en el chat de seguimiento.
+${sospechosas.length ? `- Aviso importante: estas duraciones fueron sospechosamente cortas (menos de ${DURACION_MINIMA_PLAUSIBLE}s) y casi seguro NO reflejan la ejecución real de la serie — lo más probable es que el usuario marcó el check rápido para ponerse al día tras una interrupción (por ejemplo, pérdida de lo ya ingresado), no que la hizo así de rápido: ${sospechosas.join(', ')}. No las elogies como buen ritmo, no las uses para hablar de la tendencia de ese ejercicio, y menciónalo con naturalidad en la evaluación si es relevante.` : ''}
 - Tendencia DENTRO de esta sesión (comparando, en cada ejercicio con 2+ series medidas, la primera contra la última, promediado entre ejercicios): hoy ${form.tendenciaDentroSesion != null ? (form.tendenciaDentroSesion>0?'+':'')+form.tendenciaDentroSesion+'%' : 'sin datos suficientes'} (positivo = las series finales fueron más lentas que las iniciales; negativo = más rápidas). Mismo dato en sesiones recientes del mismo bloque: ${tendenciaHistorica || 'sin datos previos'}. Desglose por ejercicio de hoy (el promedio de arriba puede esconder diferencias entre ejercicios — usa este detalle si un ejercicio en particular se comportó distinto al resto): ${form.tendenciaPorEjercicio && Object.keys(form.tendenciaPorEjercicio).length ? Object.entries(form.tendenciaPorEjercicio).map(([exId,v])=>`${(form.ejercicios.find(e=>e.id===exId)||{}).nombre||exId}: ${v>0?'+':''}${v}%`).join(', ') : 'sin datos suficientes'}. Si el porcentaje de hoy es alto, coméntalo en la evaluación como posible fatiga dentro de la sesión (o mejora de ritmo si es negativo). Si ese mismo patrón se repite de forma consistente en varias sesiones seguidas, señálalo explícitamente como algo a investigar (por ejemplo: orden de los ejercicios, tiempo de descanso, o fatiga acumulada entre sesiones) en vez de tratarlo como un dato aislado de hoy.
 - Calificación de dificultad por serie (1=fácil, 2=normal, 3=con cierta dificultad, 4=con dificultad, 5=con dificultad y algo de dolor; el detalle de cada serie ya viene junto al peso/reps de cada ejercicio más abajo), promedio por ejercicio hoy: ${calificacionPorEjercicioLinea}. Sesiones recientes del mismo bloque: ${calificacionHistorica || 'sin datos previos'}. Un 5 indica dolor, no solo esfuerzo — trátalo con la misma cautela que una molestia reportada, y nunca lo confundas con simple cansancio.
 - Descanso entre series: el usuario usa el cronómetro de la app con ${Math.floor(TEMPORIZADOR_DESCANSO_SEG/60)}:${String(TEMPORIZADOR_DESCANSO_SEG%60).padStart(2,'0')} minutos programados entre cada serie y lo cumple de forma disciplinada, empezando la siguiente serie al sonar la alarma.
@@ -1716,9 +1743,8 @@ function plantillaFormularioMovilidad(){
       <p>Rutina suave de 15-20 minutos. Ningún ejercicio debe causar dolor.</p>
       <div class="fila" style="margin-bottom:6px;">
         <button type="button" class="btn chico secundario" id="btnIniciarMovilidad" onclick="iniciarSesionMovilidad()">▶ Marcar inicio</button>
-        <button type="button" class="btn chico peligro" onclick="reiniciarRegistroHoy(false, 'movilidad')">Reiniciar registro</button>
       </div>
-      <small class="ayuda">Cada ejercicio viene prellenado con tus series y objetivo actuales. Ajústalos si hoy haces más o menos — lo que registres queda como base para la próxima sesión.</small>
+      <small class="ayuda">Opcional: mide cuánto te toma cada ejercicio (sin cronómetro ni alarma). Cada ejercicio viene prellenado con tus series y objetivo actuales.</small>
       ${secciones}
     </div>
     <div class="card">
@@ -1735,6 +1761,8 @@ function plantillaFormularioMovilidad(){
       <button class="btn" id="btnRegistrarMovilidad" onclick="registrarMovilidad()">Registrar y analizar con IA</button>
       <div id="loadingMovilidad" class="oculto"></div>
       <div id="errorMovilidad" class="error-msg oculto"></div>
+      <button type="button" class="btn secundario" style="margin-top:10px;" onclick="reiniciarRegistroHoy(false, 'movilidad')">Reiniciar registro</button>
+      <small class="ayuda">Borra los checks y los valores de este formulario si te confundiste.</small>
     </div>`;
 }
 
@@ -2365,14 +2393,35 @@ function irAVistaSegunEstado(){
 // ---- Inicio ----
 // ---- Mantener la pantalla encendida mientras se usa la app ----
 let referenciaWakeLock = null;
+
+function actualizarEstadoPantalla(estado){
+  const el = document.getElementById('estadoPantalla');
+  if(!el) return;
+  if(estado === 'activo'){
+    el.textContent = '🔒 Pantalla activa';
+    el.style.color = 'var(--primary)';
+    el.style.borderColor = 'var(--primary)';
+  }else{
+    el.textContent = '⚠️ Pantalla sin bloquear';
+    el.style.color = 'var(--amber)';
+    el.style.borderColor = 'var(--amber)';
+  }
+  el.classList.remove('oculto');
+}
+
 async function mantenerPantallaActiva(){
   try{
     if('wakeLock' in navigator){
       referenciaWakeLock = await navigator.wakeLock.request('screen');
+      actualizarEstadoPantalla('activo');
       referenciaWakeLock.addEventListener('release', ()=>{ referenciaWakeLock = null; });
+    }else{
+      actualizarEstadoPantalla('fallo');
     }
   }catch(e){
     console.error('No se pudo mantener la pantalla activa', e);
+    referenciaWakeLock = null;
+    actualizarEstadoPantalla('fallo');
   }
 }
 document.addEventListener('visibilitychange', ()=>{
@@ -2380,6 +2429,13 @@ document.addEventListener('visibilitychange', ()=>{
     mantenerPantallaActiva();
   }
 });
+// Red de seguridad: además de reintentar al volver de segundo plano, se revisa cada 20s
+// por si el sistema operativo liberó el bloqueo sin avisar (pasa en algunos Android).
+setInterval(()=>{
+  if(document.visibilityState === 'visible' && !referenciaWakeLock){
+    mantenerPantallaActiva();
+  }
+}, 20000);
 
 window.onload = function(){
   mantenerPantallaActiva();

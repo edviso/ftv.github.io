@@ -265,6 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-13 12:30 (Ecuador)", t:"Versión 4.4. Cronómetro real por actividad en la guía de cocción: cada paso tiene un botón Iniciar/Detener que mide el tiempo real que toma, mostrando el reloj en vivo mientras corre. Solo una actividad corre a la vez: arrancar una detiene automáticamente la anterior si quedó abierta. Botón Ver resumen del día que lista cada paso con su duración real y, cuando aplica, el tiempo previsto por el temporizador de la app, más el total registrado."},
   {f:"2026-08-13 11:40 (Ecuador)", t:"Versión 4.3. Nuevo ajuste de volumen objetivo en Ajustes: fija los litros del fermentador en todas las recetas de una vez, incluidas las ya elaboradas, junto con la capacidad de la nevera en botellas. Hacía falta porque los datos guardados en el teléfono conservaban el volumen antiguo y el botón de reponer recetas solo toca las pendientes."},
   {f:"2026-08-13 00:40 (Ecuador)", t:"Versión 4.2. Temperaturas reales de cada lectura incorporadas: 90 grados al llenar el hervidor, 97 al terminar el hervido y 80 antes del whirlpool. Con la corrección, los 17 L del hervidor resultan ser 16,5 L en frío y ese pasa a ser el volumen de hervido de los cálculos. El balance del lote 56 cierra con solo 0,33 L de diferencia. Temperaturas por defecto en cada punto de medición."},
   {f:"2026-08-13 00:05 (Ecuador)", t:"Versión 4.1. Corrección por dilatación térmica: al anotar un volumen se elige la temperatura a la que se midió y la app calcula el equivalente en frío, porque la paleta está calibrada con agua fría y el mosto a 85 grados ocupa un 3 por ciento más. Todo el balance usa ya los litros en frío. El desglose de pérdidas separa el trub, las mangueras y la bomba (0,15 L) y el resto sin explicar."},
@@ -444,6 +445,7 @@ DB.recetas.forEach(r=>{ const P=r.proc; if(!P) return;
   if(P.preHervido==null) P.preHervido=17;
   if(P.perdidasDia2==null||P.perdidasDia2===1) P.perdidasDia2=2.8;
 });
+if(DB.coccion && !DB.coccion.tiempos) DB.coccion.tiempos={};
 if(!DB.plan){
   DB.plan=seed().plan;
   const ids=DB.recetas.map(r=>r.id);
@@ -610,6 +612,19 @@ function ahoraEC(){
   const d=new Date(), p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
+/* Duración: "1h 05m" para resúmenes, "03:45" para el cronómetro en vivo */
+function fmtDur(seg){
+  seg=Math.max(0,Math.round(seg));
+  const h=Math.floor(seg/3600), m=Math.floor((seg%3600)/60), s=seg%60;
+  if(h) return h+"h "+String(m).padStart(2,"0")+"m";
+  if(m) return m+"m "+String(s).padStart(2,"0")+"s";
+  return s+"s";
+}
+function fmtReloj(seg){
+  seg=Math.max(0,Math.round(seg));
+  const m=Math.floor(seg/60), s=seg%60;
+  return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
 
 /* ---------- Temporizador ---------- */
 let T=null, ringing=false, ac=null, wake=null;
@@ -677,6 +692,7 @@ function render(){
   else if(tab==="lotes") v.innerHTML = ctx.id? vLote(ctx.id) : vLotes();
   else if(tab==="chat"){ v.innerHTML=vChat(); pintarChat(); }
   else if(tab==="ajustes") v.innerHTML=vAjustes();
+  arrancarTickCorrida();
 }
 
 /* ============================================================
@@ -1239,8 +1255,90 @@ function adoptarEficiencia(v){
   DB.cfg.eficiencia=v; save(); render(); toast("Eficiencia actualizada");
 }
 function iniciarCoccion(id){
-  DB.coccion={recetaId:id,dia:1,hechos:{},med:{},inicio:new Date().toISOString()};
+  DB.coccion={recetaId:id,dia:1,hechos:{},med:{},tiempos:{},inicio:new Date().toISOString()};
   save(); go("coccion");
+}
+/* ---------- Cronómetro real por actividad ---------- */
+let runTick=null;
+function botonTiempo(dia,i){
+  const t=(DB.coccion.tiempos[dia]||{})[i];
+  if(!t) return `<button class="stimer" onclick="iniciarPaso(${dia},${i})">▶ Iniciar</button>`;
+  if(!t.fin) return `<button class="stimer" style="border-color:#4A3820;color:var(--amber)"
+    onclick="detenerPaso(${dia},${i})">■ Detener <span id="run-t-${i}">${fmtReloj((Date.now()-new Date(t.ini))/1000)}</span></button>`;
+  const seg=(new Date(t.fin)-new Date(t.ini))/1000;
+  return `<button class="stimer" style="border-color:#37421F;color:var(--hop)"
+    onclick="editarTiempoPaso(${dia},${i})">✓ ${fmtDur(seg)}</button>`;
+}
+function iniciarPaso(dia,i){
+  DB.coccion.tiempos=DB.coccion.tiempos||{};
+  /* Solo una actividad corre a la vez: detiene cualquier otra que quedara abierta */
+  Object.keys(DB.coccion.tiempos).forEach(d=>{
+    Object.values(DB.coccion.tiempos[d]).forEach(t=>{ if(t&&!t.fin) t.fin=new Date().toISOString(); });
+  });
+  DB.coccion.tiempos[dia]=DB.coccion.tiempos[dia]||{};
+  DB.coccion.tiempos[dia][i]={ini:new Date().toISOString(),fin:null};
+  save(); render();
+}
+function detenerPaso(dia,i){
+  const t=DB.coccion.tiempos[dia][i];
+  if(t) t.fin=new Date().toISOString();
+  save(); render();
+}
+function editarTiempoPaso(dia,i){
+  const t=DB.coccion.tiempos[dia][i];
+  const ini=new Date(t.ini), fin=t.fin?new Date(t.fin):null;
+  const hf=d=>d.toLocaleTimeString("es-EC",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  sheet("Tiempo de este paso",`
+    <div class="mini">Inicio <b class="num">${hf(ini)}</b>${fin?` · Fin <b class="num">${hf(fin)}</b>`:""}</div>
+    ${fin?`<div class="mini" style="margin-top:4px">Duración: <b class="num">${fmtDur((fin-ini)/1000)}</b></div>`:""}
+    <button class="btn danger sm" onclick="reiniciarPaso(${dia},${i})">Reiniciar cronómetro de este paso</button>
+    <button class="btn sec sm" onclick="closeSheet()">Cerrar</button>`);
+}
+function reiniciarPaso(dia,i){
+  delete DB.coccion.tiempos[dia][i];
+  save(); closeSheet(); render();
+}
+function arrancarTickCorrida(){
+  clearInterval(runTick); runTick=null;
+  if(tab!=="coccion"||!DB.coccion) return;
+  const dia=DB.coccion.dia, t=(DB.coccion.tiempos||{})[dia];
+  if(!t) return;
+  const i=Object.keys(t).find(k=>t[k]&&!t[k].fin);
+  if(i==null) return;
+  const ini=new Date(t[i].ini);
+  runTick=setInterval(()=>{
+    const el=$("#run-t-"+i);
+    if(!el){ clearInterval(runTick); return; }
+    el.textContent=fmtReloj((Date.now()-ini)/1000);
+  },1000);
+}
+function resumenDia(dia){
+  const r=DB.recetas.find(x=>x.id===DB.coccion.recetaId);
+  const pasos=dia===1?pasosDia1(r):pasosDia2(r);
+  const tiempos=(DB.coccion.tiempos||{})[dia]||{};
+  const hechos=DB.coccion.hechos[dia]||[];
+  let total=0;
+  const filas=pasos.map((p,i)=>{
+    const t=tiempos[i];
+    const seg=(t&&t.fin)?(new Date(t.fin)-new Date(t.ini))/1000:null;
+    if(seg!=null) total+=seg;
+    return {t:p.t, seg, plan:p.timer?p.timer*60:null, hecho:hechos.includes(i), corriendo:t&&!t.fin};
+  });
+  return {filas,total};
+}
+function mostrarResumenDia(dia){
+  const {filas,total}=resumenDia(dia);
+  sheet(`Resumen del Día ${dia}`,`
+    <table><thead><tr><th>Paso</th><th>Real</th><th>Previsto</th></tr></thead><tbody>
+    ${filas.map(f=>`<tr><td>${esc(f.t)}${!f.hecho?' <span class="dim tiny">(sin marcar)</span>':""}${f.corriendo?' <span class="warn tiny">(en curso)</span>':""}</td>
+      <td>${f.seg!=null?fmtDur(f.seg):"—"}</td>
+      <td class="dim">${f.plan?fmtDur(f.plan):"—"}</td></tr>`).join("")}
+    </tbody></table>
+    <div class="spread" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line)">
+      <b>Total registrado</b><b class="num">${fmtDur(total)}</b>
+    </div>
+    <div class="tiny dim" style="margin-top:6px">Solo suma los pasos que iniciaste y detuviste con el cronómetro (▶/■). El "previsto" es el temporizador de la app, cuando el paso lo tiene.</div>
+    <button class="btn sec sm" onclick="closeSheet()">Cerrar</button>`);
 }
 function vCoccion(){
   const c=DB.coccion;
@@ -1251,6 +1349,7 @@ function vCoccion(){
     <button class="btn" onclick="go('recetas')">Ver recetas</button>`;
   const r=DB.recetas.find(x=>x.id===c.recetaId);
   if(!r){DB.coccion=null;save();return vCoccion();}
+  DB.coccion.tiempos=DB.coccion.tiempos||{};
   const pasos = c.dia===1? pasosDia1(r) : pasosDia2(r);
   const hechos = c.hechos[c.dia]||[];
   const done = pasos.filter((_,i)=>hechos.includes(i)).length;
@@ -1274,11 +1373,13 @@ function vCoccion(){
         <div class="stitle">${esc(p.t)}</div>
         <div class="sbody">${p.b}</div>
         ${p.timer?`<button class="stimer" onclick='startTimer(${p.timer},${JSON.stringify(p.t)},${JSON.stringify(p.avisos||[])})'>▶ Temporizador ${p.timer} min</button>`:""}
+        ${botonTiempo(c.dia,i)}
         ${p.med?botonMedicion(p.med):""}
         ${p.accion==="crearLote"?`<button class="btn sm" onclick="crearLoteDesdeCoccion()">Crear lote y arrancar fermentación</button>`:""}
       </div>
     </div>`).join("")}
   </div>
+  <button class="btn sec sm" onclick="mostrarResumenDia(${c.dia})">Ver resumen del Día ${c.dia}</button>
   ${vMediciones()}
   <div class="btns2">
     <button class="btn sec sm" onclick="preguntarSobre('${r.id}')">Preguntar a la IA</button>

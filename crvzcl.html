@@ -265,6 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-13 11:40 (Ecuador)", t:"Versión 4.3. Nuevo ajuste de volumen objetivo en Ajustes: fija los litros del fermentador en todas las recetas de una vez, incluidas las ya elaboradas, junto con la capacidad de la nevera en botellas. Hacía falta porque los datos guardados en el teléfono conservaban el volumen antiguo y el botón de reponer recetas solo toca las pendientes."},
   {f:"2026-08-13 00:40 (Ecuador)", t:"Versión 4.2. Temperaturas reales de cada lectura incorporadas: 90 grados al llenar el hervidor, 97 al terminar el hervido y 80 antes del whirlpool. Con la corrección, los 17 L del hervidor resultan ser 16,5 L en frío y ese pasa a ser el volumen de hervido de los cálculos. El balance del lote 56 cierra con solo 0,33 L de diferencia. Temperaturas por defecto en cada punto de medición."},
   {f:"2026-08-13 00:05 (Ecuador)", t:"Versión 4.1. Corrección por dilatación térmica: al anotar un volumen se elige la temperatura a la que se midió y la app calcula el equivalente en frío, porque la paleta está calibrada con agua fría y el mosto a 85 grados ocupa un 3 por ciento más. Todo el balance usa ya los litros en frío. El desglose de pérdidas separa el trub, las mangueras y la bomba (0,15 L) y el resto sin explicar."},
   {f:"2026-08-12 23:10 (Ecuador)", t:"Versión 4.0. Volumen objetivo fijado en 14 L en el fermentador para las 8 recetas, que es lo que impone la nevera: 40 botellas de 330 ml. Eliminado el 17 L como volumen de lote (era un artefacto de BeerSmith); los 17 L siguen siendo el llenado real del hervidor. Nuevos pesajes: espuma retirada con la espumadera durante el hervido y trub del hervidor. Con la espuma descontada la evaporación real baja de 3,27 a 2,93 L/h, y con el trub el balance separa lo que se lleva el sedimento de lo que se queda en mangueras y serpentín. El análisis del lote calcula las botellas previstas y avisa si no caben en la nevera."},
@@ -1477,7 +1478,7 @@ function analizarLote(l){
       f.push({t:d>0?"aviso":"aviso",
         n:`Densidad ${d>0?"por encima":"por debajo"} de lo previsto`,
         x:`Mediste <b>${og.toFixed(3)}</b> contra ${r.og.toFixed(3)} de la receta: ${d>0?"+":""}${(d*1000).toFixed(0)} puntos.`
-          +(vf?` Con ${String(vf).replace(".",",")} L en el fermentador contra ${r.litros} L previstos, el volumen explica buena parte.`:"")});
+          +(vf?` Con ${String(vf).replace(".",",")} L en el fermentador contra los ${r.litros} L de objetivo, el volumen explica buena parte.`:"")});
     }else f.push({t:"ok",n:"Densidad en lo previsto",x:`${og.toFixed(3)} contra ${r.og.toFixed(3)} de la receta.`});
 
     /* --- ABV proyectado con la atenuación típica --- */
@@ -1507,7 +1508,7 @@ function analizarLote(l){
   if(vf){
     const d=r.litros-vf;
     if(Math.abs(d)>=0.3) f.push({t:"accion",n:"Ajuste de volumen para el próximo lote",
-      x:`Entraron ${String(vf).replace(".",",")} L contra ${r.litros} L previstos. Agrega <b>${Math.abs(d).toFixed(1).replace(".",",")} L ${d>0?"más":"menos"}</b> de agua durante el hervido del Día 2 la próxima vez.`});
+      x:`Entraron ${String(vf).replace(".",",")} L contra los ${r.litros} L de objetivo. Agrega <b>${Math.abs(d).toFixed(1).replace(".",",")} L ${d>0?"más":"menos"}</b> de agua durante el hervido del Día 2 la próxima vez.`});
     else f.push({t:"ok",n:"Volumen clavado",x:`${String(vf).replace(".",",")} L contra ${r.litros} L previstos.`});
   }
 
@@ -2073,6 +2074,16 @@ function vAjustes(){
     <button class="btn sec sm" onclick="guardarCalc()">Guardar parámetros</button>
   </div>
   <div class="card">
+    <p class="eyebrow">Volumen objetivo</p>
+    <div class="tiny dim" style="margin-bottom:6px">Litros que quieres en el fermentador. Lo impone la nevera: ${DB.plan.botellasMax} botellas de ${DB.plan.mlBotella} ml. Se aplica a las ${DB.recetas.length} recetas, incluidas las ya elaboradas.</div>
+    <div class="grid3">
+      <div><label class="f">Litros</label><input inputmode="decimal" id="a_vol" value="${DB.recetas[0]?DB.recetas[0].litros:14}"></div>
+      <div><label class="f">Botellas máx</label><input inputmode="numeric" id="a_bot" value="${DB.plan.botellasMax}"></div>
+      <div><label class="f">ml/botella</label><input inputmode="numeric" id="a_ml" value="${DB.plan.mlBotella}"></div>
+    </div>
+    <button class="btn sec sm" onclick="aplicarVolumen()">Aplicar a todas las recetas</button>
+  </div>
+  <div class="card">
     <p class="eyebrow">Plan balanceado</p>
     <div class="tiny dim" style="margin-bottom:6px">Repone por completo las 8 recetas pendientes: granos, lúpulos, volumen, nombre y objetivos, con el reparto que deja las cuatro maltas en cero. No toca lotes ni recetas ya elaboradas.</div>
     <button class="btn sec sm" onclick="aplicarPlan()">Aplicar reparto a cero</button>
@@ -2107,6 +2118,14 @@ function guardarCalc(){
   if(!isNaN(vh)) DB.cfg.vHervido=vh;
   if(!isNaN(wp)) DB.cfg.factorWP=wp/100;
   save(); toast("Parámetros guardados"); render();
+}
+function aplicarVolumen(){
+  const v=parseFloat($("#a_vol").value);
+  if(isNaN(v)||v<=0) return toast("Volumen inválido");
+  DB.plan.botellasMax=parseInt($("#a_bot").value)||DB.plan.botellasMax;
+  DB.plan.mlBotella=parseInt($("#a_ml").value)||DB.plan.mlBotella;
+  DB.recetas.forEach(r=>{ r.litros=v; });
+  save(); render(); toast(DB.recetas.length+" recetas a "+String(v).replace(".",",")+" L");
 }
 function aplicarPlan(){
   if(!confirm("Repone las 8 recetas pendientes con el plan balanceado: granos, lúpulos, volumen, nombre y objetivos. ¿Seguir?")) return;

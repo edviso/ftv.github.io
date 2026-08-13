@@ -265,6 +265,9 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-13 00:40 (Ecuador)", t:"Versión 4.2. Temperaturas reales de cada lectura incorporadas: 90 grados al llenar el hervidor, 97 al terminar el hervido y 80 antes del whirlpool. Con la corrección, los 17 L del hervidor resultan ser 16,5 L en frío y ese pasa a ser el volumen de hervido de los cálculos. El balance del lote 56 cierra con solo 0,33 L de diferencia. Temperaturas por defecto en cada punto de medición."},
+  {f:"2026-08-13 00:05 (Ecuador)", t:"Versión 4.1. Corrección por dilatación térmica: al anotar un volumen se elige la temperatura a la que se midió y la app calcula el equivalente en frío, porque la paleta está calibrada con agua fría y el mosto a 85 grados ocupa un 3 por ciento más. Todo el balance usa ya los litros en frío. El desglose de pérdidas separa el trub, las mangueras y la bomba (0,15 L) y el resto sin explicar."},
+  {f:"2026-08-12 23:10 (Ecuador)", t:"Versión 4.0. Volumen objetivo fijado en 14 L en el fermentador para las 8 recetas, que es lo que impone la nevera: 40 botellas de 330 ml. Eliminado el 17 L como volumen de lote (era un artefacto de BeerSmith); los 17 L siguen siendo el llenado real del hervidor. Nuevos pesajes: espuma retirada con la espumadera durante el hervido y trub del hervidor. Con la espuma descontada la evaporación real baja de 3,27 a 2,93 L/h, y con el trub el balance separa lo que se lleva el sedimento de lo que se queda en mangueras y serpentín. El análisis del lote calcula las botellas previstas y avisa si no caben en la nevera."},
   {f:"2026-08-12 22:00 (Ecuador)", t:"Versión 3.9. Análisis automático del lote: al abrirlo la app compara lo medido contra lo planeado y saca conclusiones — densidad frente al objetivo, alcohol proyectado, equilibrio amargor/malta, eficiencia real, corrección de volumen para el próximo lote y, cuando la densidad lo justifica, propone bajar la temperatura de las dos primeras etapas con un botón que lo aplica. Todo calculado en la app, no por la IA. Botón para ampliar el análisis con la IA y temperaturas de cada etapa editables tocándolas."},
   {f:"2026-08-12 21:15 (Ecuador)", t:"Versión 3.8. Objetivos de la réplica actualizados a la realidad medida: OG 1.050 y 4,8 % ABV para 16 L con la eficiencia del 66,5 %. Antes decían 1.042, valores del Lote 53 que suponían una eficiencia menor."},
   {f:"2026-08-12 20:30 (Ecuador)", t:"Versión 3.7. Eficiencia subida a 66,5 % con el dato del lote del 12 ago: OG 1.058 medida con densímetro sobre 13,72 L, volumen obtenido pesando el mosto (32 lb netas). No coincide con el 56 % que daba el Lote 53 y hará falta un tercer lote para fijarla. Curva de enfriamiento del hervidor calibrada con datos reales: de 100 a 80 grados son 104 min con la olla tapada y 47 min con la tapa entreabierta tres dedos, a 31 grados de ambiente."},
@@ -308,21 +311,22 @@ const EQUIPO = `EQUIPO DEL CERVECERO (Edgar, Guayaquil, Ecuador) — 3 recipient
 - Proceso partido en 2 días (para no hacer 8 horas seguidas): DÍA 1 (~4 h, termina cerca de las 22:00) hasta el hervido de ~55 min; tapa el hervidor bien sellado. DÍA 2 a las 08:00: hervido corto de 10 min para eliminar cualquier patógeno y los DMS formados, whirlpool, enfriado y siembra. Lo ha hecho varias veces y la cerveza sale muy bien.
 - Volumen habitual: 16 L por lote. Levadura: ale limpia seca, ~11 g por lote.
 - Calentamiento del agua en DOS tandas: pone 7 L en la Olla 1 y 6 L en la Olla 2; cuando llegan a temperatura pasa los 7 L con la Bomba 1 y el macerador queda con los 13 L. Vuelve a llenar la Olla 1 con los 7 L del lavado y los calienta a 75-78 °C mientras macera.
-- Lauter en DOS etapas: tras el recirculado de 20 min trasvasa el primer mosto al hervidor (salen 9,5 a 9,8 L) y enciende el gas; luego pasa los 7 L de lavado al macerador, deja reposar 5 min, hace un segundo recirculado de 10 min y trasvasa. En el hervidor se completan unos 17 L, que es el volumen de hervido real.
-- BALANCE DE VOLUMEN REAL: al hervidor entran los dos trasvases (primer mosto ~9,5-9,8 L + lavado) sin pasar de 17 L, porque la olla es de 19 L y deja 2 L de margen anti-derrame. Tras los 55 min del Día 1 quedan unos 14 L: se evaporan cerca de 3 L, o sea unos 3,3 L/h, bastante más de lo que se había supuesto antes. Luego agrega agua caliente para cerrar en el volumen objetivo de la receta (hoy agregó 1 L); si el hervor fue más fuerte, agrega algo más. Registra los tres volúmenes en la app.
+- Lauter en DOS etapas: tras el recirculado de 20 min trasvasa el primer mosto al hervidor (salen 9,5 a 9,8 L) y enciende el gas; luego pasa los 7 L de lavado al macerador, deja reposar 5 min, hace un segundo recirculado de 10 min y trasvasa. En el hervidor se completan unos 17 L LEÍDOS EN CALIENTE a unos 90 °C, que equivalen a 16,5 L en frío: ese es el volumen de hervido real que usan los cálculos.
+- OBJETIVO DE VOLUMEN: 14 L en el fermentador, no más. El límite lo pone la nevera pequeña, donde entran 40 botellas de 330 ml (13,2 L embotellados). Con 14 L en el fermentador, descontando la levadura sedimentada, salen esas 40 botellas justas. Cualquier referencia antigua a 16 o 17 L como volumen objetivo es errónea: venía de una preconfiguración de equipo de BeerSmith que él nunca logró parametrizar. Los 17 L sí son reales, pero como volumen de HERVIDO en la olla, no como lote.
+- BALANCE DE VOLUMEN REAL: al hervidor entran los dos trasvases (primer mosto ~9,5-9,8 L + lavado) sin pasar de 17 L, porque la olla es de 19 L y deja 2 L de margen anti-derrame. Tras los 55 min del Día 1 quedan unos 14 L leídos a ~97 °C (13,5 L en frío). De los 3 L que faltan, unos 0,31 L salieron con la espumadera (espuma retirada para que no se derrame) y 2,70 L se evaporaron de verdad: la tasa real es de 2,94 L/h. Luego agrega agua caliente para cerrar en el volumen objetivo de la receta (hoy agregó 1 L); si el hervor fue más fuerte, agrega algo más. Registra los tres volúmenes en la app.
 - Mide densidad en CINCO puntos. Con REFRACTÓMETRO (escalas Brix y SG, calibrado a 20 °C), los tres del mosto que sale de la maceración: primer mosto, mosto del lavado y el total de 17 L ya en el hervidor. Con DENSÍMETRO, las dos principales: la OG el Día 2 con el mosto ya enfriado y trasvasado al fermentador, y la FG al terminar la fermentación en el momento de embotellar. Las dos del densímetro son las que valen para calcular ABV y atenuación; las del refractómetro sirven para seguir la extracción y calcular la eficiencia real de la cocción. La app guarda las cinco.`;
 
 /* ---------- Semilla ---------- */
 function seed(){
   const P = (o)=>Object.assign({
     macAgua:13, aguaOlla1:7, macTemp:"66–67", macMin:60, recirc:20, lavadoL:7, lavadoTemp:"75–78",
-    reposoLavado:5, recirc2:10, preHervido:17, perdidasDia2:1,
+    reposoLavado:5, recirc2:10, preHervido:17, perdidasDia2:2.8,
     hervido:60, topupMin:40, topupL:2, wpTemp:80, reposo:"20–30", enfriar:"18–19", levaduraG:11
   },o||{});
   return {
     v:1,
     cfg:{apiKey:"", model:"gemini-3.6-flash", boil1:55, boil2:10, tempGolpe:"72–74",
-         eficiencia:66.5, vHervido:17, factorWP:0.25},
+         eficiencia:66.5, vHervido:16.5, factorWP:0.25},
     insumos:{
       maltas:[{n:"Pilsen",g:19500,ppg:37,lov:1.8},{n:"Munich",g:3500,ppg:36,lov:10},
               {n:"Pale Ale",g:4400,ppg:37,lov:3},{n:"Cara 20",g:4750,ppg:34,lov:10.2}],
@@ -330,42 +334,42 @@ function seed(){
       levadura:[{n:"Ale limpia seca",sobres:8}]
     },
     recetas:[
-      {id:"r1",n:1,nombre:"Pilsen Ale (réplica Lote 53)",bjcp:"18A Blonde Ale (por OG y amargor reales; 5D German Pils era la referencia de diseño)",litros:16,estado:"pendiente",
+      {id:"r1",n:1,nombre:"Pilsen Ale (réplica Lote 53)",bjcp:"18A Blonde Ale (por OG y amargor reales; 5D German Pils era la referencia de diseño)",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:3600},{n:"Cara 20",g:300}],
        og:1.050,fgMin:1.012,fgMax:1.015,abv:4.8,ebcMin:8,ebcMax:10,ibuMin:13,ibuMax:17,co2:2.3,
        lupulos:[{n:"Simcoe",g:7,min:30},{n:"Cascade",g:13,min:"wp"}],
        proc:P({macTemp:"68"}),clarificante:{n:"Irish Moss",g:2},probada:true,notas:"Basada en el Lote 53 (que midió OG 1.042 y FG 1.010 en 16 L, 4,2 % ABV). El lote del 12 ago 2026 salió a 1.058 en 13,72 L por menos volumen y más eficiencia. Objetivos ajustados a 16 L con la eficiencia medida del 66,5 %. Maceración subida a 68 °C para dar más cuerpo y espuma."},
-      {id:"r2",n:2,nombre:"APA cítrica",bjcp:"18B American Pale Ale",litros:16,estado:"pendiente",
+      {id:"r2",n:2,nombre:"APA cítrica",bjcp:"18B American Pale Ale",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:2850},{n:"Pilsen",g:50,lov:150,ppg:33,nota:"tostada en casa"},{n:"Pale Ale",g:900},{n:"Cara 20",g:300}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:12,ebcMax:16,ibuMin:38,ibuMax:40,co2:2.3,
        lupulos:[{n:"Simcoe",g:10,min:60},{n:"Simcoe",g:7,min:20},{n:"Cascade",g:40,min:"wp"}],
        proc:P({}),notas:""},
-      {id:"r3",n:3,nombre:"American Amber Ale",bjcp:"19A American Amber Ale",litros:16,estado:"pendiente",
+      {id:"r3",n:3,nombre:"American Amber Ale",bjcp:"19A American Amber Ale",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:2195},{n:"Pilsen",g:205,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:700},{n:"Pale Ale",g:300},{n:"Cara 20",g:600}],
        og:1.056,fgMin:1.010,fgMax:1.012,abv:5.7,ebcMin:25,ebcMax:30,ibuMin:30,ibuMax:32,co2:2.2,
        lupulos:[{n:"Simcoe",g:8,min:60},{n:"Simcoe",g:5,min:20},{n:"Cascade",g:35,min:"wp"}],
        proc:P({macTemp:"67"}),notas:""},
-      {id:"r4",n:4,nombre:"Märzen Ale",bjcp:"6A Märzen (interpretado con levadura ale)",litros:16,estado:"pendiente",
+      {id:"r4",n:4,nombre:"Märzen Ale",bjcp:"6A Märzen (interpretado con levadura ale)",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:2230},{n:"Pilsen",g:170,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:600},{n:"Pale Ale",g:300},{n:"Cara 20",g:700}],
        og:1.057,fgMin:1.011,fgMax:1.013,abv:5.8,ebcMin:22,ebcMax:28,ibuMin:22,ibuMax:24,co2:2.2,
        lupulos:[{n:"Simcoe",g:6,min:60},{n:"Simcoe",g:3,min:20},{n:"Cascade",g:30,min:"wp"}],
        proc:P({macTemp:"67"}),notas:""},
-      {id:"r5",n:5,nombre:"Irish Red Ale",bjcp:"15A Irish Red Ale",litros:16,estado:"pendiente",
+      {id:"r5",n:5,nombre:"Irish Red Ale",bjcp:"15A Irish Red Ale",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:2185},{n:"Pilsen",g:215,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:300},{n:"Pale Ale",g:500},{n:"Cara 20",g:800}],
        og:1.055,fgMin:1.011,fgMax:1.013,abv:5.6,ebcMin:25,ebcMax:30,ibuMin:22,ibuMax:24,co2:2.1,
        lupulos:[{n:"Simcoe",g:7,min:60},{n:"Simcoe",g:3,min:20},{n:"Cascade",g:25,min:"wp"}],
        proc:P({macTemp:"67"}),notas:""},
-      {id:"r6",n:6,nombre:"Porter",bjcp:"13C English Porter / 20A American Porter",litros:16,estado:"pendiente",
+      {id:"r6",n:6,nombre:"Porter",bjcp:"13C English Porter / 20A American Porter",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:1705},{n:"Pilsen",g:695,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:400},{n:"Pale Ale",g:600},{n:"Cara 20",g:600}],
        og:1.058,fgMin:1.012,fgMax:1.014,abv:6.0,ebcMin:45,ebcMax:55,ibuMin:28,ibuMax:32,co2:2.1,
        lupulos:[{n:"Simcoe",g:9,min:60},{n:"Simcoe",g:4,min:20},{n:"Cascade",g:30,min:"wp"}],
        proc:P({macTemp:"67"}),notas:"Tostar 700 g de Pilsen hasta color castaño oscuro (~150 °L) y dejarla enfriar por completo."},
-      {id:"r7",n:7,nombre:"Stout",bjcp:"20B American Stout",litros:16,estado:"pendiente",
+      {id:"r7",n:7,nombre:"Stout",bjcp:"20B American Stout",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:1910},{n:"Pilsen",g:540,lov:300,ppg:33,nota:"tostada en casa"},{n:"Munich",g:300},{n:"Pale Ale",g:900},{n:"Cara 20",g:350}],
        og:1.060,fgMin:1.012,fgMax:1.014,abv:6.2,ebcMin:60,ebcMax:70,ibuMin:35,ibuMax:38,co2:2.05,
        lupulos:[{n:"Simcoe",g:12,min:60},{n:"Simcoe",g:4,min:20},{n:"Cascade",g:30,min:"wp"}],
        proc:P({}),notas:"Tostar 540 g de Pilsen hasta casi color de grano de café (~300 °L) y dejarla enfriar por completo."},
-      {id:"r8",n:8,nombre:"Munich Amber Ale",bjcp:"19A American Amber / 6A Märzen (híbrido)",litros:16,estado:"pendiente",
+      {id:"r8",n:8,nombre:"Munich Amber Ale",bjcp:"19A American Amber / 6A Märzen (híbrido)",litros:14,estado:"pendiente",
        granos:[{n:"Pilsen",g:755},{n:"Pilsen",g:195,lov:150,ppg:33,nota:"tostada en casa"},{n:"Munich",g:1200},{n:"Pale Ale",g:900},{n:"Cara 20",g:1100}],
        og:1.060,fgMin:1.011,fgMax:1.013,abv:6.0,ebcMin:28,ebcMax:32,ibuMin:21,ibuMax:23,co2:2.2,
        lupulos:[{n:"Simcoe",g:6,min:60},{n:"Simcoe",g:3,min:20},{n:"Cascade",g:32,min:"wp"}],
@@ -374,7 +378,7 @@ function seed(){
     lotes:[],
     plan:{inicio:"2026-08-11", neveras:2, fermentadores:1, fer:18, carb:14, mad:28, servir:7,
           orden:["r1","r2","r8","r4","r3","r5","r6","r7"],
-          compraMaltas:"2026-01", vidaMaltas:12,
+          compraMaltas:"2026-01", vidaMaltas:12, botellasMax:40, mlBotella:330, mermaEmbotellado:0.6, perdidaFondoFalso:0.25, perdidaMangueras:0.15,
           compraLupulos:"2026-01", vidaLupulos:24,
           compraLevadura:"2026-01", vidaLevadura:24},
     coccion:null,          // {recetaId, dia, hechos:{}, inicio}
@@ -427,14 +431,17 @@ if(!DB.cfg.aaReal){
 if(DB.cfg.eficiencia==null) DB.cfg.eficiencia=56;
 if(DB.cfg.eficiencia===72.5||DB.cfg.eficiencia===56) DB.cfg.eficiencia=66.5;   /* lote 12 ago: 1.058 en 13,72 L pesados */
 if(DB.cfg.vHervido==null) DB.cfg.vHervido=17;
-if(DB.cfg.vHervido===18) DB.cfg.vHervido=17;   /* dato real del equipo */
+if(DB.cfg.vHervido===18||DB.cfg.vHervido===17) DB.cfg.vHervido=16.5;   /* 17 L medidos a 90 °C = 16,5 L en frío */
 if(DB.cfg.factorWP==null) DB.cfg.factorWP=0.25;
+if(DB.plan){ if(DB.plan.botellasMax==null) DB.plan.botellasMax=40; if(DB.plan.mlBotella==null) DB.plan.mlBotella=330; if(DB.plan.mermaEmbotellado==null) DB.plan.mermaEmbotellado=0.6;
+  if(DB.plan.perdidaFondoFalso==null) DB.plan.perdidaFondoFalso=0.25;
+  if(DB.plan.perdidaMangueras==null) DB.plan.perdidaMangueras=0.15; }
 DB.recetas.forEach(r=>{ const P=r.proc; if(!P) return;
   if(P.aguaOlla1==null) P.aguaOlla1=7;
   if(P.reposoLavado==null) P.reposoLavado=5;
   if(P.recirc2==null) P.recirc2=10;
   if(P.preHervido==null) P.preHervido=17;
-  if(P.perdidasDia2==null) P.perdidasDia2=1;
+  if(P.perdidasDia2==null||P.perdidasDia2===1) P.perdidasDia2=2.8;
 });
 if(!DB.plan){
   DB.plan=seed().plan;
@@ -1013,8 +1020,9 @@ function pasosDia1(r){
      b:hopsHervido.map(h=>`Minuto <b>${h.marca}</b>: ${h.n} <b>${h.g} g</b> <span class="dim">(nominal @${h.min}')</span>`).join("<br>")
        +`<br>Minuto <b>${P.topupMin}</b>: ${P.topupL} L de agua muy caliente si corresponde.`,
      timer:b1, avisos:avisos},
+    {t:"Pesar la espuma retirada",b:`Junta lo que sacaste con la espumadera durante el hervido y pésalo. No se evaporó: se fue de la olla, y hay que descontarlo para saber la evaporación real.`,med:"espuma"},
     {t:"Medir lo que quedó",b:`Al apagar, mide los litros que quedan en el hervidor. Suelen ser unos <b>14 L</b>: se evaporan cerca de 3 L en los ${b1} min.`,med:"vpost"},
-    {t:"Completar el volumen",b:`Agrega agua hervida caliente hasta cerrar en <b>${(r.litros+(P.perdidasDia2||1)).toFixed(1).replace(".",",")} L</b> en la olla: son los ${r.litros} L que quieres en el fermentador más ${P.perdidasDia2||1} L que se pierden mañana (medio litro de evaporación en el hervido corto y medio de trub). Anota cuánta agua pusiste: si el hervor fue más fuerte hará falta un poco más.`,med:"vagua"},
+    {t:"Completar el volumen",b:`Agrega agua hervida caliente hasta cerrar en <b>${(r.litros+(P.perdidasDia2||1)).toFixed(1).replace(".",",")} L</b> en la olla: son los ${r.litros} L que quieres en el fermentador más ${String(P.perdidasDia2||2.8).replace(".",",")} L que se pierden mañana: hervido corto, enfriado destapado, trub y lo que queda en mangueras. Anota cuánta agua pusiste: si el hervor fue más fuerte hará falta un poco más.`,med:"vagua"},
     {t:"Tapar y sellar",b:`Apaga, tapa el hervidor bien sellado y déjalo reposar hasta mañana. Meta: terminar cerca de las 22:00.`}
   ];
 }
@@ -1031,6 +1039,7 @@ function pasosDia2(r){
     {t:"Trasvasar al fermentador",b:`Pasa el mosto al fermentador dejando atrás el trub. Anota los litros que entraron de verdad: es el dato que fija cuánta agua agregar en el hervido del Día 2 del próximo lote.`,med:"vferm"},
     {t:"Medir densidad inicial (OG)",b:`Ya en el fermentador, con el <b>densímetro</b>: es la primera medida principal y la que sirve para todos los cálculos. Objetivo de la receta: <b>${r.og.toFixed(3)}</b>.`,med:"og"},
     {t:"Oxigenar y sembrar",b:`Airea bien y siembra <b>${r.proc.levaduraG} g</b> de ale limpia seca, con el mosto a ${r.proc.enfriar} °C.`},
+    {t:"Pesar el trub",b:`Pesa el desecho que quedó en la olla. Separa lo que se llevó el trub de lo que se pierde en mangueras y serpentín.`,med:"trub"},
     {t:"Recuperar el agua del deshielo",b:`Guárdala para volver a congelarla en los moldes: es la misma agua que reutilizas todo el año.`},
     {t:"Abrir el lote",b:`Registra el lote y arranca el conteo de fermentación.`,accion:"crearLote"}
   ];
@@ -1042,6 +1051,8 @@ const MED={
   m3:{n:"Mosto completo",d:"Los litros ya juntos en el hervidor, antes de hervir",inst:"refractómetro",litros:17,vol:true,suma:true},
   vpost:{n:"Volumen tras el hervido",d:"Lo que queda en el hervidor al terminar los 55 min del Día 1",inst:null,litros:14,soloVol:true},
   vagua:{n:"Agua de reposición",d:"Lo que agregas para cerrar en el volumen objetivo",inst:null,litros:1,soloVol:true},
+  espuma:{n:"Espuma retirada",d:"Lo que sacas con la espumadera durante el hervido para que no se derrame",inst:null,gramos:310,soloPeso:true},
+  trub:{n:"Trub del hervidor",d:"El desecho que queda en la olla tras pasar el mosto al fermentador",inst:null,gramos:740,soloPeso:true},
   vferm:{n:"Litros en el fermentador",d:"Lo que realmente entró, ya sin el trub que quedó en la olla",inst:null,litros:16,soloVol:true},
   og:{n:"OG — densidad inicial",d:"Mosto ya en el fermentador, antes de oxigenar y sembrar",inst:"densímetro",litros:null},
   fg:{n:"FG — densidad final",d:"Al terminar la fermentación, en el momento de embotellar",inst:"densímetro",litros:null}
@@ -1054,7 +1065,8 @@ function brixASG(b){ const bc=b/WCF; return 1+(bc/(258.6-(bc/258.2)*227.1)); }
 function sgABrix(sg){ const p=(sg-1)*1000; return (p/4)*WCF; }
 function botonMedicion(k){
   const v=(DB.coccion.med||{})[k];
-  const et=v? (v.sg? `✓ ${Number(v.sg).toFixed(3)}${v.litros?` · ${String(v.litros).replace(".",",")} L`:""}` : `✓ ${String(v.litros).replace(".",",")} L`) : (MED[k].soloVol?"◇ Anotar litros":"◇ Anotar medición");
+  const et=v? (v.gramos!=null? `✓ ${gr(v.gramos)} g` : v.sg? `✓ ${Number(v.sg).toFixed(3)}${v.litros?` · ${String(v.litros).replace(".",",")} L`:""}` : `✓ ${String(v.litros).replace(".",",")} L`)
+    : (MED[k].soloPeso?"◇ Anotar peso":MED[k].soloVol?"◇ Anotar litros":"◇ Anotar medición");
   return `<button class="stimer" style="border-color:${v?"#37421F":"var(--line)"};color:${v?"var(--hop)":"var(--muted)"}"
     onclick="pedirMedicion('${k}')">${et}</button>`;
 }
@@ -1063,14 +1075,23 @@ function pedirMedicion(k){
   const refr=m.inst==="refractómetro";
   const sug=m.suma? ((med.m1&&med.m1.litros?med.m1.litros:0)+(med.m2&&med.m2.litros?med.m2.litros:0)) : m.litros;
   const objetivo=(DB.recetas.find(x=>x.id===DB.coccion.recetaId)||{}).litros;
+  if(m.soloPeso) return sheet(m.n,`
+    <div class="tiny dim" style="margin-bottom:4px">${esc(m.d)}</div>
+    <label class="f">Peso (gramos)</label>
+    <input inputmode="decimal" id="md_g" value="${v.gramos!=null?v.gramos:""}" placeholder="${m.gramos}">
+    <div class="tiny dim" style="margin-top:4px">${k==="espuma"?"Se descuenta de la evaporación: lo que sacas con la espumadera no se evaporó.":"Sirve para separar el trub de las otras pérdidas del trasvase."}</div>
+    <label class="f">Nota (opcional)</label><input id="md_n" value="${esc(v.nota||"")}">
+    <button class="btn" onclick="guardarMedicion('${k}')">Guardar</button>
+    ${v.gramos!=null?`<button class="btn danger sm" onclick="borrarMedicion('${k}')">Borrar</button>`:""}`);
   if(m.soloVol) return sheet(m.n,`
     <div class="tiny dim" style="margin-bottom:4px">${esc(m.d)}</div>
-    <label class="f">Litros</label>
-    <input inputmode="decimal" id="md_l" value="${v.litros!=null?v.litros:""}" placeholder="${m.litros}">
+    <label class="f">Litros medidos</label>
+    <input inputmode="decimal" id="md_l" value="${v.litros!=null?v.litros:""}" placeholder="${m.litros}" oninput="avisoFrio()">
+    ${selTemp("md_t",v.temp!=null?v.temp:(k==="vpost"?95:k==="vferm"?20:80))}
     ${k==="vpost"&&med.m3&&med.m3.litros?`<div class="tiny dim" style="margin-top:4px">Entraron ${String(med.m3.litros).replace(".",",")} L al hervidor.</div>`:""}
     ${k==="vferm"?(()=>{const dif=objetivo?null:null;
       return `<div class="tiny dim" style="margin-top:4px">Objetivo de la receta: <b>${objetivo} L</b>. Si entra menos, ese faltante es lo que hay que agregar durante el hervido del Día 2 la próxima vez.</div>`;})():""}
-    ${k==="vagua"?(()=>{const rr=DB.recetas.find(x=>x.id===DB.coccion.recetaId)||{},pe=(rr.proc&&rr.proc.perdidasDia2)||1,meta=objetivo+pe;
+    ${k==="vagua"?(()=>{const rr=DB.recetas.find(x=>x.id===DB.coccion.recetaId)||{},pe=(rr.proc&&rr.proc.perdidasDia2)||2.8,meta=objetivo+pe;
       return `<div class="tiny dim" style="margin-top:4px">Cerrar la olla en <b>${meta.toFixed(1).replace(".",",")} L</b> (${objetivo} L en el fermentador + ${pe} L de pérdidas del Día 2)${med.vpost&&med.vpost.litros?` · quedaron ${String(med.vpost.litros).replace(".",",")} L, faltan ${(meta-med.vpost.litros).toFixed(1).replace(".",",")} L`:""}</div>`;})():""}
     <label class="f">Nota (opcional)</label><input id="md_n" value="${esc(v.nota||"")}">
     <button class="btn" onclick="guardarMedicion('${k}')">Guardar</button>
@@ -1084,12 +1105,36 @@ function pedirMedicion(k){
     <div class="tiny dim" style="margin-top:4px">Tu refractómetro trae las dos escalas: llena la que leas y la otra se calcula sola, ya corregida por el factor de mosto (${WCF}).</div>`
     :`<label class="f">Densidad (SG)</label><input inputmode="decimal" id="md_sg" value="${v.sg!=null?v.sg:""}" placeholder="1.051">`}
     ${m.vol?`<label class="f">Litros medidos ${sug?`<span class="dim">(${m.suma?"suma de los dos trasvases":"típico "+String(m.litros).replace(".",",")})</span>`:""}</label>
-    <input inputmode="decimal" id="md_l" value="${v.litros!=null?v.litros:(sug||"")}" oninput="avisoTope()">
+    <input inputmode="decimal" id="md_l" value="${v.litros!=null?v.litros:(sug||"")}" oninput="avisoTope();avisoFrio()">
+    ${selTemp("md_t",v.temp!=null?v.temp:(k==="m3"?90:80))}
     ${m.suma?`<div class="tiny dim" id="tope" style="margin-top:4px">Tope del hervidor: ${CAP_HERVIDOR-MARGEN_HERVIDOR} L (olla de ${CAP_HERVIDOR} L con ${MARGEN_HERVIDOR} L de margen).</div>`:""}`
     :`<input type="hidden" id="md_l" value="">`}
     <label class="f">Nota (opcional)</label><input id="md_n" value="${esc(v.nota||"")}">
     <button class="btn" onclick="guardarMedicion('${k}')">Guardar medición</button>
     ${v.sg?`<button class="btn danger sm" onclick="borrarMedicion('${k}')">Borrar esta medición</button>`:""}`);
+}
+/* El mosto caliente ocupa más: una medición con la paleta a 85 °C
+   sobreestima un 3 % frente al mismo mosto frío. La paleta se calibró
+   con agua fría, así que hay que corregir. */
+const DENS_AGUA={20:0.99821,40:0.99222,60:0.98320,80:0.97180,85:0.96865,95:0.96192,100:0.95835};
+function litrosFrios(L,T){
+  if(!L) return L;
+  const t=Number(T)||20, ks=Object.keys(DENS_AGUA).map(Number);
+  const k=ks.reduce((a,b)=>Math.abs(b-t)<Math.abs(a-t)?b:a);
+  return L*(DENS_AGUA[k]/DENS_AGUA[20]);
+}
+function selTemp(id,val){
+  return `<label class="f">Temperatura al medir</label>
+    <select id="${id}">${[[20,"frío, ~20 °C"],[40,"tibio, ~40 °C"],[60,"~60 °C"],[80,"~80 °C"],[85,"~85 °C"],[95,"casi hirviendo, ~95 °C"],[100,"hirviendo"]]
+      .map(([v,t])=>`<option value="${v}" ${Number(val||20)===v?"selected":""}>${t}</option>`).join("")}</select>
+    <div class="tiny dim" style="margin-top:4px" id="avisoT"></div>`;
+}
+function avisoFrio(){
+  const el=$("#avisoT"), L=parseFloat($("#md_l").value), T=Number(($("#md_t")||{}).value||20);
+  if(!el) return;
+  if(isNaN(L)||T<=20){ el.textContent="La paleta está calibrada con agua fría, así que a 20 °C la lectura vale tal cual."; return; }
+  const fr=litrosFrios(L,T);
+  el.innerHTML=`Equivalen a <b class="num">${fr.toFixed(2).replace(".",",")} L</b> en frío: el mosto caliente ocupa un ${((L/fr-1)*100).toFixed(1).replace(".",",")} % más.`;
 }
 function avisoTope(){
   const el=$("#tope"), v=parseFloat($("#md_l").value);
@@ -1107,12 +1152,21 @@ function sincroMed(origen){
 }
 function guardarMedicion(k){
   const sgEl=$("#md_sg"), sg=sgEl?parseFloat(sgEl.value):NaN;
-  const litros=parseFloat($("#md_l").value);
+  if(MED[k].soloPeso){
+    const g=parseFloat($("#md_g").value);
+    if(isNaN(g)) return toast("Falta el peso");
+    DB.coccion.med=DB.coccion.med||{};
+    DB.coccion.med[k]={gramos:g,nota:$("#md_n").value.trim(),f:ahoraEC()};
+    save(); closeSheet(); render(); return toast("Peso guardado");
+  }
+  const litrosEl=$("#md_l"), litros=litrosEl?parseFloat(litrosEl.value):NaN;
   if(MED[k].soloVol){ if(isNaN(litros)) return toast("Faltan los litros"); }
   else if(isNaN(sg)) return toast("Falta la densidad");
   const bxEl=$("#md_bx"), bx=bxEl?parseFloat(bxEl.value):NaN;
   DB.coccion.med=DB.coccion.med||{};
+  const tEl=$("#md_t"), temp=tEl?Number(tEl.value):20;
   DB.coccion.med[k]={sg:isNaN(sg)?null:sg, brix:isNaN(bx)?null:bx, litros:isNaN(litros)?null:litros,
+                     temp:temp, litrosFrio:isNaN(litros)?null:litrosFrios(litros,temp),
                      nota:$("#md_n").value.trim(), f:ahoraEC()};
   save(); closeSheet(); render(); toast("Medición guardada");
 }
@@ -1143,18 +1197,33 @@ function vMediciones(){
       <td class="dim">${med[k].litros!=null?String(med[k].litros).replace(".",","):"—"}</td></tr>`).join("")}
     </tbody></table>
     ${(()=>{
-      const l1=med.m1&&med.m1.litros, l2=med.m2&&med.m2.litros, lt=med.m3&&med.m3.litros;
-      const vp=med.vpost&&med.vpost.litros, va=med.vagua&&med.vagua.litros;
+      const cf=k=>med[k]?(med[k].litrosFrio!=null?med[k].litrosFrio:med[k].litros):null;
+      const l1=cf("m1"), l2=cf("m2"), lt=cf("m3");
+      const vp=cf("vpost"), va=med.vagua&&med.vagua.litros;
       const f=[];
       if(l1&&l2) f.push(`Trasvases: ${String(l1).replace(".",",")} + ${String(l2).replace(".",",")} = <b class="num">${(l1+l2).toFixed(1).replace(".",",")} L</b>${(l1+l2)>CAP_HERVIDOR-MARGEN_HERVIDOR?' <span class="warn">(sobre el tope de '+(CAP_HERVIDOR-MARGEN_HERVIDOR)+' L)</span>':""}`);
-      if(lt&&vp) f.push(`Evaporados en el hervido: <b class="num">${(lt-vp).toFixed(1).replace(".",",")} L</b> en ${DB.cfg.boil1} min = <b class="num">${((lt-vp)/DB.cfg.boil1*60).toFixed(2).replace(".",",")} L/h</b>`);
+      const esp=med.espuma&&med.espuma.gramos, tr=med.trub&&med.trub.gramos;
+      if(lt&&vp){
+        const ev=(lt-vp)-(esp?esp/1000:0);
+        f.push(`Evaporados en el hervido: <b class="num">${ev.toFixed(2).replace(".",",")} L</b> en ${DB.cfg.boil1} min = <b class="num">${(ev/DB.cfg.boil1*60).toFixed(2).replace(".",",")} L/h</b>${esp?` <span class="dim">(descontados ${gr(esp)} g de espuma)</span>`:""}`);
+      }
       if(vp&&va) f.push(`Cierre del Día 1: ${String(vp).replace(".",",")} + ${String(va).replace(".",",")} = <b class="num">${(vp+va).toFixed(1).replace(".",",")} L</b>`);
-      const vf=med.vferm&&med.vferm.litros;
+      const vf=cf("vferm");
       if(vf){
         const obj=r.litros, d=obj-vf;
         f.push(`En el fermentador: <b class="num">${String(vf).replace(".",",")} L</b> de ${obj} L previstos`);
-        if(vp&&va) f.push(`Perdidos del Día 1 al fermentador: <b class="num">${((vp+va)-vf).toFixed(1).replace(".",",")} L</b> entre evaporación del hervido corto, destape y trub`);
-        if(Math.abs(d)>=0.2) f.push(`<span class="${d>0?"warn":"ok"}">Próximo lote: agrega <b class="num">${Math.abs(d).toFixed(1).replace(".",",")} L</b> ${d>0?"más":"menos"} de agua durante el hervido del Día 2.</span>`);
+        if(vp&&va){
+          const tot=(vp+va)-vf;
+          f.push(`Perdidos del Día 1 al fermentador: <b class="num">${tot.toFixed(2).replace(".",",")} L</b>`);
+          if(tr){
+            const trL=tr/1000/1.06, mg=DB.plan.perdidaMangueras;
+            const resto=tot-trL-mg;
+            f.push(`&nbsp;&nbsp;trub <b class="num">${trL.toFixed(2).replace(".",",")} L</b> (${gr(tr)} g) · mangueras y bomba <b class="num">${String(mg).replace(".",",")} L</b> · resto <b class="num">${resto.toFixed(2).replace(".",",")} L</b> entre evaporación del Día 2 e imprecisión de la paleta`);
+          }
+        }
+          const emb=vf-0.6, bot=Math.floor(emb/0.33);
+        f.push(`Botellas de 330 ml previstas: <b class="num">${bot}</b> <span class="dim">(${emb.toFixed(2).replace(".",",")} L embotellables, descontando ~0,6 L de levadura sedimentada)</span>${bot>DB.plan.botellasMax?` <span class="warn">— no caben en la nevera, que admite ${DB.plan.botellasMax}</span>`:""}`);
+      if(Math.abs(d)>=0.2) f.push(`<span class="${d>0?"warn":"ok"}">Próximo lote: agrega <b class="num">${Math.abs(d).toFixed(1).replace(".",",")} L</b> ${d>0?"más":"menos"} de agua durante el hervido del Día 2.</span>`);
         else f.push(`<span class="ok">Volumen clavado: no hace falta corregir el próximo lote.</span>`);
       }
       return f.length?`<div class="mini muted" style="margin-top:8px;line-height:1.7">${f.join("<br>")}</div>`:"";
@@ -1814,7 +1883,9 @@ REGLAS
 18. Al concentrar un mosto SUBEN las tres cosas: la densidad, el amargor y el color. Nunca digas que el amargor baja al concentrar. Ocurren dos efectos opuestos —el lúpulo queda en menos litros (sube el IBU) y la mayor densidad reduce la utilización (baja el IBU)— y el primero manda siempre; el neto es un aumento, pero menor que la razón de volúmenes. El color sube por una potencia (Morey), también menos que proporcional. Nunca multipliques por la razón de volúmenes ni restes por la caída de utilización: da el sentido correcto, márcalo como estimación y di que la app calcula el valor exacto al cambiar los litros de la receta.
 19. CONSTANTES DE ESTE EQUIPO PARA CÁLCULO RÁPIDO (úsalas, no estimes):
    - Azúcar de mesa (sacarosa): 100 g en 16 L aportan 2,4 puntos de OG y unos +0,31 % de ABV, sin subir la FG. Para subir 1 punto porcentual de ABV en 16 L hacen falta unos 325 g. Calcula siempre la cantidad con esta constante y verifica el ABV resultante antes de darlo.
-   - Evaporación: unos 3,3 L/h medidos en su equipo (3 L en los 55 min del Día 1). Los minutos EXTRA de hervido son (litros a evaporar x 18).
+   - Evaporación: 2,94 L/h medidos en su equipo, ya descontada la espuma y corregidas las lecturas por temperatura. Los minutos EXTRA de hervido son (litros a evaporar x 20,4).
+   - MIDE LOS VOLÚMENES EN CALIENTE con una paleta de madera marcada, calibrada con agua fría. Las lecturas se toman a ~90 °C en el llenado del hervidor, ~97 °C al terminar el hervido y ~80 °C antes del whirlpool, y hay que corregirlas: el mosto caliente ocupa hasta un 4 % más. La app hace la corrección; nunca uses una lectura en caliente sin convertirla. Los litros del fermentador sí son fiables porque los obtiene pesando el mosto.
+   - Pérdidas fijas de su sistema: unos 250 ml de mosto quedan bajo el fondo falso del macerador y se descartan, y unos 150 ml quedan en las mangueras de 3/8 pulgada (30 y 60 cm) y la bomba.
    - Enfriado del hervidor tras apagar, con 31 °C de ambiente y unos 16 L: de 100 a 80 °C son 104 min con la olla tapada y 47 min con la tapa entreabierta tres dedos (destapar acelera 2,2 veces). Con la tapa entreabierta: 95 °C a los 10 min, 90 °C a los 22, 85 °C a los 34, 80 °C a los 47. Destapar ese rato cuesta unos 0,6 L evaporados. No confundas minutos extra con minutos totales: los totales son esos más los 55 habituales del Día 1.
    - Concentrar la Stout de 16 a 13 L, por ejemplo, deja OG ~1.067, unos 41 IBU y unos 75 EBC.
 20. Para cualquier cambio de volumen por evaporación, usa la tasa real de este equipo: pasa de ${DB.cfg.vHervido} L a unos 14 L en los ${DB.cfg.boil1} min del Día 1, o sea unos 3,3 L/h. Calcula los minutos con esa tasa. Recuerda además que los 2 L de recarga del minuto 40 son opcionales: omitirlos ahorra casi una hora de hervido extra. Y avisa siempre cuántos litros de cerveza se pierden.

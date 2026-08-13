@@ -136,6 +136,17 @@
     border-radius:7px; padding:5px 10px; font-size:12px; margin:-4px 0 12px;
   }
   .btn-copiar:active{opacity:.7;}
+  .seccion-config > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  .seccion-config > summary::-webkit-details-marker{ display:none; }
+  .seccion-config > summary::before{
+    content:'▸'; color:var(--primary); font-size:16px; flex-shrink:0; transition:transform .15s;
+  }
+  .seccion-config[open] > summary::before{ transform:rotate(90deg); }
+  .seccion-config > summary h2{ margin:0; flex:1; }
+  .conteo-seccion{ font-size:12px; color:var(--text-dim); font-family:var(--mono); }
+  .seccion-config .contenido-seccion{ margin-top:12px; }
   .spinner-ia{
     width:56px; height:56px; display:block;
     animation: girar-ia 1.6s linear infinite;
@@ -218,31 +229,39 @@
       <div id="horarioEditor"></div>
     </div>
 
-    <div class="card">
-      <h2>Calentamiento</h2>
-      <small class="ayuda">Sin control de peso, solo se marca como realizado.</small>
-      <div id="calentamientoEditor"></div>
-      <button class="btn chico secundario" onclick="agregarCalentamiento()">+ Agregar ítem de calentamiento</button>
-    </div>
+    <details class="card seccion-config">
+      <summary><h2>Calentamiento</h2><span class="conteo-seccion" id="conteoCalentamiento"></span></summary>
+      <div class="contenido-seccion">
+        <small class="ayuda">Sin control de peso, solo se marca como realizado.</small>
+        <div id="calentamientoEditor"></div>
+        <button class="btn chico secundario" onclick="agregarCalentamiento()">+ Agregar ítem de calentamiento</button>
+      </div>
+    </details>
 
-    <div class="card">
-      <h2>Movilidad, equilibrio y flexibilidad</h2>
-      <small class="ayuda">Rutina liviana para miércoles y sábado. Sin peso ni progresión, solo checklist con la guía de repeticiones/segundos.</small>
-      <div id="movilidadEditor"></div>
-      <button class="btn chico secundario" onclick="agregarMovilidad()">+ Agregar ejercicio de movilidad</button>
-    </div>
+    <details class="card seccion-config">
+      <summary><h2>Movilidad, equilibrio y flexibilidad</h2><span class="conteo-seccion" id="conteoMovilidad"></span></summary>
+      <div class="contenido-seccion">
+        <small class="ayuda">Rutina liviana para miércoles y sábado. Cada ejercicio tiene sus series y objetivo (repeticiones, segundos o pasos).</small>
+        <div id="movilidadEditor"></div>
+        <button class="btn chico secundario" onclick="agregarMovilidad()">+ Agregar ejercicio de movilidad</button>
+      </div>
+    </details>
 
-    <div class="card">
-      <h2>Tren Superior</h2>
-      <div id="editorSuperior"></div>
-      <button class="btn chico secundario" onclick="agregarEjercicio('superior')">+ Agregar ejercicio</button>
-    </div>
+    <details class="card seccion-config">
+      <summary><h2>Tren Superior</h2><span class="conteo-seccion" id="conteoSuperior"></span></summary>
+      <div class="contenido-seccion">
+        <div id="editorSuperior"></div>
+        <button class="btn chico secundario" onclick="agregarEjercicio('superior')">+ Agregar ejercicio</button>
+      </div>
+    </details>
 
-    <div class="card">
-      <h2>Tren Inferior</h2>
-      <div id="editorInferior"></div>
-      <button class="btn chico secundario" onclick="agregarEjercicio('inferior')">+ Agregar ejercicio</button>
-    </div>
+    <details class="card seccion-config">
+      <summary><h2>Tren Inferior</h2><span class="conteo-seccion" id="conteoInferior"></span></summary>
+      <div class="contenido-seccion">
+        <div id="editorInferior"></div>
+        <button class="btn chico secundario" onclick="agregarEjercicio('inferior')">+ Agregar ejercicio</button>
+      </div>
+    </details>
 
     <div class="card">
       <button class="btn" onclick="guardarConfiguracion()">Guardar configuración</button>
@@ -355,7 +374,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-08 20:59', texto:'Movilidad ahora tiene control numérico de series y objetivo (repeticiones, segundos o pasos, según la unidad de cada ejercicio), igual que fuerza: se prellena con tus valores actuales, muestra lo que hiciste la sesión anterior, y lo que registres queda como base para la próxima. La IA sugiere la progresión por ejercicio, topada por código a máximo +1 serie y +20% del objetivo, y sin subir nada si hubo dolor (4-5), molestias reportadas o si el ejercicio se omitió. Los valores de series/objetivo se pueden editar en Ajustes.'},
   {fecha:'2026-08-10 16:59', texto:'Ahora se registra el tiempo total de cada sesión, medido con las marcas de tiempo reales de cada check (no estimado): total, ejecución pura y descanso real. Se muestra en el resumen y se le pasa a la IA junto con el contexto del descanso programado de 2:30 entre series. En Movilidad también se registra el tiempo total de la sesión.'},
   {fecha:'2026-08-10 17:30', texto:'Botones de copiar en los chats de IA (tanto en el de cada sesión como en Consulta): uno arriba para copiar toda la conversación, y uno bajo cada respuesta para copiar solo ese par de pregunta y respuesta.'},
-  {fecha:'2026-08-11 09:39', texto:'Indicador visual mientras la IA piensa: la imagen queda incrustada dentro del propio archivo (para que siga siendo uno solo) y gira por animación, ya que la imagen original es estática. Aparece al analizar una sesión de fuerza o de movilidad, y también al hacer una pregunta en cualquiera de los dos chats, donde antes no había ninguna señal de espera.'}
+  {fecha:'2026-08-11 09:39', texto:'Indicador visual mientras la IA piensa: la imagen queda incrustada dentro del propio archivo (para que siga siendo uno solo) y gira por animación, ya que la imagen original es estática. Aparece al analizar una sesión de fuerza o de movilidad, y también al hacer una pregunta en cualquiera de los dos chats, donde antes no había ninguna señal de espera.'},
+  {fecha:'2026-08-13 09:47', texto:'La app vuelve a abrir en la pantalla "Hoy" en vez de en Ajustes. En "Editar rutina y horario", las secciones de Calentamiento, Movilidad, Tren Superior y Tren Inferior ahora son desplegables y arrancan colapsadas, cada una mostrando cuántos ejercicios tiene — así ya no hay que recorrer un listado largo para llegar al final.'}
 ];
 
 function mostrarLog(){
@@ -594,6 +614,22 @@ function renderSetup(){
   renderMovilidadEditor();
   renderEjerciciosEditor('superior');
   renderEjerciciosEditor('inferior');
+  actualizarConteosSetup();
+  // Las secciones arrancan colapsadas para no tener que recorrer un listado largo.
+  document.querySelectorAll('.seccion-config').forEach(d=> d.open = false);
+}
+
+function actualizarConteosSetup(){
+  const textos = {
+    conteoCalentamiento: borradorConfig.calentamiento.length + ' ítems',
+    conteoMovilidad: borradorConfig.movilidad.length + ' ejercicios',
+    conteoSuperior: borradorConfig.ejercicios.superior.length + ' ejercicios',
+    conteoInferior: borradorConfig.ejercicios.inferior.length + ' ejercicios'
+  };
+  Object.keys(textos).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = textos[id];
+  });
 }
 
 function renderHorarioEditor(){
@@ -646,6 +682,7 @@ function renderMovilidadEditor(){
       <button class="btn chico peligro" onclick="borradorConfig.movilidad.splice(${i},1); renderMovilidadEditor();">Eliminar</button>
     </div>`;
   }).join('');
+  actualizarConteosSetup();
 }
 function agregarMovilidad(){
   borradorConfig.movilidad.push({id:uid(), categoria:'Movilidad articular', nombre:'Nuevo ejercicio', series:1, objetivo:10, unidad:'reps', detalle:''});
@@ -659,6 +696,7 @@ function renderCalentamientoEditor(){
       <input type="text" value="${escapeAttr(it.nombre)}" oninput="borradorConfig.calentamiento[${i}].nombre=this.value">
       <button class="btn chico peligro" style="flex:0 0 auto;" onclick="borradorConfig.calentamiento.splice(${i},1); renderCalentamientoEditor();">✕</button>
     </div>`).join('');
+  actualizarConteosSetup();
 }
 function agregarCalentamiento(){
   borradorConfig.calentamiento.push({id:uid(), nombre:''});
@@ -702,6 +740,7 @@ function renderEjerciciosEditor(bloque){
       </div>
       <button class="btn chico peligro" onclick="borradorConfig.ejercicios['${bloque}'].splice(${i},1); renderEjerciciosEditor('${bloque}');">Eliminar ejercicio</button>
     </div>`).join('');
+  actualizarConteosSetup();
 }
 function actualizarSeries(bloque, idx, valor){
   const n = Math.max(1, parseInt(valor)||1);
@@ -2320,7 +2359,7 @@ function textoDificultadMovilidad(n){ return {1:'Normal', 2:'Con cierta dificult
 
 function irAVistaSegunEstado(){
   if(!DATOS.config.setupCompleto){ mostrarVista('setup'); }
-  else{ mostrarVista('ajustes'); }
+  else{ mostrarVista('hoy'); }
 }
 
 // ---- Inicio ----

@@ -280,6 +280,61 @@
   .modal-body b { color: var(--maillard); }
   .loader { text-align: center; color: var(--muted); font-style: italic; padding: 20px; }
   .loader span { color: var(--ember); font-weight: bold; }
+
+  /* ---------- Chat de seguimiento dentro del modal ---------- */
+  .modal-body { flex: 1; min-height: 0; }
+  .msg-user, .msg-ia { margin-bottom: 16px; line-height: 1.6; }
+  .msg-user b { color: var(--muted); }
+  .msg-ia b { color: var(--maillard); }
+  .modal-footer {
+    display: flex; gap: 8px; padding: 12px 16px;
+    border-top: 1px solid var(--line); background: var(--surface-2);
+    align-items: flex-end; flex-shrink: 0;
+  }
+  .followup-input {
+    flex: 1; background: var(--bg); border: 1px solid var(--line-strong);
+    color: var(--ink); padding: 10px 12px; border-radius: 8px;
+    font-family: inherit; font-size: 14px; resize: none; max-height: 90px;
+  }
+  .followup-btn {
+    background: var(--maillard); color: var(--maillard-ink); border: none;
+    width: 42px; height: 42px; border-radius: 8px; font-size: 18px;
+    cursor: pointer; flex-shrink: 0; font-weight: bold;
+  }
+  .followup-btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ---------- Barra superior y botón Log ---------- */
+  .top-bar{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom: 10px; }
+  .top-bar .eyebrow{ margin: 0; }
+  .log-btn{
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--line-strong);
+    border-radius: 6px; padding: 4px 10px; font-family: var(--font-mono); font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .log-btn:hover{ color: var(--ink); border-color: var(--maillard); background: var(--ember-soft); }
+  .log-entry{ padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px dashed var(--line-strong); }
+  .log-entry:last-child{ border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .log-fecha{ font-family: var(--font-mono); font-size: 11.5px; color: var(--maillard); margin-bottom: 4px; }
+  .log-desc{ font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+  .log-note{ font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line-strong); }
+
+  /* ---------- Botón de copiar turno (pregunta + respuesta) ---------- */
+  .copy-btn{
+    display:block; margin-top:8px; background: transparent; color: var(--muted);
+    border: 1px solid var(--line-strong); border-radius: 6px; padding: 5px 10px;
+    font-family: var(--font-mono); font-size: 10.5px; cursor:pointer; transition: all 0.2s;
+  }
+  .copy-btn:hover{ color: var(--ink); border-color: var(--maillard); background: var(--ember-soft); }
+
+  /* ---------- Botón de copiar toda la conversación (encabezado del modal) ---------- */
+  .modal-header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .copy-all-btn{
+    background: var(--surface); color: var(--muted); border: 1px solid var(--line-strong);
+    border-radius: 6px; padding: 4px 9px; font-family: var(--font-mono); font-size: 10.5px;
+    font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  .copy-all-btn:hover{ color: var(--ink); border-color: var(--maillard); background: var(--ember-soft); }
 </style>
 </head>
 <body>
@@ -298,7 +353,10 @@
 
   <!-- APLICACIÓN PRINCIPAL -->
   <div id="app-section">
-    <p class="eyebrow">Laboratorio de tueste</p>
+    <div class="top-bar">
+      <p class="eyebrow">Laboratorio de tueste</p>
+      <button class="log-btn" onclick="abrirModalLog()">🕓 Log</button>
+    </div>
     <h1>El mapa de <span>Tueste</span></h1>
     <p class="subtitle">Mueve la acidez, el dulzor y el cuerpo que buscas en taza y observa cómo se reacomodan el secado, el pardeamiento de Maillard y el desarrollo — junto con una curva de tueste y su tabla de tiempo/temperatura cada 2 minutos.</p>
 
@@ -417,10 +475,30 @@
   <div class="modal-content">
     <div class="modal-header">
       <h3 id="ia-modal-title">Análisis IA</h3>
-      <button class="modal-close" onclick="cerrarModalIA()">&times;</button>
+      <div class="modal-header-actions">
+        <button class="copy-all-btn" onclick="copiarConversacionCompleta(this)">📋 Copiar todo</button>
+        <button class="modal-close" onclick="cerrarModalIA()">&times;</button>
+      </div>
     </div>
     <div class="modal-body" id="ia-modal-body">
-      <!-- Contenido generado por la IA -->
+      <!-- Turnos de conversación generados dinámicamente -->
+    </div>
+    <div class="modal-footer" id="ia-followup-row" style="display:none;">
+      <textarea id="ia-followup-input" class="followup-input" rows="1" placeholder="Pregunta algo más sobre esta sección..."></textarea>
+      <button id="ia-followup-btn" class="followup-btn" aria-label="Enviar pregunta">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- VENTANA FLOTANTE: HISTORIAL DE CAMBIOS -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Historial de cambios <span style="font-family:var(--font-mono); font-size:10.5px; color:var(--muted); font-weight:400;">(hora de Ecuador)</span></h3>
+      <button class="modal-close" onclick="cerrarModalLog()">&times;</button>
+    </div>
+    <div class="modal-body" id="log-modal-body">
+      <!-- entradas generadas dinámicamente -->
     </div>
   </div>
 </div>
@@ -434,14 +512,151 @@
   // recomendaciones sean específicas a esta máquina y no asuma una tostadora de tambor.
   const CONTEXTO_MAQUINA = `PERFIL DE LA TOSTADORA (tenlo en cuenta SIEMPRE al analizar y dar recomendaciones; no asumas otro tipo de máquina):
 - Tipo: tostadora de aire por convección. NO es una tostadora de tambor: no hay tambor rotando ni quemador de gas directo sobre el grano.
-- Carga máxima: 80 gramos de café verde por tueste.
+- Carga: siempre 80 gramos de café verde por tueste (constante fija en su proceso, no variable).
 - Control de temperatura: puede operarse con temperatura FIJA (un solo setpoint durante todo el tueste) o con temperatura VARIABLE, que el usuario ajusta manualmente en tiempo real durante el tueste (perfiles escalonados o graduales).
-- Control de aire: 3 niveles de velocidad de aire (V1, V2, V3), también ajustables manualmente en tiempo real durante el tueste, de forma independiente a la temperatura.
-- Registro de datos: el sensor de temperatura está adaptado para grabar la temperatura segundo a segundo, lo que permite reconstruir y analizar la curva de tueste y el RoR (Rate of Rise) con precisión después de cada tueste.
+- Control de aire: 3 niveles de velocidad de aire (V1, V2, V3), también ajustables manualmente en tiempo real durante el tueste, de forma independiente a la temperatura. Patrón de aire habitual del usuario: primeros ~4 minutos en V3, resto del tueste en V2. Antes de escribir cualquier frase del tipo "según tu estándar/patrón habitual/sin desviación", COMPRUEBA contra tu propia tabla en qué minuto exacto cambia el aire a V2: si ese cambio no ocurre alrededor del minuto 4, NO es su patrón habitual y no puedes decir que lo estás respetando — señálalo explícitamente como una desviación, di de cuánto es (ej. "V3 durante 7 minutos en vez de ~4"), y justifica por qué la propones. Ojo con un error fácil: replicar el patrón de aire del tueste que estás analizando NO equivale a seguir su patrón habitual; son dos cosas distintas y a menudo no coinciden. La misma disciplina aplica a cualquier otra afirmación de conformidad con sus prácticas o preferencias: verifícala contra los números que tú mismo estás proponiendo antes de afirmarla.
+- Sensor de temperatura: colocado en medio de la cama de granos, en contacto físico tanto con el aire como con los granos. La lectura es por tanto una temperatura MIXTA aire+grano: no es un ET puro de aire libre, pero tampoco es una BT calibrada y validada como la de una sonda dedicada al grano en una tostadora de tambor. Trátala como el mejor proxy disponible del proceso térmico real, sin asumir que equivale exactamente a la temperatura interna del grano ni a umbrales de BT publicados para otro tipo de máquinas.
+- El usuario NO puede escuchar los cracks durante el tueste por el ruido de la máquina: no asumas que tiene datos de audio del crack disponibles ni se los pidas como si fueran triviales de conseguir.
+- LAS FRONTERAS DE FASE QUE REPORTA SON ETIQUETAS, NO MEDICIONES: cuando en sus notas de operador o en sus registros aparecen fases marcadas (ej. "Sec. 13:30-10:00 / Mai. 10:00-6:30 / Des. 6:30-0:00"), esas fronteras corresponden a los tramos en que él PLANIFICÓ y ejecutó cada cambio de setpoint, no a dónde realmente ocurrió el fin del secado, el inicio de Maillard o el primer crack. Como no hay BT calibrada ni cracks audibles, nadie sabe dónde cayeron las fronteras reales. Puedes calcular y citar los porcentajes de fase a partir de esas etiquetas, pero preséntalos siempre como "reparto declarado/planificado" y no como un reparto medido, y no construyas una crítica fuerte apoyada únicamente en que un porcentaje declarado se aleje de los valores convencionales — señálalo como una observación a verificar, con su nivel de confianza, no como un defecto demostrado.
+- Registro de datos: el sensor está adaptado para grabar la temperatura segundo a segundo, lo que permite reconstruir y analizar la curva de tueste y el RoR (Rate of Rise) de esa temperatura registrada con precisión después de cada tueste.
+
+HALLAZGO CALIBRADO EN ESTA MÁQUINA — ESTANCAMIENTO TÉRMICO CON SETPOINT FIJO O DESCENDENTE:
+En tuestes reales con esta tostadora, fijar (o bajar) el setpoint de temperatura del aire alrededor de ~211-212°C provocó que el RoR cayera a casi cero apenas el aire alcanzaba ese setpoint (minuto 3-4), estancando el tueste térmicamente — en el caso más extremo ni siquiera llegó a cruzar el primer crack. En cambio, perfiles de setpoint ASCENDENTE (por pasos, ej. 195→199→203→207→211→214°C) mantuvieron el RoR positivo hasta el final y dieron tuestes limpios. El rango exacto validado de estancamiento es ~211-212°C: no generalices este hallazgo a un rango más amplio (por ejemplo "200-210°C") como si también estuviera calibrado — si vas a extrapolar el fenómeno a otras temperaturas fijas, dilo explícitamente como extrapolación/hipótesis, no como dato calibrado. Por lo tanto, en ESTA máquina específica, para sostener un RoR positivo y evitar el estancamiento, la recomendación calibrada es usar rampas de setpoint ASCENDENTES (no descendentes), aunque la teoría clásica de tueste en tambor sugiera lo contrario. Si vas a recomendar un perfil de temperatura decreciente para esta máquina, señala explícitamente que esa recomendación es teórica, contradice el comportamiento ya calibrado, y sugiere validarla con precaución antes de confiar en ella.
+
+COMPORTAMIENTO CONOCIDO — CAÍDAS TÉRMICAS BREVES POR AUTORREGULACIÓN:
+Esta tostadora, para evitar que el grano se sobrecaliente, a veces apaga las resistencias internas y sopla solo aire durante unos segundos. Esto causa caídas temporales de temperatura que luego se recuperan solas. Es un comportamiento normal de autorregulación de la máquina, no un error de sensor ni una apertura manual de la cámara — tenlo en cuenta como causa conocida al analizar caídas abruptas breves seguidas de recuperación.
+Estos cortes son un mecanismo AUTÓNOMO de protección prediseñado por el fabricante, con un ritmo propio: el usuario no los controla y ocurren de forma independiente de la temperatura que él haya programado. En los datos disponibles se han observado cortes tanto en tramos de setpoint bajo como alto, y su frecuencia NO aumenta al subir el dial. Por lo tanto: no atribuyas los cortes a que el usuario "exigió demasiado" a la máquina, y NO propongas bajar o topar el setpoint como estrategia para evitarlos ni para "mantener la resistencia encendida" — esa recomendación no tiene respaldo y sacrifica temperatura a cambio de nada. Trata los cortes como una restricción fija del equipo con la que hay que convivir, no como una variable que el perfil pueda eliminar. Si alguna vez una curva mostrara una relación clara entre el setpoint y la frecuencia de los cortes, repórtala como hallazgo de esa curva a confirmar, nunca como algo ya sabido.
+ADVERTENCIA ESPECÍFICA — este error ya ocurrió una vez y no debe repetirse: al analizar un tueste ejecutado a setpoint FIJO que muestre varios cortes, es tentador concluir "fijar el dial en ese valor provocó los cortes" o "un perfil ascendente habría evitado esto". NO lo hagas. Un solo tueste, por muchos cortes que tenga, nunca es evidencia suficiente de esa causalidad — y ya existe evidencia de OTRO tueste que la contradice directamente (cortes ocurriendo también en tramos de setpoint bajo, con intervalos que se alargan, no se acortan, al subir el dial). Antes de escribir cualquier frase con la forma "fijar/subir el setpoint provoca/causa/dispara los cortes", detente y verifica esa afirmación contra el resto del historial disponible, no solo contra el tueste que tienes delante.
+
+RELACIÓN ENTRE LA CURVA SIMULADA DE LA APP Y LOS SETPOINTS REALES A USAR:
+La gráfica y la tabla "Tiempo/Temperatura cada 2 min" que muestra la app son una curva OBJETIVO de lectura del sensor, calculada con un modelo matemático simple a partir de los sliders de acidez/dulzor/cuerpo — no son los setpoints de aire que hay que marcar en la máquina. Cuando propongas un perfil práctico de setpoints, es normal y esperado que tus setpoints recomendados corran por encima de esa curva objetivo (bastante más al inicio, cada vez más cerca al final), porque hay una brecha térmica entre lo que se marca en el dial y lo que el sensor realmente registra mientras el grano frío absorbe calor con rapidez. La primera vez que menciones un perfil de setpoints en una respuesta, acláralo brevemente para que no se lea como una discrepancia o error entre ambas curvas.
+
 Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de temperatura y nivel de aire (V1/V2/V3) a lo largo del tiempo, no en términos de velocidad de tambor, potencia de quemador de gas u otros controles que esta máquina no tiene.`;
+
+  const PROTOCOLO_ANALISIS_TERMICO = `PROTOCOLO DE ANÁLISIS DE DATOS TÉRMICOS (disciplina de evidencia):
+Estas reglas aplican SIEMPRE que analices o comentes datos de esta herramienta, y se vuelven especialmente estrictas cuando el usuario te entregue una serie temporal real de tiempo/temperatura de un tueste (una tabla pegada con muchos registros).
+
+REGLAS GENERALES (aplican a CUALQUIER consulta, incluidas las de cada sección):
+- El sensor da una lectura MIXTA aire+grano (ver PERFIL DE LA TOSTADORA arriba), no un ET puro ni una BT calibrada. No trates la lectura como si tuviera precisión de laboratorio sobre la temperatura interna del grano, ni la compares directamente con umbrales de BT publicados para otro tipo de máquinas (ej. de tambor); cualquier afirmación fina sobre "qué le pasa exactamente al grano" en un punto dado sigue siendo una INFERENCIA o HIPÓTESIS y debes etiquetarla como tal.
+- No inventes eventos que no estén en los datos o en el contexto que se te dio: no afirmes inicio/fin de primer crack, cambios de color, ni fases químicas concretas del grano salvo que existan marcadores reales. Puedes proponer una división aproximada de fases basada en la dinámica térmica, pero indicando siempre que es una estimación.
+- No afirmes que el café quedó necesariamente horneado, quemado, plano, amargo, seco o sobre desarrollado basándote solo en temperatura del aire; sin datos de catación, esas consecuencias sensoriales son posibilidades, no hechos.
+- Ante una anomalía o caída/subida de temperatura, no asumas automáticamente su causa (cambio de aire, de potencia, del sistema de control, del sensor, perturbación externa) salvo que haya evidencia clara o sea un comportamiento conocido de la máquina (ver PERFIL DE LA TOSTADORA arriba). Si no se puede determinar, dilo explícitamente: "no se puede determinar la causa con los datos disponibles".
+- Clasifica mentalmente cada afirmación importante como DATO (aparece directo en los datos), CÁLCULO (resultado matemático), PATRÓN (se repite en la serie), INFERENCIA (explicación razonable pero no demostrada) o HIPÓTESIS (requiere datos adicionales para confirmarse). Nunca presentes una INFERENCIA o HIPÓTESIS como si fuera un DATO. Indica el nivel de confianza (ALTA/MEDIA/BAJA) en conclusiones importantes. Si una misma frase combina algo bien establecido (ej. "más tiempo a alta temperatura → más merma y color más oscuro") con algo más especulativo (ej. el efecto exacto en la acidez o en notas sensoriales específicas), sepáralas y etiqueta cada una por separado — no le prestes a la parte especulativa la confianza que solo se ganó la parte sólida.
+- Reserva la etiqueta de Confianza ALTA para afirmaciones que puedas trazar directamente a datos medidos de este usuario (sus tuestes, sus cataciones) o a comportamientos ya calibrados en su máquina. Las comparaciones de variedades de café, perfiles sensoriales típicos u otro conocimiento general del café que NO esté anclado a datos propios de este usuario son, en el mejor de los casos, MEDIA — no le des el mismo peso a una opinión informada sobre variedades que a un hallazgo calibrado con tuestes reales.
+- Cuando el usuario fije una meta numérica (un puntaje de cata objetivo, un Agtron, una merma, un tiempo), NO la aceptes sin dimensionarla contra sus datos reales. Antes de proponer cómo llegar ahí, di de cuánto es el salto respecto a lo que ya ha conseguido, qué atributos concretos tendrían que moverse y cuántos puntos de escala, y si eso es alcanzable ajustando solo la variable que él está tocando (normalmente el perfil de tueste) o si requiere además otras palancas (selección de grano, tiempo de reposo, método de extracción, o incluso el potencial intrínseco del lote). Si el salto es grande respecto a su historial, dilo abiertamente y ofrece además una meta intermedia realista para el siguiente tueste — es más útil que aceptar la cifra y armar un plan como si estuviera al alcance. Nunca titules una sección con la meta como si ya estuviera dada por descontada.
+- Es preferible decir "no se puede determinar con estos datos" antes que dar una explicación plausible pero no demostrada.
+- VERIFICACIÓN NUMÉRICA VISIBLE: cada vez que reportes un conteo, una suma, un promedio o un porcentaje derivado de los datos, muestra la operación de la que sale y no solo el resultado — escribe "439 s de 726 s = 60.5%" en lugar de "60.5%", "142 registros" en lugar de "unos 140". Un número sin su operación a la vista es un número que nadie puede revisar, ni tú al releerte antes de entregar. Cuatro cuidados concretos, porque son los errores más fáciles de cometer:
+  · SUMA DE INTERVALOS ≠ RANGO QUE LOS CONTIENE. El tiempo total dentro de un conjunto de episodios (cortes de resistencia, fases, cualquier serie de eventos) es la SUMA de las duraciones individuales, NO la distancia entre el inicio del primero y el final del último: entre un episodio y el siguiente hay tramos que quedan fuera. Si reportas una ocupación o proporción, súmala episodio por episodio y comprueba que los huecos intermedios cuadren con la diferencia entre ambas cifras.
+  · UBICAR UN INSTANTE EN SU TRAMO. Antes de atribuir un valor de la curva a un tramo de setpoint o a una fase, verifica que su marca de tiempo caiga realmente dentro de ese intervalo. Convierte primero todos los tiempos a la misma referencia (transcurrido o restante) y deja explícita cuál estás usando.
+  · CONTEOS. Cuenta los elementos que realmente hay en el arreglo; no estimes ni redondees el tamaño de una serie de datos.
+  · HUECOS DE MUESTREO. Revisa los intervalos entre puntos consecutivos y reporta los que se aparten del muestreo nominal, indicando dónde ocurren y de qué magnitud son.
+- FRONTERAS DE FASE SOBRE UNA CURVA: si propones dividir un tueste en fases a partir de la curva, señala explícitamente de qué característica de ESA curva sale cada frontera (un cambio de pendiente, el cruce de un umbral, un cambio de setpoint). Si no puedes apuntar a la evidencia concreta que sostiene una frontera, no la fijes en un minuto preciso ni derives porcentajes de ella: describe la dinámica sin cortarla en tramos falsamente exactos. Un porcentaje de fase calculado sobre una frontera inventada hereda toda la arbitrariedad de esa frontera, por más decimales que tenga, y nunca debe reutilizarse un reparto de fases de otro tueste como si aplicara a este.
+- ENUMERA TODAS LAS INSTANCIAS ANTES DE AFIRMAR UNA CORRELACIÓN: siempre que vayas a sostener que una variable dispara, causa o explica a otra (por ejemplo "los cortes aparecen cuando el setpoint es alto", "la limpieza baja cuando se usa tal filtro"), construye primero una tabla con TODAS las instancias del efecto y el valor de la supuesta causa en cada una. No agrupes por tramos ni resumas en prosa: una fila por instancia. Si alguna fila contradice el patrón, dilo explícitamente y ajusta o abandona la conclusión — basta una contradicción para que ya no puedas presentarlo como regla. Nunca describas un conjunto de instancias por el rango temporal en que caen ("de tal minuto en adelante el setpoint era X") sin verificar el valor real de la causa en cada instante: ese atajo es la forma más común de fabricar una correlación que los datos no tienen.
+- NO OMITAS EL VALOR QUE ROMPE UNA TENDENCIA: la misma disciplina aplica al describir una serie, no solo al afirmar una correlación. Si vas a caracterizar una tendencia (una envolvente que "sube", un RoR que "se mantiene positivo", una progresión "estrictamente ascendente"), incluye TODOS los valores de esa serie, no una selección de ellos — omitir uno solo porque no encaja es tan grave como fabricar una correlación. Antes de calificar una serie como monótona, constante o con una dirección definida, recórrela completa y comprueba que ningún valor la contradiga; si alguno lo hace, dilo explícitamente ("la envolvente subió de forma continua excepto entre el pico N y N+1, donde bajó X°") en vez de reportar solo los valores que sostienen la conclusión limpia. Esto aplica también a cualquier cálculo de tendencia (un promedio entre el primer y el último valor, un RoR de extremo a extremo): si ese cálculo salta valores intermedios, verifica primero que ninguno de los saltados contradiga la tendencia que el cálculo sugiere.
+- CUANDO EL USUARIO CUESTIONE UNA CONCLUSIÓN TUYA: vuelve a los datos y re-deriva desde cero antes de responder, en lugar de buscar en ellos respaldo para lo que ya dijiste. Puedes perfectamente mantener tu posición si los datos la sostienen — no se trata de darle la razón por cortesía, y cederle un punto que los datos contradicen le hace tanto daño como defenderte sin base. Pero la respuesta debe apoyarse en una verificación nueva y completa, no en un recorte de los datos que favorezca tu conclusión previa. Si al re-derivar descubres que te equivocaste, dilo de forma clara y directa, corrige todo lo que dependía de ese error, y señala qué recomendaciones anteriores quedan sin sustento.
+- TODA RECOMENDACIÓN NECESITA UN DIAGNÓSTICO DETRÁS: puedes proponer cambios aunque el usuario solo haya pedido un análisis — no te quedes callado si ves algo —, pero ninguna recomendación puede quedar suelta. Cada una debe traer, de forma explícita: (1) EL PROBLEMA que resuelve, nombrado en una frase concreta; (2) LA EVIDENCIA de que ese problema existe, citando el dato específico del análisis que lo sostiene; y (3) EL VÍNCULO, es decir por qué el cambio propuesto ataca precisamente ese problema. Si no puedes completar los tres puntos, no has encontrado un problema: has encontrado ganas de proponer algo.
+  Es un error grave —y fácil de cometer— concluir en una sección que un tueste salió bien y proponer cambiarlo en otra sección más adelante, sin haber identificado ningún defecto entremedio. Antes de entregar, relee tu propio análisis y comprueba que la recomendación responde a algo que tú mismo señalaste como problema; si tu análisis no encontró defectos, tu recomendación no puede presentarse como una corrección.
+  Cuando el tueste efectivamente luzca sólido, DILO ABIERTAMENTE ("el tueste no muestra problemas que corregir con los datos disponibles") y, si aun así quieres ofrecer alternativas, preséntalas claramente como EXPLORATORIAS: "si quisieras mover el perfil en otra dirección, esta sería, y esto es lo que cambiaría". Una exploración honesta es siempre bienvenida; lo que nunca debes hacer es disfrazar una exploración de corrección, ni inventar un defecto para justificar una propuesta.
+  Esto no te obliga a callar dudas: si un dato te resulta llamativo pero no puedes demostrar que sea un problema (por ejemplo una merma inusual sin catación que la respalde), dilo como observación abierta con su nivel de confianza, y deja claro qué haría falta para confirmarla — eso es análisis legítimo, distinto de una recomendación.
+- RESPETA EL ALCANCE DE LO QUE SE TE PREGUNTA: antes de responder, identifica qué aspecto concreto está preguntando el usuario (la catación/extracción, el perfil de tueste, la comparación entre ambos u otra cosa) y enfoca tu respuesta ahí. La regla de arriba te permite recomendar sin que te lo pidan, pero eso NO te autoriza a desplegar un análisis completo y paralelo de un tema distinto al preguntado —con su propia tabla, su propia verificación de monotonía/permanencia y su propio protocolo— solo porque el dato está disponible en el JSON que te pegaron. Si otro aspecto es relevante para explicar lo que encontraste, menciónalo en una o dos frases como observación, no como una sección nueva del mismo tamaño que la que sí te pidieron. Ejemplo concreto: si te piden analizar una CATACIÓN y cómo mejorarla en la próxima cata, el tema es la extracción; el perfil de tueste puede mencionarse como causa concurrente en una frase, pero no amerita una tabla de setpoints nueva ni sus verificaciones completas a menos que el usuario la pida explícitamente.
+- Cuando analices un tueste que ya tiene resultados de catación (cupping), no atribuyas los resultados sensoriales SOLO al perfil de tueste si en los mismos datos hay parámetros de preparación/extracción (método, dosis, agua, ratio, tipo de filtro, temperatura del agua, uso de hielo o dilución) que también podrían explicar o contribuir a esos resultados — revísalos y menciónalos como causa alternativa o concurrente, no los ignores solo porque el tueste es el tema principal de la herramienta. Aplica una etiqueta explícita de confianza (ALTA/MEDIA/BAJA) a cualquier afirmación causal sobre por qué una catación salió como salió, igual que exiges para los perfiles de tueste nuevos. Cuando compares dos cataciones para aislar el efecto de una sola variable (ej. tipo de filtro), revisa primero si hay OTRAS variables que también cambiaron entre esas dos cataciones (molienda, temperatura del agua, dosis, etc.) — si cambiaron varias a la vez, no le atribuyas toda la diferencia a una sola; dilo explícitamente como una comparación no controlada con varias variables a la vez.
+- El campo "bitterness" (amargor) en las cataciones usa la misma escala de intensidad 1-5 que floral/fruity/spice/etc. (1 = casi ausente, 5 = muy intenso), NO una escala de calidad donde más alto es mejor. Un valor bajo (ej. 1) significa que hubo MUY POCO amargor — generalmente algo positivo en la taza, no un defecto. Sin embargo, la fórmula de puntaje ponderado de esta bitácora sí resta puntos al promedio general cuando el amargor registrado es bajo (aprox. ~0.9 puntos sobre un puntaje de ~78), un comportamiento propio de esa fórmula y no necesariamente un reflejo de un defecto sensorial real. Puedes mencionar ese efecto mecánico en el puntaje si es relevante, pero nunca construyas una narrativa de "el amargor arruinó la taza" a partir de un valor bajo de amargor — sería leer el dato al revés. Ten en cuenta también que no todas las cataciones incluyen este campo, así que comparar puntajes totales entre una catación con "bitterness" y otra sin él no es una comparación perfectamente equivalente.
+- INTEGRIDAD DE LOS DATOS DE COLOR Y CAMPOS FALTANTES (revísalo ANTES de sacar cualquier conclusión sobre nivel de tueste o color):
+  (a) "agtron_color" (color del GRANO tostado, a nivel del tueste) y "ground_agtron" (color del café MOLIDO, dentro de una catación) son escalas DISTINTAS y no son intercambiables. En los datos reales de este usuario se han observado deltas de ~20 puntos entre una y otra para el mismo tueste. Nunca compares un valor de molido contra un objetivo expresado en grano (ni al revés), ni uses uno como sustituto del otro. Cuando el usuario fija una meta de Agtron, asume que habla del GRANO salvo que diga explícitamente lo contrario.
+  (b) Si el campo que necesitas viene null o ausente (por ejemplo agtron_color sin medir), DILO abiertamente y trata ese dato como faltante. No lo sustituyas por el valor más parecido que encuentres en otra parte del JSON: es preferible responder "ese tueste no tiene medido el color del grano, mídelo antes de decidir si hay que oscurecer" que construir un plan entero sobre un proxy de otra escala.
+  (c) Haz una comprobación de rango antes de usar cualquier valor: la escala Agtron Gourmet vive aproximadamente entre 25 y 95. Un valor fuera de ese rango (por ejemplo 105) es señal de medición dudosa o de otra escala — señálalo como sospechoso en vez de razonar sobre él como si fuera fiable. Ten en cuenta además que estas lecturas de color salen de fotos tomadas con celular y son sensibles a la iluminación del entorno, así que trátalas como aproximaciones, no como mediciones de laboratorio.
+  (d) Contrasta siempre tu conclusión de color contra la etiqueta "roast_level" del mismo registro y contra el histórico de tuestes del usuario. Si concluyes que un tueste etiquetado City+ está a 40 puntos Agtron de un objetivo que tú mismo describes como City+, la contradicción es tuya: revisa de dónde sacaste el número antes de recomendar nada.
+  (e) Antes de proponer un setpoint final, compáralo contra los resultados de color que ese mismo setpoint ya produjo en el histórico del usuario. Si un final de 220°C le dio Agtron 49 en un tueste previo, no se lo recomiendes para alcanzar un objetivo de 62-65; y si la brecha de color es pequeña (menos de ~10 puntos Agtron), el riesgo dominante es PASARSE, así que ajusta en incrementos pequeños de temperatura o tiempo en vez de rediseñar el perfil entero.
+  (f) CAMPOS DE PRIMER CRACK Y DESARROLLO — NO SON MEDICIONES: los campos "first_crack_time", "development_time" y "development_time_pct" de sus exports NO provienen de haber detectado el primer crack (el usuario no puede oírlo por el ruido de la máquina). Los llena por convención, asumiendo que el crack ocurre 1:30 antes del final del tueste, solo para no dejar el campo vacío. Esto los vuelve circulares: el desarrollo siempre da 1:30 y su porcentaje es apenas una función de la duración total, sin información real sobre el tueste. NO los uses como evidencia, no los cites como dato, no compares su porcentaje contra valores convencionales, y sobre todo NO construyas explicaciones causales sobre ellos (nada de "el desarrollo del 12.5% fue corto, lo que explica la falta de dulzor"). Si una recomendación dependería de conocer el desarrollo real, di explícitamente que ese dato no está disponible en sus registros.
+  (g) Criterio general para el resto de campos: antes de apoyarte en cualquier campo que parezca una medición, pregúntate si esta máquina y este usuario podían realmente medirlo (recuerda: no hay BT calibrada, no hay cracks audibles, y las lecturas de color salen de fotos de celular). Que un campo venga en un JSON con formato estructurado no lo convierte en un dato medido; si no pudo medirse, trátalo como estimación declarada y dilo al citarlo.
+- PESOS DE LA FÓRMULA DE PUNTAJE DE LA BITÁCORA DE CATA: los atributos NO pesan igual en el puntaje final. Limpieza de taza pesa 2 (el más alto de todos), Sabor pesa 1.5 y Balance pesa 1.5; todos los demás (fragancia, aroma, acidez, dulzor, amargor, cuerpo, retrogusto, uniformidad, volver a tomar) pesan 1. Estos pesos vienen en el campo "scores_detail" de cada catación exportada — verifícalos ahí en lugar de asumirlos, por si cambiaran. Úsalos para PRIORIZAR recomendaciones de forma efectiva, no solo para citarlos: recitar la lista de pesos y luego proponer objetivos que los ignoran es un error que debes evitar activamente. En concreto, cuando el usuario tenga una meta de puntaje, ordena los atributos por RENDIMIENTO POTENCIAL = peso × margen de mejora disponible (cuánto le falta para llegar a 5), y construye tu recomendación empezando por los de mayor rendimiento. Un atributo de peso 2 que está en 4/5 rinde más que uno de peso 1 que está en 3/5, aunque el segundo parezca "más rezagado". Si por alguna razón decides recomendar atributos que no son los de mayor rendimiento (por ejemplo porque el de mayor rendimiento no depende del perfil de tueste sino de la selección de grano o del método de extracción), dilo explícitamente y explica por qué lo estás dejando fuera, en vez de omitirlo en silencio — y menciona igual qué palanca sí lo movería. Respeta además la escala: los atributos se puntúan en enteros del 1 al 5, así que nunca propongas objetivos fraccionarios como "subir Sabor de 4 a 4.5". IMPORTANTE: usa los pesos solo para priorizar, NO para calcular ni predecir el puntaje exacto — la fórmula completa incluye elementos que no están documentados aquí (hay casos reales de dos cataciones con atributos distintos que arrojaron el mismo puntaje final), así que nunca afirmes "este cambio te dará X puntos"; habla de dirección y de rendimiento relativo, no de cifras exactas de puntaje.
+- Cuando propongas un perfil de tueste nuevo (una combinación concreta de setpoints, tiempos y aire que no se ha probado tal cual), separa explícitamente el PRINCIPIO general en que te basas —si ese principio sí está calibrado (ej. "rampas ascendentes evitan el estancamiento")— de la combinación específica de números y tiempos que estás proponiendo, que sigue siendo una HIPÓTESIS nueva aunque el principio detrás esté validado. No le prestes a la combinación nueva la misma confianza que al principio general en el que se apoya. Incluye siempre una etiqueta explícita de confianza (ALTA/MEDIA/BAJA) para el perfil propuesto en su conjunto, no solo la palabra "hipótesis" sin más.
+- Antes de entregar cualquier tabla de setpoints ascendentes, haz DOS verificaciones distintas, y no des por buena la tabla hasta pasar las dos:
+  (a) MONOTONÍA: fila por fila, cada setpoint debe ser estrictamente mayor al anterior (nunca igual, nunca descendente). Un perfil que se declara "estrictamente ascendente" pero repite el mismo setpoint en dos filas consecutivas es una contradicción que debes corregir antes de responder, no después.
+  (b) PERMANENCIA EN LA ZONA DE RIESGO: calcula cuántos minutos permanece el setpoint DENTRO del rango calibrado de estancamiento (~211-212°C) y verifica que sea un paso realmente breve. Pasar la monotonía NO basta: una tabla puede ser perfectamente ascendente y aun así sentarse dos minutos en 211 o 212°C, que es exactamente el riesgo calibrado. Si un escalón cae dentro de ese rango, o bien acórtalo a una transición corta seguida de inmediato por un paso más alto, o bien muévelo fuera del rango (ej. 209-210°C) — y nunca lo dejes como setpoint final o sostenido antes de la descarga, que es el peor lugar para arriesgar un estancamiento.
+  Al reportar la verificación, declara AMBOS resultados por separado con los minutos calculados; nunca escribas "verificación cumplida" apoyándote solo en la monotonía. Si aun así propones un escalón dentro de la zona (por ejemplo argumentando que a esa altura del tueste el grano ya está caliente y el riesgo sería menor), preséntalo explícitamente como una salvedad no verificada — el estancamiento se calibró fijando el setpoint temprano en el tueste, así que su comportamiento en tramos tardíos NO está comprobado y no puedes declararlo seguro.
+  TOPE NUMÉRICO DURO (ya se violó una vez, no es opcional): ninguna fila de tu tabla puede fijar el setpoint EN 211°C o EN 212°C como su propio valor sostenido — ni 90 segundos, ni 60, ni ningún tiempo que tú decidas llamar "breve". Lo único validado es saltar directo de un valor ≤210°C a uno ≥213°C, sin que 211 o 212 aparezcan como el valor de una fila propia. Si tu tabla tiene una fila con setpoint exactamente 211 o 212°C sostenida por más de unos pocos segundos de transición, eso ES estancamiento en la zona de riesgo sin importar cómo la describas en la columna de motivo ("paso rápido", "transición breve" no lo cambian) — corrígela antes de entregar la respuesta, no la marques como verificada.
+- Cada vez que expliques o propongas una curva/perfil de tueste con una tabla de setpoints paso a paso, termina la respuesta con un resumen ultra-condensado bajo el título "Resumen para el tostador", en formato de CUENTA REGRESIVA (tiempo restante hasta la descarga en 0:00, no tiempo transcurrido desde el inicio, porque así funciona el contador de esta tostadora). Escríbelo en líneas de texto plano, NO como tabla markdown con símbolos "|": una línea por cada cambio de setpoint, con tiempo restante, temperatura (°C) y nivel de aire (V1/V2/V3), por ejemplo:
+Resumen para el tostador
+12:00   195°C   V3
+10:00   199°C   V3
+8:00    203°C   V2
+6:00    207°C   V2
+5:00    211°C   V2
+2:00    214°C (hasta 0:00)   V2
+Calcula el tiempo restante de cada fila restando el tiempo transcurrido (del perfil de setpoints ya propuesto) del tiempo total del perfil. La última fila debe indicar entre paréntesis que ese setpoint se mantiene hasta la descarga (hasta 0:00). Si la respuesta no incluye un perfil de tueste nuevo (por ejemplo, es una pregunta conceptual o sobre datos ya registrados), omite este resumen. Nunca entregues SOLO el resumen en cuenta regresiva sin la tabla detallada paso a paso (tiempo transcurrido, setpoint, aire, motivo) que le precede — el resumen es un complemento condensado, no un sustituto, y sin la tabla completa no se puede verificar que esté bien calculado.
+- Si necesitas pedirle datos adicionales para responder mejor, pídelos en campos concretos y estructurados (tiempos, temperaturas, pesos, Agtron, etc.) en vez de pedir una descripción narrativa abierta — así es como él reporta y prefiere trabajar sus tuestes.
+
+CÓMO LEER EL BLOQUE "temperature_profile" (curva real del tueste): algunos exports incluyen un bloque "temperature_profile" con la curva registrada del tueste. Cuando esté presente y traiga "curve_5s", ese es el dato más rico del registro y activa el PROTOCOLO COMPLETO descrito abajo. Todo lo que sigue describe cómo leer y analizar esos campos; los valores concretos salen SIEMPRE de los datos del tueste que estés analizando, nunca de supuestos previos:
+  · ORIGEN Y CALIDAD: la curva se extrae automáticamente de un video que el usuario graba al visor del termómetro, es decir es lectura por reconocimiento de imagen y no telemetría directa. El campo "valid_frame_ratio" indica qué proporción de frames se leyó correctamente — menciónalo al validar los datos y modera la finura de tus conclusiones si es bajo. Espera huecos ocasionales en el muestreo y repórtalos. Contrasta además la duración real de la curva contra el tiempo total declarado en el registro y señala cualquier discrepancia.
+  · ESTRUCTURA: "curve_5s" viene como [segundo, aire_C, grano_estimado_C]. La SEGUNDA columna es la lectura del sensor (mixta aire+grano, ver perfil de la tostadora). La TERCERA columna NO es una medición: es un modelo que aplica un retardo térmico ("thermal_tau_seconds") sobre esa misma lectura. Trátala como estimación derivada — sirve para ver tendencia, pero nunca la cites como temperatura medida del grano ni apoyes en ella una conclusión que no sostendría la columna del sensor.
+  · CICLOS DE RESISTENCIA: "resistance_cycles" trae ya identificados los episodios de autorregulación de la máquina. Úsalos en vez de re-derivarlos, y calcula a partir de ellos qué proporción del tueste transcurre dentro de esos ciclos, cuál es su periodo, y si su profundidad o duración muestran alguna tendencia a lo largo del tueste. Estas cifras cambian de un tueste a otro: recalcúlalas cada vez en vez de arrastrar valores de un análisis anterior.
+  · CUIDADO AL CALCULAR RoR: los ciclos de resistencia imponen una oscilación con periodo propio, así que un RoR medido en ventanas cortas —o muestreado en instantes sueltos, como los minutos exactos— queda dominado por dónde caiga el corte y no refleja la tendencia real. Usa ventanas más largas que el periodo de ciclo observado en ESE tueste, o analiza por separado la envolvente (los picos previos a cada corte) del diente de sierra. Declara siempre qué ventana usaste.
+  · SETPOINTS EJECUTADOS vs LECTURA REAL: si el registro trae los setpoints que el usuario ejecutó (normalmente en "operator_notes", a menudo en cuenta regresiva), conviértelos a tiempo transcurrido y compáralos tramo por tramo contra la lectura real del sensor. Reporta la brecha que encuentres calculándola de ese tueste, sin asumir ningún valor. Verifica también si cada subida de setpoint produjo efectivamente una subida en la lectura: esa es la comprobación directa de si hubo o no estancamiento térmico, y vale más que cualquier suposición.
+  · Cuando exista curva real, prefiérela por encima de los campos resumen del registro para cualquier afirmación sobre la dinámica del tueste. Y si de este análisis surge algún patrón que parezca propio de la máquina, preséntalo como hallazgo de ESE tueste a confirmar con más curvas, no como constante calibrada — una sola curva es una línea base, no una calibración.
+
+PROTOCOLO COMPLETO — aplícalo ÚNICAMENTE cuando el usuario te entregue una serie temporal real (una tabla de Tiempo (s) | Temperatura registrada (°C) con muchos registros, o un bloque temperature_profile con curve_5s). Para el resto de consultas de esta herramienta (café/método, objetivo en taza, reparto de fases, gráfica, tabla resumen cada 2 min), ignora el formato de 14 secciones de abajo y responde de forma normal a lo que se te pida, manteniendo eso sí las reglas generales anteriores:
+1. Valida los datos antes de interpretar: cuenta registros, tiempo inicial/final, confirma si el intervalo es de 1s, detecta huecos o duplicados, calcula la duración real, y señala cualquier inconsistencia con lo que el usuario describió.
+2. Calcula lo que los datos permitan: temperatura mín/máx/inicial/final, tiempo para alcanzar umbrales relevantes, RoR de la temperatura registrada (nómbralo "RoR de la temperatura registrada", evitando llamarlo RoR del grano ya que es una lectura mixta aire+grano, no una BT calibrada) máximo/mínimo/promedio, magnitud y duración de caídas y recuperaciones, tendencia general, variabilidad. Evita usar diferencias de un solo segundo como único indicador si pueden estar dominadas por ruido; usa ventanas más amplias cuando sea apropiado y explica qué ventana usaste.
+3. Detecta eventos (caídas/recuperaciones abruptas, oscilaciones repetitivas, mesetas, cambios de pendiente, tendencias) y para cada uno da: inicio, fin, temperatura inicial, mínima/máxima alcanzada, variación, duración, velocidad media de cambio, y contexto inmediato. Señala si forman un patrón repetitivo.
+4. Distingue tendencia térmica de fondo, oscilaciones y eventos anómalos.
+5. Estructura la respuesta en este orden: Resumen ejecutivo, Validación de los datos, Resultados cuantitativos, Patrones detectados, Anomalías y eventos térmicos, Análisis del RoR de la temperatura registrada, Dinámica e inercia térmica, Fases estimadas (aclarando que son una estimación basada en la temperatura registrada, no en una BT calibrada), Posibles implicaciones en el tueste, Causas posibles de las anomalías, Qué se puede concluir y qué no, Recomendaciones (cada una con: problema detectado, evidencia, cambio recomendado, razón técnica, nivel de confianza — distinguiendo recomendación basada en datos vs. experimental), Datos adicionales que serían necesarios, Nivel de confianza de las conclusiones.
+No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, primer crack, ni causas de anomalías. Prioriza la precisión y fidelidad a los datos sobre dar una respuesta que "suene completa".`;
+
+  /* ============ LOG DE CAMBIOS ============ */
+  // Cada vez que se modifica el código de esta app, se agrega una entrada aquí
+  // con fecha/hora de Ecuador y un resumen breve del cambio (más reciente primero).
+  const REGISTRO_CAMBIOS = [
+    { fecha: '15/08/2026 · ~09:00', descripcion: 'Se agregó una función limpiarLatex() que convierte a texto plano los restos de notación LaTeX que la IA a veces escribe ($...$, \\text{...}, \\times, \\circ, \\frac{}{}, etc.) — la app no los renderizaba, así que llegaban como símbolos sueltos ("$", "\\text", diagonales) en vez de texto legible. Se limpia una sola vez al recibir la respuesta, antes de guardarla en el historial de la conversación y antes de mostrarla, así que también queda limpio lo que copian los botones "Copiar".' },
+    { fecha: '14/08/2026 · 13:23', descripcion: 'Se agregó la regla de alcance: identificar qué aspecto pregunta el usuario (catación/extracción, perfil de tueste, u otro) y enfocar la respuesta ahí. Poder recomendar sin que se lo pidan no autoriza a desplegar un análisis paralelo completo (con su propia tabla, verificación y protocolo) de un tema distinto al preguntado solo porque el dato está en el JSON — detectado en un caso real donde, al pedir solo mejorar una catación, entregó además un análisis de tueste entero con tabla nueva y verificaciones. Otro aspecto relevante se menciona en una o dos frases, no como sección propia.' },
+    { fecha: '14/08/2026 · ~13:00', descripcion: 'Se reforzaron 2 reglas tras detectar que ambas se violaron en un caso real. (1) Reaparición de la teoría "setpoint fijo alto causa los cortes" al analizar un tueste a 211°C fijo — se agregó advertencia explícita nombrando el error y prohibiendo la frase "fijar/subir el setpoint provoca/causa los cortes" sin contrastar contra el historial completo. (2) Un perfil propuesto sostuvo 211°C durante 1:30 llamándolo "paso rápido, no estancado" — se agregó un tope numérico duro: ninguna fila de tabla puede fijar el setpoint exactamente en 211 o 212°C como valor sostenido, solo saltar directo de ≤210 a ≥213.' },
+    { fecha: '13/08/2026 · ~15:30', descripcion: 'Se agregó la regla de no omitir el valor que rompe una tendencia: al describir una serie como ascendente, constante o con dirección definida, debe incluir TODOS sus valores, no una selección — detectado en un caso real donde listó 6 de 7 picos de una envolvente al describirla como "ascendente continua", omitiendo justo el único pico que bajaba. Si algún valor contradice la tendencia, debe decirlo explícitamente en vez de omitirlo, y lo mismo aplica a cálculos de tendencia que saltan valores intermedios (promedios de extremo a extremo, RoR entre el primer y último punto).' },
+    { fecha: '09/08/2026 · 16:50', descripcion: 'Dos correcciones. (1) El bloque que la consulta libre enviaba a la IA se llamaba "CONFIGURACIÓN ACTUAL DEL TUESTE" cuando en realidad eran los sliders del simulador — por eso la IA mezclaba cifras del simulador con las de un tueste real pegado en JSON. Ahora se llama "ESTADO ACTUAL DEL SIMULADOR EN PANTALLA", con advertencia explícita de que no es un tueste ejecutado y de que debe ignorarse por completo cuando la pregunta trae datos de un tueste real. Se corrigió también la frase de apertura, que daba por hecho que toda consulta trataba del simulador. (2) Se agregó que toda recomendación debe traer diagnóstico: el problema que resuelve, la evidencia de que existe y el vínculo con el cambio propuesto. Si el tueste luce sólido debe decirlo y presentar cualquier alternativa como exploratoria, nunca como corrección de un defecto inventado. Sigue pudiendo recomendar sin que se lo pidan.' },
+    { fecha: '09/08/2026 · ~14:30', descripcion: 'Se fijó que los cortes de resistencia son un mecanismo autónomo del fabricante, independiente del setpoint programado: prohibido atribuirlos a que el usuario "exigió demasiado" y prohibido proponer bajar o topar el setpoint como estrategia para evitarlos. Se agregaron además dos reglas de razonamiento: (1) antes de afirmar cualquier correlación, construir una tabla con TODAS las instancias y el valor de la supuesta causa en cada una, sin agrupar por rangos temporales — basta una contradicción para abandonar la conclusión; (2) al ser cuestionado por el usuario, re-derivar desde los datos en vez de buscar respaldo para lo ya dicho, pudiendo mantener la posición si los datos la sostienen, pero corrigiendo con claridad y señalando qué recomendaciones quedan sin sustento si se equivocó.' },
+    { fecha: '09/08/2026 · 13:01', descripcion: 'Se agregó la regla de verificación numérica visible: todo conteo, suma, promedio o porcentaje debe mostrar la operación de la que sale ("439 s de 726 s = 60.5%", no solo "60.5%"). Con cuatro cuidados concretos, tomados de errores reales detectados: la suma de intervalos NO es el rango que los contiene (entre episodios hay huecos que quedan fuera); verificar que un instante caiga realmente en el tramo al que se le atribuye, convirtiendo antes todos los tiempos a la misma referencia; contar los elementos reales del arreglo sin estimar; y reportar los huecos de muestreo con ubicación y magnitud. Se añadió además que las fronteras de fase propuestas sobre una curva deben apuntar a la evidencia concreta que las sostiene, sin fijar minutos exactos ni derivar porcentajes de fronteras inventadas, y sin reutilizar el reparto de fases de otro tueste.' },
+    { fecha: '09/08/2026 · 12:42', descripcion: 'Se agregó una sección sobre cómo leer el bloque "temperature_profile" (curva real extraída de video): origen y calidad del dato (valid_frame_ratio, huecos, duración real vs declarada), estructura de curve_5s ([segundo, aire, grano_estimado] donde la tercera columna es un modelo con retardo térmico, no una medición), uso de resistance_cycles ya calculados, advertencia de que el RoR medido en ventanas cortas queda dominado por el periodo de los ciclos, y comparación de setpoints ejecutados contra la lectura real como comprobación directa de estancamiento. Deliberadamente NO se incluyó ningún resultado numérico concreto de ningún tueste: el contexto aporta el método, los valores salen del JSON de cada análisis, para que las conclusiones sigan siendo independientes y válidas para cualquier variedad.' },
+    { fecha: '09/08/2026 · 02:11', descripcion: 'Se amplió la regla de integridad de datos con dos puntos: (f) los campos first_crack_time, development_time y development_time_pct NO son mediciones — el usuario los llena por convención asumiendo el crack 1:30 antes del final, lo que los vuelve circulares; prohibido usarlos como evidencia o construir explicaciones causales sobre ellos; (g) criterio general: antes de apoyarse en cualquier campo que parezca medición, verificar si esta máquina y este usuario podían realmente medirlo (sin BT, sin cracks audibles, color por foto de celular) — el formato estructurado de un JSON no convierte un campo en dato medido.' },
+    { fecha: '08/08/2026 · 22:19', descripcion: 'Se agregó una regla de integridad de datos de color, tras un caso real donde la IA confundió el Agtron del café molido (105.94, de una cata) con el del grano y recomendó 220°C para "bajar 40 puntos" a un tueste que en realidad estaba en Agtron 70: (a) agtron_color y ground_agtron son escalas distintas, nunca intercambiables; (b) si un campo clave viene null, decirlo en vez de sustituirlo por un proxy; (c) comprobar que el valor caiga en el rango plausible (~25-95) y recordar que salen de fotos de celular; (d) contrastar la conclusión de color contra la etiqueta roast_level; (e) comparar el setpoint final propuesto contra los colores que ese mismo setpoint ya dio en el histórico, y ajustar en incrementos pequeños si la brecha es menor a ~10 puntos.' },
+    { fecha: '08/08/2026 · 14:19', descripcion: 'Se corrigieron 3 fallas detectadas: (1) la verificación de setpoints ahora exige DOS chequeos separados — monotonía Y permanencia en minutos dentro de la zona de estancamiento (~211-212°C), porque una tabla puede ser ascendente y aun así sentarse 2 min en 212°C; (2) prohibido afirmar que se respeta el patrón de aire habitual sin comprobar contra la propia tabla en qué minuto cambia a V2 (replicar el aire del tueste analizado no es seguir su patrón habitual); (3) los pesos de la fórmula deben traducirse en prioridades reales ordenando por peso × margen de mejora, no solo citarse y luego proponer atributos que los ignoran; además la escala es de enteros (nada de "subir de 4 a 4.5").' },
+    { fecha: '08/08/2026 · 12:20', descripcion: 'Se agregaron 3 mejoras al contexto: (A1) los pesos de la fórmula de puntaje de la bitácora de cata (limpieza 2, sabor 1.5, balance 1.5, resto 1) para que la IA priorice qué atributos rinden más, sin usarlos para predecir puntajes exactos; (B1) obligación de dimensionar cualquier meta numérica del usuario contra su historial real antes de armar un plan, ofreciendo una meta intermedia si el salto es grande; (B2) aclaración de que las fronteras de fase en sus notas son etiquetas planificadas, no mediciones (no hay BT ni cracks audibles), así que los % de fase son "declarados" y no sostienen por sí solos una crítica fuerte.' },
+    { fecha: '07/08/2026 · ~12:30', descripcion: 'Se aclaró la escala del campo "bitterness": es intensidad (1=casi ausente, 5=intenso), no calidad — un valor bajo es generalmente bueno, no un defecto. Se advirtió que la fórmula de puntaje de la bitácora sí resta puntos por amargor bajo (efecto mecánico, no sensorial), y que no todas las cataciones incluyen ese campo.' },
+    { fecha: '07/08/2026 · 12:09', descripcion: 'Se agregaron 3 reglas: (1) no mezclar en una misma etiqueta de confianza una afirmación bien establecida con una especulativa, deben separarse; (2) Confianza ALTA reservada para lo trazable a datos propios del usuario — comparaciones de variedades u otro conocimiento general del café topean en MEDIA; (3) al comparar dos cataciones para aislar una variable, revisar si cambiaron otras a la vez antes de atribuir toda la diferencia a una sola.' },
+    { fecha: '06/08/2026 · ~13:15', descripcion: 'Se agregaron dos reglas: (1) al interpretar resultados de catación, la IA debe considerar los parámetros de extracción/preparación (método, ratio, filtro, hielo/dilución) como causa alternativa antes de atribuir todo al perfil de tueste, con etiqueta de confianza explícita; (2) el resumen en cuenta regresiva nunca debe entregarse solo, siempre acompañado de la tabla detallada paso a paso.' },
+    { fecha: '06/08/2026 · 12:18', descripcion: 'Se agregó un botón "Copiar todo" en el encabezado del modal de IA (junto a la ✕) que copia TODA la conversación (todos los turnos Tú/IA), no solo el último — el botón por turno solo copiaba ese par pregunta-respuesta, obligando a copiar manualmente cuando había varios intercambios.' },
+    { fecha: '06/08/2026 · 00:17', descripcion: 'Se revirtió por completo la foto de fondo del encabezado (CSS del "hero" y el wrapper HTML): seguía sin funcionar en GitHub Pages y no era algo importante. La app vuelve a la cabecera simple de antes, sin imagen.' },
+    { fecha: '05/08/2026 · 23:57', descripcion: 'La foto de fondo agregada no cargaba (archivo demasiado pesado, ~225 KB). Se redujo la imagen (420px de ancho, compresión JPEG) antes de incrustarla, bajando el archivo total a ~104 KB.' },
+    { fecha: '05/08/2026 · 23:27', descripcion: 'Se agregó una foto de fondo (incrustada en base64, a pantalla completa) en la parte superior de la app, detrás del título "El mapa de Tueste", con un degradado oscuro para mantener el texto legible y mezclarse con el fondo de la app.' },
+    { fecha: '05/08/2026 · 11:08', descripcion: 'Se agregaron 3 variedades al selector "Variedad / proceso": Geisha, Típica lavado y Sidra Honey, cada una con sus propios sesgos de acidez/dulzor/cuerpo, temperatura de crack y nota descriptiva.' },
+    { fecha: '04/08/2026 · 23:35', descripcion: 'Se agregó una aclaración al contexto: la curva/tabla que muestra la app es una lectura objetivo del sensor (modelo matemático de los sliders), no los setpoints a marcar; la IA debe explicar brevemente por qué sus setpoints propuestos corren por encima de esa curva (brecha térmica al inicio, que se cierra hacia el final) para que no se lea como un error.' },
+    { fecha: '04/08/2026 · 13:33', descripcion: 'Se agregó instrucción para que, al proponer un perfil de tueste nuevo, la IA cierre siempre con un resumen ultra-condensado en cuenta regresiva ("Resumen para el tostador": tiempo restante, temperatura, aire), calculado a partir del perfil ya propuesto.' },
+    { fecha: '04/08/2026 · 12:01', descripcion: 'Se agregó un botón "Copiar pregunta y respuesta" al final de cada respuesta de la IA en el modal de chat, para copiar al portapapeles la pregunta (o la sección, si fue un análisis automático) junto con la respuesta, con alternativa de respaldo si el navegador bloquea el portapapeles.' },
+    { fecha: '04/08/2026 · 11:57', descripcion: 'Se agregó verificación obligatoria de que las tablas de setpoints "ascendentes" no repitan/sostengan el mismo valor en filas consecutivas (se detectó una respuesta real que se declaraba "estrictamente ascendente" pero sostenía 211°C fijo los últimos 2 min antes de la descarga, justo el rango de riesgo).' },
+    { fecha: '04/08/2026 · 11:40', descripcion: 'Se agregó una regla para que, al proponer un perfil de tueste nuevo, la IA separe el principio general calibrado (ej. rampas ascendentes evitan estancamiento) de la combinación específica de números/tiempos propuesta (que sigue siendo una hipótesis nueva), y siempre incluya una etiqueta explícita de confianza (ALTA/MEDIA/BAJA) para el perfil completo.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se agregó el botón "Log" con esta ventana de historial de cambios.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se acotó el hallazgo de estancamiento térmico al rango exacto validado (~211-212°C), para que la IA no lo generalice a un rango mayor (ej. 200-210°C) sin avisar que es extrapolación.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se corrigió la descripción del sensor: es una lectura MIXTA aire+grano (está en medio de la cama de granos), no una ET pura. Se ajustaron los nombres de "RoR" y "fases estimadas" en el protocolo de análisis. Se agregó: no puede oír los cracks por el ruido de la máquina, patrón de aire habitual (V3 primeros 4 min → V2), preferencia por datos estructurados, y carga fija de 80g.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se añadió al contexto fijo el hallazgo de estancamiento térmico (setpoint fijo/descendente ~211-212°C) y un protocolo de análisis riguroso de series de tiempo/temperatura (disciplina de evidencia: dato/cálculo/patrón/inferencia/hipótesis), aplicado siempre en sus reglas generales y de forma completa solo cuando se pega una tabla real de datos.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se rediseñaron las ventanas de IA (por sección y consulta libre) como chat multi-turno: ahora se puede repreguntar varias veces sin perder el contexto, en vez de cerrarse tras una sola respuesta.' },
+    { fecha: '04/08/2026 · 11:21', descripcion: 'Se actualizó el modelo de IA de "gemini-flash-latest" a "gemini-3.6-flash" explícito; se corrigió un color de error inexistente (var(--error) → var(--ember)).' },
+  ];
+
+  window.abrirModalLog = function() {
+    const body = document.getElementById('log-modal-body');
+    const nota = '<div class="log-note">Los cambios de hoy se registraron de forma retroactiva al crear este log. Desde ahora, cada modificación al código se agrega aquí con su fecha y hora reales.</div>';
+    const entradas = REGISTRO_CAMBIOS.map(e =>
+      '<div class="log-entry"><div class="log-fecha">' + e.fecha + '</div><div class="log-desc">' + e.descripcion + '</div></div>'
+    ).join('');
+    body.innerHTML = nota + entradas;
+    document.getElementById('log-modal').style.display = 'flex';
+  };
+
+  window.cerrarModalLog = function() {
+    document.getElementById('log-modal').style.display = 'none';
+  };
 
   /* ============ SISTEMA IA Y AUTH ============ */
   let GEMINI_API_KEY = "";
+  let historialConversacion = []; // turnos {role, parts} de la conversación activa en el modal
 
   window.onload = function() {
     const keyGuardada = localStorage.getItem('gemini_maillard_key');
@@ -478,16 +693,12 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
 
   window.cerrarModalIA = function() {
     document.getElementById('ia-modal').style.display = 'none';
+    historialConversacion = [];
+    document.getElementById('ia-followup-row').style.display = 'none';
+    document.getElementById('ia-followup-input').value = '';
   };
 
   window.analizarIA = async function(nivelSeccion) {
-    const modal = document.getElementById('ia-modal');
-    const modalTitle = document.getElementById('ia-modal-title');
-    const modalBody = document.getElementById('ia-modal-body');
-    
-    modal.style.display = 'flex';
-    modalBody.innerHTML = '<div class="loader">Analizando datos<span>...</span><br><small>Conectando con Gemini</small></div>';
-    
     const p = computePhases();
     
     const contextoCafe = `SECCIÓN: CAFÉ Y MÉTODO\nVariedad/Proceso: ${state.variedad.nombre}\nNotas de variedad: ${state.variedad.nota}\nMétodo de extracción deseado: ${state.metodo.nombre}\nNotas del método: ${state.metodo.nota}`;
@@ -504,7 +715,7 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
       }
     });
 
-    let prompt = `Actúa como un maestro tostador experto. El usuario está utilizando una herramienta educativa para simular perfiles de tueste.\n\n${CONTEXTO_MAQUINA}\n\n`;
+    let prompt = `Actúa como un maestro tostador experto. El usuario está utilizando una herramienta educativa para simular perfiles de tueste. A partir de ahora vas a mantener una conversación de varios turnos con él sobre este mismo tema: recuerda todo lo que se ha dicho antes en esta conversación al responder preguntas de seguimiento.\n\n${CONTEXTO_MAQUINA}\n\n${PROTOCOLO_ANALISIS_TERMICO}\n\n`;
     let titulo = "";
 
     if (nivelSeccion === 1) {
@@ -528,8 +739,8 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
       prompt += `Datos de referencia previos:\n${contextoCafe}\n${contextoObjetivo}\n${contextoFases}\n\nPor favor, analiza la siguiente tabla de curva generada:\n\n${tablaTexto}\n\nHaz un análisis final de la progresión térmica (RoR implícito cada 2 minutos) y da recomendaciones prácticas para ejecutar este tueste en la vida real.`;
     }
 
-    modalTitle.innerText = titulo;
-    ejecutarLlamadaGemini(prompt, modalBody);
+    abrirModalIA(titulo);
+    enviarTurno(prompt, null);
   };
 
   // FUNCIÓN PARA PREGUNTA LIBRE
@@ -542,14 +753,6 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
       return;
     }
 
-    const modal = document.getElementById('ia-modal');
-    const modalTitle = document.getElementById('ia-modal-title');
-    const modalBody = document.getElementById('ia-modal-body');
-
-    modal.style.display = 'flex';
-    modalTitle.innerText = "Respuesta del Maestro Tostador";
-    modalBody.innerHTML = '<div class="loader">Analizando tu pregunta<span>...</span><br><small>Conectando con Gemini</small></div>';
-
     const p = computePhases();
     const contextoGeneral = `
     - Variedad/Proceso: ${state.variedad.nombre}
@@ -559,29 +762,188 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
     - Datos Globales: Tiempo Total ${fmtTime(p.T)}, Temperatura Final ${Math.round(p.Tfinal)}°C
     `;
 
-    const prompt = `Actúa como un maestro tostador experto. El usuario está usando un simulador de tueste y te ha hecho una consulta específica basándose en su configuración actual.
+    const prompt = `Actúa como un maestro tostador experto. El usuario te escribe desde el cuadro de consulta libre de su herramienta de tueste, y su pregunta puede tratar de cualquier cosa: el simulador que tiene en pantalla, un tueste real que ya ejecutó y cuyos datos te pega, una duda conceptual, o cualquier otro tema. Lee la pregunta y responde a lo que realmente te está preguntando. A partir de ahora vas a mantener una conversación de varios turnos con él: recuerda todo lo que se ha dicho antes al responder preguntas de seguimiento.
 
     ${CONTEXTO_MAQUINA}
 
-    CONFIGURACIÓN ACTUAL DEL TUESTE:
+    ${PROTOCOLO_ANALISIS_TERMICO}
+
+    ESTADO ACTUAL DEL SIMULADOR EN PANTALLA — LEE ESTA ADVERTENCIA ANTES DE USAR ESTOS NÚMEROS:
+    Lo que sigue NO es un tueste real ejecutado, ni un registro histórico, ni nada que el usuario haya tostado. Son simplemente las posiciones en que tiene los controles del simulador en este momento, más la curva teórica que el modelo heurístico de la app calcula a partir de esos controles. Puede que no tengan ninguna relación con lo que te está preguntando: quizá dejó los sliders donde estaban de otra sesión, o de otro café completamente distinto.
+    Usa este bloque ÚNICAMENTE si la pregunta trata sobre el simulador (por ejemplo: "¿qué pasaría si muevo el dulzor?", "analiza esta configuración", "¿qué perfil da esta curva?"). Si la pregunta trae datos de un tueste real —típicamente un export en JSON con su curva, su merma, su Agtron y sus catas— IGNORA POR COMPLETO este bloque: no mezcles estas cifras con las del tueste, no las cites como si fueran del tueste, no las presentes como "lo que el usuario declaró", y no las uses como término de comparación salvo que él pida expresamente comparar el tueste real contra su simulación. Ante la duda, el tueste real manda y el simulador se ignora.
     ${contextoGeneral}
 
     PREGUNTA DEL USUARIO:
     "${pregunta}"
 
-    Por favor, responde a la pregunta de forma técnica pero accesible, basándote en los parámetros térmicos y sensoriales actuales, y en el perfil de la tostadora indicado arriba.`;
+    Por favor, responde a la pregunta de forma técnica pero accesible, apoyándote en los datos que la propia pregunta te aporte y en el perfil de la tostadora indicado arriba.`;
 
-    ejecutarLlamadaGemini(prompt, modalBody, preguntaInput);
+    abrirModalIA("Consulta al Maestro Tostador");
+    preguntaInput.value = '';
+    enviarTurno(prompt, pregunta);
   };
 
-  // Función reutilizable para llamar a la API
-  async function ejecutarLlamadaGemini(prompt, modalBody, inputParaLimpiar = null) {
+  // ============ Modal como chat multi-turno ============
+  function abrirModalIA(titulo) {
+    historialConversacion = [];
+    document.getElementById('ia-modal-title').innerText = titulo;
+    document.getElementById('ia-modal-body').innerHTML = '';
+    document.getElementById('ia-followup-row').style.display = 'none';
+    document.getElementById('ia-modal').style.display = 'flex';
+  }
+
+  function escaparHTML(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+  }
+
+  function formatearMarkdownBasico(texto) {
+    return escaparHTML(texto)
+      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function agregarBurbuja(rol, contenidoHTML, textoPlano) {
+    const modalBody = document.getElementById('ia-modal-body');
+    const div = document.createElement('div');
+    div.className = rol === 'user' ? 'msg-user' : 'msg-ia';
+    div.dataset.texto = textoPlano != null ? textoPlano : '';
+    const etiqueta = rol === 'user' ? 'Tú' : 'IA';
+    div.innerHTML = '<p><b>' + etiqueta + ':</b> ' + contenidoHTML + '</p>';
+    if (rol === 'ia') {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'copy-btn';
+      boton.textContent = '📋 Copiar pregunta y respuesta';
+      boton.addEventListener('click', function(){ copiarTurno(div, boton); });
+      div.appendChild(boton);
+    }
+    modalBody.appendChild(div);
+    modalBody.scrollTop = modalBody.scrollHeight;
+  }
+
+  // Copia texto al portapapeles, con respaldo si el navegador bloquea la Clipboard API,
+  // y da retroalimentación visual momentánea en el botón que la invocó.
+  async function copiarAlPortapapeles(texto, boton) {
+    const marcarCopiado = function(){
+      const original = boton.textContent;
+      boton.textContent = '✓ Copiado';
+      setTimeout(function(){ boton.textContent = original; }, 1500);
+    };
     try {
-      const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+      await navigator.clipboard.writeText(texto);
+      marcarCopiado();
+    } catch (err) {
+      const areaTemp = document.createElement('textarea');
+      areaTemp.value = texto;
+      areaTemp.style.position = 'fixed';
+      areaTemp.style.opacity = '0';
+      document.body.appendChild(areaTemp);
+      areaTemp.focus();
+      areaTemp.select();
+      try {
+        document.execCommand('copy');
+        marcarCopiado();
+      } catch (err2) {
+        alert('No se pudo copiar automáticamente. Mantén presionado el texto para copiarlo manualmente.');
+      }
+      document.body.removeChild(areaTemp);
+    }
+  }
+
+  // Copia al portapapeles la pregunta que originó esta respuesta (o el título de la
+  // sección, si fue un análisis automático sin pregunta escrita) junto con la respuesta.
+  async function copiarTurno(burbujaIA, boton) {
+    const anterior = burbujaIA.previousElementSibling;
+    const bloques = [];
+    if (anterior && anterior.classList.contains('msg-user')) {
+      bloques.push('Pregunta: ' + anterior.dataset.texto);
+    } else {
+      bloques.push('Sección: ' + document.getElementById('ia-modal-title').innerText.trim());
+    }
+    bloques.push('Respuesta: ' + burbujaIA.dataset.texto);
+    await copiarAlPortapapeles(bloques.join('\n\n'), boton);
+  }
+
+  // Copia TODA la conversación del modal (todos los turnos Tú/IA), no solo el último.
+  window.copiarConversacionCompleta = async function(boton) {
+    const modalBody = document.getElementById('ia-modal-body');
+    const burbujas = modalBody.querySelectorAll('.msg-user, .msg-ia');
+    const bloques = [];
+    burbujas.forEach(function(b){
+      const texto = b.dataset.texto;
+      if (!texto) return;
+      const etiqueta = b.classList.contains('msg-user') ? 'Tú' : 'IA';
+      bloques.push(etiqueta + ': ' + texto);
+    });
+    if (bloques.length === 0) {
+      alert('Todavía no hay nada que copiar en esta conversación.');
+      return;
+    }
+    await copiarAlPortapapeles(bloques.join('\n\n---\n\n'), boton);
+  };
+
+  // La IA a veces escribe fórmulas en notación LaTeX ($...$, \text{...}, \times, \circ, etc.)
+  // que esta app no renderiza — llegarían como símbolos sueltos en pantalla. Esta función
+  // convierte esos restos a texto plano legible antes de guardar o mostrar la respuesta.
+  function limpiarLatex(texto) {
+    let t = texto;
+    t = t.replace(/\$\$/g, '');
+    t = t.replace(/\$/g, '');
+    t = t.replace(/\\(?:text|mathrm|mathbf|textbf|textit|mathit)\{([^}]*)\}/g, '$1');
+    t = t.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '$1/$2');
+    t = t.replace(/\^\\circ/g, '°');
+    t = t.replace(/\\circ/g, '°');
+    t = t.replace(/\\times/g, '×');
+    t = t.replace(/\\cdot/g, '·');
+    t = t.replace(/\\(?:rightarrow|to)/g, '→');
+    t = t.replace(/\\leq/g, '≤');
+    t = t.replace(/\\geq/g, '≥');
+    t = t.replace(/\\approx/g, '≈');
+    t = t.replace(/\\pm/g, '±');
+    t = t.replace(/\\%/g, '%');
+    t = t.replace(/\\(?:left|right)/g, '');
+    t = t.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, '$1'); // cualquier otro \comando{contenido} restante
+    t = t.replace(/\\([a-zA-Z]+)/g, '$1');           // cualquier backslash suelto restante
+    t = t.replace(/[ \t]{2,}/g, ' ');
+    return t;
+  }
+
+  function mostrarCargando(mostrar) {
+    const modalBody = document.getElementById('ia-modal-body');
+    let loader = document.getElementById('ia-loader');
+    if (mostrar) {
+      if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'ia-loader';
+        loader.className = 'loader';
+        loader.innerHTML = 'Pensando<span>...</span>';
+        modalBody.appendChild(loader);
+      }
+      modalBody.scrollTop = modalBody.scrollHeight;
+    } else if (loader) {
+      loader.remove();
+    }
+  }
+
+  // Envía un turno nuevo a la conversación, mandando siempre todo el historial previo
+  // para que Gemini recuerde el contexto. textoVisible=null omite la burbuja "Tú:"
+  // (se usa en los análisis automáticos por sección, que no son una pregunta escrita por el usuario).
+  async function enviarTurno(textoParaAPI, textoVisible) {
+    if (textoVisible) agregarBurbuja('user', escaparHTML(textoVisible), textoVisible);
+    historialConversacion.push({ role: 'user', parts: [{ text: textoParaAPI }] });
+
+    document.getElementById('ia-followup-btn').disabled = true;
+    mostrarCargando(true);
+
+    try {
+      const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: historialConversacion,
           generationConfig: { temperature: 0.6 }
         })
       });
@@ -592,22 +954,28 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
       }
 
       const datos = await respuesta.json();
-      let textoGenerado = datos.candidates[0].content.parts[0].text;
-      
-      let textoHTML = textoGenerado
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') 
-        .replace(/\n\n/g, '</p><p>')            
-        .replace(/\n/g, '<br>');                
-        
-      modalBody.innerHTML = `<p>${textoHTML}</p>`;
+      const textoGenerado = limpiarLatex(datos.candidates[0].content.parts[0].text);
+      historialConversacion.push({ role: 'model', parts: [{ text: textoGenerado }] });
 
-      if(inputParaLimpiar) {
-        inputParaLimpiar.value = '';
-      }
+      mostrarCargando(false);
+      agregarBurbuja('ia', '<p>' + formatearMarkdownBasico(textoGenerado) + '</p>', textoGenerado);
 
     } catch (error) {
-      modalBody.innerHTML = `<span style="color: var(--error)"><b>Error:</b><br>${error.message}</span>`;
+      mostrarCargando(false);
+      agregarBurbuja('ia', '<span style="color: var(--ember)"><b>Error:</b><br>' + escaparHTML(error.message) + '</span>', 'Error: ' + error.message);
+      historialConversacion.pop(); // no hubo respuesta del modelo: no dejamos el turno colgado sin contestar
+    } finally {
+      document.getElementById('ia-followup-btn').disabled = false;
+      document.getElementById('ia-followup-row').style.display = 'flex';
     }
+  }
+
+  function enviarSeguimiento() {
+    const input = document.getElementById('ia-followup-input');
+    const texto = input.value.trim();
+    if (!texto) return;
+    input.value = '';
+    enviarTurno(texto, texto);
   }
 
 
@@ -625,6 +993,12 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
       nota:'Cuerpo y dulzor pronunciados; vigila que el secado no se quede corto.' },
     { id:'honey', nombre:'Honey / Miel', aB:0, dB:4, cB:1, crack:197,
       nota:'Punto intermedio entre lavado y natural: buen balance entre acidez y dulzor.' },
+    { id:'geisha', nombre:'Geisha', aB:7, dB:1, cB:-4, crack:198,
+      nota:'Extremadamente floral y aromática (jazmín, bergamota, té, cítricos exóticos), acidez muy alta y delicada, cuerpo ligero. Se opaca fácil con tuestes largos u oscuros; luce mejor con perfiles claros y cortos.' },
+    { id:'tipica_lavado', nombre:'Típica lavado', aB:1, dB:2, cB:1, crack:197,
+      nota:'Variedad clásica de perfil limpio y equilibrado: dulzor suave, acidez moderada y notas a caramelo/nuez. Menos exótica que Sidra o Geisha, pero versátil y fácil de tostar bien.' },
+    { id:'sidra_honey', nombre:'Sidra Honey', aB:3, dB:4, cB:1, crack:197,
+      nota:'El mismo carácter floral de la Sidra, pero el proceso honey suaviza la acidez y aporta más dulzor y cuerpo que la versión lavada — un punto intermedio entre Sidra lavado y un natural.' },
   ];
 
   const METODOS = [
@@ -944,6 +1318,20 @@ Cuando des recomendaciones prácticas, exprésalas en términos de setpoints de 
   // Cerrar modal si se hace clic fuera del contenido
   document.getElementById('ia-modal').addEventListener('click', function(e) {
     if(e.target === this) cerrarModalIA();
+  });
+
+  // Seguimiento dentro del modal de IA (repreguntar sin perder contexto)
+  document.getElementById('ia-followup-btn').addEventListener('click', enviarSeguimiento);
+  document.getElementById('ia-followup-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      enviarSeguimiento();
+    }
+  });
+
+  // Cerrar el modal de Log si se hace clic fuera del contenido
+  document.getElementById('log-modal').addEventListener('click', function(e) {
+    if(e.target === this) cerrarModalLog();
   });
 
 })();

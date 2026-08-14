@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coffee AI Lab — NVIDIA</title>
+<style>
+:root{
+  --bg:#f3eee9; --card:#fff; --ink:#30241f; --muted:#76675f;
+  --line:#dfd4cc; --accent:#5b4034; --accent2:#8b6653;
+  --soft:#f8f4f0; --user:#6d4c41; --ok:#287b45; --danger:#a33b32;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:18px; background:linear-gradient(135deg,#f1e8e1,#faf7f4);
+  color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.container{max-width:1050px;margin:auto}
+.header{
+  background:linear-gradient(135deg,#4a332a,#765443); color:white;
+  border-radius:18px; padding:22px; box-shadow:0 8px 25px #00000012;
+}
+.header h1{margin:0 0 5px;font-size:1.45rem}
+.header p{margin:0;color:#eadfd8;font-size:.92rem}
+.panel{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:16px; margin-top:14px; box-shadow:0 5px 18px #0000000b;
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field label{display:block;font-size:.78rem;font-weight:700;color:var(--accent);margin-bottom:5px}
+input,select,textarea,button{
+  font:inherit;border-radius:9px;border:1px solid #cdbfb7;
+}
+input,select,textarea{width:100%;padding:11px;background:#fff;color:var(--ink);outline:none}
+textarea{min-height:115px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px #8b665318}
+.keyrow{display:flex;gap:8px}
+.keyrow input{min-width:0}
+button{
+  padding:10px 15px;background:var(--accent);color:white;border:0;font-weight:700;
+  cursor:pointer;transition:.2s
+}
+button:hover{filter:brightness(.92)}
+button.secondary{background:#e8dfd8;color:var(--accent)}
+button.danger{background:#9b3c34}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.status{font-size:.78rem;margin-top:6px;color:var(--muted)}
+.status.ok{color:var(--ok)} .status.error{color:var(--danger)}
+.info{
+  margin-top:12px;padding:10px 12px;border-radius:9px;background:#f8f4f0;
+  font-size:.78rem;color:var(--muted);line-height:1.45
+}
+.badge{
+  display:inline-block;padding:4px 8px;border-radius:999px;background:#eee5df;
+  color:var(--accent);font-size:.7rem;font-weight:700;margin-right:5px
+}
+.results{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px
+}
+.result{
+  background:white;border:1px solid var(--line);border-radius:15px;overflow:hidden;
+  box-shadow:0 4px 15px #0000000a;min-height:180px
+}
+.result-head{
+  padding:12px 14px;background:var(--soft);border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:8px;align-items:center
+}
+.result-name{font-weight:800;font-size:.92rem}
+.result-type{font-size:.7rem;color:var(--muted)}
+.result-body{padding:14px;font-size:.88rem;line-height:1.55;white-space:normal}
+.result-body.loading{color:var(--muted);font-style:italic}
+.result-body.error{color:var(--danger)}
+.result-body .meta{font-size:.72rem;color:var(--muted);margin-bottom:8px}
+.single{max-width:760px;margin:14px auto 0}
+.history{
+  max-height:430px;overflow:auto;display:flex;flex-direction:column;gap:10px;
+  padding:2px
+}
+.msg{max-width:86%;padding:11px 13px;border-radius:12px;line-height:1.5;font-size:.9rem}
+.msg.user{align-self:flex-end;background:var(--user);color:white;border-bottom-right-radius:3px}
+.msg.bot{align-self:flex-start;background:#f1ece8;border:1px solid #e1d8d2;border-bottom-left-radius:3px}
+.footer{font-size:.72rem;color:var(--muted);text-align:center;padding:16px}
+@media(max-width:720px){
+  body{padding:10px}.grid,.results{grid-template-columns:1fr}
+  .header{padding:18px}.msg{max-width:94%}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <section class="header">
+    <h1>☕ Coffee AI Lab</h1>
+    <p>Banco de pruebas para modelos NVIDIA NIM — variedades, procesamiento, tueste, extracción y análisis técnico.</p>
+  </section>
+
+  <section class="panel">
+    <div class="grid">
+      <div class="field">
+        <label>API KEY DE NVIDIA</label>
+        <div class="keyrow">
+          <input type="password" id="apiKey" placeholder="nvapi-...">
+          <button onclick="saveKey()">Guardar</button>
+        </div>
+        <div id="keyStatus" class="status"></div>
+      </div>
+
+      <div class="field">
+        <label>MODO DE CONSULTA</label>
+        <select id="mode" onchange="changeMode()">
+          <option value="compare">Comparar los 4 modelos</option>
+          <option value="single">Consultar un solo modelo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div class="field" id="modelField" style="display:none">
+        <label>MODELO</label>
+        <select id="modelSelect"></select>
+      </div>
+      <div class="field">
+        <label>TEMPERATURA</label>
+        <input id="temperature" type="number" min="0" max="1.5" step="0.1" value="0.4">
+      </div>
+    </div>
+
+    <div class="info">
+      <span class="badge">6.500 tokens</span>
+      Cada consulta puede generar hasta 6.500 tokens. En modo comparación se hacen cuatro llamadas independientes.
+      El historial de cada modelo está separado para evitar que una respuesta de un modelo contamine la prueba de otro.
+      <br><br>
+      <strong>Privacidad:</strong> la API Key se guarda únicamente en el almacenamiento local de este navegador.
+      Para una aplicación distribuida a otras personas, no conviene exponer una API Key en JavaScript del navegador.
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="field">
+      <label>PREGUNTA / DATOS PARA ANALIZAR</label>
+      <textarea id="question" placeholder="Ej.: Analiza este perfil de tueste y diferencia claramente entre datos observados, inferencias, hipótesis y recomendaciones."></textarea>
+    </div>
+    <div class="actions">
+      <button onclick="send()">☕ Consultar</button>
+      <button class="secondary" onclick="clearCurrent()">Limpiar conversación</button>
+      <button class="secondary" onclick="clearAll()">Restablecer todo</button>
+    </div>
+  </section>
+
+  <section id="results" class="results"></section>
+  <section id="singleHistory" class="single" style="display:none"></section>
+
+  <div class="footer">Coffee AI Lab · NVIDIA NIM · 6.500 tokens máximos por respuesta</div>
+</div>
+
+<script>
+const API_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
+const MAX_TOKENS = 6500;
+
+const MODELS = [
+  {
+    id:"meta/llama-3.1-8b-instruct",
+    name:"Llama 3.1 8B",
+    role:"Rápido · conversación"
+  },
+  {
+    id:"z-ai/glm-5.2",
+    name:"GLM-5.2",
+    role:"Razonamiento · análisis profundo"
+  },
+  {
+    id:"nvidia/nemotron-3-ultra-550b-a55b",
+    name:"Nemotron 3 Ultra",
+    role:"Razonamiento · contexto largo"
+  },
+  {
+    id:"meta/muse-glimmer-30b",
+    name:"Muse-Glimmer 30B",
+    role:"Multimodal · razonamiento"
+  }
+];
+
+const SYSTEM_PROMPT = `Eres un consultor experto en café de especialidad, agronomía, procesamiento, tueste y extracción.
+
+Responde siempre en español y con buena estructura.
+
+REGLAS DE CALIDAD:
+1. Diferencia claramente entre HECHOS, INFERENCIAS, HIPÓTESIS y RECOMENDACIONES.
+2. No inventes datos sobre variedades, procesos, altitud, genética, tueste o resultados de taza.
+3. Si la evidencia disponible no permite una conclusión, dilo explícitamente.
+4. No presentes una correlación como causalidad sin justificarla.
+5. No confundas características genéticas de una variedad con efectos del ambiente, procesamiento o tueste.
+6. Si el usuario proporciona datos numéricos, utilízalos directamente y comprueba la coherencia antes de sacar conclusiones.
+7. Cuando se analice un tueste, considera tiempo, temperatura, RoR, secado, Maillard, desarrollo y DTR cuando esos datos estén disponibles.
+8. Si faltan datos relevantes, indica cuáles faltan, pero no inventes valores.
+9. No hagas recomendaciones no solicitadas. Cuando sí se pidan recomendaciones, susténtalas con los datos disponibles y explica el motivo.
+10. Sé conciso cuando la pregunta sea sencilla, pero utiliza todo el espacio necesario cuando el problema requiera análisis profundo.
+11. Si existen varias explicaciones plausibles, ordénalas por plausibilidad y explica qué evidencia permitiría distinguirlas.
+12. Para una respuesta técnica, prioriza precisión sobre seguridad aparente o afirmaciones categóricas.`;
+
+const histories = {};
+MODELS.forEach(m => {
+  histories[m.id] = [{role:"system",content:SYSTEM_PROMPT}];
+});
+
+const apiKey = document.getElementById("apiKey");
+const keyStatus = document.getElementById("keyStatus");
+const mode = document.getElementById("mode");
+const modelSelect = document.getElementById("modelSelect");
+const modelField = document.getElementById("modelField");
+const question = document.getElementById("question");
+const results = document.getElementById("results");
+const singleHistory = document.getElementById("singleHistory");
+
+MODELS.forEach(m => {
+  const o=document.createElement("option");
+  o.value=m.id;
+  o.textContent=m.name + " — " + m.role;
+  modelSelect.appendChild(o);
+});
+
+window.addEventListener("DOMContentLoaded",()=>{
+  const saved=localStorage.getItem("nvidia_api_key");
+  if(saved){
+    apiKey.value=saved;
+    keyStatus.textContent="✓ API Key cargada desde este dispositivo.";
+    keyStatus.className="status ok";
+  }
+  changeMode();
+});
+
+function saveKey(){
+  const key=apiKey.value.trim();
+  if(!key){
+    keyStatus.textContent="Ingresa una API Key.";
+    keyStatus.className="status error";
+    return;
+  }
+  localStorage.setItem("nvidia_api_key",key);
+  keyStatus.textContent="✓ API Key guardada localmente en este navegador.";
+  keyStatus.className="status ok";
+}
+
+function changeMode(){
+  const single=mode.value==="single";
+  modelField.style.display=single?"block":"none";
+  results.style.display=single?"none":"grid";
+  singleHistory.style.display=single?"block":"none";
+  render();
+}
+
+function esc(s){
+  const d=document.createElement("div");
+  d.textContent=s;
+  return d.innerHTML.replace(/\n/g,"<br>");
+}
+
+function render(){
+  if(mode.value==="compare"){
+    results.innerHTML="";
+    MODELS.forEach(m=>{
+      const card=document.createElement("div");
+      card.className="result";
+      card.id="card-"+CSS.escape(m.id);
+      card.innerHTML=`
+        <div class="result-head">
+          <div>
+            <div class="result-name">${esc(m.name)}</div>
+            <div class="result-type">${esc(m.role)}</div>
+          </div>
+          <span class="badge">6.500</span>
+        </div>
+        <div class="result-body">
+          <div class="meta">Esperando consulta…</div>
+          Respuesta aparecerá aquí.
+        </div>`;
+      results.appendChild(card);
+    });
+  }else{
+    const m=getModel(modelSelect.value);
+    singleHistory.innerHTML=`
+      <div class="panel">
+        <div style="font-weight:800;margin-bottom:10px">${esc(m.name)}</div>
+        <div id="historyBox" class="history"></div>
+      </div>`;
+    renderHistory();
+  }
+}
+
+modelSelect.addEventListener("change",render);
+
+function getModel(id){return MODELS.find(m=>m.id===id) || MODELS[0];}
+
+function renderHistory(){
+  if(mode.value!=="single") return;
+  const box=document.getElementById("historyBox");
+  if(!box)return;
+  box.innerHTML="";
+  const hist=histories[modelSelect.value] || [];
+  hist.filter(x=>x.role!=="system").forEach(x=>{
+    const div=document.createElement("div");
+    div.className="msg "+(x.role==="user"?"user":"bot");
+    div.innerHTML=esc(x.content);
+    box.appendChild(div);
+  });
+  box.scrollTop=box.scrollHeight;
+}
+
+async function callModel(model, userText){
+  histories[model.id].push({role:"user",content:userText});
+
+  const body={
+    model:model.id,
+    messages:histories[model.id],
+    temperature:parseFloat(document.getElementById("temperature").value) || 0.4,
+    max_tokens:MAX_TOKENS,
+    stream:false
+  };
+
+  // Nemotron permite activar explícitamente su modo de razonamiento.
+  if(model.id==="nvidia/nemotron-3-ultra-550b-a55b"){
+    body.extra_body={
+      chat_template_kwargs:{enable_thinking:true},
+      reasoning_budget:MAX_TOKENS
+    };
+  }
+
+  const response=await fetch(API_URL,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer "+localStorage.getItem("nvidia_api_key")
+    },
+    body:JSON.stringify(body)
+  });
+
+  const data=await response.json();
+
+  if(!response.ok){
+    const detail=data.detail || data.error?.message || ("HTTP "+response.status);
+    // Remove user message if the request failed, so the history remains clean.
+    histories[model.id].pop();
+    throw new Error(detail);
+  }
+
+  const reply=data.choices?.[0]?.message?.content;
+  if(!reply) throw new Error("El modelo no devolvió contenido.");
+
+  histories[model.id].push({role:"assistant",content:reply});
+  return reply;
+}
+
+async function send(){
+  const key=localStorage.getItem("nvidia_api_key");
+  if(!key){
+    keyStatus.textContent="Primero guarda tu API Key de NVIDIA.";
+    keyStatus.className="status error";
+    apiKey.focus();
+    return;
+  }
+
+  const text=question.value.trim();
+  if(!text)return;
+
+  if(mode.value==="single"){
+    const m=getModel(modelSelect.value);
+    const box=document.getElementById("historyBox");
+    const userDiv=document.createElement("div");
+    userDiv.className="msg user";
+    userDiv.innerHTML=esc(text);
+    box.appendChild(userDiv);
+
+    const loading=document.createElement("div");
+    loading.className="msg bot";
+    loading.textContent="Consultando "+m.name+"…";
+    box.appendChild(loading);
+    box.scrollTop=box.scrollHeight;
+    question.value="";
+
+    try{
+      const reply=await callModel(m,text);
+      loading.innerHTML=esc(reply);
+    }catch(e){
+      loading.className="msg bot";
+      loading.innerHTML="<strong>❌ Error:</strong><br>"+esc(e.message);
+    }
+    box.scrollTop=box.scrollHeight;
+    return;
+  }
+
+  // Comparison mode: each model receives the SAME user question,
+  // but has its OWN independent conversation history.
+  question.value="";
+  MODELS.forEach(m=>{
+    const card=document.getElementById("card-"+CSS.escape(m.id));
+    if(card){
+      const body=card.querySelector(".result-body");
+      body.className="result-body loading";
+      body.innerHTML="Consultando…";
+    }
+  });
+
+  await Promise.all(MODELS.map(async m=>{
+    const card=document.getElementById("card-"+CSS.escape(m.id));
+    const body=card?.querySelector(".result-body");
+    const start=performance.now();
+    try{
+      const reply=await callModel(m,text);
+      const seconds=((performance.now()-start)/1000).toFixed(1);
+      if(body){
+        body.className="result-body";
+        body.innerHTML=`<div class="meta">✓ Respuesta en ${seconds} s · máximo configurado: ${MAX_TOKENS.toLocaleString()} tokens</div>${esc(reply)}`;
+      }
+    }catch(e){
+      if(body){
+        body.className="result-body error";
+        body.innerHTML=`<div class="meta">❌ La llamada falló</div>${esc(e.message)}`;
+      }
+    }
+  }));
+}
+
+function clearCurrent(){
+  const id=mode.value==="single"?modelSelect.value:null;
+  if(id){
+    histories[id]=[{role:"system",content:SYSTEM_PROMPT}];
+    renderHistory();
+  }else{
+    MODELS.forEach(m=>histories[m.id]=[{role:"system",content:SYSTEM_PROMPT}]);
+    render();
+  }
+}
+
+function clearAll(){
+  if(!confirm("¿Restablecer conversaciones y borrar la API Key guardada en este navegador?"))return;
+  MODELS.forEach(m=>histories[m.id]=[{role:"system",content:SYSTEM_PROMPT}]);
+  localStorage.removeItem("nvidia_api_key");
+  apiKey.value="";
+  keyStatus.textContent="";
+  render();
+}
+</script>
+</body>
+</html>

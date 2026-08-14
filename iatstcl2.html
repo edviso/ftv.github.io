@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>    
+<head>   
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mapa de Maillard — Curva de tueste con IA</title>
@@ -607,6 +607,7 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
   // Cada vez que se modifica el código de esta app, se agrega una entrada aquí
   // con fecha/hora de Ecuador y un resumen breve del cambio (más reciente primero).
   const REGISTRO_CAMBIOS = [
+    { fecha: '15/08/2026 · ~09:00', descripcion: 'Se agregó una función limpiarLatex() que convierte a texto plano los restos de notación LaTeX que la IA a veces escribe ($...$, \\text{...}, \\times, \\circ, \\frac{}{}, etc.) — la app no los renderizaba, así que llegaban como símbolos sueltos ("$", "\\text", diagonales) en vez de texto legible. Se limpia una sola vez al recibir la respuesta, antes de guardarla en el historial de la conversación y antes de mostrarla, así que también queda limpio lo que copian los botones "Copiar".' },
     { fecha: '14/08/2026 · 13:23', descripcion: 'Se agregó la regla de alcance: identificar qué aspecto pregunta el usuario (catación/extracción, perfil de tueste, u otro) y enfocar la respuesta ahí. Poder recomendar sin que se lo pidan no autoriza a desplegar un análisis paralelo completo (con su propia tabla, verificación y protocolo) de un tema distinto al preguntado solo porque el dato está en el JSON — detectado en un caso real donde, al pedir solo mejorar una catación, entregó además un análisis de tueste entero con tabla nueva y verificaciones. Otro aspecto relevante se menciona en una o dos frases, no como sección propia.' },
     { fecha: '14/08/2026 · ~13:00', descripcion: 'Se reforzaron 2 reglas tras detectar que ambas se violaron en un caso real. (1) Reaparición de la teoría "setpoint fijo alto causa los cortes" al analizar un tueste a 211°C fijo — se agregó advertencia explícita nombrando el error y prohibiendo la frase "fijar/subir el setpoint provoca/causa los cortes" sin contrastar contra el historial completo. (2) Un perfil propuesto sostuvo 211°C durante 1:30 llamándolo "paso rápido, no estancado" — se agregó un tope numérico duro: ninguna fila de tabla puede fijar el setpoint exactamente en 211 o 212°C como valor sostenido, solo saltar directo de ≤210 a ≥213.' },
     { fecha: '13/08/2026 · ~15:30', descripcion: 'Se agregó la regla de no omitir el valor que rompe una tendencia: al describir una serie como ascendente, constante o con dirección definida, debe incluir TODOS sus valores, no una selección — detectado en un caso real donde listó 6 de 7 picos de una envolvente al describirla como "ascendente continua", omitiendo justo el único pico que bajaba. Si algún valor contradice la tendencia, debe decirlo explícitamente en vez de omitirlo, y lo mismo aplica a cálculos de tendencia que saltan valores intermedios (promedios de extremo a extremo, RoR entre el primer y último punto).' },
@@ -884,6 +885,32 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
     await copiarAlPortapapeles(bloques.join('\n\n---\n\n'), boton);
   };
 
+  // La IA a veces escribe fórmulas en notación LaTeX ($...$, \text{...}, \times, \circ, etc.)
+  // que esta app no renderiza — llegarían como símbolos sueltos en pantalla. Esta función
+  // convierte esos restos a texto plano legible antes de guardar o mostrar la respuesta.
+  function limpiarLatex(texto) {
+    let t = texto;
+    t = t.replace(/\$\$/g, '');
+    t = t.replace(/\$/g, '');
+    t = t.replace(/\\(?:text|mathrm|mathbf|textbf|textit|mathit)\{([^}]*)\}/g, '$1');
+    t = t.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '$1/$2');
+    t = t.replace(/\^\\circ/g, '°');
+    t = t.replace(/\\circ/g, '°');
+    t = t.replace(/\\times/g, '×');
+    t = t.replace(/\\cdot/g, '·');
+    t = t.replace(/\\(?:rightarrow|to)/g, '→');
+    t = t.replace(/\\leq/g, '≤');
+    t = t.replace(/\\geq/g, '≥');
+    t = t.replace(/\\approx/g, '≈');
+    t = t.replace(/\\pm/g, '±');
+    t = t.replace(/\\%/g, '%');
+    t = t.replace(/\\(?:left|right)/g, '');
+    t = t.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, '$1'); // cualquier otro \comando{contenido} restante
+    t = t.replace(/\\([a-zA-Z]+)/g, '$1');           // cualquier backslash suelto restante
+    t = t.replace(/[ \t]{2,}/g, ' ');
+    return t;
+  }
+
   function mostrarCargando(mostrar) {
     const modalBody = document.getElementById('ia-modal-body');
     let loader = document.getElementById('ia-loader');
@@ -927,7 +954,7 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
       }
 
       const datos = await respuesta.json();
-      const textoGenerado = datos.candidates[0].content.parts[0].text;
+      const textoGenerado = limpiarLatex(datos.candidates[0].content.parts[0].text);
       historialConversacion.push({ role: 'model', parts: [{ text: textoGenerado }] });
 
       mostrarCargando(false);

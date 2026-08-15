@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Entrenador Personal</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #222; 
+            color: #fff;
+            margin: 0; 
+            padding: 20px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            background: #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        h2 { text-align: center; color: #4CAF50; margin-top: 0; }
+        #chat-box { 
+            height: 400px; 
+            overflow-y: auto; 
+            margin-bottom: 15px;
+            padding-right: 10px;
+        }
+        .msg { 
+            margin-bottom: 12px; 
+            padding: 12px; 
+            border-radius: 8px; 
+            line-height: 1.4;
+            max-width: 85%;
+        }
+        .user { 
+            background: #4CAF50; 
+            color: white; 
+            margin-left: auto; 
+        }
+        .bot { 
+            background: #444; 
+            border: 1px solid #555;
+            margin-right: auto; 
+        }
+        #input-area { display: flex; gap: 10px; }
+        input { 
+            flex: 1; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 5px; 
+            background: #555;
+            color: white;
+            font-size: 16px;
+        }
+        button { 
+            padding: 12px 20px; 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+
+    <div id="chat-container">
+        <h2>💪 Entrenador IA</h2>
+        <div id="chat-box">
+            <div class="msg bot">¡Hola Edgar! Soy tu entrenador personal. Tengo listas tus progresiones del tren superior e inferior. ¿Qué entrenamos hoy o qué duda tienes sobre los ejercicios?</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Pregúntame sobre la rutina...">
+            <button onclick="enviarMensaje()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        // AQUÍ ESTÁ EL CÓDIGO QUEMADO (El System Prompt)
+        const contextoSistema = `Eres un entrenador personal entusiasta, motivador y experto en biomecánica. Tu cliente exclusivo se llama Edgar. Tiene 68 años y entrena con disciplina 5 a 6 días a la semana.
+        Conoces perfectamente su rutina y equipamiento:
+        - Tren superior: Utiliza una máquina multifuncional, hace bench press utilizando micro-cargas (discos pequeños) para progresiones seguras, y complementa con bandas de resistencia.
+        - Tren inferior: Realiza simulaciones de sissy squats y trabajo enfocado.
+        Debes responder todas sus dudas basándote ESTRICTAMENTE en estos ejercicios y su contexto. Cuida de sugerir progresiones adecuadas para la recuperación de sus articulaciones. Háblale de tú, con respeto pero con mucha energía deportiva.`;
+
+        // El historial mantiene la memoria de la conversación
+        let historial = [
+            { role: "system", content: contextoSistema }
+        ];
+
+        async function enviarMensaje() {
+            const input = document.getElementById("user-input");
+            const texto = input.value;
+            if (!texto) return;
+
+            const chatBox = document.getElementById("chat-box");
+            
+            // 1. Imprimir mensaje del usuario
+            chatBox.innerHTML += `<div class="msg user">${texto}</div>`;
+            input.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 2. Guardar en la memoria
+            historial.push({ role: "user", content: texto });
+
+            // 3. Mostrar indicador de que está pensando
+            const idTemp = "typing-" + Date.now();
+            chatBox.innerHTML += `<div id="${idTemp}" class="msg bot">Evaluando rutina...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // Conexión a tu Acer a través del túnel de Cloudflare
+                const urlServidor = "https://gear-stanford-urls-grade.trycloudflare.com/v1/chat/completions";
+
+                const respuesta = await fetch(urlServidor, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        messages: historial,
+                        temperature: 0.7 // Qué tan creativo es (0.0 a 1.0)
+                    })
+                });
+
+                const datos = await respuesta.json();
+                const textoBot = datos.choices[0].message.content;
+
+                // 4. Borrar el "Evaluando..." y poner la respuesta real
+                document.getElementById(idTemp).remove();
+                chatBox.innerHTML += `<div class="msg bot">${textoBot.replace(/\n/g, '<br>')}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // 5. Guardar la respuesta de la IA en la memoria
+                historial.push({ role: "assistant", content: textoBot });
+
+            } catch (error) {
+                document.getElementById(idTemp).innerHTML = "Error: Asegúrate de que tu Acer esté encendida con el servidor y el túnel corriendo.";
+            }
+        }
+
+        // Permite enviar presionando la tecla Enter
+        document.getElementById("user-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") enviarMensaje();
+        });
+    </script>
+</body>
+</html>

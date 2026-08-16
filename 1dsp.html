@@ -22,15 +22,17 @@
             border-radius: 10px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
         }
-        input[type="password"] { 
+        input[type="password"], select { 
             width: 100%; 
             padding: 10px; 
             margin-top: 8px; 
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box; 
-            font-family: monospace;
         }
+        input[type="password"] { font-family: monospace; }
+        select { font-size: 14px; cursor: pointer; }
+        
         #chat-container { 
             flex: 1; 
             background: white; 
@@ -101,11 +103,17 @@
 <div id="config-panel">
     <label for="api-key"><strong>🔑 API Key de DeepSeek:</strong></label>
     <input type="password" id="api-key" placeholder="Pega aquí tu key (empieza con sk-...)" />
+    
+    <label for="model-selector" style="display:block; margin-top:15px;"><strong>🧠 Selecciona el Modelo:</strong></label>
+    <select id="model-selector">
+        <option value="deepseek-chat">⚡ V4 Flash (Rápido y económico para tareas de rutina)</option>
+        <option value="deepseek-reasoner">🔬 V4 Pro (Análisis profundo para telemetría y catas)</option>
+    </select>
 </div>
 
 <div id="chat-container">
     <div id="messages">
-        <div class="message bot-message">¡Hola! Ingresa tu API Key arriba y cuéntame, ¿de qué quieres hablar hoy?</div>
+        <div class="message bot-message">¡Hola! Ingresa tu API Key, selecciona el modelo que prefieras usar hoy y cuéntame en qué te ayudo.</div>
     </div>
     <div id="input-area">
         <input type="text" id="user-input" placeholder="Escribe tu mensaje aquí..." autocomplete="off" />
@@ -115,23 +123,30 @@
 
 <script>
     const apiKeyInput = document.getElementById('api-key');
+    const modelSelector = document.getElementById('model-selector');
     const messagesDiv = document.getElementById('messages');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
 
-    // Historial de la conversación para mantener el contexto
     let conversationHistory = [
-        { role: "system", content: "Eres un asistente útil, amable y experto. Respondes siempre en español." }
+        { role: "system", content: "Eres un asistente experto. Si se te piden análisis complejos, razona paso a paso." }
     ];
 
-    // Cargar API key guardada en el navegador si existe
     if (localStorage.getItem('deepseek_key')) {
         apiKeyInput.value = localStorage.getItem('deepseek_key');
     }
+    
+    // Guardar preferencia de modelo para que no tengas que cambiarlo cada vez
+    if (localStorage.getItem('deepseek_model')) {
+        modelSelector.value = localStorage.getItem('deepseek_model');
+    }
 
-    // Guardar la API key automáticamente cuando se modifique
     apiKeyInput.addEventListener('input', () => {
         localStorage.setItem('deepseek_key', apiKeyInput.value.trim());
+    });
+    
+    modelSelector.addEventListener('change', () => {
+        localStorage.setItem('deepseek_model', modelSelector.value);
     });
 
     function addMessage(role, content) {
@@ -145,24 +160,23 @@
     async function sendMessage() {
         const text = userInput.value.trim();
         const apiKey = apiKeyInput.value.trim();
+        const selectedModel = modelSelector.value;
 
         if (!text) return;
         if (!apiKey) {
-            alert("⚠️ Por favor, ingresa tu API Key de DeepSeek en el recuadro superior.");
+            alert("⚠️ Por favor, ingresa tu API Key.");
             apiKeyInput.focus();
             return;
         }
 
-        // Añadir el mensaje del usuario a la pantalla y al historial
         addMessage('user', text);
         conversationHistory.push({ role: "user", content: text });
         
         userInput.value = '';
         sendBtn.disabled = true;
-        sendBtn.textContent = '...';
+        sendBtn.textContent = 'Pensando...';
 
         try {
-            // Llamada a la API de DeepSeek
             const response = await fetch('https://api.deepseek.com/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -170,9 +184,8 @@
                     'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({
-                    model: 'deepseek-chat', // El modelo principal de DeepSeek
-                    messages: conversationHistory,
-                    temperature: 0.7
+                    model: selectedModel, // ¡AQUÍ ES DONDE PASA LA MAGIA!
+                    messages: conversationHistory
                 })
             });
 
@@ -184,14 +197,12 @@
             const data = await response.json();
             const botReply = data.choices[0].message.content;
 
-            // Añadir la respuesta a la pantalla y al historial
             addMessage('assistant', botReply);
             conversationHistory.push({ role: "assistant", content: botReply });
 
         } catch (error) {
             console.error(error);
             addMessage('assistant', "❌ Error de conexión: " + error.message);
-            // Si hay error, quitamos el último mensaje del usuario del historial para no corromper el contexto
             conversationHistory.pop(); 
         } finally {
             sendBtn.disabled = false;
@@ -200,7 +211,6 @@
         }
     }
 
-    // Eventos para enviar al hacer clic o presionar Enter
     sendBtn.addEventListener('click', sendMessage);
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();

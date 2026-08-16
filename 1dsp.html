@@ -8,7 +8,7 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             margin: 0; 
-            padding: 20px; 
+            padding: 15px; 
             background-color: #f0f2f5; 
             display: flex; 
             flex-direction: column; 
@@ -16,16 +16,16 @@
             box-sizing: border-box; 
         }
         #config-panel { 
-            margin-bottom: 15px; 
-            padding: 15px; 
+            margin-bottom: 10px; 
+            padding: 12px; 
             background: white; 
             border-radius: 10px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
         }
         input[type="password"], select { 
             width: 100%; 
-            padding: 10px; 
-            margin-top: 8px; 
+            padding: 8px; 
+            margin-top: 6px; 
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box; 
@@ -41,6 +41,7 @@
             display: flex; 
             flex-direction: column; 
             overflow: hidden; 
+            margin-bottom: 10px;
         }
         #messages { 
             flex: 1; 
@@ -56,6 +57,7 @@
             max-width: 85%; 
             line-height: 1.5; 
             word-wrap: break-word;
+            white-space: pre-wrap; /* Mantiene los saltos de línea */
         }
         .user-message { 
             background: #0b93f6; 
@@ -69,22 +71,33 @@
             align-self: flex-start; 
             border-bottom-left-radius: 4px; 
         }
+        
+        /* Área de escritura amplia y cómoda */
         #input-area { 
             display: flex; 
-            padding: 15px; 
+            flex-direction: column;
+            padding: 12px; 
             background: #fff; 
-            border-top: 1px solid #eee; 
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             gap: 8px;
-            flex-wrap: wrap; /* Permite que los botones se acomoden bien en el celular */
         }
         #user-input { 
-            flex: 1; 
-            min-width: 200px;
-            padding: 12px; 
+            width: 100%; 
+            height: 110px; /* Ocupa buen espacio vertical en el celular */
+            padding: 10px; 
             border: 1px solid #ccc; 
-            border-radius: 20px; 
+            border-radius: 8px; 
             outline: none; 
-            font-size: 16px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical; /* Permite estirarlo aún más si lo deseas */
+            box-sizing: border-box;
+        }
+        .button-group {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
         }
         #send-btn { 
             padding: 10px 20px; 
@@ -99,7 +112,6 @@
         #send-btn:hover { background: #0077ce; }
         #send-btn:disabled { background: #b0c4de; cursor: not-allowed; }
         
-        /* Estilos del nuevo botón de copiar */
         #copy-btn {
             padding: 10px 15px; 
             background: #28a745; 
@@ -116,24 +128,27 @@
 <body>
 
 <div id="config-panel">
-    <label for="api-key"><strong>🔑 API Key de DeepSeek:</strong></label>
+    <label for="api-key"><small><strong>🔑 API Key de DeepSeek:</strong></small></label>
     <input type="password" id="api-key" placeholder="Pega aquí tu key (empieza con sk-...)" />
     
-    <label for="model-selector" style="display:block; margin-top:15px;"><strong>🧠 Selecciona el Modelo:</strong></label>
+    <label for="model-selector" style="display:block; margin-top:8px;"><small><strong>🧠 Selecciona el Modelo:</strong></small></label>
     <select id="model-selector">
-        <option value="deepseek-chat">⚡ V4 Flash (Rápido y económico para tareas de rutina)</option>
-        <option value="deepseek-reasoner">🔬 V4 Pro (Análisis profundo para telemetría y catas)</option>
+        <option value="deepseek-chat">⚡ V4 Flash (Rápido y económico)</option>
+        <option value="deepseek-reasoner">🔬 V4 Pro (Análisis profundo de tuestes)</option>
     </select>
 </div>
 
 <div id="chat-container">
     <div id="messages">
-        <div class="message bot-message">¡Hola! Ingresa tu API Key, selecciona el modelo que prefieras usar hoy y cuéntame en qué te ayudo.</div>
+        <div class="message bot-message">¡Hola! Escribe o pega tu texto y tablas aquí abajo con total comodidad.</div>
     </div>
-    <div id="input-area">
-        <input type="text" id="user-input" placeholder="Escribe tu mensaje aquí..." autocomplete="off" />
-        <button id="send-btn">Enviar</button>
+</div>
+
+<div id="input-area">
+    <textarea id="user-input" placeholder="Escribe tu mensaje o pega tu JSON/datos de tueste aquí... (Enter hace saltos de línea)"></textarea>
+    <div class="button-group">
         <button id="copy-btn" title="Copiar historial al portapapeles">📋 Copiar Chat</button>
+        <button id="send-btn">Enviar</button>
     </div>
 </div>
 
@@ -180,7 +195,7 @@
 
         if (!text) return;
         if (!apiKey) {
-            alert("⚠️ Por favor, ingresa tu API Key.");
+            alert("⚠️ Por favor, ingresa tu API Key en la parte superior.");
             apiKeyInput.focus();
             return;
         }
@@ -227,7 +242,6 @@
         }
     }
 
-    // Lógica para copiar el chat al portapapeles
     copyBtn.addEventListener('click', async () => {
         if (conversationHistory.length <= 1) {
             alert("Todavía no hay mensajes para copiar.");
@@ -235,8 +249,6 @@
         }
 
         let chatText = "--- Historial de Chat ---\n\n";
-        
-        // Empezamos desde 1 para ignorar el mensaje oculto del "system"
         for (let i = 1; i < conversationHistory.length; i++) {
             const msg = conversationHistory[i];
             const sender = msg.role === 'user' ? 'Tú' : 'DeepSeek';
@@ -245,26 +257,27 @@
 
         try {
             await navigator.clipboard.writeText(chatText.trim());
-            
-            // Efecto visual de copiado
             const originalText = copyBtn.textContent;
             copyBtn.textContent = '✔️ ¡Copiado!';
-            copyBtn.style.background = '#218838'; // Un verde más oscuro
-            
+            copyBtn.style.background = '#218838';
             setTimeout(() => {
                 copyBtn.textContent = originalText;
-                copyBtn.style.background = '#28a745'; // Vuelve al color original
+                copyBtn.style.background = '#28a745';
             }, 2000);
-            
         } catch (err) {
             console.error('Error al copiar: ', err);
-            alert("No se pudo copiar el texto. Tu navegador podría estar bloqueando esta función.");
+            alert("No se pudo copiar el texto.");
         }
     });
 
     sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
+    
+    // Como ahora es un campo grande, permitimos usar Enter para escribir párrafos. 
+    // Si deseas enviar rápido con teclado físico puedes usar Ctrl+Enter.
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            sendMessage();
+        }
     });
 </script>
 </body>

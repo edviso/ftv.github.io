@@ -1,0 +1,2902 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Control de Pesas &amp; IA</title>
+<style>
+  :root{
+    --bg:#12161a;
+    --surface:#1a2027;
+    --surface-alt:#212a33;
+    --border:#2b3540;
+    --text:#dfe6ec;
+    --text-dim:#8695a3;
+    --primary:#3fb8ae;
+    --primary-dim:#2c8a82;
+    --on-primary:#08201d;
+    --amber:#d99a4e;
+    --green:#6fbf73;
+    --error:#e0685f;
+    --radius:12px;
+    --mono: ui-monospace, "Roboto Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0 0 84px 0;
+    background:var(--bg); color:var(--text);
+    font-family:var(--sans); line-height:1.5; font-size:15px;
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:16px;}
+  h1,h2,h3{margin:0 0 10px 0; font-weight:700; letter-spacing:-0.01em;}
+  h1{font-size:20px; color:var(--text);}
+  h2{font-size:17px; color:var(--primary);}
+  h3{font-size:14px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em;}
+  p{margin:0 0 12px 0; color:var(--text-dim);}
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px; margin-bottom:14px;
+  }
+  label{display:block; font-size:13px; font-weight:600; color:var(--text-dim); margin-bottom:6px;}
+  input[type="text"], input[type="password"], input[type="number"], select, textarea{
+    width:100%; padding:11px 12px; margin-bottom:12px;
+    border:1px solid var(--border); border-radius:9px;
+    background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:15px;
+  }
+  input[type="number"]{font-family:var(--mono);}
+  textarea{min-height:70px; resize:vertical; font-family:var(--sans);}
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible{
+    outline:2px solid var(--primary); outline-offset:1px;
+  }
+  button{ font-family:var(--sans); cursor:pointer; }
+  .btn{
+    width:100%; padding:13px 16px; border:none; border-radius:9px;
+    font-size:15px; font-weight:700; background:var(--primary); color:var(--on-primary);
+    margin-bottom:10px;
+  }
+  .btn:active{opacity:.82;}
+  .btn:disabled{background:#3a4550; color:#7c8894; cursor:not-allowed;}
+  .btn.secundario{background:var(--surface-alt); color:var(--text); border:1px solid var(--border);}
+  .btn.peligro{background:transparent; color:var(--error); border:1px solid var(--error);}
+  .btn.chico{width:auto; padding:8px 12px; font-size:13px; margin:0;}
+  .fila{display:flex; gap:10px;}
+  .fila > *{flex:1;}
+  .badge{
+    display:inline-block; padding:4px 10px; border-radius:20px;
+    font-size:12px; font-weight:700; letter-spacing:.02em;
+  }
+  .badge.on-track{background:rgba(63,184,174,.16); color:var(--primary);}
+  .badge.consolidacion{background:rgba(217,154,78,.12); color:var(--amber);}
+  .badge.recuperacion{background:rgba(217,154,78,.2); color:var(--amber);}
+  .badge.descanso{background:rgba(255,255,255,.06); color:var(--text-dim);}
+  .top-status{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+  .fecha-linea{font-family:var(--mono); font-size:13px; color:var(--text-dim);}
+  .ejercicio-bloque{border-top:1px solid var(--border); padding-top:12px; margin-top:12px;}
+  .ejercicio-bloque:first-child{border-top:none; padding-top:0; margin-top:0;}
+  .ejercicio-nombre{font-weight:700; margin-bottom:2px;}
+  .ejercicio-meta{font-size:12px; color:var(--text-dim); margin-bottom:8px;}
+  .serie-fila{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .serie-num{font-family:var(--mono); font-size:12px; color:var(--text-dim); width:20px; flex-shrink:0;}
+  .stepper{display:flex; align-items:center; gap:4px; flex:1;}
+  .stepper-peso{flex:1.5;}
+  .stepper-peso input{min-width:56px;}
+  .stepper-reps{flex:0.8;}
+  .stepper-reps input{min-width:30px;}
+  .stepper button{
+    width:30px; height:36px; border-radius:7px; border:1px solid var(--border);
+    background:var(--surface-alt); color:var(--text); font-size:16px; flex-shrink:0;
+  }
+  .stepper input{margin:0; text-align:center; padding:8px 4px; min-width:0;}
+  .stepper span.unidad{font-size:11px; color:var(--text-dim); width:34px; flex-shrink:0;}
+  .chip-lista{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
+  .chip{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface-alt); border:1px solid var(--border);
+    border-radius:9px; padding:9px 12px; font-size:14px;
+  }
+  .chip input[type="checkbox"]{width:18px; height:18px; margin:0;}
+  .check-serie{width:22px; height:22px; margin:0; flex-shrink:0;}
+  .timer-caja{
+    position:sticky; top:8px; z-index:15;
+    margin:4px 0 16px; padding:12px; border:1px solid var(--primary); border-radius:9px;
+    background:var(--surface); box-shadow:0 4px 12px rgba(0,0,0,.4); text-align:center;
+  }
+  .timer-caja.alerta{ border-color:var(--amber); }
+  .timer-label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;}
+  .timer-reloj{font-family:var(--mono); font-size:34px; font-weight:700; color:var(--primary); letter-spacing:.02em; margin-bottom:8px;}
+  .timer-caja.alerta .timer-reloj{color:var(--amber);}
+  nav.tabs{
+    position:fixed; bottom:0; left:0; right:0; background:var(--surface);
+    border-top:1px solid var(--border); display:flex; z-index:20;
+  }
+  nav.tabs button{
+    flex:1; background:none; border:none; color:var(--text-dim);
+    padding:12px 4px 10px; font-size:12px; font-weight:600;
+  }
+  nav.tabs button.activo{color:var(--primary);}
+  .oculto{display:none !important;}
+  .resultado-caja{
+    background:var(--bg); border:1px solid var(--border); border-radius:9px;
+    padding:13px; margin-bottom:10px; font-size:14px;
+  }
+  .recom-fila{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:8px 0; border-bottom:1px solid var(--border); gap:10px;
+  }
+  .recom-fila:last-child{border-bottom:none;}
+  .recom-peso{font-family:var(--mono); font-weight:700; color:var(--primary); white-space:nowrap;}
+  .msg-chat{margin-bottom:10px; font-size:14px;}
+  .msg-chat.usuario{color:var(--text);}
+  .msg-chat.usuario b{color:var(--primary);}
+  .msg-chat.ia b{color:var(--amber);}
+  .btn-copiar{
+    background:transparent; border:1px solid var(--border); color:var(--text-dim);
+    border-radius:7px; padding:5px 10px; font-size:12px; margin:-4px 0 12px;
+  }
+  .btn-copiar:active{opacity:.7;}
+  .aviso-local{
+    border:1px solid var(--amber); background:rgba(217,154,78,.10); color:var(--amber);
+    border-radius:9px; padding:10px 12px; font-size:13px; margin-bottom:12px; line-height:1.45;
+  }
+  .seccion-config > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  .seccion-config > summary::-webkit-details-marker{ display:none; }
+  .seccion-config > summary::before{
+    content:'▸'; color:var(--primary); font-size:16px; flex-shrink:0; transition:transform .15s;
+  }
+  .seccion-config[open] > summary::before{ transform:rotate(90deg); }
+  .seccion-config > summary h2{ margin:0; flex:1; }
+  .conteo-seccion{ font-size:12px; color:var(--text-dim); font-family:var(--mono); }
+  .seccion-config .contenido-seccion{ margin-top:12px; }
+  .spinner-ia{
+    width:56px; height:56px; display:block;
+    animation: girar-ia 1.6s linear infinite;
+  }
+  @keyframes girar-ia{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .spinner-ia{ animation:none; } }
+  .error-msg{color:var(--error); font-size:13px; margin-top:-4px; margin-bottom:10px;}
+  .exercise-edit-row{border:1px solid var(--border); border-radius:9px; padding:12px; margin-bottom:10px; background:var(--bg);}
+  .exercise-edit-row .fila{margin-bottom:0;}
+  .hist-item{
+    border:1px solid var(--border); border-radius:9px; padding:12px; margin-bottom:8px; background:var(--bg);
+  }
+  .hist-item .fecha{font-family:var(--mono); font-size:13px; color:var(--text-dim);}
+  small.ayuda{display:block; color:var(--text-dim); font-size:12px; margin:-8px 0 12px;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  #btnLogFlotante{
+    position:fixed; top:12px; right:12px; z-index:25;
+    background:var(--surface-alt); color:var(--text-dim); border:1px solid var(--border);
+    border-radius:20px; padding:6px 14px; font-size:12px; font-weight:700;
+  }
+  #estadoPantalla{
+    position:fixed; top:12px; left:12px; z-index:25;
+    background:var(--surface-alt); border:1px solid var(--border);
+    border-radius:20px; padding:6px 14px; font-size:11px; font-weight:700;
+  }
+  .log-item{border-top:1px solid var(--border); padding:10px 0;}
+  .log-item:first-child{border-top:none;}
+  .log-fecha{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+  .log-texto{margin-top:2px;}
+</style>
+</head>
+<body>
+
+<button id="btnLogFlotante" onclick="mostrarLog()" title="Registro de cambios de la app">Log</button>
+<span id="estadoPantalla" class="oculto" title="Estado del bloqueo de pantalla activa"></span>
+
+<div id="modalLog" class="oculto" style="position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:40; overflow-y:auto;">
+  <div style="max-width:640px; margin:0 auto; padding:16px;">
+    <div class="card">
+      <div class="top-status">
+        <h2 style="margin:0;">Registro de cambios</h2>
+        <button class="btn chico secundario" onclick="cerrarLog()">Cerrar</button>
+      </div>
+      <small class="ayuda">Los cambios de antes del 4 de agosto de 2026 tienen fecha aproximada (reconstruida de la conversación); no hay hora porque no hay forma de saberla con certeza. De ahí en adelante, cada cambio queda con fecha y hora exactas.</small>
+      <div id="listaLog"></div>
+    </div>
+  </div>
+</div>
+
+<div id="modalCalificacionSerie" class="oculto" style="position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:45; display:flex; align-items:center; justify-content:center; padding:16px;">
+  <div class="card" style="max-width:340px; width:100%; margin:0;">
+    <h3 style="margin-bottom:12px;">¿Cómo estuvo esa serie?</h3>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(1)">1 · Fácil</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(2)">2 · Normal</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(3)">3 · Con cierta dificultad</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(4)">4 · Con dificultad</button>
+    <button type="button" class="btn secundario" style="margin-bottom:8px;" onclick="calificarSerieActual(5)">5 · Con dificultad y algo de dolor</button>
+    <button type="button" style="background:transparent; color:var(--text-dim); border:none; width:100%; margin-top:4px;" onclick="omitirCalificacionSerie()">Omitir</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===================== VISTA: API KEY ===================== -->
+  <div id="vista-auth" class="oculto">
+    <div class="card">
+      <h1>🏋️ Control de Pesas &amp; IA</h1>
+      <p>Ingresa tu API Key de Google Gemini. Se guarda solo en este dispositivo, nunca en el código ni en tus respaldos JSON.</p>
+      <label for="inputApiKey">API Key de Gemini</label>
+      <input type="password" id="inputApiKey" placeholder="AIzaSy...">
+      <div id="errorAuth" class="error-msg oculto"></div>
+      <button class="btn" onclick="guardarApiKeyYSeguir()">Continuar</button>
+      <button class="btn secundario" onclick="usarModeloLocalDesdeAuth()">Entrar con el modelo local de la Acer</button>
+      <small class="ayuda">El modelo local no necesita API Key, pero sí que la Acer esté encendida con el túnel abierto.</small>
+    </div>
+  </div>
+
+  <!-- ===================== VISTA: CONFIGURACIÓN INICIAL / EDITAR ===================== -->
+  <div id="vista-setup" class="oculto">
+    <div class="card">
+      <h1 id="setupTitulo">Configura tu rutina</h1>
+      <p>Estos datos se definen una sola vez (y puedes editarlos luego desde Ajustes). Nada queda escrito en el código: todo se guarda en tu teléfono.</p>
+    </div>
+
+    <div class="card">
+      <h2>Horario semanal</h2>
+      <small class="ayuda">Define qué bloque corresponde a cada día. La app se posicionará sola en el bloque correcto al abrir.</small>
+      <div id="horarioEditor"></div>
+    </div>
+
+    <details class="card seccion-config">
+      <summary><h2>Calentamiento</h2><span class="conteo-seccion" id="conteoCalentamiento"></span></summary>
+      <div class="contenido-seccion">
+        <small class="ayuda">Sin control de peso, solo se marca como realizado.</small>
+        <div id="calentamientoEditor"></div>
+        <button class="btn chico secundario" onclick="agregarCalentamiento()">+ Agregar ítem de calentamiento</button>
+      </div>
+    </details>
+
+    <details class="card seccion-config">
+      <summary><h2>Movilidad, equilibrio y flexibilidad</h2><span class="conteo-seccion" id="conteoMovilidad"></span></summary>
+      <div class="contenido-seccion">
+        <small class="ayuda">Rutina liviana para miércoles y sábado. Cada ejercicio tiene sus series y objetivo (repeticiones, segundos o pasos).</small>
+        <div id="movilidadEditor"></div>
+        <button class="btn chico secundario" onclick="agregarMovilidad()">+ Agregar ejercicio de movilidad</button>
+      </div>
+    </details>
+
+    <details class="card seccion-config">
+      <summary><h2>Tren Superior</h2><span class="conteo-seccion" id="conteoSuperior"></span></summary>
+      <div class="contenido-seccion">
+        <div id="editorSuperior"></div>
+        <button class="btn chico secundario" onclick="agregarEjercicio('superior')">+ Agregar ejercicio</button>
+      </div>
+    </details>
+
+    <details class="card seccion-config">
+      <summary><h2>Tren Inferior</h2><span class="conteo-seccion" id="conteoInferior"></span></summary>
+      <div class="contenido-seccion">
+        <div id="editorInferior"></div>
+        <button class="btn chico secundario" onclick="agregarEjercicio('inferior')">+ Agregar ejercicio</button>
+      </div>
+    </details>
+
+    <div class="card">
+      <button class="btn" onclick="guardarConfiguracion()">Guardar configuración</button>
+      <button id="btnCancelarSetup" class="btn secundario oculto" onclick="mostrarVista('hoy')">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ===================== VISTA: HOY ===================== -->
+  <div id="vista-hoy" class="oculto"></div>
+
+  <!-- ===================== VISTA: HISTORIAL ===================== -->
+  <div id="vista-historial" class="oculto"></div>
+
+  <!-- ===================== VISTA: CONSULTA GENERAL ===================== -->
+  <div id="vista-consulta" class="oculto"></div>
+
+  <!-- ===================== VISTA: SIMULACIÓN ===================== -->
+  <div id="vista-simulacion" class="oculto"></div>
+
+  <!-- ===================== VISTA: AJUSTES ===================== -->
+  <div id="vista-ajustes" class="oculto">
+    <div class="card" id="cardMotorIA"></div>
+    <div class="card">
+      <h2>Ajustes</h2>
+      <button class="btn secundario" onclick="mostrarVista('setup')">Editar rutina y horario</button>
+      <button class="btn secundario" onclick="mostrarVista('simulacion')">🧪 Simulación</button>
+      <button class="btn secundario" onclick="exportarJSON()">Exportar respaldo (JSON)</button>
+      <label for="inputJSON" style="margin-top:4px;">
+        <span class="btn secundario" style="display:block; text-align:center;">Importar respaldo (JSON)</span>
+      </label>
+      <input type="file" id="inputJSON" accept=".json" style="display:none" onchange="importarJSON(event)">
+      <button class="btn peligro" onclick="cambiarApiKey()">Cambiar / borrar API Key</button>
+    </div>
+  </div>
+
+</div>
+
+<nav class="tabs" id="navTabs">
+  <button id="tabHoy" onclick="mostrarVista('hoy')">Hoy</button>
+  <button id="tabHistorial" onclick="mostrarVista('historial')">Historial</button>
+  <button id="tabConsulta" onclick="mostrarVista('consulta')">Consulta</button>
+  <button id="tabAjustes" onclick="mostrarVista('ajustes')">Ajustes</button>
+</nav>
+
+
+<script>
+/* =========================================================================
+   CONTROL DE PESAS & IA
+   Estructura del archivo:
+   1. Semillas por defecto (solo prellenan el formulario de configuración)
+   2. Persistencia (localStorage) — API key separada de los datos
+   2b. Motor de IA: Gemini (nube) o modelo local en la Acer (llama.cpp)
+   3. Fecha/hora de Guayaquil y lógica de programación semanal
+   4. Enrutador de vistas
+   5. Vista: API Key
+   6. Vista: Configuración (setup / ajustes de rutina)
+   7. Vista: Hoy (registro diario + análisis IA + chat)
+   8. Vista: Historial
+   9. Exportar / Importar
+   10. Utilidades
+   ========================================================================= */
+
+const CLAVE_DATOS = 'controlPesasIA_datos_v1';
+const CLAVE_APIKEY = 'controlPesasIA_apiKey_v1';
+const CLAVE_MOTOR = 'controlPesasIA_motor_v1';
+const CLAVE_URL_LOCAL = 'controlPesasIA_urlLocal_v1';
+const CLAVE_PARAMS_LOCAL = 'controlPesasIA_paramsLocal_v1';
+const DIAS_CORTOS = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
+const NOMBRE_BLOQUE = {superior:'Tren Superior', inferior:'Tren Inferior', movilidad:'Movilidad'};
+
+// Perfil fijo del atleta, usado en todos los prompts de IA (análisis y consulta general).
+// Imagen del indicador de "IA pensando" (incrustada para que el archivo siga siendo uno solo).
+// La imagen es estática, así que la animación de giro se hace por CSS (.spinner-ia).
+const IMG_PENSANDO = 'data:image/webp;base64,UklGRrAMAABXRUJQVlA4WAoAAAAgAAAAxwAAxwAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDggwgoAABA2AJ0BKsgAyAA+bTSWSKQioiEklgmYgA2JTdwt5B/TA/wHb4Xq7T+Rv5O/M/YH7B+DPye6Gw4vXH+U/qH5N/Nv++eo/7lfcA/UH+8/z7rG/t76gP55/a/2g94n/Afqb7oPqA+QD+q/4D//9gt6AH7N+mf+4XwQ/1v/bfst8CH7P/+PrAP/f1g/Uj/AdsX6l5Lhtnoq/XO8Ha53QfxnmBxt/77wN/pXqAeTD/Q/+TyL/m3+19gb9ePRl9dP7pexv+tv/0IC5O7u7u7u7u7u7u7u7u7ufroYtgFBBPyTufzXwZpQu+PRT5Q5e4TAAPWnliWnihpJOMyYfz8yrdRIQ7v5ExEYMGExocwE03OkkEE/US5NA3sUpvkD5K49A1CeONj2W6MwKSsFWZ3yAJNfScjNSQyJCDhtIMcwdqyd4S/0G6pnnk3aEsmYmWzeWEj3sl7240tW6g4MNjdtkoEDmUHfd0y4kHgF/Soi944UlU3WzK1LVEZWOQORJoDpXbBevrn2SuiDiA5J3dMTXRfc2lYdovmRw1o+sRiOw0/i87u7vY25rPxFhJuPhJ0TnSSMJLFKBcJ+Sd3MAAD+/pq5rnJtAAAA84JN/Wu4pRsF8h5ZIBizGAdkU9ffXPw3WOgg9LAabY9agaR0hBRGTzpACSrgKq+Y3KvyfrXSzVqvtFbAzL2J6CsgqrRnVszgwaHvBJv613U8Doe6Q8J1nIX17Y/uuRs4fJKBTRJMC8wnnALsP8g9LTOWylv4Pp4f9hRj/wvq28gqMMpOXydhP0OQnNodL9MQaBf6zOOyGPiXaoe0oczuNu2kFZN/yRIH9byNwuN5gpzPo+WOKWoLP0FAepEC761WDGScdLoHnz9rB922KbnzvdUWZgFnNagJ5WjM1bcRb8OAmuPfjn5yjM/243kGn1z2ANimAO78Ihs+dld0lNvWnXilvPDaFeMTCAio+PKc+bj/84dTNvhFFvZ7J0RnO2BpLS6KEw82OtIAIlYsggMaKCKqeh4axWZ26vIwsTOJfHyFJVKwFew9B0sLgCW6k1n9tVuAuYIr8Sfj5xU4Lybb3CDU4TscE4MMp+6rQQaI8K+i8/fJoJN4gCi35QTxl/zx0fjdcfb0HyOwfC1zcvrEnP6a2J1v/ViqND17aqptHQzl+rIuX5sr26vq4YO9orlBR+reIAdjLxh0yKtfQdjuGkE0j8pCcEYIHviYIpbPc8I4M3XlBdRS6Hv0szIqVTWE1hl9bg+0EVol4x1lDds0qmTr4xaJ4hhb6Zzs8n0TPdgr76KMLg6CfhC67Kx+dVE+SE4tNZQBqX5r8yeOPl9gWQCMWYpmVw/2+Den2DaXpnGyc+/5T8dxuLc/1C+5UEjLNjQEITefSkoCVxLPDlofUra1gkjb+52h/qEfQ1uTAwIgiLTs0s+6CMkQnmO9LZXsFxcxUJj4KikH7rzNOYzw42kmmgAISWP8rKnmTaujjihqyvztPpAnhyI/aBlU8o1YFgYafgy9nZum7m32/VQFH4tdpNQ6IbeR0fZKlNMz1jDIS4iP5gq+Bfv6GnSVIJinasjnAs43BnPyOh4jgrDbV6bzX34C+BfaLJn3pK3/MijMeufJCuUFNnaml5v/cCM7N39qankN9oijcjMgJktsOzOacxiDbk+w+Sw4NDsWZDI7jK+5hhAqrDhAddbIawOYE9Q8hVzjhEyPGCqv9N0OfFO7wmMxbB90p5Ldps1s3iRocKfsFZZZyGMzAp71aZdV9e3P8SW3kF9dev93XanTE3D9tROlTcI7KLQQinYToMEycv2RmsPG4BH4pNHgAVadJFdV7SHXqEWwusRhkaUKCEu5Gy9sqkAoL90Huj2n9Lfl+DRCBKf+Q+n0+yGqfP4WZJk3O5gLnyIUkoPxrFlY3WdU6ciJVJDRyDY70ss6vQW/xdUaY4VNGW4JwrfgBa+1Lyqmoj12e8Smhk/MHPilbbgTAXMfe5mH8ZzIHsbME5B5/He6CCnPvkjOm7Se6Azfgk86aYfZLGaOcT2JlOfX/IdVtOjB1NqHSkVo8wSj09xSleUjJOfi5FVWMDFKWPoOzYe9N5eF7ceNNKkdT4A8Vg9DvI+ZUn1773EgbyPADIBxDmo36u7/6Sncxvbv/9QaDdBat7DE5lwj7PO5kuVJTbKBifsFNrqXfPH3tzvGOvmPnJl71GCp2jUJv6rSe1FAbO/MP3AZ7Jn9pURXLFPA9gGWGWQr8Qx2TAvR+nCcjIRjHHiROHdbyYwbDaFwn04CFZWuFtB/YweAchBWZH7W4rF5qwy81jPG7W62ix18N3JOLKyVL5ys+qeKt+M4i5wqj6la2SfDITEwU88YJHMFpzjV23IbqyVdODYIXJypu14fFt8AqGULVvSO3+z0nut6PZhDMsMrjnXeWqxSyN+SnljDLOJJ2EFpUPpwS/e2GT0iYB6ajh90ddfKPXjZQvNdeiKPqpjDxPnAZiTGIl7gnzNr4kO+LfOCoBQutz6HgqaZhcqIrl9LzC9wxmlSBx3vjfHBwTLmXCpaxZUBzOHKzCRHmfIwAGJmgSru+kgFaXy53bqFlM65NU8wUerguK1p6X2YS38ThaQjpCpdyhgAUn0HcLNkp3W3sqvcJYGDjjbiDeSCcCdezJlEgf9MC4vSkH4w3uaq+jyyzxtuabSD2/FJ9q7XtHC8BIJFBGl4635uMWENjZmM8/mmm/+Gx5tYxhmzRt4ZklNFKB8Heh18e4lcPyIOi7dt71+cmfpfsSM7MuXKorkCc8s1uoS7LVa1j4FvnKk9Up2idXOoQcYT9UrnLjIplFAblokqr48UTc6Oq2aNDZHmVJKZF/qW8rpS14Aso6S4rIYG13BTdw0+VqnLz++dJx/kLWZ86RTdhpENycPT1ojlI8YSPwLs/9NAT6SHFI+VtsLacHqgl5a62RbTwDoUXOGa40zNDqnmRqUwZFKXmPhg6fRtf3fApIfwZi0O+kBVBVqGv4gqhAlp9RO8ILYtXHoASl1Gpts4IY08MPLzMWY+PQUfSLPhTKPnp6R0+bYHgwZff8sSUCDsqDDd+rsbCwoShJlMyNjOiZrSTzCo+a8Y1n0SZaDJu5hnK4kkU+ROLlhAgqKNUaI7pgZGAIfPV4Xv8NRH3Aek6br9Glvf+uKjoyaFXW1PACQaozB9JBGdRzX0onP0DzDSfwoz7E2+sne0zN0BRUi4cNjvvaOqLBBhFj66G2Enq0yGi/S/+I8kTlLBVzdpu5YG2jiwuYzxAGyDZANBPZLB+QAAp9vGuS2zzQ8/cMqRVrkglIm2vGG/aOhya7E+bl69n6ocrA68v6NMBZCp5CbbrP6445cpai+wFt8cFgzJ9Fsysa6eE2P2spjpP0mNTnPPp2G680/A+doPhrY2medx8FHZERVRcCmMn3ZJquQ+jRyM/ZMG9IEpvvxHVfvlVWeA5Ma4CRChOjAphgeL6OrIVLYNWt2zdPELU/VASGQRMa70OIj8RqEJotzjTNSHa79di0EJFAqiJQtg5/AFkoBjPs0e8XiPfmjCfK2AAcrmBYATKXRnzOx48rORM6jxKOIuTduJJ659OK1tIBQMhbIlqHEglIy9719r4NsGNV7WoIv1iwPdR+Nnf0SD6RNNbK4pYSf9wBAZvHB6CP4S7HIf3Ukr26Dsq92xGkgAAAAAAA==';
+
+// Contador de espera: solo aparece con el modelo local, que puede tardar minutos.
+let intervaloEspera = null;
+function iniciarContadorEspera(){
+  clearInterval(intervaloEspera);
+  if(!usaModeloLocal()) return;
+  const inicio = Date.now();
+  intervaloEspera = setInterval(()=>{
+    const el = document.getElementById('contadorEspera');
+    if(!el){ clearInterval(intervaloEspera); intervaloEspera = null; return; }
+    el.textContent = Math.round((Date.now()-inicio)/1000) + ' s · el modelo de la Acer es lento, deja la app abierta';
+  }, 1000);
+}
+function detenerContadorEspera(){ clearInterval(intervaloEspera); intervaloEspera = null; }
+
+function htmlPensando(texto){
+  return `<div style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:6px 0;">
+    <img src="${IMG_PENSANDO}" class="spinner-ia" alt="">
+    <span style="color:var(--text-dim); font-size:14px;">${texto}</span>
+    <span id="contadorEspera" style="font-family:var(--mono); font-size:11px; color:var(--text-dim);"></span>
+  </div>`;
+}
+
+const PERFIL_USUARIO = 'Hombre de 68 años que goza de buena salud. Entrena en casa con equipo limitado (máquina multifunción, barra, ligas), nunca al fallo muscular, con antecedente de una lesión de hombro. Prioriza la calidad y seguridad de la técnica por sobre el volumen de esfuerzo sin control. Objetivo a 1 año: ganar unas 10 libras de masa muscular de forma sostenible.';
+
+// ---- Registro de cambios de la app (changelog) ----
+// Las entradas antes del 2026-08-04 22:25 son una reconstrucción aproximada (sin hora exacta,
+// solo fecha estimada). De ahí en adelante cada cambio nuevo lleva fecha y hora reales.
+const REGISTRO_CAMBIOS = [
+  {fecha:'2026-08-03 (aprox.)', texto:'Reconstrucción completa del prototipo original: configuración inicial editable sin rutina quemada, registro estructurado por series, horario semanal con posicionamiento automático, penalización por día saltado, análisis de IA con chat de seguimiento, exportar/importar JSON.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Corrección: faltaba el botón "+" para subir el peso en cada serie.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Corrección: guardar la configuración no confirmaba visualmente nada; y editar la rutina después ya no sobrescribe el progreso real con los valores originales.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Nueva pestaña "Consulta": chat libre con la IA disponible cualquier día, con tu progreso como contexto.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Restricción de tema en los chats de la IA: solo temas de entrenamiento.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Rutina de Movilidad, equilibrio y flexibilidad para miércoles y sábado.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'La app ahora abre en Ajustes en vez de en Hoy.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Ajuste de ancho: campo de peso más ancho (caben los decimales), campo de repeticiones más angosto.'},
+  {fecha:'2026-08-03 (aprox.)', texto:'Reemplazada la palabra "reps" por un check para marcar cada serie como completada.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Diagnóstico y arreglo del bloqueo al guardar en GitHub Pages: el guardado ya no se congela en silencio, muestra el motivo real si falla.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Nuevos tipos de ejercicio: "Pesa" y "Libre (sin equipo)".'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Cronómetro de descanso de 2:30 con alarma sonora y vibración al marcar una serie, luego fijado arriba de la pantalla al hacer scroll.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Registro y análisis de duración de ejecución por serie: promedio general, por ejercicio, detalle individual y tendencia de fatiga dentro de la sesión — todo enviado a la IA.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'La pantalla del celular ya no se apaga mientras se usa la app.'},
+  {fecha:'2026-08-04 (aprox.)', texto:'Botones de "Marcar inicio de sesión" (mide la primera serie del día) y "Reiniciar registro" del formulario.'},
+  {fecha:'2026-08-04 22:25', texto:'Agregado este registro de cambios (Log), con botón en la esquina superior derecha.'},
+  {fecha:'2026-08-05 09:20', texto:'Corrección: los checks de la rutina de Movilidad empezaban marcados por defecto (inconsistente con el resto de la app); ahora empiezan destildados como todo lo demás.'},
+  {fecha:'2026-08-05', texto:'Nueva sección "🧪 Simulación" en Ajustes: recorre cualquier rutina (superior, inferior o movilidad) con el descanso y la duración de cada serie comprimidos a 5 segundos. Llama a la IA de verdad, pero nunca guarda nada en el historial ni cambia los pesos reales.'},
+  {fecha:'2026-08-05', texto:'Corrección importante: los checks y valores del formulario de hoy se borraban al ir a Consulta y volver (se reconstruía todo desde cero). Ahora se guarda un borrador y se restaura, incluyendo los tiempos ya registrados. Agregados dos ejercicios de movilidad (Niño a Cobra, Mariposa sentado). En Movilidad: botón de "Marcar inicio" para medir cuánto toma cada ejercicio (sin cronómetro/alarma) y calificación de dificultad 1-5 por ejercicio al marcarlo hecho; ese detalle ya queda disponible para el chat de Consulta.'},
+  {fecha:'2026-08-05 20:11', texto:'Cambiadas las etiquetas de la calificación de Movilidad: 1 Normal, 2 Con cierta dificultad, 3 Con dificultad, 4 Con dificultad y algo de dolor, 5 Con dificultad y mucho dolor. La IA ahora sabe que 4-5 indican dolor, no solo esfuerzo.'},
+  {fecha:'2026-08-05', texto:'Movilidad ahora sí llama a la IA al registrar (se dejó de lado el ahorro de tokens por decisión del usuario): evaluación de la sesión, consejo, y chat de seguimiento igual que en fuerza. La IA compara la calificación de hoy contra sesiones recientes y trata con cautela cualquier calificación 4-5 (dolor).'},
+  {fecha:'2026-08-05 22:56', texto:'Corrección: en el Consejo de Movilidad la IA inventó "columna" (no reportada) y omitió "tobillo" (sí reportado), infiriendo partes del cuerpo por el tipo de ejercicio en vez de usar las palabras reales. Reforzada la instrucción en los tres prompts de IA (fuerza, movilidad, consulta) para citar las molestias tal cual se reportaron, sin agregar, quitar ni atribuirlas a un ejercicio específico sin base.'},
+  {fecha:'2026-08-06', texto:'Nuevo botón "💾 Guardar acuerdo de esta conversación" en el chat de sesiones de fuerza: le pide a la IA resumir el objetivo final acordado en el chat y actualiza el progreso guardado (con el mismo límite de seguridad de peso), para que quede prellenado la próxima sesión en vez de perderse en la conversación. En fuerza (superior/inferior), calificar cada serie (1 Fácil a 5 Con dificultad y algo de dolor) mediante una ventana emergente al marcar el check — sin detener el cronómetro — igual que ya existía en Movilidad; ese detalle también se le pasa a la IA para el análisis.'},
+  {fecha:'2026-08-06', texto:'La calificación de dificultad en fuerza estaba, pero muy poco visible (solo un número chico junto a la nota). Ahora tiene el mismo tratamiento que la duración: promedio general en la parte superior del resumen (en ámbar si es 4+) y un detalle desplegable "Ver calificación de cada serie".'},
+  {fecha:'2026-08-06 22:38', texto:'Agregada la tendencia dentro de la sesión por ejercicio individual (no solo el promedio general de todos juntos), al prompt de análisis y al detalle desplegable de duración — así la IA puede notar si un ejercicio en particular mejoró o empeoró distinto al resto, en vez de que un promedio general lo esconda.'},
+  {fecha:'2026-08-08 19:44', texto:'Corrección importante: la migración que sumaba "Niño a Cobra" y "Mariposa sentado" se revisaba en cada apertura de la app comprobando solo si el nombre existía, así que si el usuario los borraba, volvían a aparecer en la siguiente apertura. Ahora la migración queda marcada como hecha con una bandera propia y corre una sola vez de verdad; borrar un ejercicio ya se queda borrado.'},
+  {fecha:'2026-08-08 20:59', texto:'Movilidad ahora tiene control numérico de series y objetivo (repeticiones, segundos o pasos, según la unidad de cada ejercicio), igual que fuerza: se prellena con tus valores actuales, muestra lo que hiciste la sesión anterior, y lo que registres queda como base para la próxima. La IA sugiere la progresión por ejercicio, topada por código a máximo +1 serie y +20% del objetivo, y sin subir nada si hubo dolor (4-5), molestias reportadas o si el ejercicio se omitió. Los valores de series/objetivo se pueden editar en Ajustes.'},
+  {fecha:'2026-08-10 16:59', texto:'Ahora se registra el tiempo total de cada sesión, medido con las marcas de tiempo reales de cada check (no estimado): total, ejecución pura y descanso real. Se muestra en el resumen y se le pasa a la IA junto con el contexto del descanso programado de 2:30 entre series. En Movilidad también se registra el tiempo total de la sesión.'},
+  {fecha:'2026-08-10 17:30', texto:'Botones de copiar en los chats de IA (tanto en el de cada sesión como en Consulta): uno arriba para copiar toda la conversación, y uno bajo cada respuesta para copiar solo ese par de pregunta y respuesta.'},
+  {fecha:'2026-08-11 09:39', texto:'Indicador visual mientras la IA piensa: la imagen queda incrustada dentro del propio archivo (para que siga siendo uno solo) y gira por animación, ya que la imagen original es estática. Aparece al analizar una sesión de fuerza o de movilidad, y también al hacer una pregunta en cualquiera de los dos chats, donde antes no había ninguna señal de espera.'},
+  {fecha:'2026-08-13 09:47', texto:'La app vuelve a abrir en la pantalla "Hoy" en vez de en Ajustes. En "Editar rutina y horario", las secciones de Calentamiento, Movilidad, Tren Superior y Tren Inferior ahora son desplegables y arrancan colapsadas, cada una mostrando cuántos ejercicios tiene — así ya no hay que recorrer un listado largo para llegar al final.'},
+  {fecha:'2026-08-13', texto:'Tres correcciones: (1) el bloqueo de pantalla ahora muestra un indicador visible ("🔒 Pantalla activa" / "⚠️ Pantalla sin bloquear") en vez de fallar en silencio, y se reintenta cada 20s como red de seguridad; (2) "Reiniciar registro" se movió al final del formulario (junto a "Registrar y analizar"), lejos de la zona superior donde se toca la pantalla para mantenerla activa, para reducir el riesgo de un reinicio accidental; (3) duraciones de serie sospechosamente cortas (menos de 8s, típico de un registro apurado) ya no se usan para calcular la tendencia dentro de la sesión, y se le avisa explícitamente a la IA para que no las interprete como buen ritmo.'},
+  {fecha:'2026-08-16 15:17', texto:'Nueva opción de motor de IA en Ajustes: además de Gemini, la app puede apuntar al modelo local (llama.cpp) que corre en la Acer, pegando ahí la URL del túnel de Cloudflare (que cambia en cada arranque) y probando la conexión con un botón. Para ese modelo pequeño se usa un contexto aparte, mucho más corto y cerrado: system prompt fijo que le aclara que "press de banca" es un ejercicio y no un banco, prompt sin historial ni estadísticas, respuesta forzada por JSON Schema, y una sola tarea por ejercicio — decidir "subir", "mantener" o "bajar". Los pesos, series y objetivos los calcula la app con los mismos topes de seguridad de siempre; el modelo local nunca escribe un número. Los parámetros de generación (temperature, máx. tokens, repeat penalty, top-k, top-p, min-p) se envían en cada llamada desde Ajustes, así que mandan sobre lo guardado en la interfaz web de llama-server. Además: las repeticiones sugeridas por cualquier motor ahora se topan (máximo +2 sobre lo que hiciste hoy) y el chat de sesión ya no reenvía la conversación duplicada.'}
+];
+
+function mostrarLog(){
+  const cont = document.getElementById('listaLog');
+  cont.innerHTML = REGISTRO_CAMBIOS.slice().reverse().map(c => `
+    <div class="log-item">
+      <div class="log-fecha">${escapeHtml(c.fecha)}</div>
+      <div class="log-texto">${escapeHtml(c.texto)}</div>
+    </div>`).join('');
+  document.getElementById('modalLog').classList.remove('oculto');
+}
+function cerrarLog(){
+  document.getElementById('modalLog').classList.add('oculto');
+}
+
+// ---- 1. Semillas por defecto: SOLO sugerencias iniciales editables ----
+function semillaConfig(){
+  return {
+    setupCompleto:false,
+    _migracionEjerciciosNuevos:true, // una instalación nueva ya parte con semillaMovilidad() al día
+    schedule:{0:null,1:'superior',2:'inferior',3:'movilidad',4:'superior',5:'inferior',6:'movilidad'},
+    calentamiento:[
+      {id:uid(), nombre:'Ligas de resistencia'},
+      {id:uid(), nombre:'Saco de boxeo'},
+      {id:uid(), nombre:'Caminadora (no eléctrica)'}
+    ],
+    movilidad:semillaMovilidad(),
+    ejercicios:{
+      superior:[
+        {id:uid(), nombre:'Press de Banca (Barra)', tipo:'barra', series:6, repsObjetivo:[10,9,8,7,6,5], pesoInicial:24, incrementoMax:1},
+        {id:uid(), nombre:'Jalón al Pecho (Máquina)', tipo:'maquina', series:4, repsObjetivo:[10,10,10,10], pesoInicial:0, incrementoMax:2.5},
+        {id:uid(), nombre:'Jalón de Tríceps (Máquina)', tipo:'maquina', series:3, repsObjetivo:[12,12,10], pesoInicial:0, incrementoMax:2.5},
+        {id:uid(), nombre:'Dominadas / Fondos (Máquina asistida)', tipo:'maquina', series:3, repsObjetivo:[8,8,8], pesoInicial:0, incrementoMax:2.5}
+      ],
+      inferior:[
+        {id:uid(), nombre:'Sentadilla con Barra (rack en soporte de fondos)', tipo:'barra', series:4, repsObjetivo:[10,10,10,10], pesoInicial:30, incrementoMax:1},
+        {id:uid(), nombre:'Extensión de Piernas (Sentado)', tipo:'maquina', series:3, repsObjetivo:[12,12,10], pesoInicial:0, incrementoMax:2.5},
+        {id:uid(), nombre:'Extensión de Piernas (Acostado)', tipo:'maquina', series:3, repsObjetivo:[12,12,10], pesoInicial:0, incrementoMax:2.5}
+      ]
+    }
+  };
+}
+
+function semillaMovilidad(){
+  return [
+    {id:uid(), categoria:'Movilidad articular', nombre:'Gato-camello', series:1, objetivo:10, unidad:'reps', detalle:'8-10 repeticiones, en cuadrupedia'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos de cadera y tobillos', series:1, objetivo:10, unidad:'reps por lado', detalle:'10 círculos hacia cada lado'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Círculos suaves de hombros', series:1, objetivo:10, unidad:'reps por lado', detalle:'10 adelante y 10 atrás, sin molestia'},
+    {id:uid(), categoria:'Movilidad articular', nombre:'Niño a Cobra (flexión-extensión de columna)', series:3, objetivo:10, unidad:'reps', detalle:'Desde cuadrupedia, siéntate sobre los talones con el tronco al piso y brazos extendidos (postura del niño); vuelve a cuadrupedia y baja cadera y pelvis con brazos extendidos mirando hacia arriba (extensión). Repite con control.'},
+    {id:uid(), categoria:'Equilibrio', nombre:'Postura sobre una pierna', series:2, objetivo:25, unidad:'seg por lado', detalle:'20-30 segundos, 2-3 series por pierna, cerca de una pared o silla'},
+    {id:uid(), categoria:'Equilibrio', nombre:'Caminata talón-punta', series:1, objetivo:12, unidad:'pasos', detalle:'10-12 pasos en línea recta'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Isquiotibiales sentado', series:1, objetivo:25, unidad:'seg por lado', detalle:'20-30 segundos por pierna, espalda recta'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Pectoral en marco de puerta', series:1, objetivo:20, unidad:'seg por lado', detalle:'20 segundos por lado, estiramiento suave'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Pantorrillas en pared', series:1, objetivo:25, unidad:'seg por lado', detalle:'20-30 segundos por pierna'},
+    {id:uid(), categoria:'Flexibilidad', nombre:'Mariposa sentado (caída de rodillas)', series:2, objetivo:10, unidad:'reps por lado', detalle:'Sentado, pies fuera de la colchoneta y rodillas dobladas ~90°, manos atrás para equilibrio; lleva cada rodilla hacia la colchoneta tratando de tocarla, alternando lados, sin forzar.'}
+  ];
+}
+
+const UNIDADES_MOVILIDAD = ['reps', 'reps por lado', 'seg', 'seg por lado', 'pasos'];
+
+function datosVacios(){
+  return { version:1, config:semillaConfig(), progreso:{}, progresoMovilidad:{}, historial:[], chatGeneral:{mensajes:[]} };
+}
+
+// ---- 2. Persistencia ----
+let DATOS = null;
+
+function cargarDatos(){
+  const crudo = localStorage.getItem(CLAVE_DATOS);
+  if(!crudo) return datosVacios();
+  try{
+    const datos = JSON.parse(crudo);
+    if(!datos.chatGeneral) datos.chatGeneral = {mensajes:[]}; // migración para respaldos previos
+    if(!datos.config.movilidad){
+      // migración: se agrega la rutina de movilidad y se activa mié/sáb solo si estaban en descanso puro
+      datos.config.movilidad = semillaMovilidad();
+      if(!datos.config.schedule[3]) datos.config.schedule[3] = 'movilidad';
+      if(!datos.config.schedule[6]) datos.config.schedule[6] = 'movilidad';
+      datos.config._migracionEjerciciosNuevos = true; // ya trae todo lo actual de semillaMovilidad()
+    }else if(!datos.config._migracionEjerciciosNuevos){
+      // migración de una sola vez: sumar ejercicios nuevos que no existan todavía (por nombre).
+      // La bandera evita que, si el usuario los borra después, esta migración se los vuelva a poner.
+      const nuevos = [
+        {categoria:'Movilidad articular', nombre:'Niño a Cobra (flexión-extensión de columna)', detalle:'Desde cuadrupedia, siéntate sobre los talones con el tronco al piso y brazos extendidos (postura del niño); vuelve a cuadrupedia y baja cadera y pelvis con brazos extendidos mirando hacia arriba (extensión). Repite con control.'},
+        {categoria:'Flexibilidad', nombre:'Mariposa sentado (caída de rodillas)', detalle:'Sentado, pies fuera de la colchoneta y rodillas dobladas ~90°, manos atrás para equilibrio; lleva cada rodilla hacia la colchoneta tratando de tocarla, alternando lados, sin forzar.'}
+      ];
+      nuevos.forEach(n=>{
+        if(!datos.config.movilidad.some(it=>it.nombre === n.nombre)){
+          datos.config.movilidad.push({id:uid(), ...n});
+        }
+      });
+      datos.config._migracionEjerciciosNuevos = true;
+    }
+    if(!datos.progresoMovilidad) datos.progresoMovilidad = {};
+    // migración: dar series/objetivo/unidad a los ejercicios de movilidad que no los tengan.
+    // Si el nombre coincide con uno de la semilla, se usan sus valores; si no, un default editable.
+    const semilla = semillaMovilidad();
+    datos.config.movilidad.forEach(it=>{
+      if(it.series != null && it.objetivo != null) return;
+      const base = semilla.find(s=>s.nombre === it.nombre);
+      it.series = base ? base.series : 1;
+      it.objetivo = base ? base.objetivo : 10;
+      it.unidad = base ? base.unidad : 'reps';
+    });
+    return datos;
+  } catch(e){ return datosVacios(); }
+}
+let ultimoErrorAlmacenamiento = '';
+function guardarDatos(){
+  try{
+    localStorage.setItem(CLAVE_DATOS, JSON.stringify(DATOS));
+    return true;
+  }catch(e){
+    ultimoErrorAlmacenamiento = (e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e));
+    console.error('No se pudo guardar en localStorage', e);
+    return false;
+  }
+}
+function obtenerApiKey(){ return localStorage.getItem(CLAVE_APIKEY) || ''; }
+function guardarApiKey(k){
+  try{
+    localStorage.setItem(CLAVE_APIKEY, k);
+    return true;
+  }catch(e){
+    ultimoErrorAlmacenamiento = (e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e));
+    console.error('No se pudo guardar la API Key en localStorage', e);
+    return false;
+  }
+}
+function borrarApiKeyStorage(){ localStorage.removeItem(CLAVE_APIKEY); }
+
+// ---- 2b. Motor de IA: Gemini (nube) o modelo local en la Acer (llama.cpp) ----
+// El modelo local es un Qwen2.5-0.5B: entiende poco, confunde conceptos e inventa cifras.
+// Por eso aquí NO se le pide ningún número: se le pide una sola decisión cerrada por ejercicio
+// (subir / mantener / bajar) y la app calcula los pesos y objetivos con los mismos topes de
+// seguridad que ya usa con Gemini. La URL del túnel y los parámetros viven solo en este
+// dispositivo, igual que la API Key, y nunca entran al respaldo JSON.
+const PARAMS_LOCAL_DEFECTO = { temperature:0.2, maxTokens:220, repeatPenalty:1.15, topK:40, topP:0.9, minP:0.05 };
+
+// System prompt del modelo local: corto, cerrado y con las confusiones observadas desarmadas
+// de forma explícita (el modelo llegó a interpretar "press de banca" como banca financiera).
+const SISTEMA_LOCAL = `Eres un entrenador de fuerza. Hablas solo de entrenamiento con pesas, movilidad, técnica y recuperación de un hombre mayor que entrena en casa y nunca entrena al fallo.
+Reglas que debes cumplir siempre:
+- Responde en español, breve y concreto.
+- Usa únicamente los datos que aparecen en el mensaje del usuario. No inventes ejercicios, pesos, repeticiones, fechas ni personas.
+- "Press de banca" es un ejercicio: empujar una barra estando acostado en un banco. No tiene ninguna relación con bancos, dinero, cuentas ni empresas.
+- Los pesos están en libras y las series son las que se indican. No propongas rutinas nuevas.
+- Nunca recomiendes entrenar horas al día, ni entrenar con dolor, ni subir mucho peso de golpe.
+- Si un dato no está en el mensaje, di "no tengo ese dato" en vez de suponerlo.`;
+
+function motorActual(){ return localStorage.getItem(CLAVE_MOTOR) === 'local' ? 'local' : 'gemini'; }
+function usaModeloLocal(){ return motorActual() === 'local'; }
+function guardarMotor(v){ try{ localStorage.setItem(CLAVE_MOTOR, v); }catch(e){} }
+function obtenerUrlLocal(){ return (localStorage.getItem(CLAVE_URL_LOCAL) || '').trim().replace(/\/+$/,''); }
+function guardarUrlLocal(u){ try{ localStorage.setItem(CLAVE_URL_LOCAL, String(u||'').trim().replace(/\/+$/,'')); }catch(e){} }
+function obtenerParamsLocal(){
+  try{ return Object.assign({}, PARAMS_LOCAL_DEFECTO, JSON.parse(localStorage.getItem(CLAVE_PARAMS_LOCAL) || '{}')); }
+  catch(e){ return Object.assign({}, PARAMS_LOCAL_DEFECTO); }
+}
+function guardarParamsLocal(p){ try{ localStorage.setItem(CLAVE_PARAMS_LOCAL, JSON.stringify(p)); }catch(e){} }
+
+// Llama al servidor llama.cpp de la Acer por su endpoint compatible con OpenAI.
+// Los parámetros de sampling van en cada petición, así que mandan sobre lo que esté
+// guardado en la interfaz web de llama-server o en el comando de arranque.
+async function llamarLocal(mensajes, opciones){
+  opciones = opciones || {};
+  const base = obtenerUrlLocal();
+  if(!base) throw new Error('Falta la URL del modelo local. Pégala en Ajustes → Motor de IA.');
+  const p = obtenerParamsLocal();
+  const cuerpo = {
+    model: 'local',
+    messages: [{role:'system', content: SISTEMA_LOCAL}].concat(mensajes),
+    temperature: p.temperature,
+    top_k: p.topK,
+    top_p: p.topP,
+    min_p: p.minP,
+    repeat_penalty: p.repeatPenalty,
+    repeat_last_n: 256,
+    max_tokens: opciones.maxTokens || p.maxTokens,
+    stream: false
+  };
+  // JSON Schema: obliga al modelo a devolver exactamente la estructura esperada,
+  // con los ejercicios numerados y solo las tres decisiones permitidas.
+  if(opciones.esquema){
+    cuerpo.response_format = {type:'json_schema', json_schema:{name:'respuesta', strict:true, schema: opciones.esquema}};
+  }
+  const control = new AbortController();
+  const corte = setTimeout(()=>control.abort(), opciones.timeoutMs || 300000);
+  let respuesta;
+  try{
+    respuesta = await fetch(base + '/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(cuerpo),
+      signal: control.signal
+    });
+  }catch(e){
+    clearTimeout(corte);
+    if(e.name === 'AbortError') throw new Error('El modelo local tardó demasiado y se canceló. Baja "Máx. tokens" en Ajustes o usa Gemini.');
+    throw new Error('No se pudo conectar con la Acer. Revisa que llama-server y cloudflared estén corriendo y que la URL de Ajustes sea la de hoy.');
+  }
+  clearTimeout(corte);
+  if(!respuesta.ok){
+    let msg = 'El servidor local respondió con error ' + respuesta.status;
+    try{ const d = await respuesta.json(); msg = (d.error && (d.error.message || d.error)) || msg; }catch(e){}
+    throw new Error(msg);
+  }
+  const datos = await respuesta.json();
+  const texto = datos.choices && datos.choices[0] && datos.choices[0].message ? datos.choices[0].message.content : '';
+  if(!texto) throw new Error('El modelo local devolvió una respuesta vacía.');
+  return texto;
+}
+
+// ---- 3. Fecha de Guayaquil y programación ----
+function obtenerFechaGuayaquil(){
+  const ahora = new Date();
+  const fechaISO = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Guayaquil', year:'numeric', month:'2-digit', day:'2-digit'}).format(ahora);
+  const nombreDiaLargo = new Intl.DateTimeFormat('es-EC', {timeZone:'America/Guayaquil', weekday:'long'}).format(ahora);
+  const diaCorto = new Intl.DateTimeFormat('en-US', {timeZone:'America/Guayaquil', weekday:'short'}).format(ahora);
+  return { fechaISO, nombreDiaLargo, diaSemana: DIAS_CORTOS[diaCorto] };
+}
+
+function bloqueDelDia(config, diaSemana){ return config.schedule[diaSemana] || null; }
+
+// Día "de carga" = el primero (más temprano en la semana) entre los días configurados para ese bloque.
+// El otro día del mismo bloque es "de consolidación": se repite el peso, sin incremento.
+function esDiaDeCarga(config, bloque, diaSemana){
+  const dias = Object.keys(config.schedule).filter(d => config.schedule[d] === bloque).map(Number).sort((a,b)=>a-b);
+  if(dias.length === 0) return true;
+  return Number(diaSemana) === dias[0];
+}
+
+// Detecta si se saltó algún día programado entre la última sesión registrada y hoy.
+function detectarPenalizacion(datos, fechaInfo){
+  if(datos.historial.length === 0) return false;
+  const ultima = datos.historial[datos.historial.length - 1];
+  if(ultima.fecha >= fechaInfo.fechaISO) return false;
+  let cursor = new Date(ultima.fecha + 'T12:00:00-05:00');
+  cursor.setDate(cursor.getDate() + 1);
+  const hoy = new Date(fechaInfo.fechaISO + 'T12:00:00-05:00');
+  while(cursor < hoy){
+    const dow = cursor.getDay();
+    const bloqueDow = datos.config.schedule[dow];
+    if(bloqueDow === 'superior' || bloqueDow === 'inferior'){ return true; }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return false;
+}
+
+// ---- 4. Enrutador de vistas ----
+function mostrarVista(nombre){
+  if(nombre !== 'hoy' && !document.getElementById('vista-hoy').classList.contains('oculto')){
+    capturarBorradorHoy();
+  }
+  limpiarTemporizador();
+  ['auth','setup','hoy','historial','consulta','simulacion','ajustes'].forEach(v=>{
+    document.getElementById('vista-'+v).classList.toggle('oculto', v!==nombre);
+  });
+  document.getElementById('navTabs').classList.toggle('oculto', nombre==='auth' || nombre==='setup' || nombre==='simulacion');
+  ['Hoy','Historial','Consulta','Ajustes'].forEach(t=>{
+    document.getElementById('tab'+t).classList.toggle('activo', t.toLowerCase()===nombre);
+  });
+  if(nombre==='hoy') renderHoy();
+  if(nombre==='historial') renderHistorial();
+  if(nombre==='consulta') renderConsulta();
+  if(nombre==='setup') renderSetup();
+  if(nombre==='simulacion') renderSimulacionInicio();
+  if(nombre==='ajustes') renderAjustes();
+}
+
+// ---- 5. Vista: API Key ----
+function guardarApiKeyYSeguir(){
+  const valor = document.getElementById('inputApiKey').value.trim();
+  const err = document.getElementById('errorAuth');
+  if(valor.length < 10){
+    err.textContent = 'Ingresa una API Key válida.';
+    err.classList.remove('oculto');
+    return;
+  }
+  const guardadoOk = guardarApiKey(valor);
+  if(!guardadoOk){
+    err.textContent = 'No se pudo guardar en este navegador' + (ultimoErrorAlmacenamiento ? ' (' + ultimoErrorAlmacenamiento + ')' : ' (almacenamiento bloqueado o sin espacio)') + '.';
+    err.classList.remove('oculto');
+    return;
+  }
+  err.classList.add('oculto');
+  guardarMotor('gemini');
+  DATOS = cargarDatos();
+  irAVistaSegunEstado();
+  mostrarToast('API Key guardada');
+}
+function cambiarApiKey(){
+  borrarApiKeyStorage();
+  document.getElementById('inputApiKey').value = '';
+  mostrarVista('auth');
+}
+// Entrar sin API Key, usando el servidor de la Acer como motor.
+function usarModeloLocalDesdeAuth(){
+  guardarMotor('local');
+  DATOS = cargarDatos();
+  if(!DATOS.config.setupCompleto){ mostrarVista('setup'); }
+  else{ mostrarVista('ajustes'); }
+  mostrarToast('Modelo local activado — pega la URL del túnel aquí abajo', 4000);
+}
+
+// ---- 5b. Ajustes: motor de IA ----
+function renderAjustes(){
+  const local = usaModeloLocal();
+  const p = obtenerParamsLocal();
+  document.getElementById('cardMotorIA').innerHTML = `
+    <h2>Motor de IA</h2>
+    <label for="selMotor">¿Quién analiza tus sesiones?</label>
+    <select id="selMotor" onchange="cambiarMotor(this.value)">
+      <option value="gemini" ${local?'':'selected'}>Gemini (nube)</option>
+      <option value="local" ${local?'selected':''}>Modelo local en la Acer (experimental)</option>
+    </select>
+    <label for="inputUrlLocal">URL del túnel de la Acer</label>
+    <input type="text" id="inputUrlLocal" inputmode="url" placeholder="https://algo-algo-algo.trycloudflare.com" value="${escapeAttr(obtenerUrlLocal())}">
+    <small class="ayuda">Cloudflare genera una dirección nueva cada vez que abres el túnel: pega aquí la del día. Debe empezar con https, porque el celular no puede llamar a una dirección http desde una página https.</small>
+    <div class="fila" style="margin-bottom:10px;">
+      <button class="btn chico secundario" onclick="guardarUrlDesdeAjustes()">Guardar URL</button>
+      <button class="btn chico secundario" onclick="probarConexionLocal()">Probar conexión</button>
+    </div>
+    <div id="estadoConexionLocal" style="font-size:13px; margin-bottom:4px;"></div>
+    ${local ? `<div class="aviso-local">Con el modelo local, la app le pide una sola decisión por ejercicio: subir, mantener o bajar. Los pesos, series y objetivos los calcula la app con los topes de seguridad de siempre — el modelo nunca escribe un número.</div>` : ''}
+    <details style="margin-top:6px;">
+      <summary style="cursor:pointer; color:var(--primary); font-size:13px;">Parámetros de generación del modelo local</summary>
+      <small class="ayuda" style="margin:10px 0 12px;">La app envía estos valores en cada llamada, así que mandan sobre lo guardado en la interfaz web de llama-server y sobre el comando de arranque. Cambia uno a la vez para saber cuál mejora qué.</small>
+      <div class="fila">
+        <div>
+          <label for="inpTemp">Temperature</label>
+          <input type="number" step="0.05" min="0" max="2" id="inpTemp" value="${p.temperature}">
+        </div>
+        <div>
+          <label for="inpMaxTokens">Máx. tokens</label>
+          <input type="number" step="10" min="40" max="1000" id="inpMaxTokens" value="${p.maxTokens}">
+        </div>
+      </div>
+      <div class="fila">
+        <div>
+          <label for="inpRepeat">Repeat penalty</label>
+          <input type="number" step="0.05" min="1" max="2" id="inpRepeat" value="${p.repeatPenalty}">
+        </div>
+        <div>
+          <label for="inpTopK">Top K</label>
+          <input type="number" step="1" min="0" max="200" id="inpTopK" value="${p.topK}">
+        </div>
+      </div>
+      <div class="fila">
+        <div>
+          <label for="inpTopP">Top P</label>
+          <input type="number" step="0.01" min="0" max="1" id="inpTopP" value="${p.topP}">
+        </div>
+        <div>
+          <label for="inpMinP">Min P</label>
+          <input type="number" step="0.01" min="0" max="1" id="inpMinP" value="${p.minP}">
+        </div>
+      </div>
+      <button class="btn chico secundario" onclick="guardarParamsDesdeAjustes()">Guardar parámetros</button>
+    </details>`;
+}
+
+function cambiarMotor(v){
+  guardarMotor(v);
+  renderAjustes();
+  if(v === 'local' && !obtenerUrlLocal()){ mostrarToast('Pega la URL del túnel para poder usar el modelo local', 4000); return; }
+  mostrarToast(v === 'local' ? 'Analizando con el modelo local de la Acer' : 'Analizando con Gemini');
+}
+
+function guardarUrlDesdeAjustes(){
+  guardarUrlLocal(document.getElementById('inputUrlLocal').value);
+  mostrarToast('URL guardada');
+}
+
+function guardarParamsDesdeAjustes(){
+  const num = (id, porDefecto)=>{ const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : porDefecto; };
+  guardarParamsLocal({
+    temperature: num('inpTemp', PARAMS_LOCAL_DEFECTO.temperature),
+    maxTokens: Math.round(num('inpMaxTokens', PARAMS_LOCAL_DEFECTO.maxTokens)),
+    repeatPenalty: num('inpRepeat', PARAMS_LOCAL_DEFECTO.repeatPenalty),
+    topK: Math.round(num('inpTopK', PARAMS_LOCAL_DEFECTO.topK)),
+    topP: num('inpTopP', PARAMS_LOCAL_DEFECTO.topP),
+    minP: num('inpMinP', PARAMS_LOCAL_DEFECTO.minP)
+  });
+  mostrarToast('Parámetros guardados');
+}
+
+async function probarConexionLocal(){
+  const estado = document.getElementById('estadoConexionLocal');
+  const url = document.getElementById('inputUrlLocal').value.trim().replace(/\/+$/,'');
+  if(!url){ estado.innerHTML = '<span style="color:var(--error);">Pega primero la URL del túnel.</span>'; return; }
+  guardarUrlLocal(url);
+  estado.textContent = 'Probando...';
+  try{
+    const r = await fetch(url + '/v1/models');
+    if(!r.ok) throw new Error('respuesta ' + r.status);
+    const d = await r.json();
+    const id = d && d.data && d.data[0] ? d.data[0].id : 'modelo cargado';
+    estado.innerHTML = '<span style="color:var(--green);">Conectado · ' + escapeHtml(String(id)) + '</span>';
+  }catch(e){
+    estado.innerHTML = '<span style="color:var(--error);">Sin conexión (' + escapeHtml(e.message) + '). Revisa que llama-server y cloudflared estén corriendo y que la URL sea la de hoy.</span>';
+  }
+}
+
+// ---- 6. Vista: Configuración ----
+let borradorConfig = null;
+
+function renderSetup(){
+  borradorConfig = JSON.parse(JSON.stringify(DATOS.config));
+  // Si el ejercicio ya tiene progreso guardado, mostramos/editamos su peso y reps ACTUALES
+  // (no el valor histórico con el que se creó), para que guardar aquí siempre sea seguro y predecible.
+  ['superior','inferior'].forEach(bloque=>{
+    borradorConfig.ejercicios[bloque].forEach(ej=>{
+      const prog = DATOS.progreso[ej.id];
+      if(prog){
+        ej.pesoInicial = prog.pesoObjetivo;
+        ej.repsObjetivo = prog.repsObjetivo.slice();
+        ej.series = ej.repsObjetivo.length;
+      }
+    });
+  });
+  const esPrimeraVez = !DATOS.config.setupCompleto;
+  document.getElementById('setupTitulo').textContent = esPrimeraVez ? 'Configura tu rutina' : 'Editar rutina y horario';
+  document.getElementById('btnCancelarSetup').classList.toggle('oculto', esPrimeraVez);
+  renderHorarioEditor();
+  renderCalentamientoEditor();
+  renderMovilidadEditor();
+  renderEjerciciosEditor('superior');
+  renderEjerciciosEditor('inferior');
+  actualizarConteosSetup();
+  // Las secciones arrancan colapsadas para no tener que recorrer un listado largo.
+  document.querySelectorAll('.seccion-config').forEach(d=> d.open = false);
+}
+
+function actualizarConteosSetup(){
+  const textos = {
+    conteoCalentamiento: borradorConfig.calentamiento.length + ' ítems',
+    conteoMovilidad: borradorConfig.movilidad.length + ' ejercicios',
+    conteoSuperior: borradorConfig.ejercicios.superior.length + ' ejercicios',
+    conteoInferior: borradorConfig.ejercicios.inferior.length + ' ejercicios'
+  };
+  Object.keys(textos).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = textos[id];
+  });
+}
+
+function renderHorarioEditor(){
+  const nombresDias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const cont = document.getElementById('horarioEditor');
+  cont.innerHTML = nombresDias.map((n,i)=>`
+    <div class="fila" style="align-items:center; margin-bottom:8px;">
+      <label style="flex:0 0 90px; margin:0;">${n}</label>
+      <select onchange="borradorConfig.schedule[${i}] = this.value || null;">
+        <option value="" ${!borradorConfig.schedule[i]?'selected':''}>Descanso</option>
+        <option value="superior" ${borradorConfig.schedule[i]==='superior'?'selected':''}>Tren Superior</option>
+        <option value="inferior" ${borradorConfig.schedule[i]==='inferior'?'selected':''}>Tren Inferior</option>
+        <option value="movilidad" ${borradorConfig.schedule[i]==='movilidad'?'selected':''}>Movilidad</option>
+      </select>
+    </div>`).join('');
+}
+
+function renderMovilidadEditor(){
+  const cont = document.getElementById('movilidadEditor');
+  cont.innerHTML = borradorConfig.movilidad.map((it,i)=>{
+    const prog = DATOS.progresoMovilidad ? DATOS.progresoMovilidad[it.id] : null;
+    const series = prog && prog.series != null ? prog.series : it.series;
+    const objetivo = prog && prog.objetivo != null ? prog.objetivo : it.objetivo;
+    return `
+    <div class="exercise-edit-row">
+      <label>Nombre</label>
+      <input type="text" value="${escapeAttr(it.nombre)}" oninput="borradorConfig.movilidad[${i}].nombre=this.value">
+      <label>Categoría</label>
+      <select onchange="borradorConfig.movilidad[${i}].categoria=this.value">
+        <option value="Movilidad articular" ${it.categoria==='Movilidad articular'?'selected':''}>Movilidad articular</option>
+        <option value="Equilibrio" ${it.categoria==='Equilibrio'?'selected':''}>Equilibrio</option>
+        <option value="Flexibilidad" ${it.categoria==='Flexibilidad'?'selected':''}>Flexibilidad</option>
+      </select>
+      <div class="fila">
+        <div>
+          <label>${prog ? 'Series actuales' : 'N.º series'}</label>
+          <input type="number" min="1" max="10" value="${series}" oninput="borradorConfig.movilidad[${i}].series=Math.max(1,parseInt(this.value)||1)">
+        </div>
+        <div>
+          <label>${prog ? 'Objetivo actual' : 'Objetivo por serie'}</label>
+          <input type="number" min="1" value="${objetivo}" oninput="borradorConfig.movilidad[${i}].objetivo=Math.max(1,parseInt(this.value)||1)">
+        </div>
+      </div>
+      <label>Unidad</label>
+      <select onchange="borradorConfig.movilidad[${i}].unidad=this.value">
+        ${UNIDADES_MOVILIDAD.map(u=>`<option value="${u}" ${it.unidad===u?'selected':''}>${u}</option>`).join('')}
+      </select>
+      <label>Guía / notas de ejecución</label>
+      <input type="text" value="${escapeAttr(it.detalle)}" oninput="borradorConfig.movilidad[${i}].detalle=this.value">
+      <button class="btn chico peligro" onclick="borradorConfig.movilidad.splice(${i},1); renderMovilidadEditor();">Eliminar</button>
+    </div>`;
+  }).join('');
+  actualizarConteosSetup();
+}
+function agregarMovilidad(){
+  borradorConfig.movilidad.push({id:uid(), categoria:'Movilidad articular', nombre:'Nuevo ejercicio', series:1, objetivo:10, unidad:'reps', detalle:''});
+  renderMovilidadEditor();
+}
+
+function renderCalentamientoEditor(){
+  const cont = document.getElementById('calentamientoEditor');
+  cont.innerHTML = borradorConfig.calentamiento.map((it,i)=>`
+    <div class="fila" style="margin-bottom:8px;">
+      <input type="text" value="${escapeAttr(it.nombre)}" oninput="borradorConfig.calentamiento[${i}].nombre=this.value">
+      <button class="btn chico peligro" style="flex:0 0 auto;" onclick="borradorConfig.calentamiento.splice(${i},1); renderCalentamientoEditor();">✕</button>
+    </div>`).join('');
+  actualizarConteosSetup();
+}
+function agregarCalentamiento(){
+  borradorConfig.calentamiento.push({id:uid(), nombre:''});
+  renderCalentamientoEditor();
+}
+
+function renderEjerciciosEditor(bloque){
+  const cont = document.getElementById(bloque==='superior' ? 'editorSuperior' : 'editorInferior');
+  const lista = borradorConfig.ejercicios[bloque];
+  cont.innerHTML = lista.map((ej,i)=>`
+    <div class="exercise-edit-row">
+      <label>Nombre</label>
+      <input type="text" value="${escapeAttr(ej.nombre)}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].nombre=this.value">
+      <div class="fila">
+        <div>
+          <label>Tipo</label>
+          <select onchange="borradorConfig.ejercicios['${bloque}'][${i}].tipo=this.value">
+            <option value="barra" ${ej.tipo==='barra'?'selected':''}>Barra</option>
+            <option value="maquina" ${ej.tipo==='maquina'?'selected':''}>Máquina</option>
+            <option value="liga" ${ej.tipo==='liga'?'selected':''}>Liga</option>
+            <option value="pesa" ${ej.tipo==='pesa'?'selected':''}>Pesa</option>
+            <option value="libre" ${ej.tipo==='libre'?'selected':''}>Libre (sin equipo)</option>
+          </select>
+        </div>
+        <div>
+          <label>N.º series</label>
+          <input type="number" min="1" max="10" value="${ej.series}" oninput="actualizarSeries('${bloque}',${i},this.value)">
+        </div>
+      </div>
+      <label>Repeticiones objetivo por serie (separadas por coma)</label>
+      <input type="text" value="${ej.repsObjetivo.join(',')}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].repsObjetivo = this.value.split(',').map(x=>parseInt(x.trim())||0)">
+      <div class="fila">
+        <div>
+          <label>${DATOS.progreso[ej.id] ? 'Peso actual (lbs)' : 'Peso inicial (lbs)'}</label>
+          <input type="number" step="0.5" value="${ej.pesoInicial}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].pesoInicial=parseFloat(this.value)||0">
+        </div>
+        <div>
+          <label>Incremento máx. por sesión (lbs)</label>
+          <input type="number" step="0.5" value="${ej.incrementoMax}" oninput="borradorConfig.ejercicios['${bloque}'][${i}].incrementoMax=parseFloat(this.value)||0">
+        </div>
+      </div>
+      <button class="btn chico peligro" onclick="borradorConfig.ejercicios['${bloque}'].splice(${i},1); renderEjerciciosEditor('${bloque}');">Eliminar ejercicio</button>
+    </div>`).join('');
+  actualizarConteosSetup();
+}
+function actualizarSeries(bloque, idx, valor){
+  const n = Math.max(1, parseInt(valor)||1);
+  const ej = borradorConfig.ejercicios[bloque][idx];
+  ej.series = n;
+  const reps = ej.repsObjetivo.slice(0,n);
+  while(reps.length < n) reps.push(reps.length ? reps[reps.length-1] : 10);
+  ej.repsObjetivo = reps;
+}
+function agregarEjercicio(bloque){
+  borradorConfig.ejercicios[bloque].push({id:uid(), nombre:'Nuevo ejercicio', tipo:'maquina', series:3, repsObjetivo:[10,10,10], pesoInicial:0, incrementoMax:2.5});
+  renderEjerciciosEditor(bloque);
+}
+
+function guardarConfiguracion(){
+  // Inicializar / conservar progreso por ejercicio
+  const nuevoProgreso = {};
+  ['superior','inferior'].forEach(bloque=>{
+    borradorConfig.ejercicios[bloque].forEach(ej=>{
+      nuevoProgreso[ej.id] = {
+        pesoObjetivo: ej.pesoInicial,
+        repsObjetivo: ej.repsObjetivo.slice(),
+        pesoUltimaSesion: ej.pesoInicial,
+        repsUltimaSesion: ej.repsObjetivo.slice()
+      };
+    });
+  });
+  const nuevoProgresoMovilidad = {};
+  borradorConfig.movilidad.forEach(it=>{
+    nuevoProgresoMovilidad[it.id] = {
+      series: it.series,
+      objetivo: it.objetivo,
+      seriesUltimaSesion: it.series,
+      objetivoUltimaSesion: it.objetivo
+    };
+  });
+  borradorConfig.setupCompleto = true;
+  DATOS.config = borradorConfig;
+  DATOS.progreso = nuevoProgreso;
+  DATOS.progresoMovilidad = nuevoProgresoMovilidad;
+  const guardadoOk = guardarDatos();
+  if(!guardadoOk){
+    mostrarToast('No se pudo guardar' + (ultimoErrorAlmacenamiento ? ': ' + ultimoErrorAlmacenamiento : ' (almacenamiento bloqueado o sin espacio)'), 8000);
+    return;
+  }
+  mostrarVista('hoy');
+  mostrarToast('Configuración guardada');
+}
+
+// ---- 7. Vista: Hoy ----
+// Borrador del formulario de Hoy sin registrar: evita perder checks/valores al ir a otra
+// pestaña (p.ej. Consulta, para preguntarle algo a la IA) y volver — captura de forma genérica
+// cualquier input/select con id, o checkbox con data-calent/data-movilidad, dentro de #vista-hoy.
+let borradorHoy = null;
+
+function capturarBorradorHoy(){
+  const cont = document.getElementById('vista-hoy');
+  if(!cont) return;
+  const campos = cont.querySelectorAll('input[id], select[id], input[data-calent], input[data-movilidad], select[data-dificultad]');
+  if(!campos.length){ borradorHoy = null; return; }
+  const valores = {};
+  campos.forEach(el=>{
+    let clave = null;
+    if(el.id) clave = 'id:' + el.id;
+    else if(el.dataset.calent) clave = 'calent:' + el.dataset.calent;
+    else if(el.dataset.movilidad) clave = 'mov:' + el.dataset.movilidad;
+    else if(el.dataset.dificultad) clave = 'dif:' + el.dataset.dificultad;
+    if(!clave) return;
+    valores[clave] = (el.type === 'checkbox') ? el.checked : el.value;
+  });
+  // También los registros de tiempo, ya que reconstruir el formulario los reinicia a vacío.
+  borradorHoy = {
+    fecha: obtenerFechaGuayaquil().fechaISO,
+    valores,
+    registrosSerie: registrosSerie.slice(),
+    calificacionesSerie: calificacionesSerie.slice(),
+    registrosMovilidad: registrosMovilidad.slice(),
+    inicioMovilidad
+  };
+}
+
+function aplicarBorradorHoy(){
+  if(!borradorHoy) return;
+  if(borradorHoy.fecha !== obtenerFechaGuayaquil().fechaISO){ borradorHoy = null; return; }
+  const cont = document.getElementById('vista-hoy');
+  if(!cont) return;
+  Object.keys(borradorHoy.valores).forEach(clave=>{
+    const valor = borradorHoy.valores[clave];
+    const tipo = clave.slice(0, clave.indexOf(':'));
+    const id = clave.slice(clave.indexOf(':')+1);
+    let el = null;
+    if(tipo === 'id') el = cont.querySelector('#'+CSS.escape(id));
+    else if(tipo === 'calent') el = cont.querySelector(`[data-calent="${id}"]`);
+    else if(tipo === 'mov') el = cont.querySelector(`[data-movilidad="${id}"]`);
+    else if(tipo === 'dif') el = cont.querySelector(`[data-dificultad="${id}"]`);
+    if(!el) return;
+    if(el.type === 'checkbox') el.checked = valor;
+    else el.value = valor;
+  });
+  // Restaurar los registros de tiempo y calificaciones (se perderían si no, al reconstruirse el formulario)
+  registrosSerie = (borradorHoy.registrosSerie || []).slice();
+  calificacionesSerie = (borradorHoy.calificacionesSerie || []).slice();
+  registrosMovilidad = (borradorHoy.registrosMovilidad || []).slice();
+  inicioMovilidad = borradorHoy.inicioMovilidad != null ? borradorHoy.inicioMovilidad : null;
+  // Reflejar el botón de "Marcar inicio" si ya se había activado antes de salir
+  if(registrosSerie.some(r=>r.esInicio)){
+    const btn = cont.querySelector('#btnIniciarSesion');
+    if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  }
+  if(inicioMovilidad != null){
+    const btn = cont.querySelector('#btnIniciarMovilidad');
+    if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  }
+  // Reaplicar la visibilidad de campos condicionales (detalle de molestias, dificultad por ejercicio)
+  const selMol = cont.querySelector('#selMolestias');
+  if(selMol) cont.querySelector('#detalleMolestias')?.classList.toggle('oculto', selMol.value==='ninguna');
+  const selMolMov = cont.querySelector('#selMolestiasMov');
+  if(selMolMov) cont.querySelector('#detalleMolestiasMov')?.classList.toggle('oculto', selMolMov.value==='ninguna');
+  cont.querySelectorAll('[data-movilidad]').forEach(chk=>{
+    const sel = cont.querySelector(`[data-dificultad="${chk.dataset.movilidad}"]`);
+    if(sel) sel.classList.toggle('oculto', !chk.checked);
+  });
+}
+
+function renderHoy(){
+  limpiarTemporizador();
+  modoSimulacion = false;
+  TEMPORIZADOR_DESCANSO_SEG = 150;
+  const cont = document.getElementById('vista-hoy');
+  const fechaInfo = obtenerFechaGuayaquil();
+  const bloqueHoy = bloqueDelDia(DATOS.config, fechaInfo.diaSemana);
+  const sesionHoy = DATOS.historial.find(s => s.fecha === fechaInfo.fechaISO);
+
+  if(sesionHoy){
+    if(sesionHoy.bloque === 'movilidad'){
+      cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaResumenMovilidad(sesionHoy);
+      renderChatEnDom(sesionHoy);
+      return;
+    }
+    cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaResumenSesion(sesionHoy);
+    renderChatEnDom(sesionHoy);
+    return;
+  }
+
+  if(!bloqueHoy){
+    cont.innerHTML = plantillaEncabezado(fechaInfo, null, false) + `
+      <div class="card">
+        <p>Hoy es día de descanso según tu horario.</p>
+        <button class="btn secundario" onclick="forzarRegistroManual()">Registrar una sesión de todas formas</button>
+        <small class="ayuda" style="margin-top:8px;">El análisis de la IA y el chat de seguimiento aparecen debajo, pero solo después de registrar y analizar una sesión del día. Hoy no hay ninguna todavía.</small>
+      </div>`;
+    return;
+  }
+
+  if(bloqueHoy === 'movilidad'){
+    cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, false) + plantillaFormularioMovilidad();
+    aplicarBorradorHoy();
+    return;
+  }
+
+  const penalizado = detectarPenalizacion(DATOS, fechaInfo);
+  cont.innerHTML = plantillaEncabezado(fechaInfo, bloqueHoy, penalizado) + plantillaFormularioRegistro(bloqueHoy, fechaInfo, penalizado);
+  aplicarBorradorHoy();
+}
+
+function forzarRegistroManual(){
+  limpiarTemporizador();
+  const fechaInfo = obtenerFechaGuayaquil();
+  const cont = document.getElementById('vista-hoy');
+  cont.innerHTML = plantillaEncabezado(fechaInfo, null, false) + `
+    <div class="card">
+      <label>¿Qué bloque quieres registrar?</label>
+      <select id="selectBloqueManual" onchange="renderBloqueManual(this.value)">
+        <option value="">Selecciona...</option>
+        <option value="superior">Tren Superior</option>
+        <option value="inferior">Tren Inferior</option>
+        <option value="movilidad">Movilidad</option>
+      </select>
+    </div>
+    <div id="contBloqueManual"></div>`;
+}
+function renderBloqueManual(bloque){
+  if(!bloque){ document.getElementById('contBloqueManual').innerHTML=''; return; }
+  const fechaInfo = obtenerFechaGuayaquil();
+  document.getElementById('contBloqueManual').innerHTML = bloque === 'movilidad'
+    ? plantillaFormularioMovilidad()
+    : plantillaFormularioRegistro(bloque, fechaInfo, false, true);
+}
+
+// ---- Simulación: recorre cualquier rutina con descanso/duración comprimidos a 5s,
+// para revisar la app rápido (o mostrársela a alguien) sin esperar tiempos reales.
+// Llama a la IA de verdad (usa tu API key), pero NUNCA escribe en tu historial ni progreso reales.
+function renderSimulacionInicio(){
+  limpiarTemporizador();
+  modoSimulacion = false;
+  TEMPORIZADOR_DESCANSO_SEG = 150;
+  registrosSerie = [];
+  // Evita que un formulario real a medio llenar en "Hoy" quede de fondo con los mismos
+  // IDs que el formulario de simulación — se reconstruye solo al volver a esa pestaña.
+  document.getElementById('vista-hoy').innerHTML = '';
+  const cont = document.getElementById('vista-simulacion');
+  cont.innerHTML = `
+    <div class="card">
+      <h1>🧪 Simulación</h1>
+      <p>Recorre cualquier rutina con el descanso y la duración de cada serie comprimidos a 5 segundos, para probar la app rápido o mostrársela a alguien. La IA sí analiza de verdad con el motor que tengas activo, pero nada de esto se guarda en tu historial ni afecta tus pesos reales.</p>
+      <label for="selectSimulacion">¿Qué quieres simular?</label>
+      <select id="selectSimulacion" onchange="iniciarSimulacion(this.value)">
+        <option value="">Selecciona...</option>
+        <option value="superior">Tren Superior</option>
+        <option value="inferior">Tren Inferior</option>
+        <option value="movilidad">Movilidad</option>
+      </select>
+    </div>
+    <div class="card">
+      <button class="btn secundario" onclick="mostrarVista('ajustes')">Salir de simulación</button>
+    </div>`;
+}
+
+function iniciarSimulacion(bloque){
+  if(!bloque) return;
+  modoSimulacion = true;
+  TEMPORIZADOR_DESCANSO_SEG = 5;
+  registrosSerie = [];
+  const fechaInfo = obtenerFechaGuayaquil();
+  const contenido = bloque === 'movilidad'
+    ? plantillaFormularioMovilidad()
+    : plantillaFormularioRegistro(bloque, fechaInfo, false, true);
+  document.getElementById('vista-simulacion').innerHTML = `
+    <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
+      <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — descanso y duración comprimidos a 5s. No se guarda en tu historial real.
+      <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
+    </div>
+    ${contenido}`;
+}
+
+function salirSimulacion(){
+  modoSimulacion = false;
+  TEMPORIZADOR_DESCANSO_SEG = 150;
+  limpiarTemporizador();
+  registrosSerie = [];
+  mostrarVista('ajustes');
+}
+
+function plantillaEncabezado(fechaInfo, bloque, penalizado){
+  let badge;
+  if(!bloque) badge = `<span class="badge descanso">Descanso</span>`;
+  else if(bloque === 'movilidad') badge = `<span class="badge on-track">Movilidad · flexibilidad y equilibrio</span>`;
+  else if(penalizado) badge = `<span class="badge recuperacion">Recuperación · se repite carga anterior</span>`;
+  else {
+    const carga = esDiaDeCarga(DATOS.config, bloque, fechaInfo.diaSemana);
+    badge = carga ? `<span class="badge on-track">${NOMBRE_BLOQUE[bloque]} · día de progresión</span>`
+                  : `<span class="badge consolidacion">${NOMBRE_BLOQUE[bloque]} · día de consolidación</span>`;
+  }
+  return `<div class="card">
+    <div class="top-status"><h1 style="margin:0;">Hoy</h1>${badge}</div>
+    <div class="fecha-linea">${capitalizar(fechaInfo.nombreDiaLargo)} · ${fechaInfo.fechaISO} (Guayaquil)</div>
+    ${usaModeloLocal() ? `<div class="fecha-linea" style="color:var(--amber); margin-top:4px;">Motor: modelo local de la Acer</div>` : ''}
+  </div>`;
+}
+
+function plantillaFormularioRegistro(bloque, fechaInfo, penalizado, manual){
+  registrosSerie = [];
+  calificacionesSerie = [];
+  pendienteCalificacion = null;
+  const idForm = 'formRegistro';
+  const calent = DATOS.config.calentamiento.map(it => `
+    <label class="chip"><input type="checkbox" data-calent="${it.id}"> ${escapeHtml(it.nombre)}</label>
+  `).join('');
+
+  const ejerciciosHtml = DATOS.config.ejercicios[bloque].map(ej=>{
+    const prog = DATOS.progreso[ej.id] || {pesoObjetivo: ej.pesoInicial, repsObjetivo: ej.repsObjetivo};
+    const pesoBase = penalizado ? (prog.pesoUltimaSesion ?? prog.pesoObjetivo) : prog.pesoObjetivo;
+    const repsBase = penalizado ? (prog.repsUltimaSesion ?? prog.repsObjetivo) : prog.repsObjetivo;
+    const filas = [];
+    for(let s=0; s<ej.series; s++){
+      const repObjetivo = repsBase[s] ?? repsBase[repsBase.length-1] ?? 10;
+      filas.push(`
+        <div class="serie-fila">
+          <span class="serie-num">S${s+1}</span>
+          <div class="stepper stepper-peso">
+            <button type="button" onclick="ajustarValor('${ej.id}_peso_${s}', -1)">−</button>
+            <input type="number" step="0.5" id="${ej.id}_peso_${s}" value="${pesoBase}">
+            <button type="button" onclick="ajustarValor('${ej.id}_peso_${s}', 1)">+</button>
+            <span class="unidad">lbs</span>
+          </div>
+          <div class="stepper stepper-reps">
+            <button type="button" onclick="ajustarValor('${ej.id}_reps_${s}', -1)">−</button>
+            <input type="number" step="1" id="${ej.id}_reps_${s}" value="${repObjetivo}">
+            <button type="button" onclick="ajustarValor('${ej.id}_reps_${s}', 1)">+</button>
+          </div>
+          <input type="checkbox" class="check-serie" id="${ej.id}_hecha_${s}" title="Serie completada" onchange="if(this.checked) marcarSerieCompletada('${ej.id}', ${s})">
+        </div>`);
+    }
+    return `<div class="ejercicio-bloque" data-ejercicio="${ej.id}">
+      <div class="ejercicio-nombre">${escapeHtml(ej.nombre)}</div>
+      <div class="ejercicio-meta">${ej.series} series · objetivo previo ${repsBase.join('-')} reps</div>
+      ${filas.join('')}
+    </div>`;
+  }).join('');
+
+  return `
+    <form id="${idForm}" class="card" onsubmit="return false;">
+      <div class="fila" style="margin-bottom:6px;">
+        <button type="button" class="btn chico secundario" id="btnIniciarSesion" onclick="iniciarSesionEntrenamiento()">▶ Marcar inicio</button>
+      </div>
+      <small class="ayuda" style="margin-bottom:14px;">Opcional: tócalo justo antes de tu primera serie para que también se mida su duración.</small>
+
+      <h2>Calentamiento</h2>
+      <div class="chip-lista">${calent}</div>
+
+      <div id="cajaTemporizador" class="timer-caja oculto">
+        <div class="timer-label">Descanso — próxima serie en</div>
+        <div class="timer-reloj" id="temporizadorTexto">2:30</div>
+        <button type="button" class="btn chico secundario" onclick="detenerTemporizadorDescanso()">Detener</button>
+      </div>
+
+      <h2>${NOMBRE_BLOQUE[bloque]}</h2>
+      ${ejerciciosHtml}
+    </form>
+
+    <div class="card">
+      <h2>Cómo llegaste hoy</h2>
+      <label for="selSueno">Sueño / descanso anoche</label>
+      <select id="selSueno">
+        <option value="excelente">Excelente</option>
+        <option value="buena" selected>Buena</option>
+        <option value="regular">Regular / interrumpido</option>
+        <option value="mala">Mala / poco sueño</option>
+      </select>
+      <label for="selEnergia">Energía percibida hoy</label>
+      <select id="selEnergia">
+        <option value="alta">Alta</option>
+        <option value="normal" selected>Normal</option>
+        <option value="baja">Baja</option>
+        <option value="muy_baja">Muy baja</option>
+      </select>
+      <label for="selMolestias">Molestias articulares o musculares</label>
+      <select id="selMolestias" onchange="document.getElementById('detalleMolestias').classList.toggle('oculto', this.value==='ninguna')">
+        <option value="ninguna" selected>Ninguna</option>
+        <option value="leve">Leve</option>
+        <option value="moderada">Moderada</option>
+        <option value="debo_parar">Importante, debería parar</option>
+      </select>
+      <input type="text" id="detalleMolestias" class="oculto" placeholder="¿Dónde y qué tipo de molestia?">
+    </div>
+
+    <div class="card">
+      <button class="btn" id="btnRegistrar" onclick="registrarYAnalizar('${bloque}', ${penalizado ? 'true':'false'}, ${manual ? 'true':'false'})">Registrar y analizar con IA</button>
+      <div id="loadingRegistro" class="oculto"></div>
+      <div id="errorRegistro" class="error-msg oculto"></div>
+      <button type="button" class="btn secundario" style="margin-top:10px;" onclick="reiniciarRegistroHoy(${manual ? 'true' : 'false'}, '${bloque}')">Reiniciar registro</button>
+      <small class="ayuda">Borra los checks, el cronómetro y los valores de este formulario si te confundiste.</small>
+    </div>`;
+}
+
+function ajustarValor(id, delta){
+  const el = document.getElementById(id);
+  const paso = parseFloat(el.step) || 1;
+  el.value = (parseFloat(el.value)||0) + delta*paso;
+}
+
+// ---- 6b. Temporizador de descanso entre series (2:30, o 5s en modo simulación) ----
+let TEMPORIZADOR_DESCANSO_SEG = 150;
+let modoSimulacion = false;
+let temporizadorInterval = null;
+let temporizadorRestante = 0;
+let registrosSerie = []; // {exId, serieIndex, t} — hora de cada check de "serie completada" en la sesión actual
+let calificacionesSerie = []; // {exId, serieIndex, calificacion} — 1-5, cargada vía la ventana emergente
+let pendienteCalificacion = null; // {exId, serieIndex} — serie recién marcada, esperando su calificación
+let registrosMovilidad = []; // {id, t} — hora de cada check de un ejercicio de movilidad
+let inicioMovilidad = null; // hora de "Marcar inicio" en movilidad (sin cronómetro, solo referencia)
+
+function marcarSerieCompletada(exId, serieIndex){
+  const existente = registrosSerie.find(r => r.exId===exId && r.serieIndex===serieIndex);
+  if(existente){ existente.t = Date.now(); }
+  else{ registrosSerie.push({exId, serieIndex, t: Date.now()}); }
+  iniciarTemporizadorDescanso();
+  // El cronómetro sigue corriendo de fondo; la ventana emergente no lo detiene ni lo pausa.
+  pendienteCalificacion = {exId, serieIndex};
+  document.getElementById('modalCalificacionSerie').classList.remove('oculto');
+}
+
+function calificarSerieActual(valor){
+  if(pendienteCalificacion){
+    const {exId, serieIndex} = pendienteCalificacion;
+    const existente = calificacionesSerie.find(c=>c.exId===exId && c.serieIndex===serieIndex);
+    if(existente){ existente.calificacion = valor; }
+    else{ calificacionesSerie.push({exId, serieIndex, calificacion: valor}); }
+  }
+  pendienteCalificacion = null;
+  document.getElementById('modalCalificacionSerie').classList.add('oculto');
+}
+
+function omitirCalificacionSerie(){
+  pendienteCalificacion = null;
+  document.getElementById('modalCalificacionSerie').classList.add('oculto');
+}
+
+// Marca el momento en que arranca la sesión (opcional), para poder calcular también
+// la duración de la primerísima serie del día. A diferencia de los checks entre series,
+// aquí no hubo descanso de por medio, así que esa primera duración no le resta los 2:30.
+function iniciarSesionEntrenamiento(){
+  registrosSerie = registrosSerie.filter(r => !r.esInicio);
+  registrosSerie.push({exId:'__inicio__', serieIndex:-1, t: Date.now(), esInicio:true});
+  const btn = document.getElementById('btnIniciarSesion');
+  if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  mostrarToast('Sesión iniciada — se medirá la duración de tu primera serie');
+}
+
+// Borra los checks, el cronómetro y los valores modificados del formulario de hoy,
+// reconstruyéndolo desde cero — para cuando hay que corregir un error o suspender por fuerza mayor.
+function reiniciarRegistroHoy(manual, bloque){
+  if(!confirm('¿Seguro que quieres reiniciar el registro de hoy? Se borrarán los checks, el cronómetro y los valores que hayas modificado en este formulario.')) return;
+  limpiarTemporizador();
+  registrosSerie = [];
+  calificacionesSerie = [];
+  pendienteCalificacion = null;
+  document.getElementById('modalCalificacionSerie').classList.add('oculto');
+  registrosMovilidad = [];
+  inicioMovilidad = null;
+  borradorHoy = null;
+  if(manual){ renderBloqueManual(bloque); }
+  else{ renderHoy(); }
+  mostrarToast('Registro de hoy reiniciado');
+}
+
+function calcularDuracionesSerie(){
+  const ordenados = registrosSerie.slice().sort((a,b)=>a.t-b.t);
+  const duraciones = [];
+  // El check anterior (sea del mismo ejercicio o de otro) siempre marca el inicio del descanso
+  // que termina con la alarma, así que la duración se calcula entre cualquier par consecutivo.
+  // Solo la primerísima serie del día se queda sin dato, salvo que se haya marcado el inicio de
+  // sesión — en ese caso, esa primera duración no resta los 2:30 porque no hubo descanso previo.
+  for(let i=1; i<ordenados.length; i++){
+    if(ordenados[i].esInicio) continue;
+    const esPrimeraTrasInicio = ordenados[i-1].esInicio === true;
+    const descuento = esPrimeraTrasInicio ? 0 : TEMPORIZADOR_DESCANSO_SEG;
+    const segundos = Math.max(0, Math.round((ordenados[i].t - ordenados[i-1].t)/1000) - descuento);
+    duraciones.push({exId: ordenados[i].exId, serieIndex: ordenados[i].serieIndex, segundos});
+  }
+  const duracionPromedio = duraciones.length ? Math.round(duraciones.reduce((a,d)=>a+d.segundos,0)/duraciones.length) : null;
+  const duracionPorEjercicio = {};
+  duraciones.forEach(d=>{
+    (duracionPorEjercicio[d.exId] = duracionPorEjercicio[d.exId] || []).push(d.segundos);
+  });
+  Object.keys(duracionPorEjercicio).forEach(exId=>{
+    const arr = duracionPorEjercicio[exId];
+    duracionPorEjercicio[exId] = Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
+  });
+  return {duraciones, duracionPromedio, duracionPorEjercicio};
+}
+
+// Tiempos globales de la sesión, medidos con las marcas de tiempo reales (no estimados):
+// - tiempoTotalSeg: desde el primer registro hasta el último check
+// - tiempoEjecucionSeg: suma de la duración de ejecución de cada serie (trabajo puro)
+// - tiempoDescansoSeg: la diferencia entre ambos (lo realmente descansado, no los 2:30 teóricos)
+// Si no se marcó el inicio de sesión, el total arranca en el primer check, así que la ejecución
+// de esa primera serie queda fuera — por eso se informa 'desdeInicioMarcado'.
+function calcularTiemposSesion(duraciones){
+  if(registrosSerie.length < 2) return {tiempoTotalSeg:null, tiempoEjecucionSeg:null, tiempoDescansoSeg:null, desdeInicioMarcado:false};
+  const ordenados = registrosSerie.slice().sort((a,b)=>a.t-b.t);
+  const tiempoTotalSeg = Math.round((ordenados[ordenados.length-1].t - ordenados[0].t)/1000);
+  const tiempoEjecucionSeg = duraciones.reduce((a,d)=>a+d.segundos, 0);
+  return {
+    tiempoTotalSeg,
+    tiempoEjecucionSeg,
+    tiempoDescansoSeg: Math.max(0, tiempoTotalSeg - tiempoEjecucionSeg),
+    desdeInicioMarcado: ordenados[0].esInicio === true
+  };
+}
+
+// Formatea segundos como "56 min 48 s" (o "48 s" si es menos de un minuto).
+function formatearDuracionLarga(seg){
+  if(seg == null) return null;
+  const m = Math.floor(seg/60), s = seg % 60;
+  return m > 0 ? `${m} min ${s} s` : `${s} s`;
+}
+
+// Detalle de duración de cada serie individual, agrupado por ejercicio.
+// La primerísima serie del día nunca tiene dato porque no hay check anterior con el que compararla.
+// De ahí en más, incluida la S1 de cada ejercicio nuevo, sí queda registrada.
+function formatearDuracionPorSerie(duraciones, ejercicios){
+  if(!duraciones || !duraciones.length) return null;
+  const porEjercicio = {};
+  duraciones.forEach(d=>{
+    (porEjercicio[d.exId] = porEjercicio[d.exId] || []).push(d);
+  });
+  return Object.keys(porEjercicio).map(exId=>{
+    const nombre = (ejercicios.find(e=>e.id===exId)||{}).nombre || exId;
+    const series = porEjercicio[exId]
+      .sort((a,b)=>a.serieIndex-b.serieIndex)
+      .map(d => `S${d.serieIndex+1}=${d.segundos}s`)
+      .join(', ');
+    return {exId, nombre, texto: series};
+  });
+}
+
+function textoCalificacionFuerza(n){ return {1:'Fácil', 2:'Normal', 3:'Con cierta dificultad', 4:'Con dificultad', 5:'Con dificultad y algo de dolor'}[n] || ''; }
+
+// Detalle de calificación de cada serie individual, agrupado por ejercicio (mismo patrón que
+// formatearDuracionPorSerie). Toma los ejercicios ya guardados en la sesión (con .series[].calificacion).
+function formatearCalificacionPorSerie(ejercicios){
+  if(!ejercicios || !ejercicios.length) return null;
+  const resultado = [];
+  ejercicios.forEach(ej=>{
+    const partes = (ej.series||[]).map((s,i)=> s.calificacion!=null ? `S${i+1}=${s.calificacion}/5` : null).filter(Boolean);
+    if(partes.length) resultado.push({exId: ej.id, nombre: ej.nombre, texto: partes.join(', ')});
+  });
+  return resultado.length ? resultado : null;
+}
+
+// Por debajo de este umbral, una serie casi seguro no se ejecutó de verdad — fue un check
+// apurado (por ejemplo para "ponerse al día" tras una interrupción), no la serie en sí.
+const DURACION_MINIMA_PLAUSIBLE = 8;
+
+// Compara, para cada ejercicio con 2+ series medidas, la primera contra la última.
+// Positivo = esa última serie fue más lenta (fatiga); negativo = más rápida.
+// Si la primera o la última son sospechosamente rápidas, no calcula tendencia para ese
+// ejercicio — comparar contra un dato irreal daría un porcentaje falso (ver DURACION_MINIMA_PLAUSIBLE).
+function calcularTendenciaPorEjercicio(duraciones){
+  if(!duraciones || !duraciones.length) return {};
+  const porEjercicio = {};
+  duraciones.forEach(d=>{ (porEjercicio[d.exId] = porEjercicio[d.exId] || []).push(d); });
+  const resultado = {};
+  Object.keys(porEjercicio).forEach(exId=>{
+    const ordenado = porEjercicio[exId].slice().sort((a,b)=>a.serieIndex-b.serieIndex);
+    if(ordenado.length < 2) return;
+    const primera = ordenado[0].segundos;
+    const ultima = ordenado[ordenado.length-1].segundos;
+    if(primera < DURACION_MINIMA_PLAUSIBLE || ultima < DURACION_MINIMA_PLAUSIBLE) return;
+    if(primera > 0) resultado[exId] = Math.round(((ultima - primera) / primera) * 100);
+  });
+  return resultado;
+}
+
+// Duraciones por debajo del umbral plausible, para avisarle a la IA que no las interprete
+// como buen ritmo — probablemente fueron un registro apurado, no la ejecución real.
+function detectarDuracionesSospechosas(duraciones, ejercicios){
+  if(!duraciones || !duraciones.length) return [];
+  return duraciones
+    .filter(d => d.segundos < DURACION_MINIMA_PLAUSIBLE)
+    .map(d => `${(ejercicios.find(e=>e.id===d.exId)||{}).nombre || d.exId} S${d.serieIndex+1} (${d.segundos}s)`);
+}
+
+// Promedia esa misma tendencia entre todos los ejercicios de la sesión, para tener un solo
+// número de referencia rápida (el detalle por ejercicio se calcula aparte, ver arriba).
+function calcularTendenciaDentroSesion(duraciones){
+  const porEjercicio = calcularTendenciaPorEjercicio(duraciones);
+  const cambios = Object.values(porEjercicio);
+  return cambios.length ? Math.round(cambios.reduce((a,b)=>a+b,0)/cambios.length) : null;
+}
+
+function limpiarTemporizador(){
+  clearInterval(temporizadorInterval);
+  temporizadorInterval = null;
+}
+
+function iniciarTemporizadorDescanso(){
+  const caja = document.getElementById('cajaTemporizador');
+  if(!caja) return;
+  limpiarTemporizador();
+  caja.classList.remove('oculto', 'alerta');
+  temporizadorRestante = TEMPORIZADOR_DESCANSO_SEG;
+  actualizarTextoTemporizador();
+  temporizadorInterval = setInterval(()=>{
+    temporizadorRestante--;
+    if(temporizadorRestante <= 0){
+      limpiarTemporizador();
+      const cajaActual = document.getElementById('cajaTemporizador');
+      const texto = document.getElementById('temporizadorTexto');
+      if(cajaActual) cajaActual.classList.add('alerta');
+      if(texto) texto.textContent = '¡Listo!';
+      sonarAlarmaDescanso();
+      return;
+    }
+    actualizarTextoTemporizador();
+  }, 1000);
+}
+
+function detenerTemporizadorDescanso(){
+  limpiarTemporizador();
+  const caja = document.getElementById('cajaTemporizador');
+  if(caja) caja.classList.add('oculto');
+}
+
+function actualizarTextoTemporizador(){
+  const el = document.getElementById('temporizadorTexto');
+  if(!el) return;
+  const m = Math.floor(temporizadorRestante/60);
+  const s = temporizadorRestante % 60;
+  el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function sonarAlarmaDescanso(){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    [0, 0.35, 0.7].forEach(t=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.28);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.3);
+    });
+  }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]); }catch(e){}
+}
+
+function recopilarFormulario(bloque){
+  const calent = DATOS.config.calentamiento.map(it=>({
+    id:it.id, nombre:it.nombre,
+    hecho: document.querySelector(`[data-calent="${it.id}"]`).checked
+  }));
+  const ejercicios = DATOS.config.ejercicios[bloque].map(ej=>{
+    const series = [];
+    for(let s=0; s<ej.series; s++){
+      const cal = calificacionesSerie.find(c=>c.exId===ej.id && c.serieIndex===s);
+      series.push({
+        peso: parseFloat(document.getElementById(`${ej.id}_peso_${s}`).value)||0,
+        reps: parseInt(document.getElementById(`${ej.id}_reps_${s}`).value)||0,
+        calificacion: cal ? cal.calificacion : null
+      });
+    }
+    return {id:ej.id, nombre:ej.nombre, tipo:ej.tipo, incrementoMax:ej.incrementoMax, series};
+  });
+  const molestiasSel = document.getElementById('selMolestias').value;
+  const detalle = document.getElementById('detalleMolestias').value.trim();
+  const {duraciones, duracionPromedio, duracionPorEjercicio} = calcularDuracionesSerie();
+  const tendenciaDentroSesion = calcularTendenciaDentroSesion(duraciones);
+  const tendenciaPorEjercicio = calcularTendenciaPorEjercicio(duraciones);
+  const tiempos = calcularTiemposSesion(duraciones);
+  const calificacionPorEjercicio = {};
+  ejercicios.forEach(ej=>{
+    const cals = ej.series.map(s=>s.calificacion).filter(c=>c!=null);
+    if(cals.length) calificacionPorEjercicio[ej.id] = Math.round((cals.reduce((a,b)=>a+b,0)/cals.length)*10)/10;
+  });
+  return {
+    calentamiento: calent,
+    ejercicios,
+    sueno: document.getElementById('selSueno').value,
+    energia: document.getElementById('selEnergia').value,
+    molestias: molestiasSel,
+    molestiasDetalle: detalle,
+    duraciones, duracionPromedio, duracionPorEjercicio, tendenciaDentroSesion, tendenciaPorEjercicio, calificacionPorEjercicio,
+    tiempos
+  };
+}
+
+async function registrarYAnalizar(bloque, penalizado, manual){
+  const btn = document.getElementById('btnRegistrar');
+  const loading = document.getElementById('loadingRegistro');
+  const errDiv = document.getElementById('errorRegistro');
+  errDiv.classList.add('oculto');
+  btn.disabled = true;
+  loading.innerHTML = htmlPensando(usaModeloLocal() ? 'Analizando en la Acer...' : 'Analizando tu sesión...');
+  loading.classList.remove('oculto');
+  iniciarContadorEspera();
+
+  try{
+    const fechaInfo = obtenerFechaGuayaquil();
+    const form = recopilarFormulario(bloque);
+    const diaDeCarga = esDiaDeCarga(DATOS.config, bloque, fechaInfo.diaSemana);
+
+    let prompt, respuestaTexto, parsed;
+    if(usaModeloLocal()){
+      // Modelo local: prompt corto, sin historial ni estadísticas, y respuesta forzada por
+      // JSON Schema a una decisión cerrada por ejercicio. Los números los pone la app.
+      prompt = construirPromptLocalFuerza(bloque, form, penalizado, diaDeCarga);
+      respuestaTexto = await llamarLocal(
+        [{role:'user', content: prompt}],
+        {esquema: esquemaLocalDecisiones(form.ejercicios.length), maxTokens: tokensNecesarios(form.ejercicios.length)}
+      );
+      parsed = decisionesARecomendaciones(form, respuestaTexto);
+    }else{
+      prompt = construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual);
+      respuestaTexto = await llamarGemini([{role:'user', parts:[{text:prompt}]}]);
+      parsed = parsearRespuestaIA(respuestaTexto);
+    }
+
+    // Aplicar límites de seguridad de forma determinística
+    const recomendacionesFinal = aplicarLimitesSeguridad(bloque, form, parsed.recomendaciones || [], penalizado, diaDeCarga);
+
+    // Actualizar progreso guardado por ejercicio (nunca en modo simulación)
+    if(!modoSimulacion){
+      recomendacionesFinal.forEach(r=>{
+        const p = DATOS.progreso[r.id];
+        if(!p) return;
+        const enviado = form.ejercicios.find(e=>e.id===r.id);
+        p.pesoUltimaSesion = enviado ? enviado.series[0].peso : p.pesoUltimaSesion;
+        p.repsUltimaSesion = enviado ? enviado.series.map(s=>s.reps) : p.repsUltimaSesion;
+        p.pesoObjetivo = r.pesoSugerido;
+        p.repsObjetivo = r.repsSugeridos;
+      });
+    }
+
+    const sesion = {
+      fecha: fechaInfo.fechaISO,
+      diaSemana: fechaInfo.diaSemana,
+      bloque, manual: !!manual,
+      penalizado, diaDeCarga,
+      motor: motorActual(),
+      sueno: form.sueno, energia: form.energia,
+      molestias: form.molestias, molestiasDetalle: form.molestiasDetalle,
+      calentamiento: form.calentamiento,
+      ejercicios: form.ejercicios,
+      duraciones: form.duraciones, duracionPromedio: form.duracionPromedio, duracionPorEjercicio: form.duracionPorEjercicio,
+      tendenciaDentroSesion: form.tendenciaDentroSesion,
+      tendenciaPorEjercicio: form.tendenciaPorEjercicio,
+      calificacionPorEjercicio: form.calificacionPorEjercicio,
+      tiempos: form.tiempos,
+      analisis: {
+        evaluacion: parsed.evaluacion || respuestaTexto,
+        recomendaciones: recomendacionesFinal,
+        consejoGeneral: parsed.consejoGeneral || ''
+      },
+      geminiHistorial: [
+        {role:'user', parts:[{text:prompt}]},
+        {role:'model', parts:[{text:respuestaTexto}]}
+      ],
+      chat: []
+    };
+
+    if(modoSimulacion){
+      document.getElementById('vista-simulacion').innerHTML = `
+        <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
+          <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — este resultado no se guardó en tu historial ni cambió tus pesos reales.
+          <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
+        </div>
+        ${plantillaResumenSesion(sesion, true)}`;
+    }else{
+      DATOS.historial.push(sesion);
+      guardarDatos();
+      borradorHoy = null;
+      renderHoy();
+    }
+  }catch(e){
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.classList.remove('oculto');
+    btn.disabled = false;
+    loading.classList.add('oculto');
+  }finally{
+    detenerContadorEspera();
+  }
+}
+
+function construirPrompt(bloque, fechaInfo, form, penalizado, diaDeCarga, manual){
+  const lineasEjercicios = form.ejercicios.map(ej =>
+    `- ${ej.nombre} [id:${ej.id}]: ` + ej.series.map((s,i)=>`S${i+1} ${s.peso}lbs x ${s.reps}${s.calificacion!=null?' (calificación '+s.calificacion+'/5)':''}`).join(', ')
+  ).join('\n');
+
+  const calentLinea = form.calentamiento.map(c => `${c.nombre}: ${c.hecho ? 'realizado' : 'omitido'}`).join(', ');
+
+  const duracionHistorica = DATOS.historial
+    .filter(s => s.bloque === bloque && s.duracionPromedio != null)
+    .slice(-4)
+    .map(s => `${s.fecha}: ${s.duracionPromedio}s`)
+    .join(' | ');
+
+  const duracionPorEjercicioLinea = form.duracionPorEjercicio && Object.keys(form.duracionPorEjercicio).length
+    ? Object.entries(form.duracionPorEjercicio)
+        .map(([exId, seg]) => `${(form.ejercicios.find(e=>e.id===exId)||{}).nombre || exId}: ${seg}s`)
+        .join(', ')
+    : 'sin datos suficientes';
+
+  const detalleSerieArr = formatearDuracionPorSerie(form.duraciones, form.ejercicios);
+  const detalleSerieLinea = detalleSerieArr && detalleSerieArr.length
+    ? detalleSerieArr.map(e => `${e.nombre}: ${e.texto}`).join(' | ')
+    : 'sin datos suficientes';
+
+  const sospechosas = detectarDuracionesSospechosas(form.duraciones, form.ejercicios);
+
+  const tendenciaHistorica = DATOS.historial
+    .filter(s => s.bloque === bloque && s.tendenciaDentroSesion != null)
+    .slice(-4)
+    .map(s => `${s.fecha}: ${s.tendenciaDentroSesion>0?'+':''}${s.tendenciaDentroSesion}%`)
+    .join(' | ');
+
+  const calificacionPorEjercicioLinea = form.calificacionPorEjercicio && Object.keys(form.calificacionPorEjercicio).length
+    ? Object.entries(form.calificacionPorEjercicio)
+        .map(([exId, v]) => `${(form.ejercicios.find(e=>e.id===exId)||{}).nombre || exId}: ${v}/5`)
+        .join(', ')
+    : 'sin datos suficientes';
+
+  const calificacionHistorica = DATOS.historial
+    .filter(s => s.bloque === bloque && s.calificacionPorEjercicio && Object.keys(s.calificacionPorEjercicio).length)
+    .slice(-4)
+    .map(s => `${s.fecha}: ` + Object.entries(s.calificacionPorEjercicio).map(([id,v])=>`${(DATOS.config.ejercicios[bloque].find(e=>e.id===id)||{}).nombre || id} ${v}/5`).join(', '))
+    .join(' | ');
+
+  const t = form.tiempos || {};
+  const tiemposLinea = t.tiempoTotalSeg != null
+    ? `${formatearDuracionLarga(t.tiempoTotalSeg)}, de los cuales ${formatearDuracionLarga(t.tiempoEjecucionSeg)} fueron de ejecución pura y ${formatearDuracionLarga(t.tiempoDescansoSeg)} de descanso`
+    : 'sin datos suficientes';
+
+  const tiemposHistoricos = DATOS.historial
+    .filter(s => s.bloque === bloque && s.tiempos && s.tiempos.tiempoTotalSeg != null)
+    .slice(-4)
+    .map(s => `${s.fecha}: total ${formatearDuracionLarga(s.tiempos.tiempoTotalSeg)} (ejecución ${formatearDuracionLarga(s.tiempos.tiempoEjecucionSeg)})`)
+    .join(' | ');
+
+  return `Eres un preparador físico especializado en sobrecarga progresiva conservadora. Perfil del atleta: ${PERFIL_USUARIO}
+
+Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este espacio es solo para temas de entrenamiento, técnica, progreso, recuperación y movilidad; si una pregunta de seguimiento no tiene relación con eso, dilo brevemente y no la respondas.
+
+DATOS DE HOY (${fechaInfo.fechaISO}, ${bloque === 'superior' ? 'Tren Superior' : 'Tren Inferior'}):
+- Sesión programada: ${manual ? 'no, registro manual fuera de horario' : 'sí'}
+- ¿Se saltó un día programado antes de hoy?: ${penalizado ? 'sí, esta es una sesión de recuperación' : 'no'}
+- Tipo de día en el ciclo: ${diaDeCarga ? 'día de progresión (primer día de este bloque en la semana)' : 'día de consolidación (segundo día de este bloque en la semana, normalmente se repite el peso)'}
+- Sueño anoche: ${form.sueno}
+- Energía percibida: ${form.energia}
+- Molestias: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''} (usa exactamente estas palabras si las mencionas; no agregues, cambies ni omitas partes del cuerpo, y no le atribuyas la molestia a un ejercicio específico salvo que el usuario lo haya dicho así)
+- Calentamiento: ${calentLinea}
+- Duración promedio de ejecución por serie hoy: ${form.duracionPromedio != null ? form.duracionPromedio+' segundos' : 'sin datos suficientes'} (global). Por ejercicio: ${duracionPorEjercicioLinea}. Sesiones recientes del mismo bloque (promedio global): ${duracionHistorica || 'sin datos previos'}. Si la duración sube respecto a sesiones anteriores, interpreta que las series le están costando más esfuerzo; si baja, que le resultan más fáciles; compara cada ejercicio contra su propio ritmo esperado (no es igual el tiempo de una serie de sentadillas que de elevaciones de talón) y considéralo junto con sueño/energía/molestias al decidir la progresión de cada uno.
+- Duración de cada serie individual (la primerísima serie del día no tiene dato, es la primera y no tiene con qué compararse; el resto sí, incluida la primera serie de cada ejercicio nuevo): ${detalleSerieLinea}. Ten este detalle a mano por si el usuario pregunta por una serie o ejercicio específico en el chat de seguimiento.
+${sospechosas.length ? `- Aviso importante: estas duraciones fueron sospechosamente cortas (menos de ${DURACION_MINIMA_PLAUSIBLE}s) y casi seguro NO reflejan la ejecución real de la serie — lo más probable es que el usuario marcó el check rápido para ponerse al día tras una interrupción (por ejemplo, pérdida de lo ya ingresado), no que la hizo así de rápido: ${sospechosas.join(', ')}. No las elogies como buen ritmo, no las uses para hablar de la tendencia de ese ejercicio, y menciónalo con naturalidad en la evaluación si es relevante.` : ''}
+- Tendencia DENTRO de esta sesión (comparando, en cada ejercicio con 2+ series medidas, la primera contra la última, promediado entre ejercicios): hoy ${form.tendenciaDentroSesion != null ? (form.tendenciaDentroSesion>0?'+':'')+form.tendenciaDentroSesion+'%' : 'sin datos suficientes'} (positivo = las series finales fueron más lentas que las iniciales; negativo = más rápidas). Mismo dato en sesiones recientes del mismo bloque: ${tendenciaHistorica || 'sin datos previos'}. Desglose por ejercicio de hoy (el promedio de arriba puede esconder diferencias entre ejercicios — usa este detalle si un ejercicio en particular se comportó distinto al resto): ${form.tendenciaPorEjercicio && Object.keys(form.tendenciaPorEjercicio).length ? Object.entries(form.tendenciaPorEjercicio).map(([exId,v])=>`${(form.ejercicios.find(e=>e.id===exId)||{}).nombre||exId}: ${v>0?'+':''}${v}%`).join(', ') : 'sin datos suficientes'}. Si el porcentaje de hoy es alto, coméntalo en la evaluación como posible fatiga dentro de la sesión (o mejora de ritmo si es negativo). Si ese mismo patrón se repite de forma consistente en varias sesiones seguidas, señálalo explícitamente como algo a investigar (por ejemplo: orden de los ejercicios, tiempo de descanso, o fatiga acumulada entre sesiones) en vez de tratarlo como un dato aislado de hoy.
+- Calificación de dificultad por serie (1=fácil, 2=normal, 3=con cierta dificultad, 4=con dificultad, 5=con dificultad y algo de dolor; el detalle de cada serie ya viene junto al peso/reps de cada ejercicio más abajo), promedio por ejercicio hoy: ${calificacionPorEjercicioLinea}. Sesiones recientes del mismo bloque: ${calificacionHistorica || 'sin datos previos'}. Un 5 indica dolor, no solo esfuerzo — trátalo con la misma cautela que una molestia reportada, y nunca lo confundas con simple cansancio.
+- Descanso entre series: el usuario usa el cronómetro de la app con ${Math.floor(TEMPORIZADOR_DESCANSO_SEG/60)}:${String(TEMPORIZADOR_DESCANSO_SEG%60).padStart(2,'0')} minutos programados entre cada serie y lo cumple de forma disciplinada, empezando la siguiente serie al sonar la alarma.
+- Tiempos totales de hoy (medidos con las marcas de tiempo reales de cada check, no estimados): tiempo total de sesión ${tiemposLinea}. ${form.tiempos && !form.tiempos.desdeInicioMarcado ? 'Nota: el usuario no marcó el inicio de sesión, así que el total se cuenta desde que marcó la primera serie y no incluye la ejecución de esa primera serie ni el calentamiento previo.' : 'El total se cuenta desde que marcó el inicio de sesión, y no incluye el calentamiento previo.'} Sesiones recientes del mismo bloque: ${tiemposHistoricos || 'sin datos previos'}. Usa estos totales solo si el usuario pregunta por ellos o si notas un cambio relevante respecto a sesiones anteriores; no los repitas en cada respuesta.
+
+EJERCICIOS Y SERIES DE HOY (peso en libras):
+${lineasEjercicios}
+
+INSTRUCCIONES:
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin bloques de markdown ni backticks, con esta estructura exacta:
+{
+  "evaluacion": "máximo 2 frases sobre el rendimiento de hoy",
+  "recomendaciones": [
+    {"id": "<mismo id del ejercicio>", "pesoSugerido": <numero>, "repsSugeridos": [<numeros>], "nota": "máximo 1 frase corta"}
+  ],
+  "consejoGeneral": "máximo 2 frases sobre manejo de fatiga, técnica o cuidado articular"
+}
+Usa exactamente los mismos "id" que aparecen entre corchetes en cada ejercicio. Los incrementos de peso deben ser pequeños y sostenibles, nunca agresivos, y nunca debes sugerir entrenar al fallo. Si se reportan molestias relevantes, o si es un día de consolidación, o si es una sesión de recuperación, la recomendación de peso debe mantenerse igual al peso usado hoy.`;
+}
+
+// ---- 7c. Contexto del modelo local (fuerza) ----
+// Todo lo que confunde al Qwen 0.5B queda fuera: nada de historial, promedios, porcentajes
+// de tendencia ni ids alfanuméricos. Los ejercicios van numerados 1..N y la única salida
+// que se le pide por ejercicio es una palabra de una lista cerrada.
+function construirPromptLocalFuerza(bloque, form, penalizado, diaDeCarga){
+  const lineas = form.ejercicios.map((ej,i)=>{
+    const ultima = ej.series[ej.series.length-1] || {peso:0, reps:0};
+    const cals = ej.series.map(s=>s.calificacion).filter(c=>c!=null);
+    const prom = cals.length ? Math.round((cals.reduce((a,b)=>a+b,0)/cals.length)*10)/10 : null;
+    return `${i+1}. ${ej.nombre}: ${ej.series.length} series, la última con ${ultima.peso} libras y ${ultima.reps} repeticiones${prom!=null ? `, dificultad ${prom} de 5` : ', sin dato de dificultad'}`;
+  }).join('\n');
+
+  const debeMantenerTodo = penalizado || !diaDeCarga || form.molestias !== 'ninguna';
+
+  return `Entrenamiento de hoy en casa (${bloque === 'superior' ? 'tren superior' : 'tren inferior'}). Ejercicios hechos:
+${lineas}
+
+Molestias de hoy: ${textoMolestias(form.molestias)}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''}.
+Sueño de anoche: ${textoSueno(form.sueno)}. Energía de hoy: ${textoEnergia(form.energia)}.
+Escala de dificultad: 1 fácil, 2 normal, 3 con cierta dificultad, 4 con dificultad, 5 con dificultad y algo de dolor.
+
+Tu tarea es elegir, para cada ejercicio de la lista, una sola palabra: subir, mantener o bajar. Aplica esta regla al pie de la letra:
+- dificultad 1 o 2 = subir
+- dificultad 3 = mantener
+- dificultad 4 o 5 = bajar
+- sin dato de dificultad = mantener
+${debeMantenerTodo ? 'Excepción de hoy: todas las decisiones deben ser mantener.' : ''}
+Escribe además una evaluación de máximo 2 frases sobre cómo le fue hoy y un consejo de máximo 2 frases sobre técnica, descanso o cuidado de las articulaciones. No escribas números de peso ni de repeticiones: de eso se encarga la aplicación.`;
+}
+
+// Esquema JSON que el servidor local aplica como gramática: el modelo no puede
+// devolver otra cosa que no sean estos campos, con una decisión de la lista cerrada
+// para cada uno de los ejercicios numerados.
+function esquemaLocalDecisiones(cantidad){
+  const numeros = [];
+  for(let i=1; i<=cantidad; i++) numeros.push(i);
+  return {
+    type:'object',
+    properties:{
+      evaluacion:{type:'string'},
+      ejercicios:{
+        type:'array',
+        minItems: cantidad,
+        maxItems: cantidad,
+        items:{
+          type:'object',
+          properties:{
+            n:{type:'integer', enum:numeros},
+            decision:{type:'string', enum:['subir','mantener','bajar']}
+          },
+          required:['n','decision'],
+          additionalProperties:false
+        }
+      },
+      consejo:{type:'string'}
+    },
+    required:['evaluacion','ejercicios','consejo'],
+    additionalProperties:false
+  };
+}
+
+// Techo de tokens: el esquema obliga a una decisión por ejercicio, así que la respuesta
+// necesita espacio para todas. Si se corta a la mitad, el JSON queda inválido y la app
+// cae al valor seguro (mantener todo).
+function tokensNecesarios(cantidad){
+  return Math.max(obtenerParamsLocal().maxTokens, 140 + 26 * cantidad);
+}
+
+// Traduce las decisiones del modelo local a la misma forma que devuelve Gemini,
+// para que pase por aplicarLimitesSeguridad sin ningún trato especial.
+function decisionesARecomendaciones(form, textoRespuesta){
+  const parsed = parsearRespuestaIA(textoRespuesta);
+  const decisiones = Array.isArray(parsed.ejercicios) ? parsed.ejercicios : [];
+  const recomendaciones = form.ejercicios.map((ej,i)=>{
+    const d = decisiones.find(x=>Number(x.n) === i+1);
+    const pesoHoy = ej.series[0] ? ej.series[0].peso : 0;
+    const paso = ej.incrementoMax || 0;
+    let pesoSugerido = pesoHoy;
+    let nota = 'Se mantiene el peso.';
+    if(d && d.decision === 'subir'){ pesoSugerido = pesoHoy + paso; nota = 'El modelo local sugiere subir un poco.'; }
+    else if(d && d.decision === 'bajar'){ pesoSugerido = Math.max(0, pesoHoy - paso); nota = 'El modelo local sugiere bajar por la dificultad reportada.'; }
+    return {id: ej.id, pesoSugerido, repsSugeridos: ej.series.map(s=>s.reps), nota};
+  });
+  return {
+    evaluacion: typeof parsed.evaluacion === 'string' ? parsed.evaluacion : '',
+    consejoGeneral: typeof parsed.consejo === 'string' ? parsed.consejo : '',
+    recomendaciones
+  };
+}
+
+function parsearRespuestaIA(texto){
+  let limpio = texto.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  try{
+    return JSON.parse(limpio);
+  }catch(e){
+    return { evaluacion: texto, recomendaciones: [], consejoGeneral: '' };
+  }
+}
+
+// Capa de seguridad determinística: nunca confía ciegamente en la IA para el número final.
+function aplicarLimitesSeguridad(bloque, form, recomendaciones, penalizado, diaDeCarga){
+  const mapaRecom = {};
+  recomendaciones.forEach(r => mapaRecom[r.id] = r);
+
+  const molestiasImportantes = form.molestias !== 'ninguna';
+  const suenoMalo = form.sueno === 'mala';
+  const energiaBaja = form.energia === 'muy_baja';
+  const debeMantener = penalizado || !diaDeCarga || molestiasImportantes || suenoMalo || energiaBaja;
+
+  return DATOS.config.ejercicios[bloque].map(ej=>{
+    const enviado = form.ejercicios.find(e=>e.id===ej.id);
+    const pesoHoy = enviado ? enviado.series[0].peso : ej.pesoInicial;
+    const repsHoy = enviado ? enviado.series.map(s=>s.reps) : ej.repsObjetivo;
+    const sugerida = mapaRecom[ej.id];
+
+    if(debeMantener || !sugerida){
+      return { id:ej.id, nombre:ej.nombre, pesoSugerido: pesoHoy, repsSugeridos: repsHoy,
+        nota: sugerida ? sugerida.nota : 'Se mantiene el peso para consolidar.' };
+    }
+    let delta = (sugerida.pesoSugerido ?? pesoHoy) - pesoHoy;
+    delta = Math.max(-ej.incrementoMax, Math.min(ej.incrementoMax, delta));
+    const pesoFinal = Math.round((pesoHoy + delta) * 2) / 2; // redondeo a 0.5
+    return { id:ej.id, nombre:ej.nombre, pesoSugerido: pesoFinal,
+      repsSugeridos: limitarReps(repsHoy, sugerida.repsSugeridos),
+      nota: sugerida.nota || '' };
+  });
+}
+
+// Las repeticiones sugeridas también se topan: se conserva la cantidad de series de hoy y
+// ninguna serie puede subir más de 2 repeticiones sobre lo que realmente hizo.
+function limitarReps(repsHoy, repsSugeridos){
+  const sugeridos = Array.isArray(repsSugeridos) ? repsSugeridos : [];
+  return repsHoy.map((r,i)=>{
+    const s = Number(sugeridos[i]);
+    if(!isFinite(s)) return r;
+    return Math.max(1, Math.min(Math.round(s), r + 2, 30));
+  });
+}
+
+// Aviso visible cuando el análisis vino del modelo local, para no confundirlo nunca
+// con el criterio de Gemini al releer el historial.
+function avisoMotorLocal(sesion){
+  if(!sesion || sesion.motor !== 'local') return '';
+  return `<div class="aviso-local">Análisis hecho por el modelo local de la Acer (Qwen 0.5B). Puede equivocarse o decir cosas raras: los pesos, series y objetivos de abajo los calculó la app, no el modelo.</div>`;
+}
+
+function plantillaResumenSesion(sesion, sinChat){
+  const recomHtml = sesion.analisis.recomendaciones.map(r=>{
+    const dur = sesion.duracionPorEjercicio && sesion.duracionPorEjercicio[r.id] != null ? sesion.duracionPorEjercicio[r.id] : null;
+    const cal = sesion.calificacionPorEjercicio && sesion.calificacionPorEjercicio[r.id] != null ? sesion.calificacionPorEjercicio[r.id] : null;
+    return `
+    <div class="recom-fila">
+      <div>
+        <div>${escapeHtml(r.nombre)}</div>
+        <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}${dur != null ? ' · '+dur+'s/serie' : ''}${cal != null ? ' · '+cal+'/5 ('+textoCalificacionFuerza(Math.round(cal))+')' : ''}</small>
+      </div>
+      <div class="recom-peso">${r.pesoSugerido} lbs · ${r.repsSugeridos.join('-')}</div>
+    </div>`;
+  }).join('');
+
+  const detalleSerieArr = formatearDuracionPorSerie(sesion.duraciones, sesion.ejercicios);
+  const detalleSerieHtml = detalleSerieArr && detalleSerieArr.length
+    ? `<details style="margin-top:8px;">
+        <summary style="cursor:pointer; color:var(--primary); font-size:13px;">Ver duración de cada serie</summary>
+        <div style="margin-top:8px; font-size:13px; font-family:var(--mono); color:var(--text-dim);">
+          ${detalleSerieArr.map(e => {
+            const tend = sesion.tendenciaPorEjercicio && sesion.tendenciaPorEjercicio[e.exId] != null ? sesion.tendenciaPorEjercicio[e.exId] : null;
+            return `<div style="margin-bottom:4px;"><span style="color:var(--text);">${escapeHtml(e.nombre)}:</span> ${e.texto}${tend != null ? ` <span style="color:${tend>15?'var(--amber)':'var(--text-dim)'};">(${tend>0?'+':''}${tend}%)</span>` : ''}</div>`;
+          }).join('')}
+        </div>
+      </details>`
+    : '';
+
+  const todasLasCalificaciones = (sesion.ejercicios||[]).flatMap(ej=>(ej.series||[]).map(s=>s.calificacion)).filter(c=>c!=null);
+  const calificacionPromedioGeneral = todasLasCalificaciones.length
+    ? Math.round((todasLasCalificaciones.reduce((a,b)=>a+b,0)/todasLasCalificaciones.length)*10)/10
+    : null;
+  const detalleCalificacionArr = formatearCalificacionPorSerie(sesion.ejercicios);
+  const detalleCalificacionHtml = detalleCalificacionArr && detalleCalificacionArr.length
+    ? `<details style="margin-top:8px;">
+        <summary style="cursor:pointer; color:var(--primary); font-size:13px;">Ver calificación de cada serie</summary>
+        <div style="margin-top:8px; font-size:13px; font-family:var(--mono); color:var(--text-dim);">
+          ${detalleCalificacionArr.map(e => `<div style="margin-bottom:4px;"><span style="color:var(--text);">${escapeHtml(e.nombre)}:</span> ${e.texto}</div>`).join('')}
+        </div>
+      </details>`
+    : '';
+
+  return `
+    <div class="card">
+      <h2>Sesión de hoy registrada</h2>
+      <p style="margin-bottom:4px;">Sueño: ${textoSueno(sesion.sueno)} · Energía: ${textoEnergia(sesion.energia)} · Molestias: ${textoMolestias(sesion.molestias)}</p>
+      ${sesion.duracionPromedio != null ? `<p style="margin-bottom:0;">Duración promedio por serie: <span style="font-family:var(--mono); color:var(--primary);">${sesion.duracionPromedio}s</span></p>` : ''}
+      ${sesion.tendenciaDentroSesion != null ? `<p style="margin-bottom:0;">Tendencia dentro de la sesión (última serie vs primera): <span style="font-family:var(--mono); color:${sesion.tendenciaDentroSesion>15?'var(--amber)':'var(--primary)'};">${sesion.tendenciaDentroSesion>0?'+':''}${sesion.tendenciaDentroSesion}%</span></p>` : ''}
+      ${calificacionPromedioGeneral != null ? `<p style="margin-bottom:0;">Calificación promedio de dificultad: <span style="font-family:var(--mono); color:${calificacionPromedioGeneral>=4?'var(--amber)':'var(--primary)'};">${calificacionPromedioGeneral}/5</span></p>` : ''}
+      ${sesion.tiempos && sesion.tiempos.tiempoTotalSeg != null ? `
+        <p style="margin-bottom:0; margin-top:6px;">Tiempo total de sesión: <span style="font-family:var(--mono); color:var(--primary);">${formatearDuracionLarga(sesion.tiempos.tiempoTotalSeg)}</span></p>
+        <p style="margin-bottom:0;"><small class="ayuda" style="margin:0;">Ejecución pura: ${formatearDuracionLarga(sesion.tiempos.tiempoEjecucionSeg)} · Descanso: ${formatearDuracionLarga(sesion.tiempos.tiempoDescansoSeg)}${sesion.tiempos.desdeInicioMarcado ? '' : ' · (desde la primera serie marcada, sin incluir su ejecución)'}</small></p>
+      ` : ''}
+      ${detalleSerieHtml}
+      ${detalleCalificacionHtml}
+    </div>
+    <div class="card">
+      <h2>Análisis de la IA</h2>
+      ${avisoMotorLocal(sesion)}
+      <div class="resultado-caja">${escapeHtml(sesion.analisis.evaluacion)}</div>
+      <h3>Próxima sesión de ${NOMBRE_BLOQUE[sesion.bloque]}</h3>
+      ${recomHtml}
+      ${sesion.analisis.consejoGeneral ? `<h3 style="margin-top:12px;">Consejo</h3><div class="resultado-caja">${escapeHtml(sesion.analisis.consejoGeneral)}</div>` : ''}
+    </div>
+    ${sinChat ? '' : `
+    <div class="card" id="cardChat">
+      <h2>Preguntar a la IA sobre esta sesión</h2>
+      <div id="listaChat"></div>
+      <div class="fila">
+        <input type="text" id="inputPregunta" placeholder="Escribe tu pregunta...">
+      </div>
+      <button class="btn secundario" id="btnPreguntar" onclick="enviarPregunta('${sesion.fecha}')">Enviar</button>
+      <button class="btn secundario" id="btnGuardarAcuerdo" style="margin-top:6px;" onclick="guardarAcuerdoChat('${sesion.fecha}')">💾 Guardar acuerdo de esta conversación</button>
+      <small class="ayuda">Si en el chat llegaron a un objetivo concreto de peso o reps, esto lo deja prellenado para la próxima sesión. Solo con Gemini.</small>
+    </div>`}`;
+}
+
+// ---- 7b. Movilidad, equilibrio y flexibilidad (miércoles/sábado) ----
+// Sin peso que progresar, pero sí análisis de IA con evaluación, consejo y chat de
+// seguimiento, igual que en fuerza — con foco en la tendencia de dificultad/dolor.
+function plantillaFormularioMovilidad(){
+  registrosMovilidad = [];
+  inicioMovilidad = null;
+  const categorias = {};
+  DATOS.config.movilidad.forEach(it=>{
+    (categorias[it.categoria] = categorias[it.categoria] || []).push(it);
+  });
+  const secciones = Object.keys(categorias).map(cat => `
+    <h3>${escapeHtml(cat)}</h3>
+    <div class="chip-lista">
+      ${categorias[cat].map(it => {
+        const prog = DATOS.progresoMovilidad[it.id] || {};
+        const seriesBase = prog.series != null ? prog.series : (it.series != null ? it.series : 1);
+        const objetivoBase = prog.objetivo != null ? prog.objetivo : (it.objetivo != null ? it.objetivo : 10);
+        const previo = (prog.seriesUltimaSesion != null && prog.objetivoUltimaSesion != null)
+          ? `Sesión anterior: ${prog.seriesUltimaSesion} × ${prog.objetivoUltimaSesion} ${it.unidad||'reps'}`
+          : '';
+        return `
+        <label class="chip" style="flex-direction:column; align-items:flex-start; gap:2px; width:100%;">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" data-movilidad="${it.id}" onchange="marcarMovilidadHecha('${it.id}', this.checked)"> ${escapeHtml(it.nombre)}
+          </span>
+          <small class="ayuda" style="margin:0;">${escapeHtml(it.detalle)}</small>
+          ${previo ? `<small class="ayuda" style="margin:0; color:var(--primary);">${previo}</small>` : ''}
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px; width:100%;">
+            <div class="stepper" style="flex:0.9;">
+              <button type="button" onclick="ajustarValor('${it.id}_series', -1)">−</button>
+              <input type="number" step="1" min="1" id="${it.id}_series" value="${seriesBase}">
+              <button type="button" onclick="ajustarValor('${it.id}_series', 1)">+</button>
+              <span class="unidad">series</span>
+            </div>
+            <div class="stepper" style="flex:1.1;">
+              <button type="button" onclick="ajustarValor('${it.id}_objetivo', -1)">−</button>
+              <input type="number" step="1" min="1" id="${it.id}_objetivo" value="${objetivoBase}">
+              <button type="button" onclick="ajustarValor('${it.id}_objetivo', 1)">+</button>
+              <span class="unidad" style="width:auto;">${escapeHtml(it.unidad||'reps')}</span>
+            </div>
+          </div>
+          <select data-dificultad="${it.id}" class="oculto" style="margin-top:4px;">
+            <option value="">Calificación de hoy...</option>
+            <option value="1">1 - Normal</option>
+            <option value="2">2 - Con cierta dificultad</option>
+            <option value="3">3 - Con dificultad</option>
+            <option value="4">4 - Con dificultad y algo de dolor</option>
+            <option value="5">5 - Con dificultad y mucho dolor</option>
+          </select>
+        </label>`;
+      }).join('')}
+    </div>`).join('');
+
+  return `
+    <div class="card">
+      <h2>Movilidad, equilibrio y flexibilidad</h2>
+      <p>Rutina suave de 15-20 minutos. Ningún ejercicio debe causar dolor.</p>
+      <div class="fila" style="margin-bottom:6px;">
+        <button type="button" class="btn chico secundario" id="btnIniciarMovilidad" onclick="iniciarSesionMovilidad()">▶ Marcar inicio</button>
+      </div>
+      <small class="ayuda">Opcional: mide cuánto te toma cada ejercicio (sin cronómetro ni alarma). Cada ejercicio viene prellenado con tus series y objetivo actuales.</small>
+      ${secciones}
+    </div>
+    <div class="card">
+      <label for="selMolestiasMov">Molestias articulares o musculares</label>
+      <select id="selMolestiasMov" onchange="document.getElementById('detalleMolestiasMov').classList.toggle('oculto', this.value==='ninguna')">
+        <option value="ninguna" selected>Ninguna</option>
+        <option value="leve">Leve</option>
+        <option value="moderada">Moderada</option>
+        <option value="debo_parar">Importante, debería parar</option>
+      </select>
+      <input type="text" id="detalleMolestiasMov" class="oculto" placeholder="¿Dónde y qué tipo de molestia?">
+    </div>
+    <div class="card">
+      <button class="btn" id="btnRegistrarMovilidad" onclick="registrarMovilidad()">Registrar y analizar con IA</button>
+      <div id="loadingMovilidad" class="oculto"></div>
+      <div id="errorMovilidad" class="error-msg oculto"></div>
+      <button type="button" class="btn secundario" style="margin-top:10px;" onclick="reiniciarRegistroHoy(false, 'movilidad')">Reiniciar registro</button>
+      <small class="ayuda">Borra los checks y los valores de este formulario si te confundiste.</small>
+    </div>`;
+}
+
+function iniciarSesionMovilidad(){
+  inicioMovilidad = Date.now();
+  registrosMovilidad = [];
+  const btn = document.getElementById('btnIniciarMovilidad');
+  if(btn){ btn.textContent = '✓ Sesión iniciada'; btn.disabled = true; }
+  mostrarToast('Sesión iniciada — se medirá cuánto te toma cada ejercicio');
+}
+
+function marcarMovilidadHecha(id, checked){
+  const sel = document.querySelector(`[data-dificultad="${id}"]`);
+  if(sel) sel.classList.toggle('oculto', !checked);
+  if(!checked) return;
+  const existente = registrosMovilidad.find(r=>r.id===id);
+  if(existente){ existente.t = Date.now(); }
+  else{ registrosMovilidad.push({id, t: Date.now()}); }
+}
+
+// Duración de cada ejercicio = tiempo desde el check anterior (o desde "Marcar inicio" si es el
+// primero). A diferencia de fuerza, aquí no hay descanso programado que restar.
+function calcularDuracionesMovilidad(){
+  const ordenado = registrosMovilidad.slice().sort((a,b)=>a.t-b.t);
+  const duraciones = {};
+  let anterior = inicioMovilidad;
+  ordenado.forEach(r=>{
+    if(anterior != null) duraciones[r.id] = Math.max(0, Math.round((r.t - anterior)/1000));
+    anterior = r.t;
+  });
+  return duraciones;
+}
+
+function calcularTiempoTotalMovilidad(){
+  const ordenado = registrosMovilidad.slice().sort((a,b)=>a.t-b.t);
+  if(!ordenado.length) return null;
+  const inicio = inicioMovilidad != null ? inicioMovilidad : ordenado[0].t;
+  const fin = ordenado[ordenado.length-1].t;
+  const seg = Math.round((fin - inicio)/1000);
+  return seg > 0 ? seg : null;
+}
+
+function construirPromptMovilidad(fechaInfo, form){
+  const lineas = form.items.map(it =>
+    `- ${it.nombre} (${it.categoria}) [id:${it.id}]: ${it.hecho ? 'hecho' : 'omitido'}, hoy ${it.series} series × ${it.objetivo} ${it.unidad}${it.seriesPrevias != null ? ' (sesión anterior: '+it.seriesPrevias+' × '+it.objetivoPrevio+')' : ''}${it.dificultad != null ? ', calificación ' + it.dificultad + '/5 (' + textoDificultadMovilidad(it.dificultad) + ')' : ''}${it.duracionSeg != null ? ', ' + it.duracionSeg + 's' : ''}`
+  ).join('\n');
+
+  const historica = DATOS.historial
+    .filter(s => s.bloque === 'movilidad' && s.dificultadPromedio != null)
+    .slice(-6)
+    .map(s => `${s.fecha}: ${s.dificultadPromedio}/5`)
+    .join(' | ');
+
+  return `Eres un preparador físico especializado en movilidad, equilibrio y flexibilidad para un atleta mayor. Perfil: ${PERFIL_USUARIO}
+
+Contexto importante: el usuario ha perdido rango de movimiento respecto a meses atrás y quiere recuperarlo de forma medible, no hacer estos ejercicios como relleno. Por eso ahora registra series y objetivo (repeticiones o segundos) de cada ejercicio.
+
+Sé concreto y breve para ahorrar tokens: máximo 2-3 frases por sección, sin relleno. Este espacio es solo para temas de entrenamiento; si hay una pregunta de seguimiento ajena al tema, no la respondas.
+
+DATOS DE HOY (${fechaInfo.fechaISO}, Movilidad):
+- Molestias generales de la sesión: ${form.molestias}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''} (usa exactamente estas palabras si las mencionas en tu respuesta; no agregues, cambies ni omitas partes del cuerpo, y no le atribuyas la molestia a un ejercicio específico de la lista de abajo salvo que el usuario lo haya dicho así explícitamente)
+- Ejercicios de hoy:
+${lineas}
+- Calificación promedio hoy: ${form.dificultadPromedio != null ? form.dificultadPromedio+'/5' : 'sin datos'}. Escala: 1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor.
+- Calificación promedio en sesiones recientes de movilidad: ${historica || 'sin datos previos'}.
+- Tiempo total de la sesión de hoy (medido con las marcas de tiempo reales; aquí no hay descanso programado entre ejercicios): ${form.tiempoTotalSeg != null ? formatearDuracionLarga(form.tiempoTotalSeg) : 'sin datos suficientes'}.
+
+INSTRUCCIONES:
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques de markdown, con esta estructura exacta:
+{
+  "evaluacion": "máximo 2-3 frases sobre cómo le fue hoy, comparando con la tendencia reciente si hay datos para eso",
+  "recomendaciones": [
+    {"id": "<mismo id del ejercicio>", "series": <numero>, "objetivo": <numero>, "nota": "máximo 1 frase corta"}
+  ],
+  "consejoGeneral": "máximo 2-3 frases de consejo — si algún ejercicio calificó 4 o 5 (dolor), coméntalo con cautela y sugiere consultar a un profesional si el dolor persiste o empeora; si la tendencia mejora, dilo con ánimo pero sin exagerar"
+}
+Reglas para las recomendaciones: usa exactamente los mismos "id" entre corchetes e incluye TODOS los ejercicios de la lista. Los aumentos deben ser mínimos y sostenibles (por ejemplo +1 serie, o unas pocas repeticiones/segundos), nunca agresivos. Si un ejercicio calificó 1 o 2 y no hubo dolor, puedes sugerir un aumento pequeño. Si calificó 4 o 5, o se reportaron molestias relevantes, o el ejercicio fue omitido, mantén exactamente los mismos valores de hoy o sugiere reducir. Nunca minimices el dolor reportado ni lo confundas con simple esfuerzo o dificultad.`;
+}
+
+// ---- Contexto del modelo local (movilidad): mismo criterio que en fuerza ----
+function construirPromptLocalMovilidad(form){
+  const lineas = form.items.map((it,i)=>
+    `${i+1}. ${it.nombre}: ${it.hecho ? 'lo hizo' : 'no lo hizo'}, ${it.series} series de ${it.objetivo} ${it.unidad}${it.dificultad != null ? `, dificultad ${it.dificultad} de 5` : ', sin dato de dificultad'}`
+  ).join('\n');
+
+  return `Rutina de movilidad, equilibrio y flexibilidad de hoy, hecha en casa:
+${lineas}
+
+Molestias de hoy: ${textoMolestias(form.molestias)}${form.molestiasDetalle ? ' — ' + form.molestiasDetalle : ''}.
+Escala de dificultad: 1 normal, 2 con cierta dificultad, 3 con dificultad, 4 con dificultad y algo de dolor, 5 con dificultad y mucho dolor. El 4 y el 5 significan dolor, no solo esfuerzo.
+
+Tu tarea es elegir, para cada ejercicio de la lista, una sola palabra: subir, mantener o bajar. Aplica esta regla al pie de la letra:
+- dificultad 1 o 2 = subir
+- dificultad 3 = mantener
+- dificultad 4 o 5 = bajar
+- no lo hizo = mantener
+- sin dato de dificultad = mantener
+${form.molestias !== 'ninguna' ? 'Excepción de hoy: como hay molestias, todas las decisiones deben ser mantener.' : ''}
+Escribe además una evaluación de máximo 2 frases y un consejo de máximo 2 frases. Si hubo dolor, dilo con cautela y sugiere consultar a un profesional si sigue o empeora. No escribas números de series ni de repeticiones: de eso se encarga la aplicación.`;
+}
+
+function decisionesAMovilidad(form, textoRespuesta){
+  const parsed = parsearRespuestaIA(textoRespuesta);
+  const decisiones = Array.isArray(parsed.ejercicios) ? parsed.ejercicios : [];
+  const recomendaciones = form.items.map((it,i)=>{
+    const d = decisiones.find(x=>Number(x.n) === i+1);
+    const paso = Math.max(1, Math.round(it.objetivo * 0.1));
+    let objetivo = it.objetivo;
+    let nota = 'Se mantiene igual para consolidar.';
+    if(d && d.decision === 'subir'){ objetivo = it.objetivo + paso; nota = 'El modelo local sugiere subir un poco el objetivo.'; }
+    else if(d && d.decision === 'bajar'){ objetivo = Math.max(1, it.objetivo - paso); nota = 'El modelo local sugiere bajar el objetivo.'; }
+    return {id: it.id, series: it.series, objetivo, nota};
+  });
+  return {
+    evaluacion: typeof parsed.evaluacion === 'string' ? parsed.evaluacion : '',
+    consejoGeneral: typeof parsed.consejo === 'string' ? parsed.consejo : '',
+    recomendaciones
+  };
+}
+
+async function registrarMovilidad(){
+  const fechaInfo = obtenerFechaGuayaquil();
+  const duraciones = calcularDuracionesMovilidad();
+  const items = DATOS.config.movilidad.map(it=>{
+    const chk = document.querySelector(`[data-movilidad="${it.id}"]`);
+    const hecho = chk ? chk.checked : false;
+    const selDif = document.querySelector(`[data-dificultad="${it.id}"]`);
+    const dificultad = hecho && selDif && selDif.value ? parseInt(selDif.value) : null;
+    const inpSeries = document.getElementById(`${it.id}_series`);
+    const inpObjetivo = document.getElementById(`${it.id}_objetivo`);
+    const prog = DATOS.progresoMovilidad[it.id] || {};
+    return {
+      id: it.id, nombre: it.nombre, categoria: it.categoria, hecho, dificultad,
+      series: inpSeries ? Math.max(1, parseInt(inpSeries.value)||1) : (it.series||1),
+      objetivo: inpObjetivo ? Math.max(1, parseInt(inpObjetivo.value)||1) : (it.objetivo||10),
+      unidad: it.unidad || 'reps',
+      seriesPrevias: prog.seriesUltimaSesion != null ? prog.seriesUltimaSesion : null,
+      objetivoPrevio: prog.objetivoUltimaSesion != null ? prog.objetivoUltimaSesion : null,
+      duracionSeg: duraciones[it.id] != null ? duraciones[it.id] : null
+    };
+  });
+  const dificultades = items.filter(i=>i.dificultad != null).map(i=>i.dificultad);
+  const dificultadPromedio = dificultades.length ? Math.round((dificultades.reduce((a,b)=>a+b,0)/dificultades.length)*10)/10 : null;
+  const form = {
+    molestias: document.getElementById('selMolestiasMov').value,
+    molestiasDetalle: document.getElementById('detalleMolestiasMov').value.trim(),
+    items, dificultadPromedio,
+    tiempoTotalSeg: calcularTiempoTotalMovilidad()
+  };
+
+  const btn = document.getElementById('btnRegistrarMovilidad');
+  const loading = document.getElementById('loadingMovilidad');
+  const errDiv = document.getElementById('errorMovilidad');
+  errDiv.classList.add('oculto');
+  btn.disabled = true;
+  loading.innerHTML = htmlPensando(usaModeloLocal() ? 'Analizando en la Acer...' : 'Analizando tu sesión de movilidad...');
+  loading.classList.remove('oculto');
+  iniciarContadorEspera();
+
+  try{
+    let prompt, respuestaTexto, parsed;
+    if(usaModeloLocal()){
+      prompt = construirPromptLocalMovilidad(form);
+      respuestaTexto = await llamarLocal(
+        [{role:'user', content: prompt}],
+        {esquema: esquemaLocalDecisiones(form.items.length), maxTokens: tokensNecesarios(form.items.length)}
+      );
+      parsed = decisionesAMovilidad(form, respuestaTexto);
+    }else{
+      prompt = construirPromptMovilidad(fechaInfo, form);
+      respuestaTexto = await llamarGemini([{role:'user', parts:[{text:prompt}]}]);
+      parsed = parsearRespuestaIA(respuestaTexto);
+    }
+    const recomendacionesFinal = aplicarLimitesMovilidad(form, parsed.recomendaciones || []);
+
+    const sesion = {
+      fecha: fechaInfo.fechaISO, diaSemana: fechaInfo.diaSemana,
+      bloque:'movilidad',
+      motor: motorActual(),
+      molestias: form.molestias, molestiasDetalle: form.molestiasDetalle,
+      movilidad: items, dificultadPromedio,
+      tiempoTotalSeg: form.tiempoTotalSeg,
+      analisis: {
+        evaluacion: parsed.evaluacion || respuestaTexto,
+        recomendaciones: recomendacionesFinal,
+        consejoGeneral: parsed.consejoGeneral || ''
+      },
+      geminiHistorial: [
+        {role:'user', parts:[{text:prompt}]},
+        {role:'model', parts:[{text:respuestaTexto}]}
+      ],
+      chat: []
+    };
+
+    if(modoSimulacion){
+      document.getElementById('vista-simulacion').innerHTML = `
+        <div class="card" style="border-color:var(--amber); background:rgba(217,154,78,.12);">
+          <strong style="color:var(--amber);">🧪 MODO SIMULACIÓN</strong> — este resultado no se guardó en tu historial real.
+          <button class="btn chico secundario" style="margin-top:10px;" onclick="salirSimulacion()">Salir de simulación</button>
+        </div>
+        ${plantillaResumenMovilidad(sesion, true)}`;
+      return;
+    }
+    // Actualizar el progreso: lo hecho hoy queda como referencia y la recomendación como próximo objetivo
+    recomendacionesFinal.forEach(r=>{
+      const hoy = items.find(i=>i.id===r.id);
+      if(!hoy) return;
+      DATOS.progresoMovilidad[r.id] = {
+        series: r.series,
+        objetivo: r.objetivo,
+        seriesUltimaSesion: hoy.series,
+        objetivoUltimaSesion: hoy.objetivo
+      };
+    });
+    DATOS.historial.push(sesion);
+    guardarDatos();
+    borradorHoy = null;
+    renderHoy();
+  }catch(e){
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.classList.remove('oculto');
+    btn.disabled = false;
+    loading.classList.add('oculto');
+  }finally{
+    detenerContadorEspera();
+  }
+}
+
+// Capa de seguridad determinística para movilidad: nunca se confía en la IA para el número final.
+// Aumentos topados a +1 serie y +20% del objetivo; y se mantiene lo de hoy si hubo dolor (4-5),
+// molestias reportadas, o si el ejercicio no se hizo.
+function aplicarLimitesMovilidad(form, recomendaciones){
+  const mapa = {};
+  recomendaciones.forEach(r=> mapa[r.id] = r);
+  const molestiasReportadas = form.molestias !== 'ninguna';
+
+  return form.items.map(it=>{
+    const sugerida = mapa[it.id];
+    const debeMantener = !it.hecho || molestiasReportadas || (it.dificultad != null && it.dificultad >= 4);
+    if(debeMantener || !sugerida){
+      return {
+        id: it.id, nombre: it.nombre, series: it.series, objetivo: it.objetivo, unidad: it.unidad,
+        nota: sugerida && sugerida.nota ? sugerida.nota : 'Se mantiene igual para consolidar.'
+      };
+    }
+    const seriesTope = it.series + 1;
+    const objetivoTope = Math.max(it.objetivo + 1, Math.round(it.objetivo * 1.2));
+    const series = Math.max(1, Math.min(seriesTope, Math.round(sugerida.series ?? it.series)));
+    const objetivo = Math.max(1, Math.min(objetivoTope, Math.round(sugerida.objetivo ?? it.objetivo)));
+    return {id: it.id, nombre: it.nombre, series, objetivo, unidad: it.unidad, nota: sugerida.nota || ''};
+  });
+}
+
+function plantillaResumenMovilidad(sesion, sinChat){
+  const hechos = sesion.movilidad.filter(m=>m.hecho).length;
+  const total = sesion.movilidad.length;
+  const lista = sesion.movilidad.map(m=>{
+    const detalles = [];
+    if(m.series != null && m.objetivo != null) detalles.push(`${m.series} × ${m.objetivo} ${m.unidad||'reps'}`);
+    if(m.dificultad != null) detalles.push(`${m.dificultad}/5 · ${textoDificultadMovilidad(m.dificultad)}`);
+    if(m.duracionSeg != null) detalles.push(`${m.duracionSeg}s`);
+    return `<div style="padding:4px 0;">${m.hecho ? '✅' : '⬜️'} ${escapeHtml(m.nombre)}${detalles.length ? ' · '+detalles.join(' · ') : ''}</div>`;
+  }).join('');
+  const recomHtml = (sesion.analisis && sesion.analisis.recomendaciones && sesion.analisis.recomendaciones.length)
+    ? `<h3 style="margin-top:12px;">Objetivo para la próxima sesión</h3>` + sesion.analisis.recomendaciones.map(r=>{
+        const hoy = sesion.movilidad.find(m=>m.id===r.id);
+        const subio = hoy && (r.series > hoy.series || r.objetivo > hoy.objetivo);
+        return `
+        <div class="recom-fila">
+          <div>
+            <div>${escapeHtml(r.nombre)}</div>
+            <small class="ayuda" style="margin:2px 0 0;">${escapeHtml(r.nota||'')}</small>
+          </div>
+          <div class="recom-peso" style="color:${subio?'var(--green)':'var(--primary)'};">${r.series} × ${r.objetivo} ${escapeHtml(r.unidad||'reps')}</div>
+        </div>`;
+      }).join('')
+    : '';
+  const analisisHtml = sesion.analisis ? `
+    <div class="card">
+      <h2>Análisis de la IA</h2>
+      ${avisoMotorLocal(sesion)}
+      <div class="resultado-caja">${escapeHtml(sesion.analisis.evaluacion)}</div>
+      ${recomHtml}
+      ${sesion.analisis.consejoGeneral ? `<h3 style="margin-top:12px;">Consejo</h3><div class="resultado-caja">${escapeHtml(sesion.analisis.consejoGeneral)}</div>` : ''}
+    </div>` : '';
+  const chatHtml = (sinChat || !sesion.analisis) ? '' : `
+    <div class="card" id="cardChat">
+      <h2>Preguntar a la IA sobre esta sesión</h2>
+      <div id="listaChat"></div>
+      <div class="fila">
+        <input type="text" id="inputPregunta" placeholder="Escribe tu pregunta...">
+      </div>
+      <button class="btn secundario" id="btnPreguntar" onclick="enviarPregunta('${sesion.fecha}')">Enviar</button>
+    </div>`;
+  return `<div class="card">
+    <h2>Movilidad de hoy registrada</h2>
+    <p>${hechos}/${total} ejercicios completados${sesion.dificultadPromedio != null ? ' · Calificación promedio: '+sesion.dificultadPromedio+'/5' : ''}${sesion.molestias && sesion.molestias!=='ninguna' ? ' · Molestias: '+textoMolestias(sesion.molestias) : ''}${sesion.tiempoTotalSeg != null ? ' · Tiempo total: '+formatearDuracionLarga(sesion.tiempoTotalSeg) : ''}</p>
+    ${lista}
+  </div>
+  ${analisisHtml}
+  ${chatHtml}`;
+}
+
+// ---- Copiar al portapapeles (con respaldo para navegadores que no permiten la API moderna) ----
+async function copiarAlPortapapeles(texto, mensajeOk){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(texto);
+    }else{
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.cssText = 'position:fixed; left:-9999px; top:0;';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    mostrarToast(mensajeOk || 'Copiado');
+  }catch(e){
+    mostrarToast('No se pudo copiar: ' + e.message, 5000);
+  }
+}
+
+// Guarda las conversaciones activas para que los botones de copiar tengan de dónde leer,
+// sin depender de recorrer el DOM ni de re-escapar el texto ya renderizado.
+let chatCopiables = { sesion: [], general: [] };
+
+function copiarParChat(cual, indiceRespuesta){
+  const msgs = chatCopiables[cual] || [];
+  const respuesta = msgs[indiceRespuesta];
+  if(!respuesta) return;
+  const pregunta = indiceRespuesta > 0 && msgs[indiceRespuesta-1].rol === 'usuario' ? msgs[indiceRespuesta-1] : null;
+  const texto = (pregunta ? 'Pregunta: ' + pregunta.texto + '\n\n' : '') + 'Respuesta: ' + respuesta.texto;
+  copiarAlPortapapeles(texto, 'Pregunta y respuesta copiadas');
+}
+
+function copiarConversacion(cual){
+  const msgs = chatCopiables[cual] || [];
+  if(!msgs.length){ mostrarToast('No hay conversación que copiar'); return; }
+  const texto = msgs.map(m => (m.rol==='usuario' ? 'Pregunta: ' : 'Respuesta: ') + m.texto).join('\n\n');
+  copiarAlPortapapeles(texto, 'Conversación completa copiada');
+}
+
+// Construye el HTML de una lista de mensajes con botón de copiar bajo cada respuesta de la IA.
+function htmlMensajesChat(mensajes, cual){
+  return mensajes.map((m,i) => `
+    <div class="msg-chat ${m.rol==='usuario'?'usuario':'ia'}"><b>${m.rol==='usuario'?'Tú':'IA'}:</b> ${escapeHtml(m.texto)}</div>
+    ${m.rol!=='usuario' ? `<button type="button" class="btn-copiar" onclick="copiarParChat('${cual}', ${i})">📋 Copiar pregunta y respuesta</button>` : ''}
+  `).join('');
+}
+
+function renderChatEnDom(sesion){
+  const cont = document.getElementById('listaChat');
+  if(!cont) return;
+  chatCopiables.sesion = sesion.chat.slice();
+  const botonTodo = sesion.chat.length
+    ? `<button type="button" class="btn chico secundario" style="margin-bottom:10px;" onclick="copiarConversacion('sesion')">📋 Copiar toda la conversación</button>`
+    : '';
+  cont.innerHTML = botonTodo + htmlMensajesChat(sesion.chat, 'sesion');
+}
+
+// Resumen corto de la sesión, para que el modelo local reciba solo los datos crudos
+// y no el prompt completo de análisis (que sería demasiado largo y lento para él).
+function resumenCortoSesion(sesion){
+  if(sesion.bloque === 'movilidad'){
+    return (sesion.movilidad||[]).map(m=>`${m.nombre}: ${m.hecho ? 'lo hizo' : 'no lo hizo'}, ${m.series} series de ${m.objetivo} ${m.unidad||'reps'}${m.dificultad!=null?`, dificultad ${m.dificultad} de 5`:''}`).join('\n');
+  }
+  return (sesion.ejercicios||[]).map(ej=>`${ej.nombre}: ` + ej.series.map((s,i)=>`serie ${i+1} con ${s.peso} libras y ${s.reps} repeticiones`).join('; ')).join('\n');
+}
+
+function mensajesLocalesSesion(sesion, pregunta){
+  const previos = sesion.chat.slice(-5, -1).map(m=>({role: m.rol==='usuario'?'user':'assistant', content: m.texto}));
+  return [
+    {role:'user', content:`Estos son los datos de la sesión de entrenamiento de hoy (${sesion.fecha}):\n${resumenCortoSesion(sesion)}\nMolestias: ${textoMolestias(sesion.molestias)}${sesion.molestiasDetalle ? ' — ' + sesion.molestiasDetalle : ''}.\nResponde solo con estos datos.`},
+    {role:'assistant', content:'Entendido, tengo los datos de la sesión.'}
+  ].concat(previos, [{role:'user', content: pregunta}]);
+}
+
+async function enviarPregunta(fecha){
+  const sesion = DATOS.historial.find(s=>s.fecha===fecha);
+  const input = document.getElementById('inputPregunta');
+  const pregunta = input.value.trim();
+  if(!pregunta) return;
+  const btn = document.getElementById('btnPreguntar');
+  btn.disabled = true;
+
+  sesion.chat.push({rol:'usuario', texto:pregunta});
+  renderChatEnDom(sesion);
+  input.value = '';
+  const listaChat = document.getElementById('listaChat');
+  if(listaChat) listaChat.insertAdjacentHTML('beforeend', `<div id="pensandoChat">${htmlPensando(usaModeloLocal() ? 'El modelo de la Acer está pensando...' : 'La IA está pensando...')}</div>`);
+  iniciarContadorEspera();
+
+  try{
+    // geminiHistorial ya contiene todas las preguntas y respuestas anteriores, así que
+    // basta con agregar la nueva pregunta (antes se reenviaba también sesion.chat y la
+    // conversación viajaba duplicada).
+    const respuesta = usaModeloLocal()
+      ? await llamarLocal(mensajesLocalesSesion(sesion, pregunta), {})
+      : await llamarGemini(sesion.geminiHistorial.concat([{role:'user', parts:[{text:pregunta}]}]));
+    sesion.geminiHistorial.push({role:'user', parts:[{text:pregunta}]}, {role:'model', parts:[{text:respuesta}]});
+    sesion.chat.push({rol:'ia', texto:respuesta});
+    guardarDatos();
+    renderChatEnDom(sesion);
+  }catch(e){
+    sesion.chat.push({rol:'ia', texto:'Error: ' + e.message});
+    renderChatEnDom(sesion);
+  }finally{
+    detenerContadorEspera();
+    btn.disabled = false;
+  }
+}
+
+// Le pide a la IA que resuma en JSON el objetivo final acordado en la conversación (peso/reps
+// por ejercicio) y actualiza DATOS.progreso — así lo que se conversó queda prellenado la próxima
+// vez, no solo escrito en el chat. Solo aplica a sesiones de fuerza (tienen peso/reps que ajustar).
+async function guardarAcuerdoChat(fecha){
+  const sesion = DATOS.historial.find(s=>s.fecha===fecha);
+  if(!sesion || !sesion.ejercicios) return;
+  if(usaModeloLocal()){
+    mostrarToast('Guardar acuerdo solo funciona con Gemini: el modelo local no resume conversaciones de forma confiable', 6000);
+    return;
+  }
+  const btn = document.getElementById('btnGuardarAcuerdo');
+  if(btn) btn.disabled = true;
+
+  const promptResumen = `Basándote en TODA la conversación de este chat, resume el objetivo final que quedó acordado para la próxima sesión, ejercicio por ejercicio. Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques de markdown, con esta estructura exacta:
+{"objetivos": [{"id": "<mismo id de ejercicio usado en la sesión original>", "pesoSugerido": <numero>, "repsSugeridos": [<numeros>]}]}
+Incluye solo los ejercicios sobre los que se llegó a un acuerdo concreto y explícito en la conversación. Si no se acordó nada concreto para ningún ejercicio, responde {"objetivos": []}. No inventes un acuerdo que no esté explícito en el chat.`;
+
+  const contents = sesion.geminiHistorial.concat([{role:'user', parts:[{text: promptResumen}]}]);
+
+  try{
+    const respuesta = await llamarGemini(contents);
+    let limpio = respuesta.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+    const parsed = JSON.parse(limpio);
+    const objetivos = Array.isArray(parsed.objetivos) ? parsed.objetivos : [];
+    if(!objetivos.length){
+      mostrarToast('La IA no encontró un acuerdo concreto que guardar en esta conversación');
+      return;
+    }
+    const todosLosEjercicios = DATOS.config.ejercicios.superior.concat(DATOS.config.ejercicios.inferior);
+    const nombresActualizados = [];
+    objetivos.forEach(o=>{
+      const prog = DATOS.progreso[o.id];
+      const cfgEj = todosLosEjercicios.find(e=>e.id===o.id);
+      if(!prog || !cfgEj) return;
+      const pesoBase = prog.pesoUltimaSesion != null ? prog.pesoUltimaSesion : prog.pesoObjetivo;
+      let pesoFinal = typeof o.pesoSugerido === 'number' ? o.pesoSugerido : pesoBase;
+      const delta = Math.max(-cfgEj.incrementoMax, Math.min(cfgEj.incrementoMax, pesoFinal - pesoBase));
+      pesoFinal = Math.round((pesoBase + delta) * 2) / 2;
+      const repsFinal = Array.isArray(o.repsSugeridos) && o.repsSugeridos.length
+        ? o.repsSugeridos.map(n=>Math.max(1, Math.round(n)))
+        : prog.repsObjetivo;
+      prog.pesoObjetivo = pesoFinal;
+      prog.repsObjetivo = repsFinal;
+      nombresActualizados.push(cfgEj.nombre);
+    });
+    if(!nombresActualizados.length){
+      mostrarToast('No se pudo relacionar el acuerdo con ningún ejercicio conocido');
+      return;
+    }
+    guardarDatos();
+    mostrarToast('Objetivo actualizado para: ' + nombresActualizados.join(', '), 5000);
+  }catch(e){
+    mostrarToast('No se pudo guardar el acuerdo: ' + e.message, 5000);
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+async function llamarGemini(contents){
+  const apiKey = obtenerApiKey();
+  if(!apiKey) throw new Error('No hay API Key de Gemini guardada en este dispositivo. Cámbiala en Ajustes o usa el modelo local.');
+  const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json', 'x-goog-api-key': apiKey},
+    body: JSON.stringify({ contents, generationConfig:{ temperature:0.5 } })
+  });
+  if(!respuesta.ok){
+    let msg = 'Error de conexión con Gemini';
+    try{ const errData = await respuesta.json(); msg = errData.error?.message || JSON.stringify(errData); }catch(e){}
+    throw new Error(msg);
+  }
+  const datos = await respuesta.json();
+  return datos.candidates[0].content.parts[0].text;
+}
+
+// ---- 8. Vista: Historial ----
+function renderHistorial(){
+  const cont = document.getElementById('vista-historial');
+  if(DATOS.historial.length === 0){
+    cont.innerHTML = `<div class="card"><h1>Historial</h1><p>Todavía no hay sesiones registradas.</p></div>`;
+    return;
+  }
+  const items = DATOS.historial.slice().reverse().map((s,idxRev)=>{
+    const idx = DATOS.historial.length - 1 - idxRev;
+    const resumen = s.bloque === 'movilidad'
+      ? s.movilidad.filter(m=>m.hecho).map(m=>m.nombre).slice(0,2).join(' · ') || 'Sin ejercicios marcados'
+      : s.ejercicios.slice(0,2).map(e=>`${e.nombre}: ${e.series[0].peso}lbs`).join(' · ');
+    return `<div class="hist-item">
+      <div class="fecha">${s.fecha} · ${NOMBRE_BLOQUE[s.bloque]}${s.penalizado?' · recuperación':''}${s.motor==='local'?' · modelo local':''}</div>
+      <div style="margin:4px 0;">${escapeHtml(resumen)}</div>
+      <button class="btn chico secundario" onclick="verDetalleHistorial(${idx})">Ver detalle</button>
+      <div id="detalle-${idx}" class="oculto" style="margin-top:10px;"></div>
+    </div>`;
+  }).join('');
+  cont.innerHTML = `<div class="card"><h1>Historial</h1></div>` + items;
+}
+function verDetalleHistorial(idx){
+  const div = document.getElementById('detalle-'+idx);
+  const abierto = !div.classList.contains('oculto');
+  if(abierto){ div.classList.add('oculto'); div.innerHTML=''; return; }
+  const s = DATOS.historial[idx];
+  if(s.bloque === 'movilidad'){
+    div.innerHTML = plantillaResumenMovilidad(s);
+    div.classList.remove('oculto');
+    renderChatEnDom(s);
+    return;
+  }
+  div.innerHTML = plantillaResumenSesion(s);
+  div.classList.remove('oculto');
+  renderChatEnDom(s);
+  const btnPreguntar = div.querySelector('#btnPreguntar');
+  if(btnPreguntar) btnPreguntar.setAttribute('onclick', `enviarPregunta('${s.fecha}')`);
+}
+
+// ---- 8b. Vista: Consulta general (chat libre, cualquier día) ----
+function renderConsulta(){
+  const cont = document.getElementById('vista-consulta');
+  cont.innerHTML = `
+    <div class="card">
+      <h1>Consulta</h1>
+      <p>Pregúntale a la IA sobre tu progreso general, tu rutina o cualquier duda de entrenamiento — no hace falta registrar una sesión ni esperar a un día programado.</p>
+      ${usaModeloLocal() ? `<div class="aviso-local">Estás preguntándole al modelo local de la Acer. Responde lento y se equivoca con facilidad: para dudas que importan, cambia a Gemini en Ajustes.</div>` : ''}
+    </div>
+    <div class="card">
+      <div id="listaConsultaGeneral"></div>
+      <div class="fila">
+        <input type="text" id="inputPreguntaGeneral" placeholder="Escribe tu pregunta...">
+      </div>
+      <button class="btn secundario" id="btnPreguntarGeneral" onclick="enviarPreguntaGeneral()">Enviar</button>
+    </div>`;
+  renderMensajesGeneral();
+}
+
+function renderMensajesGeneral(){
+  const cont = document.getElementById('listaConsultaGeneral');
+  if(!cont) return;
+  chatCopiables.general = DATOS.chatGeneral.mensajes.slice();
+  if(DATOS.chatGeneral.mensajes.length === 0){
+    cont.innerHTML = `<small class="ayuda">Aún no hay preguntas. Por ejemplo: "¿cómo va mi progreso este mes?" o "¿debería bajar el ritmo esta semana?".</small>`;
+    return;
+  }
+  cont.innerHTML = `<button type="button" class="btn chico secundario" style="margin-bottom:10px;" onclick="copiarConversacion('general')">📋 Copiar toda la conversación</button>`
+    + htmlMensajesChat(DATOS.chatGeneral.mensajes, 'general');
+}
+
+// Arma un resumen fresco del estado actual (horario, pesos objetivo, últimas sesiones)
+// para que la IA responda con datos reales aunque la conversación sea larga.
+function construirContextoGeneral(){
+  const fechaInfo = obtenerFechaGuayaquil();
+  const bloqueHoy = bloqueDelDia(DATOS.config, fechaInfo.diaSemana);
+
+  const resumenProgreso = [];
+  ['superior','inferior'].forEach(b=>{
+    DATOS.config.ejercicios[b].forEach(ej=>{
+      const p = DATOS.progreso[ej.id];
+      if(p) resumenProgreso.push(`- ${ej.nombre} (${NOMBRE_BLOQUE[b]}): ${p.pesoObjetivo} lbs objetivo actual, reps ${p.repsObjetivo.join('-')}`);
+    });
+  });
+
+  const ultimas = DATOS.historial.slice(-5).map(s=>{
+    if(s.bloque === 'movilidad'){
+      const hechos = s.movilidad.filter(m=>m.hecho).length;
+      return `- ${s.fecha} (Movilidad): ${hechos}/${s.movilidad.length} ejercicios, molestias ${textoMolestias(s.molestias)}${s.dificultadPromedio != null ? ', dificultad promedio ' + s.dificultadPromedio + '/5' : ''}`;
+    }
+    return `- ${s.fecha} (${NOMBRE_BLOQUE[s.bloque]}${s.penalizado?', sesión de recuperación':''}): sueño ${textoSueno(s.sueno)}, energía ${textoEnergia(s.energia)}, molestias ${textoMolestias(s.molestias)}${s.duracionPromedio != null ? ', duración promedio por serie ' + s.duracionPromedio + 's' : ''}`;
+  }).join('\n');
+
+  const movilidadHistorica = DATOS.historial
+    .filter(s => s.bloque === 'movilidad' && s.dificultadPromedio != null)
+    .slice(-6)
+    .map(s => `${s.fecha}: dificultad promedio ${s.dificultadPromedio}/5`)
+    .join(' | ');
+
+  return `Eres un preparador físico que acompaña a este atleta. Perfil: ${PERFIL_USUARIO}
+
+Sé concreto y breve para ahorrar tokens: no repitas el perfil ni rellenes con generalidades. Este chat es exclusivamente para temas de entrenamiento, salud física, movilidad, técnica y el progreso registrado en esta app. Si la pregunta no tiene relación con eso (por ejemplo cocina, tecnología, noticias u otro tema ajeno), respóndelo en una frase indicando que este espacio es solo para consultas de entrenamiento, sin desarrollar el tema pedido.
+
+CONTEXTO ACTUAL:
+Fecha: ${fechaInfo.fechaISO} (${capitalizar(fechaInfo.nombreDiaLargo)}, Guayaquil)
+Hoy corresponde: ${bloqueHoy ? NOMBRE_BLOQUE[bloqueHoy] : 'día de descanso'}
+
+Pesos objetivo actuales por ejercicio:
+${resumenProgreso.join('\n') || 'Todavía no hay progreso registrado.'}
+
+Últimas sesiones registradas:
+${ultimas || 'Todavía no hay sesiones registradas.'}
+
+Tendencia de calificación en Movilidad (1=normal, 2=con cierta dificultad, 3=con dificultad, 4=con dificultad y algo de dolor, 5=con dificultad y mucho dolor; que baje con el tiempo es señal de estar recuperando flexibilidad/equilibrio/movilidad; un 4 o 5 indica dolor, no solo esfuerzo, y merece atención aparte): ${movilidadHistorica || 'sin datos suficientes'}.
+
+Responde la siguiente pregunta de forma breve y concreta (máximo 3-4 frases salvo que se pida más detalle), en español, usando este contexto cuando sea relevante. No inventes datos que no tengas, y si te falta información para responder con precisión, dilo. Si mencionas molestias reportadas, usa exactamente las palabras/partes del cuerpo del contexto — no agregues, cambies ni las atribuyas a un ejercicio específico salvo que así conste.`;
+}
+
+// Versión mínima del contexto para el modelo local: solo lo de hoy y los pesos actuales.
+function construirContextoGeneralLocal(){
+  const fechaInfo = obtenerFechaGuayaquil();
+  const bloqueHoy = bloqueDelDia(DATOS.config, fechaInfo.diaSemana);
+  const pesos = [];
+  ['superior','inferior'].forEach(b=>{
+    DATOS.config.ejercicios[b].forEach(ej=>{
+      const p = DATOS.progreso[ej.id];
+      if(p) pesos.push(`- ${ej.nombre}: ${p.pesoObjetivo} libras, repeticiones ${p.repsObjetivo.join('-')}`);
+    });
+  });
+  const ultima = DATOS.historial.length ? DATOS.historial[DATOS.historial.length-1] : null;
+  return `Datos actuales del entrenamiento en casa.
+Hoy toca: ${bloqueHoy ? NOMBRE_BLOQUE[bloqueHoy] : 'descanso'}.
+Pesos y repeticiones objetivo de cada ejercicio:
+${pesos.join('\n') || 'sin datos'}
+${ultima ? `Última sesión registrada: ${ultima.fecha}, ${NOMBRE_BLOQUE[ultima.bloque]}.` : ''}
+Responde solo con estos datos y en 2 frases como máximo.`;
+}
+
+async function enviarPreguntaGeneral(){
+  const input = document.getElementById('inputPreguntaGeneral');
+  const pregunta = input.value.trim();
+  if(!pregunta) return;
+  const btn = document.getElementById('btnPreguntarGeneral');
+  btn.disabled = true;
+
+  DATOS.chatGeneral.mensajes.push({rol:'usuario', texto:pregunta});
+  guardarDatos();
+  renderMensajesGeneral();
+  input.value = '';
+  const listaGeneral = document.getElementById('listaConsultaGeneral');
+  if(listaGeneral) listaGeneral.insertAdjacentHTML('beforeend', `<div id="pensandoGeneral">${htmlPensando(usaModeloLocal() ? 'El modelo de la Acer está pensando...' : 'La IA está pensando...')}</div>`);
+  iniciarContadorEspera();
+
+  try{
+    let respuesta;
+    if(usaModeloLocal()){
+      // Contexto mínimo + solo los últimos intercambios: el modelo local no soporta más.
+      const previos = DATOS.chatGeneral.mensajes.slice(-5, -1).map(m=>({role: m.rol==='usuario'?'user':'assistant', content: m.texto}));
+      const mensajes = [
+        {role:'user', content: construirContextoGeneralLocal()},
+        {role:'assistant', content:'Entendido, tengo los datos.'}
+      ].concat(previos, [{role:'user', content: pregunta}]);
+      respuesta = await llamarLocal(mensajes, {});
+    }else{
+      // Se reconstruye el contexto en cada pregunta (no se acumula sin límite) y se
+      // agregan solo los últimos intercambios como memoria conversacional reciente.
+      const previos = DATOS.chatGeneral.mensajes.slice(-13, -1);
+      const contents = [
+        {role:'user', parts:[{text: construirContextoGeneral()}]},
+        {role:'model', parts:[{text:'Entendido, tengo el contexto de tu entrenamiento. ¿En qué te ayudo?'}]},
+        ...previos.map(m=>({role: m.rol==='usuario'?'user':'model', parts:[{text:m.texto}]})),
+        {role:'user', parts:[{text: pregunta}]}
+      ];
+      respuesta = await llamarGemini(contents);
+    }
+    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:respuesta});
+  }catch(e){
+    DATOS.chatGeneral.mensajes.push({rol:'ia', texto:'Error: ' + e.message});
+  }finally{
+    detenerContadorEspera();
+    guardarDatos();
+    renderMensajesGeneral();
+    btn.disabled = false;
+  }
+}
+
+// ---- 9. Exportar / Importar ----
+function exportarJSON(){
+  // La API key y la URL del modelo local NUNCA se incluyen en el respaldo.
+  const blob = new Blob([JSON.stringify(DATOS, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `control-pesas-ia_${obtenerFechaGuayaquil().fechaISO}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importarJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const contenido = JSON.parse(e.target.result);
+      if(!contenido.config || !contenido.historial) throw new Error('Formato no reconocido');
+      if(!confirm('Esto reemplazará tus datos actuales en este dispositivo. ¿Continuar?')) return;
+      DATOS = contenido;
+      guardarDatos();
+      alert('Historial importado correctamente.');
+      mostrarVista('hoy');
+    }catch(err){
+      alert('El archivo no es un respaldo válido: ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ---- 10. Utilidades ----
+function mostrarToast(mensaje, duracionMs){
+  let toast = document.getElementById('toastMsg');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'toastMsg';
+    toast.style.cssText = 'position:fixed;left:50%;bottom:74px;transform:translateX(-50%);max-width:88vw;text-align:center;background:var(--primary);color:var(--on-primary);padding:10px 18px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = mensaje;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>{ toast.style.opacity = '0'; }, duracionMs || 2200);
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function capitalizar(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+function textoSueno(v){ return {excelente:'Excelente', buena:'Buena', regular:'Regular', mala:'Mala'}[v] || v; }
+function textoEnergia(v){ return {alta:'Alta', normal:'Normal', baja:'Baja', muy_baja:'Muy baja'}[v] || v; }
+function textoMolestias(v){ return {ninguna:'Ninguna', leve:'Leve', moderada:'Moderada', debo_parar:'Importante'}[v] || v; }
+function textoDificultadMovilidad(n){ return {1:'Normal', 2:'Con cierta dificultad', 3:'Con dificultad', 4:'Con dificultad y algo de dolor', 5:'Con dificultad y mucho dolor'}[n] || ''; }
+
+function irAVistaSegunEstado(){
+  if(!DATOS.config.setupCompleto){ mostrarVista('setup'); }
+  else{ mostrarVista('hoy'); }
+}
+
+// ---- Inicio ----
+// ---- Mantener la pantalla encendida mientras se usa la app ----
+let referenciaWakeLock = null;
+
+function actualizarEstadoPantalla(estado){
+  const el = document.getElementById('estadoPantalla');
+  if(!el) return;
+  if(estado === 'activo'){
+    el.textContent = '🔒 Pantalla activa';
+    el.style.color = 'var(--primary)';
+    el.style.borderColor = 'var(--primary)';
+  }else{
+    el.textContent = '⚠️ Pantalla sin bloquear';
+    el.style.color = 'var(--amber)';
+    el.style.borderColor = 'var(--amber)';
+  }
+  el.classList.remove('oculto');
+}
+
+async function mantenerPantallaActiva(){
+  try{
+    if('wakeLock' in navigator){
+      referenciaWakeLock = await navigator.wakeLock.request('screen');
+      actualizarEstadoPantalla('activo');
+      referenciaWakeLock.addEventListener('release', ()=>{ referenciaWakeLock = null; });
+    }else{
+      actualizarEstadoPantalla('fallo');
+    }
+  }catch(e){
+    console.error('No se pudo mantener la pantalla activa', e);
+    referenciaWakeLock = null;
+    actualizarEstadoPantalla('fallo');
+  }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && !referenciaWakeLock){
+    mantenerPantallaActiva();
+  }
+});
+// Red de seguridad: además de reintentar al volver de segundo plano, se revisa cada 20s
+// por si el sistema operativo liberó el bloqueo sin avisar (pasa en algunos Android).
+setInterval(()=>{
+  if(document.visibilityState === 'visible' && !referenciaWakeLock){
+    mantenerPantallaActiva();
+  }
+}, 20000);
+
+window.onload = function(){
+  mantenerPantallaActiva();
+  // Con el motor local no hace falta API Key, así que la pantalla de acceso se salta.
+  if(!obtenerApiKey() && !usaModeloLocal()){ mostrarVista('auth'); return; }
+  DATOS = cargarDatos();
+  irAVistaSegunEstado();
+};
+</script>
+</body>
+</html>

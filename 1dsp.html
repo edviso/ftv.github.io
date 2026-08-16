@@ -74,10 +74,12 @@
             padding: 15px; 
             background: #fff; 
             border-top: 1px solid #eee; 
-            gap: 10px;
+            gap: 8px;
+            flex-wrap: wrap; /* Permite que los botones se acomoden bien en el celular */
         }
         #user-input { 
             flex: 1; 
+            min-width: 200px;
             padding: 12px; 
             border: 1px solid #ccc; 
             border-radius: 20px; 
@@ -85,7 +87,7 @@
             font-size: 16px;
         }
         #send-btn { 
-            padding: 10px 25px; 
+            padding: 10px 20px; 
             background: #0b93f6; 
             color: white; 
             font-weight: bold;
@@ -96,6 +98,19 @@
         }
         #send-btn:hover { background: #0077ce; }
         #send-btn:disabled { background: #b0c4de; cursor: not-allowed; }
+        
+        /* Estilos del nuevo botón de copiar */
+        #copy-btn {
+            padding: 10px 15px; 
+            background: #28a745; 
+            color: white; 
+            font-weight: bold;
+            border: none; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            transition: background 0.2s;
+        }
+        #copy-btn:hover { background: #218838; }
     </style>
 </head>
 <body>
@@ -118,6 +133,7 @@
     <div id="input-area">
         <input type="text" id="user-input" placeholder="Escribe tu mensaje aquí..." autocomplete="off" />
         <button id="send-btn">Enviar</button>
+        <button id="copy-btn" title="Copiar historial al portapapeles">📋 Copiar Chat</button>
     </div>
 </div>
 
@@ -127,6 +143,7 @@
     const messagesDiv = document.getElementById('messages');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+    const copyBtn = document.getElementById('copy-btn');
 
     let conversationHistory = [
         { role: "system", content: "Eres un asistente experto. Si se te piden análisis complejos, razona paso a paso." }
@@ -136,7 +153,6 @@
         apiKeyInput.value = localStorage.getItem('deepseek_key');
     }
     
-    // Guardar preferencia de modelo para que no tengas que cambiarlo cada vez
     if (localStorage.getItem('deepseek_model')) {
         modelSelector.value = localStorage.getItem('deepseek_model');
     }
@@ -184,7 +200,7 @@
                     'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({
-                    model: selectedModel, // ¡AQUÍ ES DONDE PASA LA MAGIA!
+                    model: selectedModel,
                     messages: conversationHistory
                 })
             });
@@ -210,6 +226,41 @@
             userInput.focus();
         }
     }
+
+    // Lógica para copiar el chat al portapapeles
+    copyBtn.addEventListener('click', async () => {
+        if (conversationHistory.length <= 1) {
+            alert("Todavía no hay mensajes para copiar.");
+            return;
+        }
+
+        let chatText = "--- Historial de Chat ---\n\n";
+        
+        // Empezamos desde 1 para ignorar el mensaje oculto del "system"
+        for (let i = 1; i < conversationHistory.length; i++) {
+            const msg = conversationHistory[i];
+            const sender = msg.role === 'user' ? 'Tú' : 'DeepSeek';
+            chatText += `${sender}:\n${msg.content}\n\n`;
+        }
+
+        try {
+            await navigator.clipboard.writeText(chatText.trim());
+            
+            // Efecto visual de copiado
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✔️ ¡Copiado!';
+            copyBtn.style.background = '#218838'; // Un verde más oscuro
+            
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.style.background = '#28a745'; // Vuelve al color original
+            }, 2000);
+            
+        } catch (err) {
+            console.error('Error al copiar: ', err);
+            alert("No se pudo copiar el texto. Tu navegador podría estar bloqueando esta función.");
+        }
+    });
 
     sendBtn.addEventListener('click', sendMessage);
     userInput.addEventListener('keypress', (e) => {

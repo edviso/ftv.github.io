@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1113">
+<title>Qwen local · Acer</title>
+<style>
+  :root{
+    --bg:#0e1113;
+    --surface:#171b1f;
+    --surface-alt:#1f252a;
+    --border:#2a3238;
+    --text:#e2e8ec;
+    --text-dim:#8a97a1;
+    --accent:#4fb6a8;
+    --accent-dim:#2f8479;
+    --on-accent:#06201c;
+    --amber:#d3a05a;
+    --error:#e0685f;
+    --mono: ui-monospace, "Roboto Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:15.5px; line-height:1.55;
+    display:flex; flex-direction:column;
+    overscroll-behavior:none;
+  }
+
+  /* ---------- Cabecera ---------- */
+  header{
+    position:sticky; top:0; z-index:10;
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:10px 14px calc(10px + env(safe-area-inset-top,0px));
+    padding-top:calc(10px + env(safe-area-inset-top,0px));
+  }
+  .barra-top{display:flex; align-items:center; gap:10px;}
+  .punto{width:9px; height:9px; border-radius:50%; background:var(--text-dim); flex-shrink:0;}
+  .punto.ok{background:var(--accent);}
+  .punto.mal{background:var(--error);}
+  .titulo{font-size:14px; font-weight:700; letter-spacing:-.01em; flex:1; min-width:0;
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .titulo small{display:block; font-family:var(--mono); font-size:11px; color:var(--text-dim); font-weight:400;}
+  .btn-icono{
+    background:var(--surface-alt); border:1px solid var(--border); color:var(--text-dim);
+    border-radius:8px; padding:7px 11px; font-size:12px; font-weight:700; cursor:pointer; flex-shrink:0;
+  }
+  .barra-modos{display:flex; gap:6px; margin-top:10px;}
+  .barra-modos button{
+    flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text-dim);
+    border-radius:8px; padding:8px 6px; font-family:var(--sans); font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .barra-modos button.activo{background:var(--surface-alt); border-color:var(--accent); color:var(--accent);}
+  #panelConexion{margin-top:12px;}
+  #panelConexion.oculto{display:none;}
+  label{display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:5px;}
+  input[type="text"], input[type="number"], textarea{
+    width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px;
+    background:var(--bg); color:var(--text); font-family:var(--sans); font-size:15px;
+  }
+  input[type="number"]{font-family:var(--mono);}
+  input:focus-visible, textarea:focus-visible, button:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
+  .fila{display:flex; gap:8px;}
+  .fila > *{flex:1;}
+  .btn{
+    padding:11px 14px; border:none; border-radius:9px; font-family:var(--sans);
+    font-size:14px; font-weight:700; background:var(--accent); color:var(--on-accent); cursor:pointer;
+  }
+  .btn.sec{background:var(--surface-alt); color:var(--text); border:1px solid var(--border);}
+  .btn:active{opacity:.82;}
+  .btn:disabled{background:#333c43; color:#79848c; cursor:not-allowed;}
+  .ayuda{display:block; color:var(--text-dim); font-size:11.5px; margin:6px 0 10px; line-height:1.45;}
+  #estadoConexion{font-size:12.5px; font-family:var(--mono); margin-top:8px; min-height:17px;}
+  details.avanzado{margin-top:12px; border-top:1px solid var(--border); padding-top:10px;}
+  details.avanzado summary{cursor:pointer; font-size:12.5px; color:var(--accent); list-style:none;}
+  details.avanzado summary::-webkit-details-marker{display:none;}
+  details.avanzado summary::before{content:'▸ '; }
+  details.avanzado[open] summary::before{content:'▾ '; }
+  .rejilla{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .rejilla label{margin-bottom:4px;}
+  .rejilla input{margin:0;}
+
+  /* ---------- Conversación ---------- */
+  main{flex:1; overflow-y:auto; padding:16px 14px 4px; -webkit-overflow-scrolling:touch;}
+  .msg{margin-bottom:18px; max-width:100%;}
+  .quien{
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--text-dim); margin-bottom:5px;
+  }
+  .msg.yo .quien{color:var(--accent);}
+  .msg.ia .quien{color:var(--amber);}
+  .burbuja{white-space:pre-wrap; word-wrap:break-word;}
+  .msg.yo .burbuja{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:10px 12px;
+  }
+  .msg .acciones{margin-top:7px;}
+  .btn-copiar{
+    background:transparent; border:1px solid var(--border); color:var(--text-dim);
+    border-radius:7px; padding:4px 9px; font-size:11.5px; cursor:pointer; font-family:var(--sans);
+  }
+  .btn-copiar:active{opacity:.6;}
+  .meta-msg{font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-top:6px;}
+  .cursor::after{
+    content:'▍'; color:var(--accent); animation:parpadeo 1s steps(2) infinite;
+  }
+  @keyframes parpadeo{50%{opacity:0;}}
+  .spinner-ia{width:44px; height:44px; display:block; animation:girar 1.6s linear infinite;}
+  @keyframes girar{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){
+    .spinner-ia{animation:none;} .cursor::after{animation:none;} *{transition:none !important;}
+  }
+  .vacio{color:var(--text-dim); font-size:13px; text-align:center; padding:20px 0;}
+
+  /* ---------- Pie fijo ---------- */
+  footer{
+    position:sticky; bottom:0; z-index:10;
+    background:var(--surface); border-top:1px solid var(--border);
+    padding:0 14px calc(12px + env(safe-area-inset-bottom,0px));
+  }
+  .barra-metricas{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 0; border-bottom:1px solid var(--border); margin-bottom:10px;
+  }
+  #metricas{
+    flex:1; min-width:0; font-family:var(--mono); font-size:11.5px; color:var(--text-dim);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  #metricas b{color:var(--accent); font-weight:700;}
+  textarea#entrada{min-height:104px; max-height:38vh; resize:none; line-height:1.5;}
+  .fila-enviar{display:flex; gap:8px; margin-top:8px;}
+  .fila-enviar .btn{flex:1;}
+  .fila-enviar .btn.sec{flex:0 0 auto;}
+  #toast{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:calc(50% - 20px);
+    background:var(--accent); color:var(--on-accent); font-weight:700; font-size:13.5px;
+    padding:9px 16px; border-radius:20px; opacity:0; transition:opacity .25s;
+    pointer-events:none; z-index:40; max-width:86vw; text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="barra-top">
+    <span class="punto" id="punto"></span>
+    <div class="titulo">Qwen2.5-0.5B <small id="subtitulo">servidor local · Acer 3S</small></div>
+    <button class="btn-icono" onclick="limpiar()">Limpiar</button>
+    <button class="btn-icono" onclick="alternarPanel()">Conexión</button>
+  </div>
+
+  <div class="barra-modos">
+    <button id="btnPreciso" onclick="cambiarModo('preciso')">Preciso</button>
+    <button id="btnCreativo" onclick="cambiarModo('creativo')">Creativo</button>
+  </div>
+
+  <div id="panelConexion" class="oculto">
+    <label for="url">Dirección del servidor</label>
+    <input type="text" id="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"
+           placeholder="https://algo-algo.trycloudflare.com">
+    <span class="ayuda">Cloudflare genera una dirección nueva cada vez que abres el túnel: pega aquí la del día. Tiene que empezar con https.</span>
+    <div class="fila">
+      <button class="btn sec" onclick="guardarUrl()">Guardar</button>
+      <button class="btn" onclick="probarConexion()">Probar conexión</button>
+    </div>
+    <div id="estadoConexion"></div>
+
+    <details class="avanzado">
+      <summary>Parámetros del modo <span id="modoEnAjustes">Preciso</span></summary>
+      <span class="ayuda" style="margin-top:10px;">Cada modo guarda sus propios valores; aquí editas los del modo que tengas activo. Se envían en cada pregunta, así que mandan sobre lo guardado en la interfaz web de llama-server. Cambia uno a la vez.</span>
+      <div class="rejilla">
+        <div><label for="pTemp">Temperature</label><input type="number" id="pTemp" step="0.05" min="0" max="2"></div>
+        <div><label for="pMax">Máx. tokens</label><input type="number" id="pMax" step="10" min="40" max="1000"></div>
+        <div><label for="pRep">Repeat penalty</label><input type="number" id="pRep" step="0.05" min="1" max="2"></div>
+        <div><label for="pTopK">Top K</label><input type="number" id="pTopK" step="1" min="0" max="200"></div>
+        <div><label for="pTopP">Top P</label><input type="number" id="pTopP" step="0.01" min="0" max="1"></div>
+        <div><label for="pMinP">Min P</label><input type="number" id="pMinP" step="0.01" min="0" max="1"></div>
+        <div><label for="pMem">Turnos de memoria</label><input type="number" id="pMem" step="1" min="0" max="10"></div>
+        <div style="display:flex; align-items:flex-end;"><button class="btn sec" style="width:100%;" onclick="guardarParams()">Guardar</button></div>
+      </div>
+      <span class="ayuda">Cada turno de memoria son una pregunta y una respuesta más que se reenvían. Cuantos más, más lento arranca, porque la Acer tiene que releerlos. En modo Creativo van en 0 a propósito: si recuerda el verso anterior, lo copia en vez de escribir uno nuevo.</span>
+    </details>
+  </div>
+</header>
+
+<main id="chat"></main>
+
+<footer>
+  <div class="barra-metricas">
+    <span id="metricas">Listo</span>
+    <button class="btn-copiar" onclick="copiarUltima()">📋 Copiar respuesta</button>
+  </div>
+  <textarea id="entrada" placeholder="Escribe tu pregunta..." rows="4"></textarea>
+  <div class="fila-enviar">
+    <button class="btn" id="btnEnviar" onclick="enviar()">Enviar</button>
+    <button class="btn sec" id="btnDetener" onclick="detener()" style="display:none;">Detener</button>
+  </div>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+/* =============================================================
+   Chat local con Qwen2.5-0.5B sobre llama.cpp (llama-server)
+   Un solo archivo. La dirección del túnel y los parámetros se
+   guardan solo en este dispositivo (localStorage).
+   ============================================================= */
+
+const CLAVE_URL = 'qwenChat_url_v1';
+const CLAVE_CFG = 'qwenChat_cfg_v2';
+const CLAVE_MSGS = 'qwenChat_msgs_v1';
+
+// Dos modos con parámetros propios, porque lo que sirve para un dato no sirve para un verso.
+// Preciso: temperatura baja y memoria de la conversación, para preguntas de información.
+// Creativo: algo más de temperatura y CERO memoria — con memoria, el modelo recicla el
+// verso anterior en vez de escribir uno nuevo.
+const MODOS_DEF = {
+  preciso:  { temperature:0.2,  maxTokens:280, repeatPenalty:1.18, topK:40, topP:0.90, minP:0.05, memoria:3 },
+  creativo: { temperature:0.40, maxTokens:280, repeatPenalty:1.15, topK:40, topP:0.95, minP:0.03, memoria:0 }
+};
+const CFG_DEF = { modo:'preciso', preciso:MODOS_DEF.preciso, creativo:MODOS_DEF.creativo };
+
+// Instrucciones cortas a propósito: con siete reglas, el modelo de 0.5B termina imitando
+// el género "instrucciones" y comentando su propia respuesta. Se le pide un formato
+// (un párrafo, sin listas) en vez de un número de frases, que no sabe contar.
+const SISTEMA = {
+  preciso: `Responde en español, en un solo párrafo corto y directo. Nunca uses listas numeradas ni viñetas, no repitas la pregunta y no comentes tu propia respuesta.
+Si no tienes el dato, dilo en una frase y para. No inventes cifras, fechas, nombres ni fuentes.
+No sabes nada del usuario ni de hechos recientes.`,
+
+  creativo: `Eres un escritor en español. Entrega solo lo que te piden: si piden un poema o una estrofa, escribe únicamente los versos; si piden un chiste, únicamente el chiste.
+No expliques, no comentes ni justifiques lo que escribiste, y no repitas la pregunta.
+Sé breve.`
+};
+
+const SALUDO = 'Hola, soy Qwen2.5-0.5B, un modelo de IA compacto de 500 millones de parámetros, desarrollado por Alibaba Cloud en 2024. Estoy ejecutándome localmente en una laptop Acer 3S Series del 2011.\n\nIndícame en qué puedo ayudarte.';
+
+const IMG_PENSANDO = 'data:image/webp;base64,UklGRrAMAABXRUJQVlA4WAoAAAAgAAAAxwAAxwAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDggwgoAABA2AJ0BKsgAyAA+bTSWSKQioiEklgmYgA2JTdwt5B/TA/wHb4Xq7T+Rv5O/M/YH7B+DPye6Gw4vXH+U/qH5N/Nv++eo/7lfcA/UH+8/z7rG/t76gP55/a/2g94n/Afqb7oPqA+QD+q/4D//9gt6AH7N+mf+4XwQ/1v/bfst8CH7P/+PrAP/f1g/Uj/AdsX6l5Lhtnoq/XO8Ha53QfxnmBxt/77wN/pXqAeTD/Q/+TyL/m3+19gb9ePRl9dP7pexv+tv/0IC5O7u7u7u7u7u7u7u7u7ufroYtgFBBPyTufzXwZpQu+PRT5Q5e4TAAPWnliWnihpJOMyYfz8yrdRIQ7v5ExEYMGExocwE03OkkEE/US5NA3sUpvkD5K49A1CeONj2W6MwKSsFWZ3yAJNfScjNSQyJCDhtIMcwdqyd4S/0G6pnnk3aEsmYmWzeWEj3sl7240tW6g4MNjdtkoEDmUHfd0y4kHgF/Soi944UlU3WzK1LVEZWOQORJoDpXbBevrn2SuiDiA5J3dMTXRfc2lYdovmRw1o+sRiOw0/i87u7vY25rPxFhJuPhJ0TnSSMJLFKBcJ+Sd3MAAD+/pq5rnJtAAAA84JN/Wu4pRsF8h5ZIBizGAdkU9ffXPw3WOgg9LAabY9agaR0hBRGTzpACSrgKq+Y3KvyfrXSzVqvtFbAzL2J6CsgqrRnVszgwaHvBJv613U8Doe6Q8J1nIX17Y/uuRs4fJKBTRJMC8wnnALsP8g9LTOWylv4Pp4f9hRj/wvq28gqMMpOXydhP0OQnNodL9MQaBf6zOOyGPiXaoe0oczuNu2kFZN/yRIH9byNwuN5gpzPo+WOKWoLP0FAepEC761WDGScdLoHnz9rB922KbnzvdUWZgFnNagJ5WjM1bcRb8OAmuPfjn5yjM/243kGn1z2ANimAO78Ihs+dld0lNvWnXilvPDaFeMTCAio+PKc+bj/84dTNvhFFvZ7J0RnO2BpLS6KEw82OtIAIlYsggMaKCKqeh4axWZ26vIwsTOJfHyFJVKwFew9B0sLgCW6k1n9tVuAuYIr8Sfj5xU4Lybb3CDU4TscE4MMp+6rQQaI8K+i8/fJoJN4gCi35QTxl/zx0fjdcfb0HyOwfC1zcvrEnP6a2J1v/ViqND17aqptHQzl+rIuX5sr26vq4YO9orlBR+reIAdjLxh0yKtfQdjuGkE0j8pCcEYIHviYIpbPc8I4M3XlBdRS6Hv0szIqVTWE1hl9bg+0EVol4x1lDds0qmTr4xaJ4hhb6Zzs8n0TPdgr76KMLg6CfhC67Kx+dVE+SE4tNZQBqX5r8yeOPl9gWQCMWYpmVw/2+Den2DaXpnGyc+/5T8dxuLc/1C+5UEjLNjQEITefSkoCVxLPDlofUra1gkjb+52h/qEfQ1uTAwIgiLTs0s+6CMkQnmO9LZXsFxcxUJj4KikH7rzNOYzw42kmmgAISWP8rKnmTaujjihqyvztPpAnhyI/aBlU8o1YFgYafgy9nZum7m32/VQFH4tdpNQ6IbeR0fZKlNMz1jDIS4iP5gq+Bfv6GnSVIJinasjnAs43BnPyOh4jgrDbV6bzX34C+BfaLJn3pK3/MijMeufJCuUFNnaml5v/cCM7N39qankN9oijcjMgJktsOzOacxiDbk+w+Sw4NDsWZDI7jK+5hhAqrDhAddbIawOYE9Q8hVzjhEyPGCqv9N0OfFO7wmMxbB90p5Ldps1s3iRocKfsFZZZyGMzAp71aZdV9e3P8SW3kF9dev93XanTE3D9tROlTcI7KLQQinYToMEycv2RmsPG4BH4pNHgAVadJFdV7SHXqEWwusRhkaUKCEu5Gy9sqkAoL90Huj2n9Lfl+DRCBKf+Q+n0+yGqfP4WZJk3O5gLnyIUkoPxrFlY3WdU6ciJVJDRyDY70ss6vQW/xdUaY4VNGW4JwrfgBa+1Lyqmoj12e8Smhk/MHPilbbgTAXMfe5mH8ZzIHsbME5B5/He6CCnPvkjOm7Se6Azfgk86aYfZLGaOcT2JlOfX/IdVtOjB1NqHSkVo8wSj09xSleUjJOfi5FVWMDFKWPoOzYe9N5eF7ceNNKkdT4A8Vg9DvI+ZUn1773EgbyPADIBxDmo36u7/6Sncxvbv/9QaDdBat7DE5lwj7PO5kuVJTbKBifsFNrqXfPH3tzvGOvmPnJl71GCp2jUJv6rSe1FAbO/MP3AZ7Jn9pURXLFPA9gGWGWQr8Qx2TAvR+nCcjIRjHHiROHdbyYwbDaFwn04CFZWuFtB/YweAchBWZH7W4rF5qwy81jPG7W62ix18N3JOLKyVL5ys+qeKt+M4i5wqj6la2SfDITEwU88YJHMFpzjV23IbqyVdODYIXJypu14fFt8AqGULVvSO3+z0nut6PZhDMsMrjnXeWqxSyN+SnljDLOJJ2EFpUPpwS/e2GT0iYB6ajh90ddfKPXjZQvNdeiKPqpjDxPnAZiTGIl7gnzNr4kO+LfOCoBQutz6HgqaZhcqIrl9LzC9wxmlSBx3vjfHBwTLmXCpaxZUBzOHKzCRHmfIwAGJmgSru+kgFaXy53bqFlM65NU8wUerguK1p6X2YS38ThaQjpCpdyhgAUn0HcLNkp3W3sqvcJYGDjjbiDeSCcCdezJlEgf9MC4vSkH4w3uaq+jyyzxtuabSD2/FJ9q7XtHC8BIJFBGl4635uMWENjZmM8/mmm/+Gx5tYxhmzRt4ZklNFKB8Heh18e4lcPyIOi7dt71+cmfpfsSM7MuXKorkCc8s1uoS7LVa1j4FvnKk9Up2idXOoQcYT9UrnLjIplFAblokqr48UTc6Oq2aNDZHmVJKZF/qW8rpS14Aso6S4rIYG13BTdw0+VqnLz++dJx/kLWZ86RTdhpENycPT1ojlI8YSPwLs/9NAT6SHFI+VtsLacHqgl5a62RbTwDoUXOGa40zNDqnmRqUwZFKXmPhg6fRtf3fApIfwZi0O+kBVBVqGv4gqhAlp9RO8ILYtXHoASl1Gpts4IY08MPLzMWY+PQUfSLPhTKPnp6R0+bYHgwZff8sSUCDsqDDd+rsbCwoShJlMyNjOiZrSTzCo+a8Y1n0SZaDJu5hnK4kkU+ROLlhAgqKNUaI7pgZGAIfPV4Xv8NRH3Aek6br9Glvf+uKjoyaFXW1PACQaozB9JBGdRzX0onP0DzDSfwoz7E2+sne0zN0BRUi4cNjvvaOqLBBhFj66G2Enq0yGi/S/+I8kTlLBVzdpu5YG2jiwuYzxAGyDZANBPZLB+QAAp9vGuS2zzQ8/cMqRVrkglIm2vGG/aOhya7E+bl69n6ocrA68v6NMBZCp5CbbrP6445cpai+wFt8cFgzJ9Fsysa6eE2P2spjpP0mNTnPPp2G680/A+doPhrY2medx8FHZERVRcCmMn3ZJquQ+jRyM/ZMG9IEpvvxHVfvlVWeA5Ma4CRChOjAphgeL6OrIVLYNWt2zdPELU/VASGQRMa70OIj8RqEJotzjTNSHa79di0EJFAqiJQtg5/AFkoBjPs0e8XiPfmjCfK2AAcrmBYATKXRnzOx48rORM6jxKOIuTduJJ659OK1tIBQMhbIlqHEglIy9719r4NsGNV7WoIv1iwPdR+Nnf0SD6RNNbK4pYSf9wBAZvHB6CP4S7HIf3Ukr26Dsq92xGkgAAAAAAA==';
+
+let mensajes = [];      // {rol:'yo'|'ia', texto, tokens?, segundos?, tps?}
+let generando = false;
+let controlador = null;
+
+// ---------- Almacenamiento ----------
+function obtenerUrl(){ return (localStorage.getItem(CLAVE_URL) || '').trim().replace(/\/+$/,''); }
+function fijarUrl(u){ try{ localStorage.setItem(CLAVE_URL, String(u||'').trim().replace(/\/+$/,'')); }catch(e){} }
+function obtenerCfg(){
+  let guardado = {};
+  try{ guardado = JSON.parse(localStorage.getItem(CLAVE_CFG) || '{}') || {}; }catch(e){}
+  return {
+    modo: guardado.modo === 'creativo' ? 'creativo' : 'preciso',
+    preciso: Object.assign({}, MODOS_DEF.preciso, guardado.preciso || {}),
+    creativo: Object.assign({}, MODOS_DEF.creativo, guardado.creativo || {})
+  };
+}
+function fijarCfg(c){ try{ localStorage.setItem(CLAVE_CFG, JSON.stringify(c)); }catch(e){} }
+function modoActual(){ return obtenerCfg().modo; }
+function paramsActuales(){ const c = obtenerCfg(); return c[c.modo]; }
+
+function cambiarModo(modo){
+  const c = obtenerCfg();
+  c.modo = modo;
+  fijarCfg(c);
+  pintarModo();
+  pintarParams();
+  mostrarToast(modo === 'creativo'
+    ? 'Modo creativo: para versos, chistes y textos'
+    : 'Modo preciso: para preguntas de información');
+}
+
+function pintarModo(){
+  const modo = modoActual();
+  document.getElementById('btnPreciso').classList.toggle('activo', modo === 'preciso');
+  document.getElementById('btnCreativo').classList.toggle('activo', modo === 'creativo');
+  const etiqueta = document.getElementById('modoEnAjustes');
+  if(etiqueta) etiqueta.textContent = modo === 'creativo' ? 'Creativo' : 'Preciso';
+}
+function guardarMensajes(){ try{ localStorage.setItem(CLAVE_MSGS, JSON.stringify(mensajes.slice(-40))); }catch(e){} }
+function cargarMensajes(){
+  try{ const m = JSON.parse(localStorage.getItem(CLAVE_MSGS) || '[]'); return Array.isArray(m) ? m : []; }
+  catch(e){ return []; }
+}
+
+// ---------- Cabecera ----------
+function alternarPanel(){
+  document.getElementById('panelConexion').classList.toggle('oculto');
+}
+function marcarEstado(estado, texto){
+  const punto = document.getElementById('punto');
+  punto.className = 'punto' + (estado === 'ok' ? ' ok' : estado === 'mal' ? ' mal' : '');
+  if(texto) document.getElementById('subtitulo').textContent = texto;
+}
+function guardarUrl(){
+  fijarUrl(document.getElementById('url').value);
+  mostrarToast('Dirección guardada');
+}
+async function probarConexion(){
+  const caja = document.getElementById('estadoConexion');
+  const url = document.getElementById('url').value.trim().replace(/\/+$/,'');
+  if(!url){ caja.innerHTML = '<span style="color:var(--error);">Pega primero la dirección del túnel.</span>'; return; }
+  fijarUrl(url);
+  caja.textContent = 'Probando...';
+  try{
+    const r = await fetch(url + '/v1/models');
+    if(!r.ok) throw new Error('respuesta ' + r.status);
+    const d = await r.json();
+    const id = d && d.data && d.data[0] ? String(d.data[0].id) : 'modelo cargado';
+    const corto = id.split('/').pop();
+    caja.innerHTML = '<span style="color:var(--accent);">Conectado · ' + escapar(corto) + '</span>';
+    marcarEstado('ok', 'conectado · ' + corto);
+  }catch(e){
+    caja.innerHTML = '<span style="color:var(--error);">Sin conexión (' + escapar(e.message) + '). Revisa que llama-server y cloudflared estén corriendo, y que la dirección sea la de hoy.</span>';
+    marcarEstado('mal', 'sin conexión');
+  }
+}
+function guardarParams(){
+  const c = obtenerCfg();
+  const base = MODOS_DEF[c.modo];
+  const num = (id, def)=>{ const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : def; };
+  c[c.modo] = {
+    temperature: num('pTemp', base.temperature),
+    maxTokens: Math.round(num('pMax', base.maxTokens)),
+    repeatPenalty: num('pRep', base.repeatPenalty),
+    topK: Math.round(num('pTopK', base.topK)),
+    topP: num('pTopP', base.topP),
+    minP: num('pMinP', base.minP),
+    memoria: Math.round(num('pMem', base.memoria))
+  };
+  fijarCfg(c);
+  mostrarToast('Parámetros del modo ' + (c.modo === 'creativo' ? 'Creativo' : 'Preciso') + ' guardados');
+}
+function pintarParams(){
+  const c = paramsActuales();
+  document.getElementById('pTemp').value = c.temperature;
+  document.getElementById('pMax').value = c.maxTokens;
+  document.getElementById('pRep').value = c.repeatPenalty;
+  document.getElementById('pTopK').value = c.topK;
+  document.getElementById('pTopP').value = c.topP;
+  document.getElementById('pMinP').value = c.minP;
+  document.getElementById('pMem').value = c.memoria;
+}
+
+// ---------- Conversación ----------
+function escapar(s){
+  return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function pintarChat(){
+  const cont = document.getElementById('chat');
+  const html = [`
+    <div class="msg ia">
+      <div class="quien">Qwen 0.5B</div>
+      <div class="burbuja">${escapar(SALUDO)}</div>
+    </div>`];
+
+  mensajes.forEach((m,i)=>{
+    if(m.rol === 'yo'){
+      html.push(`
+        <div class="msg yo">
+          <div class="quien">Tú</div>
+          <div class="burbuja">${escapar(m.texto)}</div>
+        </div>`);
+    }else{
+      const metricas = m.tokens != null && !m.error
+        ? `<div class="meta-msg">${m.tokens} tokens · ${m.segundos}s${Number(m.tps) > 0 ? ' · ' + m.tps + ' tok/s' : ''}</div>` : '';
+      html.push(`
+        <div class="msg ia">
+          <div class="quien">Qwen 0.5B</div>
+          <div class="burbuja">${escapar(m.texto)}</div>
+          ${metricas}
+          <div class="acciones">
+            <button class="btn-copiar" onclick="copiarPar(${i})">📋 Copiar pregunta y respuesta</button>
+          </div>
+        </div>`);
+    }
+  });
+  cont.innerHTML = html.join('');
+  alFinal();
+}
+
+function alFinal(){
+  const cont = document.getElementById('chat');
+  cont.scrollTop = cont.scrollHeight;
+}
+
+// Historial que se reenvía: solo los últimos turnos, para no hacer lentísimo el
+// arranque de cada respuesta (la Acer relee todo el prompt en cada pregunta).
+function historialParaEnviar(){
+  const cfg = paramsActuales();
+  const recientes = cfg.memoria > 0 ? mensajes.slice(-cfg.memoria * 2) : [];
+  return recientes
+    .filter(m => m.texto && !m.error)
+    .map(m => ({role: m.rol === 'yo' ? 'user' : 'assistant', content: m.texto}));
+}
+
+async function enviar(){
+  if(generando) return;
+  const entrada = document.getElementById('entrada');
+  const pregunta = entrada.value.trim();
+  if(!pregunta) return;
+  const url = obtenerUrl();
+  if(!url){
+    document.getElementById('panelConexion').classList.remove('oculto');
+    mostrarToast('Primero pega la dirección del servidor', 3500);
+    return;
+  }
+
+  const previos = historialParaEnviar();
+  mensajes.push({rol:'yo', texto:pregunta});
+  entrada.value = '';
+  entrada.style.height = '';
+  pintarChat();
+  guardarMensajes();
+
+  // Burbuja de respuesta en construcción: primero la animación de espera, y en
+  // cuanto llega el primer token se reemplaza por el texto, que va creciendo.
+  const cont = document.getElementById('chat');
+  cont.insertAdjacentHTML('beforeend', `
+    <div class="msg ia" id="msgVivo">
+      <div class="quien">Qwen 0.5B</div>
+      <div id="espera" style="padding:4px 0;"><img src="${IMG_PENSANDO}" class="spinner-ia" alt=""></div>
+      <div class="burbuja cursor" id="burbujaViva"></div>
+      <div class="meta-msg" id="metaViva"></div>
+    </div>`);
+  alFinal();
+
+  ponerModoGenerando(true);
+  const modo = modoActual();
+  const cfg = paramsActuales();
+  const inicio = Date.now();
+  let texto = '', tokens = 0, primerToken = null, usoServidor = null;
+  const burbuja = document.getElementById('burbujaViva');
+  const marcaTiempo = setInterval(()=>{
+    document.getElementById('metricas').innerHTML = 'Generando... <b>' + ((Date.now()-inicio)/1000).toFixed(1) + ' s</b>' + (tokens ? ' · ' + tokens + ' tokens' : '');
+  }, 200);
+
+  controlador = new AbortController();
+  try{
+    const respuesta = await fetch(url + '/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'local',
+        messages: [{role:'system', content:SISTEMA[modo]}].concat(previos, [{role:'user', content:pregunta}]),
+        temperature: cfg.temperature,
+        top_k: cfg.topK,
+        top_p: cfg.topP,
+        min_p: cfg.minP,
+        repeat_penalty: cfg.repeatPenalty,
+        repeat_last_n: 256,
+        max_tokens: cfg.maxTokens,
+        stream: true,
+        stream_options: {include_usage: true}
+      }),
+      signal: controlador.signal
+    });
+
+    if(!respuesta.ok){
+      let msg = 'El servidor respondió con error ' + respuesta.status;
+      try{ const d = await respuesta.json(); msg = (d.error && (d.error.message || d.error)) || msg; }catch(e){}
+      throw new Error(msg);
+    }
+    if(!respuesta.body) throw new Error('Este navegador no permite leer la respuesta en streaming.');
+
+    // Lectura del flujo SSE: cada bloque trae un pedacito de texto, que se
+    // muestra apenas llega en vez de esperar a que termine toda la respuesta.
+    const lector = respuesta.body.getReader();
+    const decodificador = new TextDecoder();
+    let resto = '';
+    while(true){
+      const {done, value} = await lector.read();
+      if(done) break;
+      resto += decodificador.decode(value, {stream:true}).replace(/\r\n/g, '\n');
+      const bloques = resto.split('\n\n');
+      resto = bloques.pop();
+      for(const bloque of bloques){
+        for(const linea of bloque.split('\n')){
+          if(!linea.startsWith('data:')) continue;
+          const crudo = linea.slice(5).trim();
+          if(!crudo || crudo === '[DONE]') continue;
+          let dato;
+          try{ dato = JSON.parse(crudo); }catch(e){ continue; }
+          if(dato.usage) usoServidor = dato.usage;
+          const trozo = dato.choices && dato.choices[0] && dato.choices[0].delta
+            ? (dato.choices[0].delta.content || '') : '';
+          if(!trozo) continue;
+          if(primerToken === null){
+            primerToken = Date.now();
+            const espera = document.getElementById('espera');
+            if(espera) espera.remove();
+          }
+          texto += trozo;
+          tokens++;
+          burbuja.textContent = texto;
+          alFinal();
+        }
+      }
+    }
+  }catch(e){
+    if(e.name === 'AbortError'){
+      texto = texto || '(detenido antes de la primera palabra)';
+    }else{
+      texto = 'Error: ' + (e.message === 'Failed to fetch'
+        ? 'no se pudo conectar con la Acer. Revisa que llama-server y cloudflared estén corriendo, y que la dirección sea la de hoy.'
+        : e.message);
+      marcarEstado('mal', 'sin conexión');
+    }
+    burbuja.textContent = texto;
+  }finally{
+    clearInterval(marcaTiempo);
+    const espera = document.getElementById('espera');
+    if(espera) espera.remove();
+    const segundos = (Date.now() - inicio) / 1000;
+    const generados = usoServidor && usoServidor.completion_tokens ? usoServidor.completion_tokens : tokens;
+    // Con respuestas instantáneas (o cortadas al inicio) la división no dice nada útil.
+    const tps = segundos >= 0.3 ? (generados / segundos) : 0;
+    const registro = {
+      rol:'ia', texto,
+      tokens: generados || 0,
+      segundos: segundos.toFixed(1),
+      tps: tps.toFixed(1)
+    };
+    if(texto.startsWith('Error:')) registro.error = true;
+    mensajes.push(registro);
+    guardarMensajes();
+    const vivo = document.getElementById('msgVivo');
+    if(vivo) vivo.remove();
+    pintarChat();
+    mostrarMetricas(registro, primerToken ? ((primerToken - inicio)/1000).toFixed(1) : null);
+    ponerModoGenerando(false);
+    controlador = null;
+  }
+}
+
+function detener(){
+  if(controlador) controlador.abort();
+}
+
+function ponerModoGenerando(v){
+  generando = v;
+  document.getElementById('btnEnviar').style.display = v ? 'none' : '';
+  document.getElementById('btnDetener').style.display = v ? '' : 'none';
+  document.getElementById('entrada').disabled = v;
+}
+
+function mostrarMetricas(m, primerTokenSeg){
+  const caja = document.getElementById('metricas');
+  if(m.error){ caja.textContent = 'Sin respuesta'; return; }
+  caja.innerHTML = `<b>${m.tokens}</b> tokens · <b>${m.segundos} s</b>`
+    + (Number(m.tps) > 0 ? ` · ${m.tps} tok/s` : '')
+    + (primerTokenSeg ? ` · 1.ª palabra a los ${primerTokenSeg} s` : '');
+}
+
+// ---------- Copiar ----------
+async function copiar(texto, mensajeOk){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(texto);
+    }else{
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.cssText = 'position:fixed; left:-9999px; top:0;';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    mostrarToast(mensajeOk || 'Copiado');
+  }catch(e){
+    mostrarToast('No se pudo copiar: ' + e.message, 4000);
+  }
+}
+function copiarPar(indice){
+  const respuesta = mensajes[indice];
+  if(!respuesta) return;
+  const pregunta = indice > 0 && mensajes[indice-1].rol === 'yo' ? mensajes[indice-1] : null;
+  copiar((pregunta ? 'Pregunta: ' + pregunta.texto + '\n\n' : '') + 'Respuesta: ' + respuesta.texto,
+         'Pregunta y respuesta copiadas');
+}
+function copiarUltima(){
+  for(let i = mensajes.length - 1; i >= 0; i--){
+    if(mensajes[i].rol === 'ia'){ copiar(mensajes[i].texto, 'Respuesta copiada'); return; }
+  }
+  mostrarToast('Todavía no hay ninguna respuesta');
+}
+function limpiar(){
+  if(!mensajes.length){ mostrarToast('No hay nada que limpiar'); return; }
+  if(!confirm('¿Borrar toda la conversación de este dispositivo?')) return;
+  mensajes = [];
+  guardarMensajes();
+  pintarChat();
+  document.getElementById('metricas').textContent = 'Listo';
+  mostrarToast('Conversación borrada');
+  document.getElementById('entrada').focus();
+}
+
+function mostrarToast(mensaje, ms){
+  const t = document.getElementById('toast');
+  t.textContent = mensaje;
+  t.style.opacity = '1';
+  clearTimeout(t._temporizador);
+  t._temporizador = setTimeout(()=>{ t.style.opacity = '0'; }, ms || 2200);
+}
+
+// ---------- Arranque ----------
+const entrada = document.getElementById('entrada');
+entrada.addEventListener('input', ()=>{
+  entrada.style.height = 'auto';
+  entrada.style.height = Math.min(entrada.scrollHeight, window.innerHeight * 0.38) + 'px';
+});
+// En Android el Enter hace salto de línea; para enviar desde teclado físico, Ctrl+Enter.
+entrada.addEventListener('keydown', e=>{
+  if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); enviar(); }
+});
+
+window.addEventListener('load', ()=>{
+  const url = obtenerUrl();
+  document.getElementById('url').value = url;
+  pintarModo();
+  pintarParams();
+  mensajes = cargarMensajes();
+  pintarChat();
+  if(!url){
+    document.getElementById('panelConexion').classList.remove('oculto');
+    marcarEstado('', 'pega la dirección del túnel');
+  }else{
+    probarConexion();
+  }
+});
+</script>
+</body>
+</html>

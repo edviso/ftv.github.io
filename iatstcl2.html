@@ -344,8 +344,16 @@
   <!-- SECCIÓN AUTH -->
   <div id="auth-section">
     <h2>Configuración de Inteligencia Artificial</h2>
-    <p class="subtitle" style="margin: 0 auto; margin-bottom: 10px;">Ingresa tu API Key de Google Gemini para activar el asistente de tueste.</p>
+    <p class="subtitle" style="margin: 0 auto; margin-bottom: 10px;">Elige el modelo y coloca su API Key para activar el asistente de tueste.</p>
+    <label class="field" style="max-width:400px; margin:0 auto 12px; text-align:left;">Modelo a usar
+      <select id="sel-modelo-ia" onchange="alCambiarModeloIA()">
+        <option value="gemini-3.6-flash">Gemini (gemini-3.6-flash)</option>
+        <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+        <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
+      </select>
+    </label>
     <input type="password" id="apiKey" class="auth-input" placeholder="AIzaSy...">
+    <p id="modelo-nota" style="color:var(--muted); font-size:12.5px; max-width:400px; margin:8px auto 0;">Consigue tu API Key en aistudio.google.com</p>
     <br>
     <button class="auth-btn" onclick="guardarEIniciarApp()">Iniciar Aplicación</button>
     <div id="error-message">Por favor, ingresa una API Key válida.</div>
@@ -466,7 +474,7 @@
       Curva generada con un modelo heurístico educativo (no telemetría de una tostadora real).
     </footer>
     
-    <button class="change-key-btn" onclick="cambiarApiKey()">⚙️ Cambiar API Key</button>
+    <button class="change-key-btn" onclick="cambiarApiKey()">⚙️ Configuración de IA</button>
   </div>
 </div>
 
@@ -607,6 +615,7 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
   // Cada vez que se modifica el código de esta app, se agrega una entrada aquí
   // con fecha/hora de Ecuador y un resumen breve del cambio (más reciente primero).
   const REGISTRO_CAMBIOS = [
+    { fecha: '18/08/2026 · ~15:00', descripcion: 'Se agregó soporte para DeepSeek V4 Flash y V4 Pro como alternativa a Gemini, igual que en la app de control de pesas. La pantalla de configuración ahora tiene un selector "Modelo a usar" (Gemini / DeepSeek V4 Flash / DeepSeek V4 Pro); cada proveedor guarda su propia API Key por separado, así que cambiar de modelo no borra la otra key. El botón "⚙️ Configuración de IA" (antes "Cambiar API Key") reabre esa pantalla sin borrar nada, precargando el modelo y la key activos, para poder saltar a DeepSeek en cualquier momento si Gemini falla o se acaba la cuota gratuita.' },
     { fecha: '15/08/2026 · ~09:00', descripcion: 'Se agregó una función limpiarLatex() que convierte a texto plano los restos de notación LaTeX que la IA a veces escribe ($...$, \\text{...}, \\times, \\circ, \\frac{}{}, etc.) — la app no los renderizaba, así que llegaban como símbolos sueltos ("$", "\\text", diagonales) en vez de texto legible. Se limpia una sola vez al recibir la respuesta, antes de guardarla en el historial de la conversación y antes de mostrarla, así que también queda limpio lo que copian los botones "Copiar".' },
     { fecha: '14/08/2026 · 13:23', descripcion: 'Se agregó la regla de alcance: identificar qué aspecto pregunta el usuario (catación/extracción, perfil de tueste, u otro) y enfocar la respuesta ahí. Poder recomendar sin que se lo pidan no autoriza a desplegar un análisis paralelo completo (con su propia tabla, verificación y protocolo) de un tema distinto al preguntado solo porque el dato está en el JSON — detectado en un caso real donde, al pedir solo mejorar una catación, entregó además un análisis de tueste entero con tabla nueva y verificaciones. Otro aspecto relevante se menciona en una o dos frases, no como sección propia.' },
     { fecha: '14/08/2026 · ~13:00', descripcion: 'Se reforzaron 2 reglas tras detectar que ambas se violaron en un caso real. (1) Reaparición de la teoría "setpoint fijo alto causa los cortes" al analizar un tueste a 211°C fijo — se agregó advertencia explícita nombrando el error y prohibiendo la frase "fijar/subir el setpoint provoca/causa los cortes" sin contrastar contra el historial completo. (2) Un perfil propuesto sostuvo 211°C durante 1:30 llamándolo "paso rápido, no estancado" — se agregó un tope numérico duro: ninguna fila de tabla puede fijar el setpoint exactamente en 211 o 212°C como valor sostenido, solo saltar directo de ≤210 a ≥213.' },
@@ -656,37 +665,83 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
 
   /* ============ SISTEMA IA Y AUTH ============ */
   let GEMINI_API_KEY = "";
+  let DEEPSEEK_API_KEY = "";
+  let MODELO_ACTUAL = "gemini-3.6-flash"; // 'gemini-3.6-flash' | 'deepseek-v4-flash' | 'deepseek-v4-pro'
   let historialConversacion = []; // turnos {role, parts} de la conversación activa en el modal
 
+  // 'gemini-3.6-flash' -> 'gemini'; cualquier 'deepseek-...' -> 'deepseek'
+  function proveedorDe(modelo) {
+    return modelo.indexOf('deepseek') === 0 ? 'deepseek' : 'gemini';
+  }
+
+  // Ajusta el placeholder, la nota de ayuda y pre-llena la key ya guardada (si existe)
+  // del proveedor que se acaba de seleccionar en el selector de modelo.
+  window.alCambiarModeloIA = function() {
+    const modelo = document.getElementById('sel-modelo-ia').value;
+    const input = document.getElementById('apiKey');
+    const nota = document.getElementById('modelo-nota');
+    if (proveedorDe(modelo) === 'deepseek') {
+      input.placeholder = 'sk-...';
+      nota.textContent = 'Consigue tu API Key en platform.deepseek.com';
+      input.value = localStorage.getItem('deepseek_maillard_key') || '';
+    } else {
+      input.placeholder = 'AIzaSy...';
+      nota.textContent = 'Consigue tu API Key en aistudio.google.com';
+      input.value = localStorage.getItem('gemini_maillard_key') || '';
+    }
+  };
+
   window.onload = function() {
-    const keyGuardada = localStorage.getItem('gemini_maillard_key');
-    if (keyGuardada && keyGuardada.length > 10) {
-      GEMINI_API_KEY = keyGuardada;
+    const modeloGuardado = localStorage.getItem('maillard_modelo_ia') || 'gemini-3.6-flash';
+    document.getElementById('sel-modelo-ia').value = modeloGuardado;
+    MODELO_ACTUAL = modeloGuardado;
+
+    const claveGemini = localStorage.getItem('gemini_maillard_key') || '';
+    const claveDeepseek = localStorage.getItem('deepseek_maillard_key') || '';
+    GEMINI_API_KEY = claveGemini;
+    DEEPSEEK_API_KEY = claveDeepseek;
+
+    const claveActiva = proveedorDe(modeloGuardado) === 'deepseek' ? claveDeepseek : claveGemini;
+    if (claveActiva && claveActiva.length > 10) {
       document.getElementById('auth-section').style.display = 'none';
       document.getElementById('app-section').style.display = 'block';
       update();
     } else {
-      update(); 
+      alCambiarModeloIA();
+      update();
     }
   };
 
   window.guardarEIniciarApp = function() {
+    const modeloSeleccionado = document.getElementById('sel-modelo-ia').value;
     const keyInput = document.getElementById('apiKey').value.trim();
     const errorDiv = document.getElementById('error-message');
-    
+
     if (keyInput.length < 10) {
       errorDiv.style.display = "block";
       return;
     }
     errorDiv.style.display = "none";
-    GEMINI_API_KEY = keyInput;
-    localStorage.setItem('gemini_maillard_key', keyInput);
+
+    MODELO_ACTUAL = modeloSeleccionado;
+    localStorage.setItem('maillard_modelo_ia', modeloSeleccionado);
+    if (proveedorDe(modeloSeleccionado) === 'deepseek') {
+      DEEPSEEK_API_KEY = keyInput;
+      localStorage.setItem('deepseek_maillard_key', keyInput);
+    } else {
+      GEMINI_API_KEY = keyInput;
+      localStorage.setItem('gemini_maillard_key', keyInput);
+    }
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('app-section').style.display = 'block';
   };
 
+  // Reabre la pantalla de configuración (sin borrar ninguna key guardada) para poder
+  // cambiar de modelo o actualizar una API Key — por ejemplo, pasar a DeepSeek si
+  // Gemini falla o se acaba la cuota gratuita.
   window.cambiarApiKey = function() {
-    localStorage.removeItem('gemini_maillard_key');
+    document.getElementById('sel-modelo-ia').value = MODELO_ACTUAL;
+    alCambiarModeloIA();
     document.getElementById('app-section').style.display = 'none';
     document.getElementById('auth-section').style.display = 'block';
   };
@@ -939,22 +994,46 @@ No inventes datos, eventos, parámetros de la tostadora, temperatura del grano, 
     mostrarCargando(true);
 
     try {
-      const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: historialConversacion,
-          generationConfig: { temperature: 0.6 }
-        })
-      });
+      let textoGenerado;
 
-      if (!respuesta.ok) {
-        const errorData = await respuesta.json();
-        throw new Error(errorData.error?.message || "Error al conectar con la API de Gemini");
+      if (proveedorDe(MODELO_ACTUAL) === 'deepseek') {
+        // DeepSeek usa la API compatible con OpenAI: roles 'user'/'assistant' y campo 'content'.
+        const mensajes = historialConversacion.map(function(turno) {
+          return { role: turno.role === 'model' ? 'assistant' : 'user', content: turno.parts[0].text };
+        });
+        const respuesta = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY },
+          body: JSON.stringify({
+            model: MODELO_ACTUAL,
+            messages: mensajes,
+            temperature: 0.6,
+            stream: false
+          })
+        });
+        if (!respuesta.ok) {
+          const errorData = await respuesta.json();
+          throw new Error(errorData.error?.message || "Error al conectar con la API de DeepSeek");
+        }
+        const datos = await respuesta.json();
+        textoGenerado = limpiarLatex(datos.choices[0].message.content);
+      } else {
+        const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: historialConversacion,
+            generationConfig: { temperature: 0.6 }
+          })
+        });
+        if (!respuesta.ok) {
+          const errorData = await respuesta.json();
+          throw new Error(errorData.error?.message || "Error al conectar con la API de Gemini");
+        }
+        const datos = await respuesta.json();
+        textoGenerado = limpiarLatex(datos.candidates[0].content.parts[0].text);
       }
 
-      const datos = await respuesta.json();
-      const textoGenerado = limpiarLatex(datos.candidates[0].content.parts[0].text);
       historialConversacion.push({ role: 'model', parts: [{ text: textoGenerado }] });
 
       mostrarCargando(false);

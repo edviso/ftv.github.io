@@ -128,6 +128,14 @@
   @media (prefers-reduced-motion: reduce){
     .spinner-ia{animation:none;} .cursor::after{animation:none;} *{transition:none !important;}
   }
+  .incompleta{
+    color:var(--amber); font-size:12.5px; margin-top:7px; line-height:1.45;
+  }
+  .btn-reintentar{
+    background:var(--surface-alt); border:1px solid var(--amber); color:var(--amber);
+    border-radius:7px; padding:5px 11px; font-size:12px; font-weight:700; cursor:pointer;
+    font-family:var(--sans); margin-top:6px;
+  }
   .vacio{color:var(--text-dim); font-size:13px; text-align:center; padding:20px 0;}
 
   /* ---------- Pie fijo ---------- */
@@ -163,6 +171,7 @@
   <div class="barra-top">
     <span class="punto" id="punto"></span>
     <div class="titulo">Qwen3-1.7B <small id="subtitulo">servidor local · Acer 3S</small></div>
+    <span id="candado" title="Bloqueo de pantalla" style="font-size:15px; flex-shrink:0;"></span>
     <button class="btn-icono" onclick="limpiar()">Limpiar</button>
     <button class="btn-icono" onclick="alternarPanel()">Conexión</button>
   </div>
@@ -381,6 +390,43 @@ function pintarParams(){
   document.getElementById('pMem').value = c.memoria;
 }
 
+// ---------- Mantener la pantalla encendida ----------
+// Android corta la red cuando la pantalla se apaga, así que una respuesta larga se
+// caía a mitad de camino. Con el bloqueo activo, la pantalla no se apaga sola.
+let referenciaWakeLock = null;
+
+function pintarCandado(activo){
+  const el = document.getElementById('candado');
+  if(!el) return;
+  el.textContent = activo ? '🔒' : '⚠️';
+  el.title = activo
+    ? 'La pantalla no se apagará mientras uses el chat'
+    : 'No se pudo bloquear la pantalla: si se apaga sola, las respuestas largas pueden cortarse';
+}
+
+async function mantenerPantallaActiva(){
+  try{
+    if('wakeLock' in navigator){
+      referenciaWakeLock = await navigator.wakeLock.request('screen');
+      pintarCandado(true);
+      referenciaWakeLock.addEventListener('release', ()=>{ referenciaWakeLock = null; });
+    }else{
+      pintarCandado(false);
+    }
+  }catch(e){
+    referenciaWakeLock = null;
+    pintarCandado(false);
+  }
+}
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && !referenciaWakeLock) mantenerPantallaActiva();
+});
+// Red de seguridad: algunos Android sueltan el bloqueo sin avisar.
+setInterval(()=>{
+  if(document.visibilityState === 'visible' && !referenciaWakeLock) mantenerPantallaActiva();
+}, 20000);
+
 // ---------- Conversación ----------
 function escapar(s){
   return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -432,6 +478,7 @@ function pintarChat(){
           <div class="quien">Qwen3 1.7B</div>
           ${htmlPensamiento(m.pensamiento, false)}
           <div class="burbuja">${escapar(m.texto)}</div>
+          ${m.incompleta ? `<div class="incompleta">${escapar(m.motivo)}<br><button class="btn-reintentar" onclick="reintentar(${i})">↻ Reintentar esta pregunta</button></div>` : ''}
           ${metricas}
           <div class="acciones">
             <button class="btn-copiar" onclick="copiarPar(${i})">📋 Copiar pregunta y respuesta</button>
@@ -499,6 +546,7 @@ async function enviar(){
   const techoTokens = piensa ? Math.max(cfg.maxTokens, 900) : cfg.maxTokens;
   const inicio = Date.now();
   let textoCrudo = '', texto = '', pensamiento = '', tokens = 0, tokensPensando = 0;
+  let incompleta = false, motivo = '';
   let primerToken = null, usoServidor = null;
   const burbuja = document.getElementById('burbujaViva');
   const cajaPensamiento = document.getElementById('cajaPensamiento');
@@ -584,16 +632,20 @@ async function enviar(){
       }
     }
   }catch(e){
+    // Lo que ya llegó NO se borra: se conserva y se marca como incompleta, para no
+    // perder minutos de generación por un corte de red a mitad de camino.
+    incompleta = true;
     if(e.name === 'AbortError'){
-      texto = texto || '(detenido antes de la primera palabra)';
+      motivo = 'Detenida por ti antes de terminar.';
+    }else if(e.message === 'Failed to fetch' || /network|fetch/i.test(e.message)){
+      motivo = 'Se cortó la conexión con la Acer antes de terminar. Suele pasar si la pantalla del teléfono se apaga o el túnel se cae; lo de arriba es lo que alcanzó a llegar.';
+      marcarEstado('mal', 'conexión interrumpida');
     }else{
-      texto = 'Error: ' + (e.message === 'Failed to fetch'
-        ? 'no se pudo conectar con la Acer. Revisa que llama-server y cloudflared estén corriendo, y que la dirección sea la de hoy.'
-        : e.message);
+      motivo = 'Se interrumpió: ' + e.message;
       marcarEstado('mal', 'sin conexión');
     }
+    if(!texto.trim() && !pensamiento.trim()) texto = '(no alcanzó a llegar nada)';
     burbuja.textContent = texto;
-    if(cajaPensamiento) cajaPensamiento.innerHTML = '';
   }finally{
     clearInterval(marcaTiempo);
     const espera = document.getElementById('espera');
@@ -611,7 +663,11 @@ async function enviar(){
       segundos: segundos.toFixed(1),
       tps: tps.toFixed(1)
     };
-    if(texto.startsWith('Error:')) registro.error = true;
+    if(incompleta){
+      registro.incompleta = true;
+      registro.motivo = motivo;
+      registro.error = true; // no se reenvía como contexto en las siguientes preguntas
+    }
     mensajes.push(registro);
     guardarMensajes();
     const vivo = document.getElementById('msgVivo');
@@ -636,7 +692,7 @@ function ponerModoGenerando(v){
 
 function mostrarMetricas(m, primerTokenSeg){
   const caja = document.getElementById('metricas');
-  if(m.error){ caja.textContent = 'Sin respuesta'; return; }
+  if(m.incompleta && !m.tokens){ caja.textContent = 'Se cortó sin recibir nada'; return; }
   caja.innerHTML = `<b>${m.tokens}</b> tokens${m.tokensPensando ? ' (' + m.tokensPensando + ' pensando)' : ''} · <b>${m.segundos} s</b>`
     + (Number(m.tps) > 0 ? ` · ${m.tps} tok/s` : '')
     + (primerTokenSeg ? ` · 1.ª palabra a los ${primerTokenSeg} s` : '');
@@ -700,6 +756,21 @@ function copiarUltima(){
   }
   mostrarToast('Todavía no hay ninguna respuesta');
 }
+// Reintenta la pregunta que quedó a medias: quita el intento fallido y su pregunta,
+// y la vuelve a enviar tal cual, para no dejar el mismo turno duplicado en el historial.
+function reintentar(indice){
+  if(generando){ mostrarToast('Espera a que termine la respuesta en curso'); return; }
+  const respuesta = mensajes[indice];
+  const pregunta = indice > 0 && mensajes[indice-1].rol === 'yo' ? mensajes[indice-1] : null;
+  if(!respuesta || !pregunta){ mostrarToast('No encuentro la pregunta original'); return; }
+  const texto = pregunta.texto;
+  mensajes.splice(indice-1, 2);
+  guardarMensajes();
+  pintarChat();
+  document.getElementById('entrada').value = texto;
+  enviar();
+}
+
 function limpiar(){
   if(!mensajes.length){ mostrarToast('No hay nada que limpiar'); return; }
   if(!confirm('¿Borrar toda la conversación de este dispositivo?')) return;
@@ -731,6 +802,7 @@ entrada.addEventListener('keydown', e=>{
 });
 
 window.addEventListener('load', ()=>{
+  mantenerPantallaActiva();
   const url = obtenerUrl();
   document.getElementById('url').value = url;
   pintarModo();

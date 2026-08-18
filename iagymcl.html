@@ -298,7 +298,24 @@
         <span class="btn secundario" style="display:block; text-align:center;">Importar respaldo (JSON)</span>
       </label>
       <input type="file" id="inputJSON" accept=".json" style="display:none" onchange="importarJSON(event)">
-      <button class="btn peligro" onclick="cambiarApiKey()">Cambiar / borrar API Key</button>
+      <button class="btn peligro" onclick="cambiarApiKey()">Cambiar / borrar API Key de Gemini</button>
+    </div>
+
+    <div class="card">
+      <h2>Proveedor de IA</h2>
+      <small class="ayuda">Por defecto usa Gemini. Si se te acaban las consultas gratis o el servicio está saturado, puedes cambiar a DeepSeek como respaldo.</small>
+      <label for="selProveedorIA">Modelo a usar</label>
+      <select id="selProveedorIA" onchange="cambiarProveedorIA(this.value)">
+        <option value="gemini">Gemini (gemini-flash-latest)</option>
+        <option value="deepseek-flash">DeepSeek V4 Flash</option>
+        <option value="deepseek-pro">DeepSeek V4 Pro</option>
+      </select>
+      <div id="contDeepSeekKey" class="oculto">
+        <label for="inputDeepSeekKey">API Key de DeepSeek</label>
+        <input type="password" id="inputDeepSeekKey" placeholder="sk-...">
+        <button class="btn secundario" onclick="guardarDeepSeekKeyDesdeAjustes()">Guardar API Key de DeepSeek</button>
+        <div id="errorDeepSeekKey" class="error-msg oculto"></div>
+      </div>
     </div>
   </div>
 
@@ -382,7 +399,8 @@ const REGISTRO_CAMBIOS = [
   {fecha:'2026-08-10 17:30', texto:'Botones de copiar en los chats de IA (tanto en el de cada sesión como en Consulta): uno arriba para copiar toda la conversación, y uno bajo cada respuesta para copiar solo ese par de pregunta y respuesta.'},
   {fecha:'2026-08-11 09:39', texto:'Indicador visual mientras la IA piensa: la imagen queda incrustada dentro del propio archivo (para que siga siendo uno solo) y gira por animación, ya que la imagen original es estática. Aparece al analizar una sesión de fuerza o de movilidad, y también al hacer una pregunta en cualquiera de los dos chats, donde antes no había ninguna señal de espera.'},
   {fecha:'2026-08-13 09:47', texto:'La app vuelve a abrir en la pantalla "Hoy" en vez de en Ajustes. En "Editar rutina y horario", las secciones de Calentamiento, Movilidad, Tren Superior y Tren Inferior ahora son desplegables y arrancan colapsadas, cada una mostrando cuántos ejercicios tiene — así ya no hay que recorrer un listado largo para llegar al final.'},
-  {fecha:'2026-08-13', texto:'Tres correcciones: (1) el bloqueo de pantalla ahora muestra un indicador visible ("🔒 Pantalla activa" / "⚠️ Pantalla sin bloquear") en vez de fallar en silencio, y se reintenta cada 20s como red de seguridad; (2) "Reiniciar registro" se movió al final del formulario (junto a "Registrar y analizar"), lejos de la zona superior donde se toca la pantalla para mantenerla activa, para reducir el riesgo de un reinicio accidental; (3) duraciones de serie sospechosamente cortas (menos de 8s, típico de un registro apurado) ya no se usan para calcular la tendencia dentro de la sesión, y se le avisa explícitamente a la IA para que no las interprete como buen ritmo.'}
+  {fecha:'2026-08-13', texto:'Tres correcciones: (1) el bloqueo de pantalla ahora muestra un indicador visible ("🔒 Pantalla activa" / "⚠️ Pantalla sin bloquear") en vez de fallar en silencio, y se reintenta cada 20s como red de seguridad; (2) "Reiniciar registro" se movió al final del formulario (junto a "Registrar y analizar"), lejos de la zona superior donde se toca la pantalla para mantenerla activa, para reducir el riesgo de un reinicio accidental; (3) duraciones de serie sospechosamente cortas (menos de 8s, típico de un registro apurado) ya no se usan para calcular la tendencia dentro de la sesión, y se le avisa explícitamente a la IA para que no las interprete como buen ritmo.'},
+  {fecha:'2026-08-17 19:14', texto:'Nueva sección "Proveedor de IA" en Ajustes: por defecto sigue usando Gemini, pero se puede cambiar a DeepSeek V4 Flash o V4 Pro como respaldo (con su propia API Key, guardada aparte) para cuando se acaben las consultas gratis de Gemini o el servicio esté saturado. El resto de la app (análisis, chats, Consulta) no tuvo que cambiar nada — todos pasan por el mismo punto de entrada, que ahora traduce el formato al de DeepSeek cuando corresponde.'}
 ];
 
 function mostrarLog(){
@@ -568,6 +586,7 @@ function mostrarVista(nombre){
   if(nombre==='consulta') renderConsulta();
   if(nombre==='setup') renderSetup();
   if(nombre==='simulacion') renderSimulacionInicio();
+  if(nombre==='ajustes') renderAjustes();
 }
 
 // ---- 5. Vista: API Key ----
@@ -2158,7 +2177,69 @@ Incluye solo los ejercicios sobre los que se llegó a un acuerdo concreto y expl
   }
 }
 
+// ---- Proveedor de IA: Gemini (por defecto) o DeepSeek (V4 Flash / V4 Pro) como respaldo ----
+const CLAVE_PROVEEDOR_IA = 'controlPesasIA_proveedor_v1';
+const CLAVE_DEEPSEEK_KEY = 'controlPesasIA_deepseekKey_v1';
+
+function obtenerProveedorIA(){ return localStorage.getItem(CLAVE_PROVEEDOR_IA) || 'gemini'; }
+function guardarProveedorIA(p){
+  try{ localStorage.setItem(CLAVE_PROVEEDOR_IA, p); return true; }
+  catch(e){ return false; }
+}
+function obtenerDeepSeekKey(){ return localStorage.getItem(CLAVE_DEEPSEEK_KEY) || ''; }
+function guardarDeepSeekKey(k){
+  try{ localStorage.setItem(CLAVE_DEEPSEEK_KEY, k); return true; }
+  catch(e){ return false; }
+}
+
+function renderAjustes(){
+  const sel = document.getElementById('selProveedorIA');
+  if(!sel) return;
+  sel.value = obtenerProveedorIA();
+  document.getElementById('contDeepSeekKey').classList.toggle('oculto', sel.value === 'gemini');
+  const inputKey = document.getElementById('inputDeepSeekKey');
+  if(inputKey) inputKey.value = obtenerDeepSeekKey();
+}
+
+function cambiarProveedorIA(valor){
+  if((valor === 'deepseek-flash' || valor === 'deepseek-pro') && !obtenerDeepSeekKey()){
+    mostrarToast('Ahora ingresa y guarda tu API Key de DeepSeek abajo', 5000);
+  }
+  document.getElementById('contDeepSeekKey').classList.toggle('oculto', valor === 'gemini');
+  guardarProveedorIA(valor);
+  const nombres = {gemini:'Gemini', 'deepseek-flash':'DeepSeek V4 Flash', 'deepseek-pro':'DeepSeek V4 Pro'};
+  mostrarToast('Proveedor de IA: ' + nombres[valor]);
+}
+
+function guardarDeepSeekKeyDesdeAjustes(){
+  const valor = document.getElementById('inputDeepSeekKey').value.trim();
+  const err = document.getElementById('errorDeepSeekKey');
+  if(valor.length < 10){
+    err.textContent = 'Ingresa una API Key válida.';
+    err.classList.remove('oculto');
+    return;
+  }
+  const ok = guardarDeepSeekKey(valor);
+  if(!ok){
+    err.textContent = 'No se pudo guardar' + (ultimoErrorAlmacenamiento ? ': ' + ultimoErrorAlmacenamiento : '.');
+    err.classList.remove('oculto');
+    return;
+  }
+  err.classList.add('oculto');
+  mostrarToast('API Key de DeepSeek guardada');
+}
+
+// Punto de entrada único que ya usa el resto de la app: decide con qué proveedor hablar
+// según lo elegido en Ajustes, sin que el resto del código tenga que saberlo.
 async function llamarGemini(contents){
+  const proveedor = obtenerProveedorIA();
+  if(proveedor === 'deepseek-flash' || proveedor === 'deepseek-pro'){
+    return llamarDeepSeek(contents, proveedor === 'deepseek-pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash');
+  }
+  return llamarGeminiAPI(contents);
+}
+
+async function llamarGeminiAPI(contents){
   const apiKey = obtenerApiKey();
   const respuesta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
     method:'POST',
@@ -2172,6 +2253,33 @@ async function llamarGemini(contents){
   }
   const datos = await respuesta.json();
   return datos.candidates[0].content.parts[0].text;
+}
+
+// DeepSeek usa una API compatible con OpenAI (mensajes con role "user"/"assistant" y
+// "content" de texto plano), distinta a la de Gemini — se traduce el mismo "contents" de
+// siempre para no tener que tocar ninguno de los lugares que ya arman el historial de chat.
+function contentsAMensajesOpenAI(contents){
+  return contents.map(c => ({
+    role: c.role === 'model' ? 'assistant' : 'user',
+    content: (c.parts || []).map(p=>p.text).join('\n')
+  }));
+}
+
+async function llamarDeepSeek(contents, modelo){
+  const apiKey = obtenerDeepSeekKey();
+  if(!apiKey) throw new Error('Falta la API Key de DeepSeek. Configúrala en Ajustes → Proveedor de IA.');
+  const respuesta = await fetch('https://api.deepseek.com/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey},
+    body: JSON.stringify({ model: modelo, messages: contentsAMensajesOpenAI(contents), temperature: 0.5 })
+  });
+  if(!respuesta.ok){
+    let msg = 'Error de conexión con DeepSeek';
+    try{ const errData = await respuesta.json(); msg = errData.error?.message || JSON.stringify(errData); }catch(e){}
+    throw new Error(msg);
+  }
+  const datos = await respuesta.json();
+  return datos.choices[0].message.content;
 }
 
 // ---- 8. Vista: Historial ----

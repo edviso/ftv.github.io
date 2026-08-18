@@ -137,7 +137,7 @@
     padding:0 14px calc(12px + env(safe-area-inset-bottom,0px));
   }
   .barra-metricas{
-    display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; gap:7px;
     padding:8px 0; border-bottom:1px solid var(--border); margin-bottom:10px;
   }
   #metricas{
@@ -207,7 +207,8 @@
 <footer>
   <div class="barra-metricas">
     <span id="metricas">Listo</span>
-    <button class="btn-copiar" onclick="copiarUltima()">📋 Copiar respuesta</button>
+    <button class="btn-copiar" onclick="copiarUltima()">📋 Respuesta</button>
+    <button class="btn-copiar" onclick="copiarTodo()">📋 Todo</button>
   </div>
   <textarea id="entrada" placeholder="Escribe tu pregunta..." rows="4"></textarea>
   <div class="fila-enviar">
@@ -667,6 +668,32 @@ function copiarPar(indice){
   copiar((pregunta ? 'Pregunta: ' + pregunta.texto + '\n\n' : '') + 'Respuesta: ' + respuesta.texto,
          'Pregunta y respuesta copiadas');
 }
+// Vuelca toda la conversación numerada, con pensamiento y métricas, para poder
+// analizarla después fuera de la app.
+function copiarTodo(){
+  if(!mensajes.length){ mostrarToast('No hay conversación que copiar'); return; }
+  const partes = [];
+  let numero = 0;
+  mensajes.forEach(m=>{
+    if(m.rol === 'yo'){
+      numero++;
+      partes.push('--- ' + numero + ' ---\nPregunta: ' + m.texto);
+      return;
+    }
+    let bloque = '';
+    if(m.pensamiento) bloque += 'Pensamiento: ' + m.pensamiento + '\n\n';
+    bloque += 'Respuesta: ' + m.texto;
+    if(m.tokens){
+      bloque += '\n(' + m.tokens + ' tokens'
+        + (m.tokensPensando ? ', ' + m.tokensPensando + ' pensando' : '')
+        + ' · ' + m.segundos + ' s'
+        + (Number(m.tps) > 0 ? ' · ' + m.tps + ' tok/s' : '') + ')';
+    }
+    partes.push(bloque);
+  });
+  copiar(partes.join('\n\n'), 'Conversación completa copiada');
+}
+
 function copiarUltima(){
   for(let i = mensajes.length - 1; i >= 0; i--){
     if(mensajes[i].rol === 'ia'){ copiar(mensajes[i].texto, 'Respuesta copiada'); return; }

@@ -236,6 +236,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
 <header>
   <div class="brand">Cervecería<small id="hsub">control integral</small></div>
   <div class="hbtns">
+    <button class="hbtn" onclick="exportar()">EXPORTAR</button>
     <button class="hbtn" onclick="openLog()">LOG</button>
     <button class="hbtn" onclick="go('ajustes')">AJUSTES</button>
   </div>
@@ -265,6 +266,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-19 02:00 (Ecuador)", t:"Versión 4.6. Botón EXPORTAR visible en la cabecera para descargar inmediatamente todos los datos guardados en este navegador como JSON y migrarlos a la nueva aplicación local."},
   {f:"2026-08-14 09:15 (Ecuador)", t:"Versión 4.5. Cuatro correcciones al contexto tras una ronda de pruebas del chat: 1) la curva de enfriamiento pasa de dos datos fijos a la fórmula de Newton con las dos constantes k calibradas, para que se recalcule con cualquier temperatura ambiente en vez de reutilizar el ejemplo de 31°C; 2) unificada la tasa de evaporación (2,94 L/h en todas partes, se había quedado un 3,3 L/h viejo en otra regla); 3) agregadas las constantes de priming por tipo de azúcar (mesa 3,83, dextrosa 4,0, DME 4,6, miel 5,0 g/L por volumen de CO2), el chat había usado 4,1 para azúcar de mesa; 4) nueva regla: todo recorte de malta para bajar la OG debe recalcular el IBU resultante, porque baja la gravedad y sube la utilización del lúpulo; 5) nueva regla: nunca inventar números de subcategoría BJCP fuera de la tabla del contexto, solo el nombre descriptivo con aviso de que no está verificado."},
   {f:"2026-08-13 12:30 (Ecuador)", t:"Versión 4.4. Cronómetro real por actividad en la guía de cocción: cada paso tiene un botón Iniciar/Detener que mide el tiempo real que toma, mostrando el reloj en vivo mientras corre. Solo una actividad corre a la vez: arrancar una detiene automáticamente la anterior si quedó abierta. Botón Ver resumen del día que lista cada paso con su duración real y, cuando aplica, el tiempo previsto por el temporizador de la app, más el total registrado."},
   {f:"2026-08-13 11:40 (Ecuador)", t:"Versión 4.3. Nuevo ajuste de volumen objetivo en Ajustes: fija los litros del fermentador en todas las recetas de una vez, incluidas las ya elaboradas, junto con la capacidad de la nevera en botellas. Hacía falta porque los datos guardados en el teléfono conservaban el volumen antiguo y el botón de reponer recetas solo toca las pendientes."},
@@ -2250,6 +2252,7 @@ function exportar(){
   a.href=URL.createObjectURL(blob);
   a.download=`cerveceria_${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  toast("Respaldo JSON descargado");
 }
 function importar(ev){
   const f=ev.target.files[0]; if(!f) return;

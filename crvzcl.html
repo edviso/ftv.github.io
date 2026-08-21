@@ -236,7 +236,6 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
 <header>
   <div class="brand">Cervecería<small id="hsub">control integral</small></div>
   <div class="hbtns">
-    <button class="hbtn" onclick="exportar()">EXPORTAR</button>
     <button class="hbtn" onclick="openLog()">LOG</button>
     <button class="hbtn" onclick="go('ajustes')">AJUSTES</button>
   </div>
@@ -266,7 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
-  {f:"2026-08-19 02:00 (Ecuador)", t:"Versión 4.6. Botón EXPORTAR visible en la cabecera para descargar inmediatamente todos los datos guardados en este navegador como JSON y migrarlos a la nueva aplicación local."},
+  {f:"2026-08-20 13:50 (Ecuador)", t:"Versión 4.6. El chat recibía solo la etapa en curso de cada lote, así que cuando le preguntaban por las siguientes se las inventaba: llegó a afirmar que la maduración cálida y el descanso de fin de primaria eran la misma fase y a dar tres calendarios distintos y erróneos seguidos. Ahora el contexto lleva el cronograma completo de cada lote con los días, la temperatura y la fecha de fin de cada etapa, marcando cuáles están terminadas, cuál está en curso y cuáles pendientes, más una regla que prohíbe fusionar etapas o reconstruir el calendario de memoria."},
   {f:"2026-08-14 09:15 (Ecuador)", t:"Versión 4.5. Cuatro correcciones al contexto tras una ronda de pruebas del chat: 1) la curva de enfriamiento pasa de dos datos fijos a la fórmula de Newton con las dos constantes k calibradas, para que se recalcule con cualquier temperatura ambiente en vez de reutilizar el ejemplo de 31°C; 2) unificada la tasa de evaporación (2,94 L/h en todas partes, se había quedado un 3,3 L/h viejo en otra regla); 3) agregadas las constantes de priming por tipo de azúcar (mesa 3,83, dextrosa 4,0, DME 4,6, miel 5,0 g/L por volumen de CO2), el chat había usado 4,1 para azúcar de mesa; 4) nueva regla: todo recorte de malta para bajar la OG debe recalcular el IBU resultante, porque baja la gravedad y sube la utilización del lúpulo; 5) nueva regla: nunca inventar números de subcategoría BJCP fuera de la tabla del contexto, solo el nombre descriptivo con aviso de que no está verificado."},
   {f:"2026-08-13 12:30 (Ecuador)", t:"Versión 4.4. Cronómetro real por actividad en la guía de cocción: cada paso tiene un botón Iniciar/Detener que mide el tiempo real que toma, mostrando el reloj en vivo mientras corre. Solo una actividad corre a la vez: arrancar una detiene automáticamente la anterior si quedó abierta. Botón Ver resumen del día que lista cada paso con su duración real y, cuando aplica, el tiempo previsto por el temporizador de la app, más el total registrado."},
   {f:"2026-08-13 11:40 (Ecuador)", t:"Versión 4.3. Nuevo ajuste de volumen objetivo en Ajustes: fija los litros del fermentador en todas las recetas de una vez, incluidas las ya elaboradas, junto con la capacidad de la nevera en botellas. Hacía falta porque los datos guardados en el teléfono conservaban el volumen antiguo y el botón de reponer recetas solo toca las pendientes."},
@@ -1950,7 +1949,13 @@ ATENCIÓN: esa eficiencia está medida con SU proceso habitual, 13 L de maceraci
   }).join("\n");
   const lot = DB.lotes.length? "LOTES EN CURSO:\n"+DB.lotes.map(l=>{
       const s=estadoLote(l);
-      return `Lote ${l.numero} ${l.nombre}, inicio ${l.fecha}, día ${s.dia} de ${s.total}, etapa actual "${l.etapas[s.idx].n}" (día ${s.dentro} de ${l.etapas[s.idx].d}, ${l.etapas[s.idx].t}), OG ${l.og||"?"}, FG ${l.fg||"sin medir"}, EBC ${l.ebc}.`
+      let ac=0;
+      const crono=l.etapas.map((e,i)=>{
+        const ini=ac+1; ac+=e.d;
+        const est = s.fin? "terminada" : (i<s.idx? "terminada" : i===s.idx? `EN CURSO, día ${s.dentro} de ${e.d}` : "pendiente");
+        return `   ${i+1}. ${e.n}: ${e.d} d a ${e.t}, termina ${fechaMas(l.fecha,ac)} — ${est}`;
+      }).join("\n");
+      return `Lote ${l.numero} ${l.nombre}, inicio ${l.fecha}, día ${s.dia} de ${s.total}, etapa actual "${l.etapas[s.idx].n}" (día ${s.dentro} de ${l.etapas[s.idx].d}, ${l.etapas[s.idx].t}), OG ${l.og||"?"}, FG ${l.fg||"sin medir"}, EBC ${l.ebc}.\n  CRONOGRAMA COMPLETO DE ESTE LOTE (son etapas distintas y consecutivas, no sinónimos; usa estos días, temperaturas y fechas tal cual, nunca los recalcules ni los inventes):\n${crono}`
       +(Object.keys(l.med||{}).length?` Mediciones: ${Object.keys(l.med).map(k=>`${MED[k].n} ${l.med[k].sg}`).join("; ")}.`:"")
       +(l.notas.length?` Bitácora: ${l.notas.slice(0,8).map(n=>n.f+" "+n.t).join(" | ")}`:"");
     }).join("\n") : "LOTES EN CURSO: ninguno.";
@@ -1999,7 +2004,8 @@ REGLAS
 22. Sobre las mediciones: el refractómetro solo sirve ANTES de que empiece la fermentación. Una vez que hay alcohol su lectura se desvía y no se puede usar para calcular la FG ni el ABV sin una fórmula de corrección aparte. Nunca le sugieras medir la FG con el refractómetro: para eso usa el densímetro.
 23. El usuario compra solo lo que va a usar: ya botó unos 40 kg de malta caducada. No le propongas insumos que no tenga sin advertirle la restricción de compra (las maltas especiales se venden por 5 kg mínimo, y le sobrarían). Lo que se consigue en supermercado, como los copos de avena, sí es viable en cualquier cantidad.
 24. Cualquier ajuste de gramos de malta para corregir la OG cambia también el IBU calculado: menos malta baja la gravedad del hervido, lo que SUBE la utilización del lúpulo. Nunca entregues un recorte de malta como solución completa sin recalcular el IBU resultante y comprobar que sigue dentro del rango del estilo. Si se sale, dilo y ajusta el lúpulo también, igual que ya haces cuando cambias el volumen.
-25. Si te preguntan por un estilo, código o subcategoría que NO esté en la tabla BJCP de este contexto, nunca inventes ni recuerdes de memoria un número de subcategoría (ejemplo: "22A", "4C") aunque te suene familiar. Da solo el nombre descriptivo del estilo y di explícitamente que el código exacto no está verificado en tu contexto y conviene confirmarlo en la guía. Esto aplica también a estilos que menciones tú mismo al razonar sobre un cambio de receta, no solo cuando te los pregunten directamente.
+25. El cronograma de etapas de cada lote viene completo en el contexto, con sus días, temperaturas y fechas de fin. Úsalo literalmente. Las etapas son distintas y consecutivas aunque sus nombres suenen parecidos: "Final de primaria + descanso" y "Maduración cálida" NO son la misma fase con dos nombres, son dos etapas seguidas con temperaturas distintas. Nunca fusiones etapas, nunca cambies sus duraciones ni sus fechas, y nunca reconstruyas el calendario de memoria. Si el usuario te corrige sobre una fecha o una etapa, vuelve al cronograma del contexto y verifica ahí antes de responder, en lugar de improvisar una nueva versión.
+26. Si te preguntan por un estilo, código o subcategoría que NO esté en la tabla BJCP de este contexto, nunca inventes ni recuerdes de memoria un número de subcategoría (ejemplo: "22A", "4C") aunque te suene familiar. Da solo el nombre descriptivo del estilo y di explícitamente que el código exacto no está verificado en tu contexto y conviene confirmarlo en la guía. Esto aplica también a estilos que menciones tú mismo al razonar sobre un cambio de receta, no solo cuando te los pregunten directamente.
 
 CONTEXTO ACTUAL
 ${contextoTexto()}`;
@@ -2252,7 +2258,6 @@ function exportar(){
   a.href=URL.createObjectURL(blob);
   a.download=`cerveceria_${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
-  toast("Respaldo JSON descargado");
 }
 function importar(ev){
   const f=ev.target.files[0]; if(!f) return;

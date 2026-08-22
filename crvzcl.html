@@ -265,6 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-20 19:45 (Ecuador)", t:"Versión 4.8. Aclarado en la interfaz y en el contexto que el acondicionamiento final de 14 días a 6 grados ocurre en la refrigeradora grande y no ocupa las neveras pequeñas. El planificador ya lo trataba así (solo reserva los 60 días de fermentación, carbonatación y maduración), pero no se veía en pantalla."},
   {f:"2026-08-20 19:20 (Ecuador)", t:"Versión 4.7. Corregido el calendario de botella con los apuntes del lote de referencia: la maduración en botella a 11-12 grados son 28 días, no 14, y se agrega una novena etapa de acondicionamiento final de 14 días a 6 grados. Con eso el lote suma 60 días en nevera, que coincide exactamente con el ciclo del plan, y 74 días hasta poder tomarla (unas 11 semanas). Antes las etapas del lote sumaban 46 días y el plan 60: eran dos calendarios que no cuadraban entre sí. Los lotes ya abiertos con el esquema viejo se corrigen solos."},
   {f:"2026-08-20 13:50 (Ecuador)", t:"Versión 4.6. El chat recibía solo la etapa en curso de cada lote, así que cuando le preguntaban por las siguientes se las inventaba: llegó a afirmar que la maduración cálida y el descanso de fin de primaria eran la misma fase y a dar tres calendarios distintos y erróneos seguidos. Ahora el contexto lleva el cronograma completo de cada lote con los días, la temperatura y la fecha de fin de cada etapa, marcando cuáles están terminadas, cuál está en curso y cuáles pendientes, más una regla que prohíbe fusionar etapas o reconstruir el calendario de memoria."},
   {f:"2026-08-14 09:15 (Ecuador)", t:"Versión 4.5. Cuatro correcciones al contexto tras una ronda de pruebas del chat: 1) la curva de enfriamiento pasa de dos datos fijos a la fórmula de Newton con las dos constantes k calibradas, para que se recalcule con cualquier temperatura ambiente en vez de reutilizar el ejemplo de 31°C; 2) unificada la tasa de evaporación (2,94 L/h en todas partes, se había quedado un 3,3 L/h viejo en otra regla); 3) agregadas las constantes de priming por tipo de azúcar (mesa 3,83, dextrosa 4,0, DME 4,6, miel 5,0 g/L por volumen de CO2), el chat había usado 4,1 para azúcar de mesa; 4) nueva regla: todo recorte de malta para bajar la OG debe recalcular el IBU resultante, porque baja la gravedad y sube la utilización del lúpulo; 5) nueva regla: nunca inventar números de subcategoría BJCP fuera de la tabla del contexto, solo el nombre descriptivo con aviso de que no está verificado."},
@@ -401,7 +402,7 @@ const ETAPAS_BASE = [
   {n:"Embotellado + priming",d:1,t:"20–21 °C"},
   {n:"Carbonatación en botella",d:14,t:"21–22 °C"},
   {n:"Maduración en botella",d:28,t:"11–12 °C"},
-  {n:"Acondicionamiento final",d:14,t:"6 °C"}
+  {n:"Acondicionamiento final",d:14,t:"6 °C · nevera grande"}
 ];
 
 /* ---------- Almacenamiento ---------- */
@@ -458,7 +459,7 @@ DB.lotes.forEach(l=>{
   const u=l.etapas[7];
   if(u && /Maduraci.n en botella/i.test(u.n)){
     if(u.d===14) u.d=28;
-    l.etapas.push({n:"Acondicionamiento final",d:14,t:"6 °C"});
+    l.etapas.push({n:"Acondicionamiento final",d:14,t:"6 °C · nevera grande"});
   }
 });
 if(!DB.plan){
@@ -1844,7 +1845,7 @@ function vPlan(){
         <div class="fn">${nom[k]} <span class="dim">· nevera ${t.nevera}</span></div>
         <div class="fd">${fFecha(diaAFecha(t.ini))} → ${fFecha(diaAFecha(t.fin))}</div>
       </div>`).join("")}
-      <div class="tiny ok" style="margin-top:4px">Consumible tras ${P.servir} d a 6 °C: <b>${fLargo(diaAFecha(p.fin+P.servir))}</b></div>
+      <div class="tiny ok" style="margin-top:4px">Consumible tras ${P.servir} d a 6 °C en la nevera grande: <b>${fLargo(diaAFecha(p.fin+P.servir))}</b></div>
       <div class="btns2" style="margin-top:8px">
         <button class="btn sec sm" style="margin:0" onclick="go('recetas',{id:'${p.r.id}'})">Ver receta</button>
         <button class="btn sec sm" style="margin:0" onclick="moverEnPlan('${p.r.id}',-1)">Subir en el orden</button>
@@ -1885,7 +1886,8 @@ function editarPlan(){
       <div><label class="f">Carbonata d</label><input inputmode="numeric" id="p_dc" value="${P.carb}"></div>
       <div><label class="f">Madura d</label><input inputmode="numeric" id="p_dm" value="${P.mad}"></div>
     </div>
-    <label class="f">Acondicionamiento final a 6 °C (días)</label><input inputmode="numeric" id="p_ds" value="${P.servir}">
+    <label class="f">Acondicionamiento final a 6 °C, nevera grande (días)</label><input inputmode="numeric" id="p_ds" value="${P.servir}">
+    <div class="tiny dim" style="margin-top:4px">Esta etapa va en la refrigeradora grande, así que no ocupa las neveras pequeñas: el lote siguiente puede entrar mientras tanto.</div>
     <hr>
     <div class="grid2">
       <div><label class="f">Maltas compradas</label><input id="p_cm" value="${P.compraMaltas}" placeholder="2026-01"></div>
@@ -1977,7 +1979,7 @@ ATENCIÓN: esa eficiencia está medida con SU proceso habitual, 13 L de maceraci
     : "COCCIÓN ABIERTA: ninguna.";
   const P=DB.plan, prog=programar();
   const cal = "CALENDARIO YA CALCULADO POR LA APP (no lo recalcules). "
-    +`${P.neveras} nevera(s) y ${P.fermentadores} fermentador(es); cada lote ocupa nevera ${P.fer} d fermentando, ${P.carb} d carbonatando a 21-22 °C y ${P.mad} d madurando a 11-12 °C, sin salir nunca al ambiente; luego ${P.servir} d de acondicionamiento final a 6 °C en la nevera grande antes de consumir. `
+    +`${P.neveras} nevera(s) y ${P.fermentadores} fermentador(es); cada lote ocupa nevera ${P.fer} d fermentando, ${P.carb} d carbonatando a 21-22 °C y ${P.mad} d madurando a 11-12 °C, sin salir nunca al ambiente; luego ${P.servir} d de acondicionamiento final a 6 °C en la REFRIGERADORA GRANDE, que no ocupa las neveras pequeñas: el lote siguiente ya puede entrar a fermentar mientras el anterior se acondiciona. `
     +`Las maltas se compraron en ${P.compraMaltas} y se estiman ${P.vidaMaltas} meses de vida útil en clima húmedo.\n`
     +prog.map((p,i)=>`${i+1}. ${p.r.nombre}: cocción Día 1 el ${fLargo(diaAFecha(p.s-1))}, madura hasta ${fLargo(diaAFecha(p.fin))}, consumible ${fLargo(diaAFecha(p.fin+P.servir))}; la malta tendrá ${edadMalta(p.s)} meses.`).join("\n");
   return `Hoy es ${ahoraEC()} (hora de Ecuador).\n${EQUIPO}\n\n${HISTORIAL}\n\n${BJCP}\n\n${DEFECTOS}\n\n${par}\n\n${inv}\n\n${rec}\n\n${cal}\n\n${lot}\n${coc}`;

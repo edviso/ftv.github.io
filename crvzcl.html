@@ -265,6 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-20 22:30 (Ecuador)", t:"Versión 4.9. Agregado DeepSeek como segundo motor de IA, igual que en la app de tueste: selector con Gemini, DeepSeek V4 Flash y DeepSeek V4 Pro, con su propia API key (una sola sirve para los dos modelos DeepSeek). El chat detecta cuál está activo y llama al endpoint correspondiente; en DeepSeek se pide el razonamiento desactivado para respuestas rápidas y se descarta cualquier reasoning_content igual que se descartan los \"thought\" de Gemini. Pensado para cuando la API de Gemini esté congestionada."},
   {f:"2026-08-20 19:45 (Ecuador)", t:"Versión 4.8. Aclarado en la interfaz y en el contexto que el acondicionamiento final de 14 días a 6 grados ocurre en la refrigeradora grande y no ocupa las neveras pequeñas. El planificador ya lo trataba así (solo reserva los 60 días de fermentación, carbonatación y maduración), pero no se veía en pantalla."},
   {f:"2026-08-20 19:20 (Ecuador)", t:"Versión 4.7. Corregido el calendario de botella con los apuntes del lote de referencia: la maduración en botella a 11-12 grados son 28 días, no 14, y se agrega una novena etapa de acondicionamiento final de 14 días a 6 grados. Con eso el lote suma 60 días en nevera, que coincide exactamente con el ciclo del plan, y 74 días hasta poder tomarla (unas 11 semanas). Antes las etapas del lote sumaban 46 días y el plan 60: eran dos calendarios que no cuadraban entre sí. Los lotes ya abiertos con el esquema viejo se corrigen solos."},
   {f:"2026-08-20 13:50 (Ecuador)", t:"Versión 4.6. El chat recibía solo la etapa en curso de cada lote, así que cuando le preguntaban por las siguientes se las inventaba: llegó a afirmar que la maduración cálida y el descanso de fin de primaria eran la misma fase y a dar tres calendarios distintos y erróneos seguidos. Ahora el contexto lleva el cronograma completo de cada lote con los días, la temperatura y la fecha de fin de cada etapa, marcando cuáles están terminadas, cuál está en curso y cuáles pendientes, más una regla que prohíbe fusionar etapas o reconstruir el calendario de memoria."},
@@ -331,7 +332,7 @@ function seed(){
   },o||{});
   return {
     v:1,
-    cfg:{apiKey:"", model:"gemini-3.6-flash", boil1:55, boil2:10, tempGolpe:"72–74",
+    cfg:{apiKey:"", motor:"gemini", model:"gemini-3.6-flash", deepseekApiKey:"", boil1:55, boil2:10, tempGolpe:"72–74",
          eficiencia:66.5, vHervido:16.5, factorWP:0.25},
     insumos:{
       maltas:[{n:"Pilsen",g:19500,ppg:37,lov:1.8},{n:"Munich",g:3500,ppg:36,lov:10},
@@ -424,6 +425,8 @@ function save(){
 }
 let DB = load() || seed();
 if(!DB.cfg) DB.cfg={apiKey:"",model:"gemini-3.6-flash",boil1:55,boil2:10,tempGolpe:"72–74"};
+if(DB.cfg.motor==null) DB.cfg.motor="gemini";
+if(DB.cfg.deepseekApiKey==null) DB.cfg.deepseekApiKey="";
 /* Fichas por defecto para datos guardados con la versión 1.0 */
 const PPG_DEF={"Pilsen":37,"Pale Ale":37,"Munich":36,"Cara 20":34};
 const LOV_DEF={"Pilsen":1.8,"Pale Ale":3,"Munich":10,"Cara 20":10.2};
@@ -2109,10 +2112,27 @@ async function llamarGemini(gen){
   const data=await res.json().catch(()=>({}));
   return {ok:res.ok, status:res.status, data:data};
 }
+/* DeepSeek es compatible con la API de OpenAI. Sus modelos V4 razonan
+   por defecto y devuelven el borrador en reasoning_content: nunca se
+   muestra ni se reenvía en el historial, igual que el "thought" de Gemini. */
+async function llamarDeepSeek(){
+  const res=await fetch("https://api.deepseek.com/chat/completions",{method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+DB.cfg.deepseekApiKey},
+    body:JSON.stringify({
+      model:DB.cfg.model,
+      messages:[{role:"system",content:sistema()},
+        ...DB.chat.map(x=>({role:x.r==="u"?"user":"assistant",content:x.t}))],
+      thinking:{type:"disabled"},
+      temperature:0.6, max_tokens:2048
+    })});
+  const data=await res.json().catch(()=>({}));
+  return {ok:res.ok, status:res.status, data:data};
+}
 async function enviar(){
   const el=$("#chatin"), txt=el.value.trim();
   if(!txt||cargando) return;
-  if(!DB.cfg.apiKey){ toast("Falta la API key en Ajustes"); return; }
+  const key = DB.cfg.motor==="deepseek" ? DB.cfg.deepseekApiKey : DB.cfg.apiKey;
+  if(!key){ toast("Falta la API key en Ajustes"); return; }
   el.value=""; autosize(el);
   DB.chat.push({r:"u",t:txt}); save();
   /* Con el primer mensaje la cabecera cambia (aparecen Copiar todo y
@@ -2137,35 +2157,48 @@ async function enviar(){
     </div></div>`);
   abajo();
 
-  const base={temperature:0.6,maxOutputTokens:6144};
-  const intentos=[
-    Object.assign({},base,{thinkingConfig:{thinkingLevel:"low",includeThoughts:false}}),
-    Object.assign({},base,{thinkingConfig:{thinkingBudget:512,includeThoughts:false}}),
-    base
-  ];
-  let r=null;
+  const nombreMotor = DB.cfg.motor==="deepseek" ? "DeepSeek" : "Gemini";
   try{
-    for(let i=0;i<intentos.length;i++){
-      r=await llamarGemini(intentos[i]);
-      if(r.ok) break;
-      const msg=(r.data.error&&r.data.error.message)||"";
-      const campoDesconocido = r.status===400 && /thinking|unknown name|Invalid JSON payload/i.test(msg);
-      if(!campoDesconocido) break;
+    let r;
+    if(DB.cfg.motor==="deepseek"){
+      r=await llamarDeepSeek();
+      if(!r.ok) throw new Error((r.data.error&&r.data.error.message)||("Error "+r.status));
+      const msg=(r.data.choices||[])[0]||{};
+      const out=((msg.message||{}).content||"").trim();
+      const razon=msg.finish_reason;
+      if(out) DB.chat.push({r:"a",t:out});
+      else if(razon==="length")
+        DB.chat.push({r:"a",t:"El modelo se quedó sin espacio antes de escribir la respuesta. Vuelve a preguntar de forma más concreta."});
+      else
+        DB.chat.push({r:"a",t:"La respuesta llegó vacía. Revisa el nombre del modelo en Ajustes."});
+    }else{
+      const base={temperature:0.6,maxOutputTokens:6144};
+      const intentos=[
+        Object.assign({},base,{thinkingConfig:{thinkingLevel:"low",includeThoughts:false}}),
+        Object.assign({},base,{thinkingConfig:{thinkingBudget:512,includeThoughts:false}}),
+        base
+      ];
+      for(let i=0;i<intentos.length;i++){
+        r=await llamarGemini(intentos[i]);
+        if(r.ok) break;
+        const msg=(r.data.error&&r.data.error.message)||"";
+        const campoDesconocido = r.status===400 && /thinking|unknown name|Invalid JSON payload/i.test(msg);
+        if(!campoDesconocido) break;
+      }
+      if(!r.ok) throw new Error((r.data.error&&r.data.error.message)||("Error "+r.status));
+      const cand=(r.data.candidates||[])[0]||{};
+      const partes=((cand.content||{}).parts)||[];
+      const out=partes.filter(p=>!p.thought && typeof p.text==="string").map(p=>p.text).join("").trim();
+      if(out) DB.chat.push({r:"a",t:out});
+      else if(cand.finishReason==="MAX_TOKENS")
+        DB.chat.push({r:"a",t:"El modelo se quedó sin espacio antes de escribir la respuesta (gastó el presupuesto pensando). Vuelve a preguntar de forma más concreta, o baja el tamaño de la pregunta."});
+      else if(cand.finishReason && cand.finishReason!=="STOP")
+        DB.chat.push({r:"a",t:"La respuesta se detuvo ("+cand.finishReason+"). Reformula la pregunta."});
+      else
+        DB.chat.push({r:"a",t:"La respuesta llegó vacía. Revisa el nombre del modelo en Ajustes."});
     }
-    if(!r.ok) throw new Error((r.data.error&&r.data.error.message)||("Error "+r.status));
-
-    const cand=(r.data.candidates||[])[0]||{};
-    const partes=((cand.content||{}).parts)||[];
-    const out=partes.filter(p=>!p.thought && typeof p.text==="string").map(p=>p.text).join("").trim();
-    if(out) DB.chat.push({r:"a",t:out});
-    else if(cand.finishReason==="MAX_TOKENS")
-      DB.chat.push({r:"a",t:"El modelo se quedó sin espacio antes de escribir la respuesta (gastó el presupuesto pensando). Vuelve a preguntar de forma más concreta, o baja el tamaño de la pregunta."});
-    else if(cand.finishReason && cand.finishReason!=="STOP")
-      DB.chat.push({r:"a",t:"La respuesta se detuvo ("+cand.finishReason+"). Reformula la pregunta."});
-    else
-      DB.chat.push({r:"a",t:"La respuesta llegó vacía. Revisa el nombre del modelo en Ajustes."});
   }catch(e){
-    DB.chat.push({r:"a",t:"No se pudo consultar a Gemini: "+e.message+"\n\nRevisa la API key, el nombre del modelo en Ajustes y tu conexión."});
+    DB.chat.push({r:"a",t:"No se pudo consultar a "+nombreMotor+": "+e.message+"\n\nRevisa la API key, el modelo elegido en Ajustes y tu conexión."});
   }
   cargando=false; save(); pintarChat();
 }
@@ -2177,13 +2210,29 @@ function vAjustes(){
   return `
   <p class="eyebrow">Configuración</p>
   <h1>Ajustes</h1>
-  <p class="sub">La API key se guarda solo en este teléfono. Nunca sale de aquí salvo hacia Google al consultar.</p>
+  <p class="sub">Configura el asistente de IA, tu proceso y tus parámetros de cálculo.</p>
   <div class="card">
-    <label class="f">API key de Gemini</label>
-    <input id="a_key" type="password" value="${esc(DB.cfg.apiKey)}" placeholder="AIza...">
-    <label class="f">Modelo</label>
-    <input id="a_mod" value="${esc(DB.cfg.model)}" placeholder="gemini-3.6-flash">
-    <div class="tiny dim" style="margin-top:4px">Si el chat responde “modelo no encontrado”, cambia aquí el nombre exacto del modelo.</div>
+    <p class="eyebrow">Configuración de Inteligencia Artificial</p>
+    <p class="tiny dim" style="margin-bottom:8px">Elige el modelo y coloca su API key para activar el asistente cervecero.</p>
+    <label class="f">Modelo a usar</label>
+    <select id="a_sel" onchange="cambiarSelectorIA()">
+      <option value="gemini" ${DB.cfg.motor==="gemini"?"selected":""}>Gemini (${esc(DB.cfg.motor==="gemini"?DB.cfg.model:"gemini-3.6-flash")})</option>
+      <option value="deepseek-v4-flash" ${DB.cfg.motor==="deepseek"&&DB.cfg.model==="deepseek-v4-flash"?"selected":""}>DeepSeek V4 Flash</option>
+      <option value="deepseek-v4-pro" ${DB.cfg.motor==="deepseek"&&DB.cfg.model==="deepseek-v4-pro"?"selected":""}>DeepSeek V4 Pro</option>
+    </select>
+    <div id="a_keywrap">
+      ${DB.cfg.motor==="deepseek"?`
+        <label class="f">API key de DeepSeek</label>
+        <input id="a_key" type="password" value="${esc(DB.cfg.deepseekApiKey)}" placeholder="sk-...">
+        <div class="tiny dim" style="margin-top:4px">Una sola key sirve para Flash y Pro: solo cambia el modelo arriba.</div>`
+      :`
+        <label class="f">API key de Gemini</label>
+        <input id="a_key" type="password" value="${esc(DB.cfg.apiKey)}" placeholder="AIza...">
+        <label class="f">Modelo exacto</label>
+        <input id="a_mod" value="${esc(DB.cfg.model)}" placeholder="gemini-3.6-flash">
+        <div class="tiny dim" style="margin-top:4px">Si el chat responde "modelo no encontrado", cambia aquí el nombre exacto.</div>`}
+    </div>
+    <p class="tiny dim" style="margin-top:8px">La API key se guarda solo en este teléfono. Nunca sale de aquí salvo hacia ${DB.cfg.motor==="deepseek"?"DeepSeek":"Google"} al consultar.</p>
     <div class="grid2" style="margin-top:6px">
       <div><label class="f">Hervido Día 1 (min)</label><input inputmode="numeric" id="a_b1" value="${DB.cfg.boil1}"></div>
       <div><label class="f">Hervido Día 2 (min)</label><input inputmode="numeric" id="a_b2" value="${DB.cfg.boil2}"></div>
@@ -2232,9 +2281,19 @@ function vAjustes(){
   </div>
   <p class="tiny dim">${memOnly?"⚠ Este navegador bloqueó el almacenamiento: los cambios se pierden al cerrar. Exporta el JSON.":"Datos guardados en este dispositivo."}</p>`;
 }
+function cambiarSelectorIA(){
+  const v=$("#a_sel").value;
+  if(v==="gemini"){ DB.cfg.motor="gemini"; if(!/^gemini/i.test(DB.cfg.model)) DB.cfg.model="gemini-3.6-flash"; }
+  else{ DB.cfg.motor="deepseek"; DB.cfg.model=v; }
+  render();
+}
 function guardarCfg(){
-  DB.cfg.apiKey=$("#a_key").value.trim();
-  DB.cfg.model=$("#a_mod").value.trim()||"gemini-3.6-flash";
+  if(DB.cfg.motor==="deepseek"){
+    DB.cfg.deepseekApiKey=$("#a_key").value.trim();
+  }else{
+    DB.cfg.apiKey=$("#a_key").value.trim();
+    DB.cfg.model=$("#a_mod").value.trim()||"gemini-3.6-flash";
+  }
   DB.cfg.boil1=parseInt($("#a_b1").value)||55;
   DB.cfg.boil2=parseInt($("#a_b2").value)||10;
   DB.cfg.tempGolpe=$("#a_tg").value.trim()||"72–74";

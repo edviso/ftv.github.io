@@ -265,6 +265,7 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-22 15:40 (Ecuador)", t:"Versión 5.1. Agregado Nemotron 3 Super 120B de NVIDIA como tercer motor, con su propia API key. Usa el endpoint compatible con OpenAI de build.nvidia.com y el modelo nvidia/nemotron-3-super-120b-a12b. Es un modelo de razonamiento, así que se le pide enable_thinking en false y, como con los otros, nunca se lee el campo de la traza de razonamiento."},
   {f:"2026-08-22 13:20 (Ecuador)", t:"Versión 5.0. Retirado DeepSeek V4 Flash del selector: en las pruebas daba números en el titular que no coincidían con su propio cálculo (86 min contra 95,7 en el enfriado; 25 IBU contra 19,5 en el desglose) y erró la OG y el color de una receta ajustada. V4 Pro reprodujo todos los números de la app con precisión, así que queda como único respaldo cuando Gemini esté saturado. Quien tuviera Flash configurado pasa a Pro automáticamente."},
   {f:"2026-08-20 22:30 (Ecuador)", t:"Versión 4.9. Agregado DeepSeek como segundo motor de IA, igual que en la app de tueste: selector con Gemini, DeepSeek V4 Flash y DeepSeek V4 Pro, con su propia API key (una sola sirve para los dos modelos DeepSeek). El chat detecta cuál está activo y llama al endpoint correspondiente; en DeepSeek se pide el razonamiento desactivado para respuestas rápidas y se descarta cualquier reasoning_content igual que se descartan los \"thought\" de Gemini. Pensado para cuando la API de Gemini esté congestionada."},
   {f:"2026-08-20 19:45 (Ecuador)", t:"Versión 4.8. Aclarado en la interfaz y en el contexto que el acondicionamiento final de 14 días a 6 grados ocurre en la refrigeradora grande y no ocupa las neveras pequeñas. El planificador ya lo trataba así (solo reserva los 60 días de fermentación, carbonatación y maduración), pero no se veía en pantalla."},
@@ -333,7 +334,7 @@ function seed(){
   },o||{});
   return {
     v:1,
-    cfg:{apiKey:"", motor:"gemini", model:"gemini-3.6-flash", deepseekApiKey:"", boil1:55, boil2:10, tempGolpe:"72–74",
+    cfg:{apiKey:"", motor:"gemini", model:"gemini-3.6-flash", deepseekApiKey:"", nvidiaApiKey:"", boil1:55, boil2:10, tempGolpe:"72–74",
          eficiencia:66.5, vHervido:16.5, factorWP:0.25},
     insumos:{
       maltas:[{n:"Pilsen",g:19500,ppg:37,lov:1.8},{n:"Munich",g:3500,ppg:36,lov:10},
@@ -428,6 +429,7 @@ let DB = load() || seed();
 if(!DB.cfg) DB.cfg={apiKey:"",model:"gemini-3.6-flash",boil1:55,boil2:10,tempGolpe:"72–74"};
 if(DB.cfg.motor==null) DB.cfg.motor="gemini";
 if(DB.cfg.deepseekApiKey==null) DB.cfg.deepseekApiKey="";
+if(DB.cfg.nvidiaApiKey==null) DB.cfg.nvidiaApiKey="";
 if(DB.cfg.model==="deepseek-v4-flash") DB.cfg.model="deepseek-v4-pro";   /* Flash retirado: aritmética poco fiable */
 /* Fichas por defecto para datos guardados con la versión 1.0 */
 const PPG_DEF={"Pilsen":37,"Pale Ale":37,"Munich":36,"Cara 20":34};
@@ -2114,6 +2116,24 @@ async function llamarGemini(gen){
   const data=await res.json().catch(()=>({}));
   return {ok:res.ok, status:res.status, data:data};
 }
+/* NVIDIA NIM también es compatible con la API de OpenAI. Nemotron 3 Super
+   es un modelo de razonamiento: genera primero una traza y luego la respuesta.
+   Se desactiva con chat_template_kwargs.enable_thinking=false y, por si acaso,
+   nunca se lee reasoning_content. */
+async function llamarNvidia(){
+  const res=await fetch("https://integrate.api.nvidia.com/v1/chat/completions",{method:"POST",
+    headers:{"Content-Type":"application/json","Accept":"application/json",
+             "Authorization":"Bearer "+DB.cfg.nvidiaApiKey},
+    body:JSON.stringify({
+      model:"nvidia/nemotron-3-super-120b-a12b",
+      messages:[{role:"system",content:sistema()},
+        ...DB.chat.map(x=>({role:x.r==="u"?"user":"assistant",content:x.t}))],
+      chat_template_kwargs:{enable_thinking:false},
+      temperature:0.6, top_p:0.95, max_tokens:4096, stream:false
+    })});
+  const data=await res.json().catch(()=>({}));
+  return {ok:res.ok, status:res.status, data:data};
+}
 /* DeepSeek es compatible con la API de OpenAI. Sus modelos V4 razonan
    por defecto y devuelven el borrador en reasoning_content: nunca se
    muestra ni se reenvía en el historial, igual que el "thought" de Gemini. */
@@ -2133,7 +2153,9 @@ async function llamarDeepSeek(){
 async function enviar(){
   const el=$("#chatin"), txt=el.value.trim();
   if(!txt||cargando) return;
-  const key = DB.cfg.motor==="deepseek" ? DB.cfg.deepseekApiKey : DB.cfg.apiKey;
+  const key = DB.cfg.motor==="deepseek" ? DB.cfg.deepseekApiKey
+            : DB.cfg.motor==="nvidia"   ? DB.cfg.nvidiaApiKey
+            : DB.cfg.apiKey;
   if(!key){ toast("Falta la API key en Ajustes"); return; }
   el.value=""; autosize(el);
   DB.chat.push({r:"u",t:txt}); save();
@@ -2159,11 +2181,13 @@ async function enviar(){
     </div></div>`);
   abajo();
 
-  const nombreMotor = DB.cfg.motor==="deepseek" ? "DeepSeek" : "Gemini";
+  const nombreMotor = DB.cfg.motor==="deepseek" ? "DeepSeek"
+                    : DB.cfg.motor==="nvidia"   ? "Nemotron"
+                    : "Gemini";
   try{
     let r;
-    if(DB.cfg.motor==="deepseek"){
-      r=await llamarDeepSeek();
+    if(DB.cfg.motor==="deepseek" || DB.cfg.motor==="nvidia"){
+      r = DB.cfg.motor==="nvidia" ? await llamarNvidia() : await llamarDeepSeek();
       if(!r.ok) throw new Error((r.data.error&&r.data.error.message)||("Error "+r.status));
       const msg=(r.data.choices||[])[0]||{};
       const out=((msg.message||{}).content||"").trim();
@@ -2220,9 +2244,14 @@ function vAjustes(){
     <select id="a_sel" onchange="cambiarSelectorIA()">
       <option value="gemini" ${DB.cfg.motor==="gemini"?"selected":""}>Gemini (${esc(DB.cfg.motor==="gemini"?DB.cfg.model:"gemini-3.6-flash")})</option>
       <option value="deepseek-v4-pro" ${DB.cfg.motor==="deepseek"?"selected":""}>DeepSeek V4 Pro (respaldo)</option>
+      <option value="nemotron" ${DB.cfg.motor==="nvidia"?"selected":""}>Nemotron 3 Super 120B (NVIDIA)</option>
     </select>
     <div id="a_keywrap">
-      ${DB.cfg.motor==="deepseek"?`
+      ${DB.cfg.motor==="nvidia"?`
+        <label class="f">API key de NVIDIA</label>
+        <input id="a_key" type="password" value="${esc(DB.cfg.nvidiaApiKey)}" placeholder="nvapi-...">
+        <div class="tiny dim" style="margin-top:4px">Modelo <b>nvidia/nemotron-3-super-120b-a12b</b> por la API de build.nvidia.com. Todavía sin probar contra tus preguntas de control.</div>`
+      :DB.cfg.motor==="deepseek"?`
         <label class="f">API key de DeepSeek</label>
         <input id="a_key" type="password" value="${esc(DB.cfg.deepseekApiKey)}" placeholder="sk-...">
         <div class="tiny dim" style="margin-top:4px">Respaldo para cuando Gemini esté saturado. Se usa Pro y no Flash porque en las pruebas Flash daba números que se contradecían con su propio cálculo.</div>`
@@ -2233,7 +2262,7 @@ function vAjustes(){
         <input id="a_mod" value="${esc(DB.cfg.model)}" placeholder="gemini-3.6-flash">
         <div class="tiny dim" style="margin-top:4px">Si el chat responde "modelo no encontrado", cambia aquí el nombre exacto.</div>`}
     </div>
-    <p class="tiny dim" style="margin-top:8px">La API key se guarda solo en este teléfono. Nunca sale de aquí salvo hacia ${DB.cfg.motor==="deepseek"?"DeepSeek":"Google"} al consultar.</p>
+    <p class="tiny dim" style="margin-top:8px">La API key se guarda solo en este teléfono. Nunca sale de aquí salvo hacia ${DB.cfg.motor==="deepseek"?"DeepSeek":DB.cfg.motor==="nvidia"?"NVIDIA":"Google"} al consultar.</p>
     <div class="grid2" style="margin-top:6px">
       <div><label class="f">Hervido Día 1 (min)</label><input inputmode="numeric" id="a_b1" value="${DB.cfg.boil1}"></div>
       <div><label class="f">Hervido Día 2 (min)</label><input inputmode="numeric" id="a_b2" value="${DB.cfg.boil2}"></div>
@@ -2285,11 +2314,14 @@ function vAjustes(){
 function cambiarSelectorIA(){
   const v=$("#a_sel").value;
   if(v==="gemini"){ DB.cfg.motor="gemini"; if(!/^gemini/i.test(DB.cfg.model)) DB.cfg.model="gemini-3.6-flash"; }
+  else if(v==="nemotron"){ DB.cfg.motor="nvidia"; DB.cfg.model="nvidia/nemotron-3-super-120b-a12b"; }
   else{ DB.cfg.motor="deepseek"; DB.cfg.model=v; }
   render();
 }
 function guardarCfg(){
-  if(DB.cfg.motor==="deepseek"){
+  if(DB.cfg.motor==="nvidia"){
+    DB.cfg.nvidiaApiKey=$("#a_key").value.trim();
+  }else if(DB.cfg.motor==="deepseek"){
     DB.cfg.deepseekApiKey=$("#a_key").value.trim();
   }else{
     DB.cfg.apiKey=$("#a_key").value.trim();

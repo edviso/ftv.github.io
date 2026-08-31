@@ -265,6 +265,10 @@ main.chatmode{overflow:hidden;padding:14px 14px 0}
    ============================================================ */
 
 const CAMBIOS = [
+  {f:"2026-08-29 10:30 (Ecuador)", t:"Versión 5.5. Corregida la vista del lote: la espuma y el trub del hervidor ya se registraban durante la cocción pero nunca se mostraban en la ficha del lote. Agregados dos campos nuevos que faltaban por completo: el desecho que queda en el fermentador al embotellar por la llave de paso, y el conteo real de botellas obtenidas (antes solo había una previsión calculada). Ambos aparecen al llegar a la etapa de embotellado. El análisis del lote (no el de la cocción, donde había quedado mal ubicado en un primer intento) compara las botellas previstas contra las reales, y muestra el desecho del fermentador convertido a litros aproximados."},
+  {f:"2026-08-26 14:10 (Ecuador)", t:"Versión 5.4. Dos correcciones al contexto tras un fallo del chat en el cálculo de priming: usó la temperatura del cold crash para el CO2 residual y le habría hecho echar un tercio menos de azúcar (1,89 volúmenes en vez de 2,3). Ahora el contexto explica que el residual se toma con la temperatura máxima posterior a la fermentación, con la fórmula y el valor de su proceso, y que se usen los litros reales a embotellar. Agregado además su método real de embotellado (llave de paso, jarabe dosificado con jeringa botella por botella, sin balde ni remover el fermentador) con prohibición expresa de sugerirle verter el jarabe en el fermentador."},
+  {f:"2026-08-22 20:05 (Ecuador)", t:"Versión 5.3. Retirado Nemotron de NVIDIA: exigía levantar un proxy propio y un túnel cloudflared con URL nueva en cada arranque, demasiados pasos manuales para un respaldo que ya cubre DeepSeek V4 Pro. El selector vuelve a Gemini y V4 Pro."},
+  {f:"2026-08-22 19:10 (Ecuador)", t:"Versión 5.2. Campo de proxy propio para Nemotron: NVIDIA no acepta llamadas directas desde el navegador, así que hay que pasar por un proxy. Debe ser una URL https (por ejemplo la de un túnel cloudflared), porque la app se sirve por https y el navegador bloquea cualquier destino http, incluida la IP local de la red."},
   {f:"2026-08-22 15:40 (Ecuador)", t:"Versión 5.1. Agregado Nemotron 3 Super 120B de NVIDIA como tercer motor, con su propia API key. Usa el endpoint compatible con OpenAI de build.nvidia.com y el modelo nvidia/nemotron-3-super-120b-a12b. Es un modelo de razonamiento, así que se le pide enable_thinking en false y, como con los otros, nunca se lee el campo de la traza de razonamiento."},
   {f:"2026-08-22 13:20 (Ecuador)", t:"Versión 5.0. Retirado DeepSeek V4 Flash del selector: en las pruebas daba números en el titular que no coincidían con su propio cálculo (86 min contra 95,7 en el enfriado; 25 IBU contra 19,5 en el desglose) y erró la OG y el color de una receta ajustada. V4 Pro reprodujo todos los números de la app con precisión, así que queda como único respaldo cuando Gemini esté saturado. Quien tuviera Flash configurado pasa a Pro automáticamente."},
   {f:"2026-08-20 22:30 (Ecuador)", t:"Versión 4.9. Agregado DeepSeek como segundo motor de IA, igual que en la app de tueste: selector con Gemini, DeepSeek V4 Flash y DeepSeek V4 Pro, con su propia API key (una sola sirve para los dos modelos DeepSeek). El chat detecta cuál está activo y llama al endpoint correspondiente; en DeepSeek se pide el razonamiento desactivado para respuestas rápidas y se descarta cualquier reasoning_content igual que se descartan los \"thought\" de Gemini. Pensado para cuando la API de Gemini esté congestionada."},
@@ -323,6 +327,7 @@ const EQUIPO = `EQUIPO DEL CERVECERO (Edgar, Guayaquil, Ecuador) — 3 recipient
 - Lauter en DOS etapas: tras el recirculado de 20 min trasvasa el primer mosto al hervidor (salen 9,5 a 9,8 L) y enciende el gas; luego pasa los 7 L de lavado al macerador, deja reposar 5 min, hace un segundo recirculado de 10 min y trasvasa. En el hervidor se completan unos 17 L LEÍDOS EN CALIENTE a unos 90 °C, que equivalen a 16,5 L en frío: ese es el volumen de hervido real que usan los cálculos.
 - OBJETIVO DE VOLUMEN: 14 L en el fermentador, no más. El límite lo pone la nevera pequeña, donde entran 40 botellas de 330 ml (13,2 L embotellados). Con 14 L en el fermentador, descontando la levadura sedimentada, salen esas 40 botellas justas. Cualquier referencia antigua a 16 o 17 L como volumen objetivo es errónea: venía de una preconfiguración de equipo de BeerSmith que él nunca logró parametrizar. Los 17 L sí son reales, pero como volumen de HERVIDO en la olla, no como lote.
 - BALANCE DE VOLUMEN REAL: al hervidor entran los dos trasvases (primer mosto ~9,5-9,8 L + lavado) sin pasar de 17 L, porque la olla es de 19 L y deja 2 L de margen anti-derrame. Tras los 55 min del Día 1 quedan unos 14 L leídos a ~97 °C (13,5 L en frío). De los 3 L que faltan, unos 0,31 L salieron con la espumadera (espuma retirada para que no se derrame) y 2,70 L se evaporaron de verdad: la tasa real es de 2,94 L/h. Luego agrega agua caliente para cerrar en el volumen objetivo de la receta (hoy agregó 1 L); si el hervor fue más fuerte, agrega algo más. Registra los tres volúmenes en la app.
+- MÉTODO DE EMBOTELLADO: no usa balde intermedio ni remueve nada dentro del fermentador. Embotella por la llave de paso del fermentador, que está por encima del nivel del sedimento. Saca el fermentador de la nevera, lo deja reposar un rato en la mesa y llena botella por botella. El jarabe de priming lo prepara aparte (hervido, tapado y enfriado en la refrigeradora grande) y lo dosifica con jeringa sanitizada en cada botella antes de llenarla; las botellas esperan sanitizadas y tapadas con papel aluminio. NUNCA le sugieras verter el jarabe en el fermentador ni remover con paleta: le levantaría el sedimento, anularía el cold crash y además su fermentador rectangular tiene boca angosta. Dale siempre la dosis en MILILITROS DE JARABE POR BOTELLA, no solo los gramos totales.
 - Mide densidad en CINCO puntos. Con REFRACTÓMETRO (escalas Brix y SG, calibrado a 20 °C), los tres del mosto que sale de la maceración: primer mosto, mosto del lavado y el total de 17 L ya en el hervidor. Con DENSÍMETRO, las dos principales: la OG el Día 2 con el mosto ya enfriado y trasvasado al fermentador, y la FG al terminar la fermentación en el momento de embotellar. Las dos del densímetro son las que valen para calcular ABV y atenuación; las del refractómetro sirven para seguir la extracción y calcular la eficiencia real de la cocción. La app guarda las cinco.`;
 
 /* ---------- Semilla ---------- */
@@ -334,7 +339,7 @@ function seed(){
   },o||{});
   return {
     v:1,
-    cfg:{apiKey:"", motor:"gemini", model:"gemini-3.6-flash", deepseekApiKey:"", nvidiaApiKey:"", boil1:55, boil2:10, tempGolpe:"72–74",
+    cfg:{apiKey:"", motor:"gemini", model:"gemini-3.6-flash", deepseekApiKey:"", boil1:55, boil2:10, tempGolpe:"72–74",
          eficiencia:66.5, vHervido:16.5, factorWP:0.25},
     insumos:{
       maltas:[{n:"Pilsen",g:19500,ppg:37,lov:1.8},{n:"Munich",g:3500,ppg:36,lov:10},
@@ -429,8 +434,8 @@ let DB = load() || seed();
 if(!DB.cfg) DB.cfg={apiKey:"",model:"gemini-3.6-flash",boil1:55,boil2:10,tempGolpe:"72–74"};
 if(DB.cfg.motor==null) DB.cfg.motor="gemini";
 if(DB.cfg.deepseekApiKey==null) DB.cfg.deepseekApiKey="";
-if(DB.cfg.nvidiaApiKey==null) DB.cfg.nvidiaApiKey="";
 if(DB.cfg.model==="deepseek-v4-flash") DB.cfg.model="deepseek-v4-pro";   /* Flash retirado: aritmética poco fiable */
+if(DB.cfg.motor==="nvidia"){ DB.cfg.motor="gemini"; DB.cfg.model="gemini-3.6-flash"; }   /* Nemotron retirado */
 /* Fichas por defecto para datos guardados con la versión 1.0 */
 const PPG_DEF={"Pilsen":37,"Pale Ale":37,"Munich":36,"Cara 20":34};
 const LOV_DEF={"Pilsen":1.8,"Pale Ale":3,"Munich":10,"Cara 20":10.2};
@@ -1094,6 +1099,8 @@ const MED={
   espuma:{n:"Espuma retirada",d:"Lo que sacas con la espumadera durante el hervido para que no se derrame",inst:null,gramos:310,soloPeso:true},
   trub:{n:"Trub del hervidor",d:"El desecho que queda en la olla tras pasar el mosto al fermentador",inst:null,gramos:740,soloPeso:true},
   vferm:{n:"Litros en el fermentador",d:"Lo que realmente entró, ya sin el trub que quedó en la olla",inst:null,litros:16,soloVol:true},
+  trubFerm:{n:"Desecho del fermentador",d:"Lo que queda en el fondo tras embotellar por la llave de paso",inst:null,gramos:200,soloPeso:true},
+  botellas:{n:"Botellas obtenidas",d:"Conteo real al terminar de embotellar",inst:null,soloNum:true},
   og:{n:"OG — densidad inicial",d:"Mosto ya en el fermentador, antes de oxigenar y sembrar",inst:"densímetro",litros:null},
   fg:{n:"FG — densidad final",d:"Al terminar la fermentación, en el momento de embotellar",inst:"densímetro",litros:null}
 };
@@ -1558,15 +1565,16 @@ function vLote(id){
       <div><div class="tiny dim">ABV</div><div class="num" style="font-weight:700">${abv?abv.toFixed(1)+" %":"—"}</div></div>
     </div>
     ${(()=>{
-      const m=l.med||{}, prev=["m1","m2","m3","vpost","vagua","vferm"].filter(k=>m[k]);
+      const m=l.med||{}, prev=["m1","m2","m3","vpost","vagua","espuma","trub","vferm"].filter(k=>m[k]);
       if(!prev.length) return "";
       return `<div class="tiny dim" style="margin-top:8px;line-height:1.7">Del día de cocción:<br>
-        ${prev.map(k=>`${MED[k].n}: ${m[k].sg!=null?`<b class="num">${Number(m[k].sg).toFixed(3)}</b>`:""}${m[k].litros?`${m[k].sg!=null?" en ":""}<b class="num">${String(m[k].litros).replace(".",",")} L</b>`:""}`).join("<br>")}</div>`;
+        ${prev.map(k=>`${MED[k].n}: ${m[k].sg!=null?`<b class="num">${Number(m[k].sg).toFixed(3)}</b>`:""}${m[k].litros?`${m[k].sg!=null?" en ":""}<b class="num">${String(m[k].litros).replace(".",",")} L</b>`:""}${m[k].gramos!=null?`<b class="num">${gr(m[k].gramos)} g</b>`:""}`).join("<br>")}</div>`;
     })()}
     ${!l.fg && s.idx>=5 ? `<div class="mini" style="margin-top:8px;color:var(--amber)">Toca embotellar: mide la densidad final antes de agregar el priming.</div>`
       +botonMedLote(l.id,"fg") : ""}
     ${!l.og ? botonMedLote(l.id,"og") : ""}
     ${l.fg && l.og ? `<div class="tiny ok" style="margin-top:8px">Atenuación aparente: <b class="num">${((l.og-l.fg)/(l.og-1)*100).toFixed(0)} %</b></div>`:""}
+    ${s.idx>=5 ? `<div style="margin-top:8px">${botonMedLote(l.id,"trubFerm")}${botonMedLote(l.id,"botellas")}</div>` : ""}
     <button class="btn sec sm" onclick="editarLote('${l.id}')">Editar mediciones</button>
   </div>
   ${vAnalisis(l)}
@@ -1634,6 +1642,18 @@ function analizarLote(l){
     if(Math.abs(d)>=0.3) f.push({t:"accion",n:"Ajuste de volumen para el próximo lote",
       x:`Entraron ${String(vf).replace(".",",")} L contra los ${r.litros} L de objetivo. Agrega <b>${Math.abs(d).toFixed(1).replace(".",",")} L ${d>0?"más":"menos"}</b> de agua durante el hervido del Día 2 la próxima vez.`});
     else f.push({t:"ok",n:"Volumen clavado",x:`${String(vf).replace(".",",")} L contra ${r.litros} L previstos.`});
+
+    /* Botellas previstas al abrir el lote vs. las que de verdad salieron */
+    const emb=vf-0.6, bot=Math.floor(emb/0.33);
+    const real=med.botellas&&med.botellas.num;
+    const tf=med.trubFerm&&med.trubFerm.gramos;
+    let xb=`Con ${String(vf).replace(".",",")} L en el fermentador se preveían <b>${bot}</b> botellas de 330 ml.`;
+    if(real!=null){
+      const dif=real-bot;
+      xb+=` Salieron <b>${real}</b>.`+(Math.abs(dif)>=2?` La previsión falló por ${Math.abs(dif)} — revisa la merma de 0,6 L que asume la app si esto se repite.`:"");
+    }
+    if(tf!=null) xb+=` Desecho en el fermentador al embotellar: <b>${gr(tf)} g</b> (${(tf/1000/1.03).toFixed(2).replace(".",",")} L aprox.).`;
+    f.push({t:real!=null?(Math.abs(real-bot)>=2?"aviso":"ok"):"ok", n:"Botellas obtenidas", x:xb});
   }
 
   /* --- eficiencia medida --- */
@@ -1679,25 +1699,38 @@ function analizarConIA(id){
   setTimeout(()=>usarSugerencia(`Analiza el lote ${l.numero} (${l.nombre}) con las mediciones que ya tienes: qué esperar en el vaso, qué vigilar durante la fermentación y qué cambiarías en el próximo lote. `),50);
 }
 function botonMedLote(id,k){
-  const l=DB.lotes.find(x=>x.id===id), v=(l.med||{})[k];
+  const l=DB.lotes.find(x=>x.id===id), v=(l.med||{})[k], m=MED[k];
+  const et = !v ? `◇ Anotar ${m.n}`
+    : m.soloPeso ? `✓ ${m.n}: ${gr(v.gramos)} g`
+    : m.soloNum  ? `✓ ${m.n}: ${v.num}`
+    : `✓ ${m.n}: ${Number(v.sg).toFixed(3)}`;
   return `<button class="stimer" style="margin-top:0;border-color:${v?"#37421F":"#4A3820"};color:${v?"var(--hop)":"var(--amber)"}"
-    onclick="pedirMedLote('${id}','${k}')">${v?`✓ ${MED[k].n}: ${Number(v.sg).toFixed(3)}`:`◇ Anotar ${MED[k].n}`}</button>`;
+    onclick="pedirMedLote('${id}','${k}')">${et}</button>`;
 }
 function pedirMedLote(id,k){
   const l=DB.lotes.find(x=>x.id===id), m=MED[k], v=(l.med||{})[k]||{};
+  const campo = m.soloPeso
+    ? `<label class="f">Peso (gramos)</label><input inputmode="decimal" id="ml_v" value="${v.gramos!=null?v.gramos:""}" placeholder="${m.gramos||""}">`
+    : m.soloNum
+    ? `<label class="f">Cantidad</label><input inputmode="numeric" id="ml_v" value="${v.num!=null?v.num:""}" placeholder="40">`
+    : `<label class="f">Densidad (SG)</label><input inputmode="decimal" id="ml_v" value="${v.sg!=null?v.sg:""}" placeholder="${k==="fg"?"1.012":"1.051"}">`;
   sheet(m.n,`
-    <div class="tiny dim" style="margin-bottom:4px">${esc(m.d)} · con el <b>${m.inst}</b></div>
-    <label class="f">Densidad (SG)</label>
-    <input inputmode="decimal" id="ml_sg" value="${v.sg!=null?v.sg:""}" placeholder="${k==="fg"?"1.012":"1.051"}">
+    <div class="tiny dim" style="margin-bottom:4px">${esc(m.d)}${m.inst?` · con el <b>${m.inst}</b>`:""}</div>
+    ${campo}
     <label class="f">Nota (opcional)</label><input id="ml_n" value="${esc(v.nota||"")}">
     <button class="btn" onclick="guardarMedLote('${id}','${k}')">Guardar</button>`);
 }
 function guardarMedLote(id,k){
-  const sg=parseFloat($("#ml_sg").value);
-  if(isNaN(sg)) return toast("Falta la densidad");
+  const m=MED[k], val=$("#ml_v").value, num=parseFloat(val);
+  if(isNaN(num)) return toast(m.soloPeso?"Falta el peso":m.soloNum?"Falta la cantidad":"Falta la densidad");
   const l=DB.lotes.find(x=>x.id===id);
-  l.med=l.med||{}; l.med[k]={sg:sg,nota:$("#ml_n").value.trim(),f:ahoraEC()};
-  if(k==="og") l.og=sg; if(k==="fg") l.fg=sg;
+  l.med=l.med||{};
+  if(m.soloPeso) l.med[k]={gramos:num,nota:$("#ml_n").value.trim(),f:ahoraEC()};
+  else if(m.soloNum) l.med[k]={num:num,nota:$("#ml_n").value.trim(),f:ahoraEC()};
+  else{
+    l.med[k]={sg:num,nota:$("#ml_n").value.trim(),f:ahoraEC()};
+    if(k==="og") l.og=num; if(k==="fg") l.fg=num;
+  }
   save(); closeSheet(); render(); toast("Medición guardada");
 }
 function ajustarEtapa(id,i,d){
@@ -1978,7 +2011,7 @@ ATENCIÓN: esa eficiencia está medida con SU proceso habitual, 13 L de maceraci
         return `   ${i+1}. ${e.n}: ${e.d} d a ${e.t}, termina ${fechaMas(l.fecha,ac)} — ${est}`;
       }).join("\n");
       return `Lote ${l.numero} ${l.nombre}, inicio ${l.fecha}, día ${s.dia} de ${s.total}, etapa actual "${l.etapas[s.idx].n}" (día ${s.dentro} de ${l.etapas[s.idx].d}, ${l.etapas[s.idx].t}), OG ${l.og||"?"}, FG ${l.fg||"sin medir"}, EBC ${l.ebc}.\n  CRONOGRAMA COMPLETO DE ESTE LOTE (son etapas distintas y consecutivas, no sinónimos; usa estos días, temperaturas y fechas tal cual, nunca los recalcules ni los inventes):\n${crono}`
-      +(Object.keys(l.med||{}).length?` Mediciones: ${Object.keys(l.med).map(k=>`${MED[k].n} ${l.med[k].sg}`).join("; ")}.`:"")
+      +(Object.keys(l.med||{}).length?` Mediciones: ${Object.keys(l.med).map(k=>`${MED[k].n} ${l.med[k].sg!=null?l.med[k].sg:l.med[k].gramos!=null?l.med[k].gramos+" g":l.med[k].num}`).join("; ")}.`:"")
       +(l.notas.length?` Bitácora: ${l.notas.slice(0,8).map(n=>n.f+" "+n.t).join(" | ")}`:"");
     }).join("\n") : "LOTES EN CURSO: ninguno.";
   const coc = DB.coccion? `COCCIÓN ABIERTA: receta "${(DB.recetas.find(r=>r.id===DB.coccion.recetaId)||{}).nombre}", Día ${DB.coccion.dia}.`
@@ -2019,7 +2052,9 @@ REGLAS
    - MIDE LOS VOLÚMENES EN CALIENTE con una paleta de madera marcada, calibrada con agua fría. Las lecturas se toman a ~90 °C en el llenado del hervidor, ~97 °C al terminar el hervido y ~80 °C antes del whirlpool, y hay que corregirlas: el mosto caliente ocupa hasta un 4 % más. La app hace la corrección; nunca uses una lectura en caliente sin convertirla. Los litros del fermentador sí son fiables porque los obtiene pesando el mosto.
    - Pérdidas fijas de su sistema: unos 250 ml de mosto quedan bajo el fondo falso del macerador y se descartan, y unos 150 ml quedan en las mangueras de 3/8 pulgada (30 y 60 cm) y la bomba.
    - Enfriado del hervidor tras apagar (ley de enfriamiento de Newton, calibrada con sus propias mediciones): minutos = ln((100−Tamb)/(Objetivo−Tamb)) / k, con k=0,00329/min si está tapada y k=0,0072/min si está entreabierta unos tres dedos (destapar acelera 2,2 veces). Tamb es la temperatura ambiente en °C que te den; RECALCULA SIEMPRE con esta fórmula, nunca reutilices el ejemplo de abajo para un Tamb distinto de 31 °C. Ejemplo ya resuelto, a 31 °C de ambiente y unos 16 L: de 100 a 80 °C son 104 min tapada y 47 min entreabierta (95 °C a los 10 min, 90 a los 22, 85 a los 34, 80 a los 47). Destapar ese rato cuesta unos 0,6 L evaporados de más.
-   - Priming en botella (g por litro por volumen de CO₂ que hay que sumar): azúcar de mesa 3,83, dextrosa/azúcar de maíz 4,0, DME 4,6, miel 5,0. Multiplica por los litros del lote y por (volúmenes objetivo − volúmenes residuales según la temperatura de fermentación). No sustituyas este valor por otro de memoria.
+   - Priming en botella (g por litro por volumen de CO₂ que hay que sumar): azúcar de mesa 3,83, dextrosa/azúcar de maíz 4,0, DME 4,6, miel 5,0. No sustituyas estos valores por otros de memoria.
+   - CO₂ RESIDUAL: se calcula con la temperatura MÁS ALTA que alcanzó la cerveza DESPUÉS de terminar la fermentación, nunca con la del cold crash. El CO₂ escapa por el airlock a esa temperatura máxima y no vuelve a disolverse después, porque el fermentador está a presión atmosférica. En su proceso la máxima son los 21-22 °C del "Final de primaria + descanso" y la "Carbonatación en botella", así que el residual es 0,81-0,85 volúmenes. Usar los 4-6 °C del cold crash daría 1,4 volúmenes y haría que echara un tercio menos de azúcar: cerveza floja de gas. Fórmula: residual = 3,0378 − 0,050062·T(°F) + 0,00026555·T(°F)².
+   - Usa siempre los LITROS REALES que va a embotellar (los del fermentador menos la merma de levadura, unos 0,6 L), no el volumen objetivo de la receta.
    - Concentrar la Stout de 16 a 13 L, por ejemplo, deja OG ~1.067, unos 41 IBU y unos 75 EBC.
 20. Para cualquier cambio de volumen por evaporación, usa siempre la tasa de evaporación de la constante anterior (2,94 L/h), nunca otro número. Recuerda que los 2 L de recarga del minuto 40 son opcionales: omitirlos ahorra casi una hora de hervido extra. Avisa siempre cuántos litros de cerveza se ganan o se pierden con el cambio.
 21. Cuidado con las dos numeraciones: cada receta tiene su número propio (#1 a #8) y el plan tiene un ORDEN DE ELABORACIÓN distinto. Di siempre el nombre de la receta y aclara a cuál de las dos numeraciones te refieres.
@@ -2116,24 +2151,6 @@ async function llamarGemini(gen){
   const data=await res.json().catch(()=>({}));
   return {ok:res.ok, status:res.status, data:data};
 }
-/* NVIDIA NIM también es compatible con la API de OpenAI. Nemotron 3 Super
-   es un modelo de razonamiento: genera primero una traza y luego la respuesta.
-   Se desactiva con chat_template_kwargs.enable_thinking=false y, por si acaso,
-   nunca se lee reasoning_content. */
-async function llamarNvidia(){
-  const res=await fetch("https://integrate.api.nvidia.com/v1/chat/completions",{method:"POST",
-    headers:{"Content-Type":"application/json","Accept":"application/json",
-             "Authorization":"Bearer "+DB.cfg.nvidiaApiKey},
-    body:JSON.stringify({
-      model:"nvidia/nemotron-3-super-120b-a12b",
-      messages:[{role:"system",content:sistema()},
-        ...DB.chat.map(x=>({role:x.r==="u"?"user":"assistant",content:x.t}))],
-      chat_template_kwargs:{enable_thinking:false},
-      temperature:0.6, top_p:0.95, max_tokens:4096, stream:false
-    })});
-  const data=await res.json().catch(()=>({}));
-  return {ok:res.ok, status:res.status, data:data};
-}
 /* DeepSeek es compatible con la API de OpenAI. Sus modelos V4 razonan
    por defecto y devuelven el borrador en reasoning_content: nunca se
    muestra ni se reenvía en el historial, igual que el "thought" de Gemini. */
@@ -2153,9 +2170,7 @@ async function llamarDeepSeek(){
 async function enviar(){
   const el=$("#chatin"), txt=el.value.trim();
   if(!txt||cargando) return;
-  const key = DB.cfg.motor==="deepseek" ? DB.cfg.deepseekApiKey
-            : DB.cfg.motor==="nvidia"   ? DB.cfg.nvidiaApiKey
-            : DB.cfg.apiKey;
+  const key = DB.cfg.motor==="deepseek" ? DB.cfg.deepseekApiKey : DB.cfg.apiKey;
   if(!key){ toast("Falta la API key en Ajustes"); return; }
   el.value=""; autosize(el);
   DB.chat.push({r:"u",t:txt}); save();
@@ -2181,13 +2196,11 @@ async function enviar(){
     </div></div>`);
   abajo();
 
-  const nombreMotor = DB.cfg.motor==="deepseek" ? "DeepSeek"
-                    : DB.cfg.motor==="nvidia"   ? "Nemotron"
-                    : "Gemini";
+  const nombreMotor = DB.cfg.motor==="deepseek" ? "DeepSeek" : "Gemini";
   try{
     let r;
-    if(DB.cfg.motor==="deepseek" || DB.cfg.motor==="nvidia"){
-      r = DB.cfg.motor==="nvidia" ? await llamarNvidia() : await llamarDeepSeek();
+    if(DB.cfg.motor==="deepseek"){
+      r=await llamarDeepSeek();
       if(!r.ok) throw new Error((r.data.error&&r.data.error.message)||("Error "+r.status));
       const msg=(r.data.choices||[])[0]||{};
       const out=((msg.message||{}).content||"").trim();
@@ -2244,14 +2257,9 @@ function vAjustes(){
     <select id="a_sel" onchange="cambiarSelectorIA()">
       <option value="gemini" ${DB.cfg.motor==="gemini"?"selected":""}>Gemini (${esc(DB.cfg.motor==="gemini"?DB.cfg.model:"gemini-3.6-flash")})</option>
       <option value="deepseek-v4-pro" ${DB.cfg.motor==="deepseek"?"selected":""}>DeepSeek V4 Pro (respaldo)</option>
-      <option value="nemotron" ${DB.cfg.motor==="nvidia"?"selected":""}>Nemotron 3 Super 120B (NVIDIA)</option>
     </select>
     <div id="a_keywrap">
-      ${DB.cfg.motor==="nvidia"?`
-        <label class="f">API key de NVIDIA</label>
-        <input id="a_key" type="password" value="${esc(DB.cfg.nvidiaApiKey)}" placeholder="nvapi-...">
-        <div class="tiny dim" style="margin-top:4px">Modelo <b>nvidia/nemotron-3-super-120b-a12b</b> por la API de build.nvidia.com. Todavía sin probar contra tus preguntas de control.</div>`
-      :DB.cfg.motor==="deepseek"?`
+      ${DB.cfg.motor==="deepseek"?`
         <label class="f">API key de DeepSeek</label>
         <input id="a_key" type="password" value="${esc(DB.cfg.deepseekApiKey)}" placeholder="sk-...">
         <div class="tiny dim" style="margin-top:4px">Respaldo para cuando Gemini esté saturado. Se usa Pro y no Flash porque en las pruebas Flash daba números que se contradecían con su propio cálculo.</div>`
@@ -2262,7 +2270,7 @@ function vAjustes(){
         <input id="a_mod" value="${esc(DB.cfg.model)}" placeholder="gemini-3.6-flash">
         <div class="tiny dim" style="margin-top:4px">Si el chat responde "modelo no encontrado", cambia aquí el nombre exacto.</div>`}
     </div>
-    <p class="tiny dim" style="margin-top:8px">La API key se guarda solo en este teléfono. Nunca sale de aquí salvo hacia ${DB.cfg.motor==="deepseek"?"DeepSeek":DB.cfg.motor==="nvidia"?"NVIDIA":"Google"} al consultar.</p>
+    <p class="tiny dim" style="margin-top:8px">La API key se guarda solo en este teléfono. Nunca sale de aquí salvo hacia ${DB.cfg.motor==="deepseek"?"DeepSeek":"Google"} al consultar.</p>
     <div class="grid2" style="margin-top:6px">
       <div><label class="f">Hervido Día 1 (min)</label><input inputmode="numeric" id="a_b1" value="${DB.cfg.boil1}"></div>
       <div><label class="f">Hervido Día 2 (min)</label><input inputmode="numeric" id="a_b2" value="${DB.cfg.boil2}"></div>
@@ -2314,14 +2322,11 @@ function vAjustes(){
 function cambiarSelectorIA(){
   const v=$("#a_sel").value;
   if(v==="gemini"){ DB.cfg.motor="gemini"; if(!/^gemini/i.test(DB.cfg.model)) DB.cfg.model="gemini-3.6-flash"; }
-  else if(v==="nemotron"){ DB.cfg.motor="nvidia"; DB.cfg.model="nvidia/nemotron-3-super-120b-a12b"; }
   else{ DB.cfg.motor="deepseek"; DB.cfg.model=v; }
   render();
 }
 function guardarCfg(){
-  if(DB.cfg.motor==="nvidia"){
-    DB.cfg.nvidiaApiKey=$("#a_key").value.trim();
-  }else if(DB.cfg.motor==="deepseek"){
+  if(DB.cfg.motor==="deepseek"){
     DB.cfg.deepseekApiKey=$("#a_key").value.trim();
   }else{
     DB.cfg.apiKey=$("#a_key").value.trim();

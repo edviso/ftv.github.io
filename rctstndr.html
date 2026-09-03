@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Receta Estándar — Origami</title>
+<title>Recetas — Origami</title>
 <style>
   * { box-sizing: border-box; }
   html, body {
@@ -11,18 +11,14 @@
     background: #ffffff;
     color: #0a0a0a;
     font-family: 'Poppins', 'DejaVu Sans', system-ui, sans-serif;
-  }
-  .page {
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 28px 24px 120px 24px;
+    overflow-x: hidden;
   }
 
-  /* ---------- Wake lock status bar ---------- */
+  /* ---------- Wake lock status bar (fixed, shared) ---------- */
   .wake-bar {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 20;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -30,8 +26,6 @@
     background: #0a0a0a;
     color: #ffffff;
     padding: 12px 16px;
-    border-radius: 14px;
-    margin-bottom: 22px;
     font-size: 15px;
     font-weight: 600;
   }
@@ -55,104 +49,79 @@
     font-family: inherit;
   }
 
-  /* ---------- Header ---------- */
-  .eyebrow {
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-  }
-  h1 {
-    font-size: 40px;
-    font-weight: 700;
-    margin: 6px 0 0 0;
-    line-height: 1.05;
-    letter-spacing: -0.5px;
-  }
-  .subtitle {
-    font-size: 18px;
-    font-weight: 400;
-    margin-top: 8px;
-    color: #2a2a2a;
-  }
-  .rule {
-    height: 2px;
-    background: #0a0a0a;
+  /* ---------- Horizontal swipe container ---------- */
+  .carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
     width: 100%;
-    margin: 20px 0;
+  }
+  .card {
+    flex: 0 0 100%;
+    width: 100%;
+    scroll-snap-align: start;
+    padding: 20px 24px 60px 24px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 0 4px 0;
+  }
+  .dots span {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #d0d0d0;
+  }
+  .dots span.active { background: #0a0a0a; }
+  .swipe-hint {
+    text-align: center;
+    font-size: 13px;
+    color: #8a8a8a;
+    padding-bottom: 6px;
   }
 
+  /* ---------- Header ---------- */
+  .eyebrow { font-size: 15px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; }
+  h1 { font-size: 38px; font-weight: 700; margin: 6px 0 0 0; line-height: 1.08; letter-spacing: -0.5px; }
+  .subtitle { font-size: 18px; font-weight: 400; margin-top: 8px; color: #2a2a2a; }
+  .rule { height: 2px; background: #0a0a0a; width: 100%; margin: 20px 0; }
+
   /* ---------- Spec grid ---------- */
-  .spec-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    row-gap: 16px;
-    column-gap: 16px;
-    margin-bottom: 16px;
-  }
-  .spec-label {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #4a4a4a;
-    margin-bottom: 2px;
-  }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; row-gap: 16px; column-gap: 16px; margin-bottom: 16px; }
+  .spec-label { font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4a4a4a; margin-bottom: 2px; }
   .spec-value { font-size: 22px; font-weight: 600; line-height: 1.15; }
   .spec-value .unit { font-size: 14px; font-weight: 400; color: #4a4a4a; }
 
   /* ---------- Section title ---------- */
-  .section-title {
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-  }
+  .section-title { font-size: 17px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; }
   .section-title .num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    border: 2px solid #0a0a0a;
-    font-size: 14px;
-    margin-right: 10px;
-    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid #0a0a0a;
+    font-size: 14px; margin-right: 10px; flex-shrink: 0;
   }
 
   /* ---------- Pours timeline ---------- */
-  .pours-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 0 2px 6px 2px;
-    position: relative;
-  }
+  .pours-row { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 6px 2px; position: relative; }
   .pour-stop { display: flex; flex-direction: column; align-items: center; z-index: 2; width: 25%; }
   .pour-dot { width: 14px; height: 14px; border-radius: 50%; background: #0a0a0a; margin-bottom: 8px; }
   .pour-ml { font-size: 17px; font-weight: 700; }
   .pour-name { font-size: 12px; color: #4a4a4a; margin-top: 3px; text-align: center; }
   .pours-line { position: absolute; top: 7px; left: 12%; right: 12%; height: 2px; background: #0a0a0a; z-index: 1; }
-  .pours-note {
-    font-size: 15px; color: #2a2a2a; margin-top: 12px; line-height: 1.4;
-    border-left: 3px solid #0a0a0a; padding-left: 12px;
-  }
+  .pours-note { font-size: 15px; color: #2a2a2a; margin-top: 12px; line-height: 1.4; border-left: 3px solid #0a0a0a; padding-left: 12px; }
 
   /* ---------- Technique block ---------- */
   .technique-wrap { display: flex; align-items: flex-start; gap: 16px; }
   .spiral-box { flex-shrink: 0; width: 76px; height: 76px; }
   .technique-list { flex: 1; display: flex; flex-direction: column; gap: 10px; }
   .t-item { font-size: 15px; line-height: 1.4; padding-left: 16px; position: relative; }
-  .t-item::before {
-    content: ""; position: absolute; left: 0; top: 7px;
-    width: 6px; height: 6px; background: #0a0a0a; border-radius: 50%;
-  }
+  .t-item::before { content: ""; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; background: #0a0a0a; border-radius: 50%; }
   .t-item b { font-weight: 700; }
 
-  /* ---------- Total time footer ---------- */
+  /* ---------- Bottom highlight box ---------- */
   .total-box {
     border: 2px solid #0a0a0a; border-radius: 14px; padding: 16px 18px;
     display: flex; align-items: center; justify-content: space-between;
@@ -164,83 +133,147 @@
 </style>
 </head>
 <body>
-  <div class="page">
 
-    <div class="wake-bar" id="wakeBar">
-      <div class="dot" id="wakeDot"></div>
-      <div class="txt" id="wakeTxt">Activando pantalla siempre encendida…</div>
-      <button class="wake-btn" id="wakeBtn">Reactivar</button>
+  <div class="wake-bar" id="wakeBar">
+    <div class="dot" id="wakeDot"></div>
+    <div class="txt" id="wakeTxt">Activando pantalla siempre encendida…</div>
+    <button class="wake-btn" id="wakeBtn">Reactivar</button>
+  </div>
+
+  <div class="swipe-hint">← Desliza para ver la otra receta →</div>
+  <div class="dots"><span class="active"></span><span></span></div>
+
+  <div class="carousel" id="carousel">
+
+    <!-- ===================== CARD 1 — Estándar Blend ===================== -->
+    <div class="card">
+      <div class="eyebrow">Línea base · Origami</div>
+      <h1>Receta<br>Estándar</h1>
+      <div class="subtitle">Primera cata de cada tueste</div>
+      <div class="rule"></div>
+
+      <div class="spec-grid">
+        <div>
+          <div class="spec-label">Dispositivo</div>
+          <div class="spec-value">Origami<br><span class="unit">filtro fondo plano (papel)</span></div>
+        </div>
+        <div>
+          <div class="spec-label">Molienda</div>
+          <div class="spec-value">Click 35 <span class="unit">(molino MAVO)</span></div>
+        </div>
+        <div>
+          <div class="spec-label">Ratio</div>
+          <div class="spec-value">1:16 <span class="unit">— 12.5g / 200ml</span></div>
+        </div>
+        <div>
+          <div class="spec-label">Agua</div>
+          <div class="spec-value">92°C</div>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="section-title"><span class="num">1</span>Vertidos</div>
+      <div class="pours-row">
+        <div class="pours-line"></div>
+        <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">40ml</div><div class="pour-name">Bloom</div></div>
+        <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">95ml</div><div class="pour-name">Vertido 1</div></div>
+        <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">140ml</div><div class="pour-name">Vertido 2</div></div>
+        <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">200ml</div><div class="pour-name">Vertido 3</div></div>
+      </div>
+      <div class="pours-note">Espera <b>40 segundos</b> después del bloom antes del Vertido 1.</div>
+
+      <div class="rule"></div>
+
+      <div class="section-title"><span class="num">2</span>Técnica</div>
+      <div class="technique-wrap">
+        <div class="spiral-box">
+          <svg width="76" height="76" viewBox="0 0 210 210">
+            <circle cx="105" cy="105" r="98" fill="none" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="4 6"/>
+            <path d="M105,105 C 112,98 118,102 116,110 C 113,122 96,120 92,105 C 88,86 112,78 128,90 C 148,105 138,140 108,142 C 72,144 58,104 82,76 C 108,48 156,64 158,100"
+                  fill="none" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="105" cy="105" r="7" fill="#0a0a0a"/>
+          </svg>
+        </div>
+        <div class="technique-list">
+          <div class="t-item">Ritmo: vierte apenas <b>baja el nivel del agua</b> — sin dejar secar la cama, sin dejar agua estancada arriba.</div>
+          <div class="t-item">Desde el <b>centro</b>, en espiral suave hacia afuera, círculo de <b>~3cm</b> de diámetro, sin tocar el filtro.</div>
+        </div>
+      </div>
+
+      <div class="total-box">
+        <div class="total-label">Tiempo total</div>
+        <div class="total-value">2:30</div>
+      </div>
+      <div class="footnote">Referencia del círculo de vertido: una moneda de medio dólar (30.6mm) — casi exacta a los 3cm.</div>
     </div>
 
-    <div class="eyebrow">Línea base · Origami</div>
-    <h1>Receta<br>Estándar</h1>
-    <div class="subtitle">Primera cata de cada tueste</div>
-    <div class="rule"></div>
+    <!-- ===================== CARD 2 — Última cata Typica Oxy Natural ===================== -->
+    <div class="card">
+      <div class="eyebrow">Última cata · Origami</div>
+      <h1>Typica<br>Oxy Natural</h1>
+      <div class="subtitle">IKIGAI — Finca La Marquesa · 78.6 pts</div>
+      <div class="rule"></div>
 
-    <div class="spec-grid">
-      <div>
-        <div class="spec-label">Dispositivo</div>
-        <div class="spec-value">Origami<br><span class="unit">filtro fondo plano (papel)</span></div>
+      <div class="spec-grid">
+        <div>
+          <div class="spec-label">Dispositivo</div>
+          <div class="spec-value">Origami<br><span class="unit">filtro fondo plano (papel)</span></div>
+        </div>
+        <div>
+          <div class="spec-label">Molienda</div>
+          <div class="spec-value">Click 35 <span class="unit">(molino MAVO)</span></div>
+        </div>
+        <div>
+          <div class="spec-label">Ratio</div>
+          <div class="spec-value">1:16 <span class="unit">— 12.5g / 200ml</span></div>
+        </div>
+        <div>
+          <div class="spec-label">Agua</div>
+          <div class="spec-value">88°C</div>
+        </div>
       </div>
-      <div>
-        <div class="spec-label">Molienda</div>
-        <div class="spec-value">Click 35 <span class="unit">(molino MAVO)</span></div>
+
+      <div class="rule"></div>
+
+      <div class="section-title"><span class="num">1</span>Vertidos</div>
+      <div class="pours-row">
+        <div class="pours-line"></div>
+        <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">67ml</div><div class="pour-name">Vertido 1</div></div>
+        <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">133ml</div><div class="pour-name">Vertido 2</div></div>
+        <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">200ml</div><div class="pour-name">Vertido 3</div></div>
       </div>
-      <div>
-        <div class="spec-label">Ratio</div>
-        <div class="spec-value">1:16 <span class="unit">— 12.5g / 200ml</span></div>
+      <div class="pours-note">El bloom no quedó registrado con un volumen propio en esta cata — arrancó directo con el Vertido 1.</div>
+
+      <div class="rule"></div>
+
+      <div class="section-title"><span class="num">2</span>Técnica</div>
+      <div class="technique-wrap">
+        <div class="spiral-box">
+          <svg width="76" height="76" viewBox="0 0 210 210">
+            <circle cx="105" cy="105" r="98" fill="none" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="4 6"/>
+            <path d="M105,105 C 112,98 118,102 116,110 C 113,122 96,120 92,105 C 88,86 112,78 128,90 C 148,105 138,140 108,142 C 72,144 58,104 82,76 C 108,48 156,64 158,100"
+                  fill="none" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="105" cy="105" r="7" fill="#0a0a0a"/>
+          </svg>
+        </div>
+        <div class="technique-list">
+          <div class="t-item">Ritmo: vierte apenas <b>baja el nivel del agua</b> — sin dejar secar la cama, sin dejar agua estancada arriba.</div>
+          <div class="t-item">Desde el <b>centro</b>, en espiral suave hacia afuera, círculo de <b>~3cm</b> de diámetro, sin tocar el filtro.</div>
+        </div>
       </div>
-      <div>
-        <div class="spec-label">Agua</div>
-        <div class="spec-value">92°C</div>
+
+      <div class="total-box">
+        <div class="total-label">Resultado</div>
+        <div class="total-value">78.6</div>
       </div>
+      <div class="footnote">"Bebida agradable, destaca su aroma y sabores en tibio a frío y queda la sensación de volver a tomarlo." — 31 de agosto.</div>
     </div>
-
-    <div class="rule"></div>
-
-    <div class="section-title"><span class="num">1</span>Vertidos</div>
-    <div class="pours-row">
-      <div class="pours-line"></div>
-      <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">40ml</div><div class="pour-name">Bloom</div></div>
-      <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">95ml</div><div class="pour-name">Vertido 1</div></div>
-      <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">140ml</div><div class="pour-name">Vertido 2</div></div>
-      <div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">200ml</div><div class="pour-name">Vertido 3</div></div>
-    </div>
-    <div class="pours-note">Espera <b>40 segundos</b> después del bloom antes del Vertido 1.</div>
-
-    <div class="rule"></div>
-
-    <div class="section-title"><span class="num">2</span>Técnica</div>
-    <div class="technique-wrap">
-      <div class="spiral-box">
-        <svg width="76" height="76" viewBox="0 0 210 210">
-          <circle cx="105" cy="105" r="98" fill="none" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="4 6"/>
-          <path d="M105,105
-                   C 112,98 118,102 116,110
-                   C 113,122 96,120 92,105
-                   C 88,86 112,78 128,90
-                   C 148,105 138,140 108,142
-                   C 72,144 58,104 82,76
-                   C 108,48 156,64 158,100"
-                fill="none" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"/>
-          <circle cx="105" cy="105" r="7" fill="#0a0a0a"/>
-        </svg>
-      </div>
-      <div class="technique-list">
-        <div class="t-item">Ritmo: vierte apenas <b>baja el nivel del agua</b> — sin dejar secar la cama, sin dejar agua estancada arriba.</div>
-        <div class="t-item">Desde el <b>centro</b>, en espiral suave hacia afuera, círculo de <b>~3cm</b> de diámetro, sin tocar el filtro.</div>
-      </div>
-    </div>
-
-    <div class="total-box">
-      <div class="total-label">Tiempo total</div>
-      <div class="total-value">2:30</div>
-    </div>
-    <div class="footnote">Referencia del círculo de vertido: una moneda de medio dólar (30.6mm) — casi exacta a los 3cm.</div>
 
   </div>
 
 <script>
+  // ---------- Wake Lock ----------
   let wakeLock = null;
   const bar = document.getElementById('wakeBar');
   const dot = document.getElementById('wakeDot');
@@ -261,23 +294,24 @@
     try {
       wakeLock = await navigator.wakeLock.request('screen');
       setStatus(true, 'Pantalla activa mientras preparas');
-      wakeLock.addEventListener('release', () => {
-        setStatus(false, 'Se liberó — toca "Reactivar"');
-      });
+      wakeLock.addEventListener('release', () => setStatus(false, 'Se liberó — toca "Reactivar"'));
     } catch (err) {
       setStatus(false, 'No se pudo activar. Toca "Reactivar".');
     }
   }
-
   btn.addEventListener('click', requestWakeLock);
-
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      requestWakeLock();
-    }
+    if (document.visibilityState === 'visible') requestWakeLock();
   });
-
   requestWakeLock();
+
+  // ---------- Dots follow horizontal scroll ----------
+  const carousel = document.getElementById('carousel');
+  const dotsEls = document.querySelectorAll('.dots span');
+  carousel.addEventListener('scroll', () => {
+    const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    dotsEls.forEach((d, i) => d.classList.toggle('active', i === idx));
+  });
 </script>
 </body>
 </html>

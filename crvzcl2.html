@@ -1,0 +1,44 @@
+  a.download=`cerveceria_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+}
+function importar(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d.recetas) throw new Error("archivo sin recetas");
+      DB=d; if(!DB.log) DB.log=CAMBIOS.slice();
+      save(); go("recetas"); toast("Datos importados");
+    }catch(err){ toast("Archivo inválido: "+err.message,3500); }
+    ev.target.value="";
+  };
+  rd.readAsText(f);
+}
+function reset(){
+  if(!confirm("Esto borra lotes, chat y cambios de receta. ¿Continuar?")) return;
+  DB=seed(); save(); go("recetas"); toast("Datos de fábrica restaurados");
+}
+function openLog(){
+  sheet("Registro de cambios", DB.log.map(c=>
+    `<div style="padding:8px 0;border-top:1px solid var(--line)">
+      <div class="tiny num" style="color:var(--amber)">${esc(c.f)}</div>
+      <div class="mini muted">${esc(c.t)}</div></div>`).join("")
+    +`<button class="btn sec sm" onclick="closeSheet()">Cerrar</button>`);
+}
+
+/* ---------- Sheet ---------- */
+function sheet(titulo,html){
+  const d=document.createElement("div");
+  d.className="modal"; d.id="sheet";
+  d.innerHTML=`<div class="sheet"><div class="grab"></div><h2 style="margin-bottom:2px">${esc(titulo)}</h2>${html}</div>`;
+  d.addEventListener("click",e=>{ if(e.target===d) closeSheet(); });
+  document.body.appendChild(d);
+}
+function closeSheet(){ const s=$("#sheet"); if(s) s.remove(); }
+
+/* ---------- Arranque ---------- */
+go("lotes");
+</script>
+</body>
+</html>

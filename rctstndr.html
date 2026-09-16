@@ -6,108 +6,538 @@
 <title>Mejores recetas — RoastLab</title>
 <style>
   * { box-sizing: border-box; }
-  html, body { margin:0; padding:0; background:#fff; color:#0a0a0a; font-family:'Poppins','DejaVu Sans',system-ui,sans-serif; overflow-x:hidden; }
-  .wake-bar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:12px; background:#0a0a0a; color:#fff; padding:12px 16px; font-size:15px; font-weight:600; }
-  .wake-bar .dot { width:10px; height:10px; border-radius:50%; background:#ff4d4d; flex-shrink:0; transition:background .2s; }
+  html, body {
+    margin:0; padding:0; background:#fff; color:#0a0a0a;
+    font-family:'Poppins','DejaVu Sans',system-ui,sans-serif;
+    overflow-x:hidden;
+  }
+
+  .wake-bar {
+    position:sticky; top:0; z-index:30;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:#0a0a0a; color:#fff; padding:12px 16px;
+    font-size:15px; font-weight:600;
+  }
+  .wake-bar .dot {
+    width:10px; height:10px; border-radius:50%; background:#ff4d4d;
+    flex-shrink:0; transition:background .2s;
+  }
   .wake-bar.on .dot { background:#33e07a; }
   .wake-bar .txt { flex:1; }
-  .wake-btn { background:#fff; color:#0a0a0a; border:none; border-radius:10px; padding:8px 14px; font-size:14px; font-weight:700; font-family:inherit; }
+  .wake-btn {
+    background:#fff; color:#0a0a0a; border:none; border-radius:10px;
+    padding:8px 14px; font-size:14px; font-weight:700; font-family:inherit;
+  }
+
   .swipe-hint { text-align:center; font-size:13px; color:#8a8a8a; padding:10px 8px 4px; }
   .dots { display:flex; justify-content:center; gap:7px; padding:6px 10px 8px; flex-wrap:wrap; }
   .dots span { width:8px; height:8px; border-radius:50%; background:#d0d0d0; }
   .dots span.active { background:#0a0a0a; }
-  .carousel { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; width:100%; }
-  .card { flex:0 0 100%; width:100%; scroll-snap-align:start; padding:20px 24px 60px; max-width:480px; margin:0 auto; }
+
+  .carousel {
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch; width:100%;
+  }
+  .card {
+    flex:0 0 100%; width:100%; scroll-snap-align:start;
+    padding:20px 24px 60px; max-width:480px; margin:0 auto;
+    position:relative;
+  }
+
+  .header-row {
+    display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start;
+  }
+  .title-wrap { min-width:0; }
   .eyebrow { font-size:14px; font-weight:600; letter-spacing:2.5px; text-transform:uppercase; }
   h1 { font-size:36px; font-weight:700; margin:6px 0 0; line-height:1.08; letter-spacing:-.5px; }
   .subtitle { font-size:17px; margin-top:8px; color:#2a2a2a; line-height:1.35; }
+
+  /* Convertidor */
+  .converter { position:relative; display:flex; justify-content:flex-end; }
+  .convert-btn {
+    border:2px solid #0a0a0a; background:#fff; color:#0a0a0a;
+    border-radius:12px; padding:9px 11px; font-size:12px; font-weight:800;
+    font-family:inherit; line-height:1.05; min-width:94px;
+  }
+  .convert-btn small { display:block; font-size:10px; font-weight:600; margin-top:3px; color:#555; }
+  .convert-menu {
+    position:absolute; right:0; top:48px; z-index:25;
+    width:170px; background:#fff; border:2px solid #0a0a0a; border-radius:14px;
+    padding:7px; box-shadow:0 8px 24px rgba(0,0,0,.16); display:none;
+  }
+  .converter.open .convert-menu { display:block; }
+  .convert-option {
+    width:100%; text-align:left; border:0; background:#fff; padding:10px 9px;
+    border-radius:9px; font-family:inherit; font-size:14px; font-weight:650;
+  }
+  .convert-option:active, .convert-option.active { background:#0a0a0a; color:#fff; }
+  .converted-badge {
+    margin-top:10px; display:inline-block; border:1px solid #0a0a0a;
+    border-radius:999px; padding:4px 9px; font-size:11px; font-weight:700;
+  }
+
   .rule { height:2px; background:#0a0a0a; width:100%; margin:20px 0; }
-  .spec-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
-  .spec-label { font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#4a4a4a; margin-bottom:3px; }
+
+  .spec-grid {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:16px; margin-bottom:16px;
+  }
+  .spec-label {
+    font-size:12px; font-weight:600; letter-spacing:1px;
+    text-transform:uppercase; color:#4a4a4a; margin-bottom:3px;
+  }
   .spec-value { font-size:21px; font-weight:600; line-height:1.15; }
   .spec-value .unit { font-size:13px; font-weight:400; color:#4a4a4a; }
-  .section-title { font-size:17px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; }
-  .section-title .num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; border:2px solid #0a0a0a; font-size:14px; margin-right:10px; flex-shrink:0; }
-  .pours-row { display:flex; align-items:flex-start; justify-content:space-between; margin:0 2px 6px; position:relative; gap:4px; }
-  .pour-stop { display:flex; flex-direction:column; align-items:center; z-index:2; flex:1; min-width:0; }
+
+  .section-title {
+    font-size:17px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+    margin-bottom:12px; display:flex; align-items:center;
+  }
+  .section-title .num {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%; border:2px solid #0a0a0a;
+    font-size:14px; margin-right:10px; flex-shrink:0;
+  }
+
+  .pours-row {
+    display:flex; align-items:flex-start; justify-content:space-between;
+    margin:0 2px 6px; position:relative; gap:4px;
+  }
+  .pour-stop {
+    display:flex; flex-direction:column; align-items:center;
+    z-index:2; flex:1; min-width:0;
+  }
   .pour-dot { width:14px; height:14px; border-radius:50%; background:#0a0a0a; margin-bottom:8px; }
   .pour-ml { font-size:16px; font-weight:700; white-space:nowrap; }
   .pour-name { font-size:11px; color:#4a4a4a; margin-top:3px; text-align:center; }
-  .pours-line { position:absolute; top:7px; left:7%; right:7%; height:2px; background:#0a0a0a; z-index:1; }
-  .pours-note { font-size:14px; color:#2a2a2a; margin-top:12px; line-height:1.45; border-left:3px solid #0a0a0a; padding-left:12px; }
+  .pours-line {
+    position:absolute; top:7px; left:7%; right:7%;
+    height:2px; background:#0a0a0a; z-index:1;
+  }
+
+  .pours-note {
+    font-size:14px; color:#2a2a2a; margin-top:12px; line-height:1.45;
+    border-left:3px solid #0a0a0a; padding-left:12px;
+  }
   .technique-list { display:flex; flex-direction:column; gap:10px; }
   .t-item { font-size:15px; line-height:1.42; padding-left:16px; position:relative; }
-  .t-item::before { content:""; position:absolute; left:0; top:7px; width:6px; height:6px; background:#0a0a0a; border-radius:50%; }
-  .total-box { border:2px solid #0a0a0a; border-radius:14px; padding:16px 18px; display:flex; align-items:center; justify-content:space-between; margin-top:20px; }
+  .t-item::before {
+    content:""; position:absolute; left:0; top:7px; width:6px; height:6px;
+    background:#0a0a0a; border-radius:50%;
+  }
+
+  .total-box {
+    border:2px solid #0a0a0a; border-radius:14px; padding:16px 18px;
+    display:flex; align-items:center; justify-content:space-between; margin-top:20px;
+  }
   .total-label { font-size:14px; font-weight:600; letter-spacing:1px; text-transform:uppercase; }
   .total-value { font-size:31px; font-weight:700; }
   .footnote { font-size:12px; color:#666; margin-top:12px; line-height:1.45; }
-  .tag { display:inline-block; border:1px solid #0a0a0a; border-radius:999px; padding:4px 9px; font-size:12px; font-weight:600; margin-top:10px; }
+  .tag {
+    display:inline-block; border:1px solid #0a0a0a; border-radius:999px;
+    padding:4px 9px; font-size:12px; font-weight:600; margin-top:10px;
+  }
+  .adapt-note {
+    background:#f4f4f4; border-radius:12px; padding:12px 14px;
+    margin-top:14px; font-size:12px; line-height:1.45; color:#333;
+  }
+
+
+  .grinder-equivalents {
+    grid-column: 1 / -1;
+    border: 2px solid #0a0a0a;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-top: 2px;
+  }
+  .grinder-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    color: #3f3f3f;
+  }
+  .grinder-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .grinder-item {
+    border: 1px solid #bdbdbd;
+    border-radius: 10px;
+    padding: 9px 7px;
+    text-align: center;
+    min-width: 0;
+  }
+  .grinder-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .grinder-click {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .grinder-note {
+    font-size: 11px;
+    color: #666;
+    margin-top: 8px;
+    line-height: 1.35;
+  }
+
+  @media (max-width:360px) {
+    .card { padding-left:18px; padding-right:18px; }
+    h1 { font-size:32px; }
+    .convert-btn { min-width:84px; padding:8px; }
+  }
 </style>
 </head>
 <body>
+
 <div class="wake-bar" id="wakeBar">
-  <div class="dot"></div><div class="txt" id="wakeTxt">Activando pantalla siempre encendida…</div>
+  <div class="dot"></div>
+  <div class="txt" id="wakeTxt">Activando pantalla siempre encendida…</div>
   <button class="wake-btn" id="wakeBtn">Reactivar</button>
 </div>
+
 <div class="swipe-hint">← Desliza para recorrer las mejores recetas →</div>
 <div class="dots" id="dots"></div>
 <div class="carousel" id="carousel"></div>
+
 <script>
 const recipes = [
-  {name:'Ají Borbón', source:'Externo', origin:'Ecuador', method:'Pour over', device:'Origami Dripper', grind:'20', dose:'10 g', water:'160 ml', temp:'94°C', pours:[['30','Bloom'],['73','V1'],['117','V2'],['160','V3']], score:'77.8', note:'La mejor cata registrada usó click 20. En la observación se indicó que convendría probar click 30 para reducir amargor.'},
-  {name:'Catucai', source:'Externo', origin:'Loja · Ecuador · Honey', method:'Pour over', device:'Hario V60', grind:'35', dose:'12.5 g', water:'200 ml', temp:'92°C', pours:[['38','Bloom'],['92','V1'],['146','V2'],['200','V3']], score:'84.6', note:'“Muy bueno, pero siento que puede dar más con un par de semanas adicionales en reposo.”'},
-  {name:'Etiopía Yirgacheffe', source:'Externo', origin:'Registrado: USA', method:'Pour over', device:'Hario V60', grind:'35', dose:'12.5 g', water:'200 ml', temp:'93°C', pours:[['38','Bloom'],['92','V1'],['146','V2'],['200','V3']], score:'77.0', note:'“Algo amargo que tapaba la acidez y dulzor, buen aroma.”'},
-  {name:'Rosado', source:'Externo', origin:'Colombia · Chapolera', method:'Híbrido', device:'AeroPress', grind:'18', dose:'11.7 g', water:'187 ml', temp:'94°C', pours:[['35','Bloom'],['86','V1'],['136','V2'],['187','V3']], score:'95.0', note:'“Un café excelente… gran fragancia a flores y frutas como frutilla; delicado y elegante.”'},
-  {name:'Sudan Rume', source:'Externo', origin:'Quito · Ecuador · Anaeróbico', method:'Híbrido', device:'Hario Switch', grind:'18', dose:'12.5 g', water:'200 ml', temp:'94°C', pours:[['38','Bloom'],['200','Único']], score:'82.3', note:'Se percolaron 100 ml y luego se infusionaron 100 ml.'},
-  {name:'Typica Oxy Natural', source:'Externo', origin:'Loja · Ecuador · IKIGAI', method:'Pour over', device:'Origami Dripper', grind:'37', dose:'12.5 g', water:'200 ml*', temp:'88°C', pours:[['38','Bloom'],['92','V1'],['146','V2'],['200','V3']], score:'92.0', note:'*El registro estructurado termina en 200 ml, pero la nota manual dice: bloom sin ducha; luego 90 → 135 → 170 → 240 ml con ducha.'},
-  {name:'Blend', source:'Propio', origin:'Loja · Ecuador · Natural', method:'Pour over', device:'Hario V60', grind:'33', dose:'13.1 g', water:'190 ml + 20 ml hielo', temp:'90°C', pours:[['39','Bloom'],['89','V1'],['140','V2'],['190','V3']], score:'80.5', note:'Mezcla real: 7 g del tueste en tostadora + 6.1 g de tueste en canguilera. Filtro plano de Origami usado en V60.'},
-  {name:'Sidra Honey', source:'Propio', origin:'Quito · Ecuador · Honey', method:'Híbrido', device:'Hario Switch', grind:'26', dose:'11.8 g', water:'165.2 g', temp:'90°C / 70°C', pours:[['35.4','00:00'],['70.8','00:30'],['165.2','01:15']], score:'80.7', note:'Devil’s Switch de Tetsu Kasuya. La ejecución real se retrasó: el paso de 1:15 llegó a 1:40 y terminó en 3:13.'},
-  {name:'Sidra Lavado', source:'Propio', origin:'Loja · Ecuador · Lavado', method:'Pour over', device:'Origami Dripper', grind:'26', dose:'12.5 g', water:'200 ml', temp:'No registrado', pours:[['38','Bloom'],['92','V1'],['146','V2'],['200','V3']], score:'80.8', note:'Observación: “Buena bebida”. La temperatura no consta en esta cata.'},
-  {name:'Típica Lavado', source:'Propio', origin:'Quito · Ecuador · Lavado', method:'Pour over', device:'Origami Dripper', grind:'13', dose:'19 g', water:'304 ml', temp:'95°C', pours:[['57','Bloom'],['139','V1'],['222','V2'],['304','V3']], score:'78.8', note:'Mejor cata registrada de Típica lavado.'}
+  {name:'Ají Borbón', source:'Externo', origin:'Ecuador', method:'Pour over', device:'Origami', grind:20, dose:10, water:160, ice:0, temp:94, pours:[30,73,117,160], score:'77.8', note:'La mejor cata registrada usó click 20. En la observación se indicó que convendría probar click 30 para reducir amargor.'},
+  {name:'Catucai', source:'Externo', origin:'Loja · Ecuador · Honey', method:'Pour over', device:'V60', grind:35, dose:12.5, water:200, ice:0, temp:92, pours:[38,92,146,200], score:'84.6', note:'“Muy bueno, pero siento que puede dar más con un par de semanas adicionales en reposo.”'},
+  {name:'Etiopía Yirgacheffe', source:'Externo', origin:'Registrado: USA', method:'Pour over', device:'V60', grind:35, dose:12.5, water:200, ice:0, temp:93, pours:[38,92,146,200], score:'77.0', note:'“Algo amargo que tapaba la acidez y dulzor, buen aroma.”'},
+  {name:'Rosado', source:'Externo', origin:'Colombia · Chapolera', method:'Híbrido', device:'AeroPress', grind:18, dose:11.7, water:187, ice:0, temp:94, pours:[35,86,136,187], score:'95.0', note:'“Un café excelente… gran fragancia a flores y frutas como frutilla; delicado y elegante.”'},
+  {name:'Sudan Rume', source:'Externo', origin:'Quito · Ecuador · Anaeróbico', method:'Híbrido', device:'Hario Switch', grind:18, dose:12.5, water:200, ice:0, temp:94, pours:[38,200], score:'82.3', note:'Se percolaron 100 ml y luego se infusionaron 100 ml.'},
+  {name:'Typica Oxy Natural', source:'Externo', origin:'Loja · Ecuador · IKIGAI', method:'Pour over', device:'Origami', grind:37, dose:12.5, water:200, ice:0, temp:88, pours:[38,92,146,200], score:'92.0', note:'El registro estructurado termina en 200 ml, pero la nota manual dice: bloom sin ducha; luego 90 → 135 → 170 → 240 ml con ducha.'},
+  {name:'Blend', source:'Propio', origin:'Loja · Ecuador · Natural', method:'Pour over', device:'V60', grind:33, dose:13.1, water:190, ice:20, temp:90, pours:[39,89,140,190], score:'80.5', note:'Mezcla real: 7 g del tueste en tostadora + 6.1 g de tueste en canguilera. Filtro plano de Origami usado en V60.'},
+  {name:'Sidra Honey', source:'Propio', origin:'Quito · Ecuador · Honey', method:'Híbrido', device:'Hario Switch', grind:26, dose:11.8, water:165.2, ice:0, temp:90, secondTemp:70, pours:[35.4,70.8,165.2], score:'80.7', note:'Devil’s Switch de Tetsu Kasuya. La ejecución real se retrasó: el paso de 1:15 llegó a 1:40 y terminó en 3:13.'},
+  {name:'Sidra Lavado', source:'Propio', origin:'Loja · Ecuador · Lavado', method:'Pour over', device:'Origami', grind:26, dose:12.5, water:200, ice:0, temp:null, pours:[38,92,146,200], score:'80.8', note:'Observación: “Buena bebida”. La temperatura no consta en esta cata.'},
+  {name:'Típica Lavado', source:'Propio', origin:'Quito · Ecuador · Lavado', method:'Pour over', device:'Origami', grind:13, dose:19, water:304, ice:0, temp:95, pours:[57,139,222,304], score:'78.8', note:'Mejor cata registrada de Típica lavado.'}
 ];
 
-const carousel = document.getElementById('carousel');
-const dots = document.getElementById('dots');
+const deviceLabels = {
+  'Original':'Original',
+  'V60':'V60',
+  'Origami':'Origami',
+  'AeroPress':'AeroPress',
+  'Hario Switch':'Hario Switch'
+};
 
-function card(r){
-  return `<section class="card">
-    <div class="eyebrow">Mejor receta · ${r.source}</div>
-    <h1>${r.name.replace(' ','<br>')}</h1>
-    <div class="subtitle">${r.origin}</div>
+function round1(n){ return Math.round(n * 10) / 10; }
+function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+function normalizeDevice(d){
+  const s=(d||'').toLowerCase();
+  if(s.includes('aero')) return 'AeroPress';
+  if(s.includes('switch') || s.includes('swich')) return 'Hario Switch';
+  if(s.includes('origami')) return 'Origami';
+  return 'V60';
+}
+
+/*
+  Conversión heurística:
+  - Conserva dosis y agua total para mantener concentración.
+  - Molienda se desplaza según resistencia/extracción típica del método.
+  - Temperatura se corrige suavemente, evitando cambios bruscos del perfil.
+  - V60/Origami: bloom + 3 vertidos.
+  - AeroPress: inmersión + presión; si el agua excede 220 ml, usa bypass.
+  - Switch: mitad percolación / mitad inmersión.
+*/
+const grindDelta = {
+  'V60':          {'V60':0,  'Origami':-1, 'AeroPress':7,  'Hario Switch':0},
+  'Origami':      {'V60':1,  'Origami':0,  'AeroPress':8,  'Hario Switch':1},
+  'AeroPress':    {'V60':-7, 'Origami':-8, 'AeroPress':0,  'Hario Switch':-6},
+  'Hario Switch': {'V60':0,  'Origami':-1, 'AeroPress':6,  'Hario Switch':0}
+};
+
+function targetGrind(base, target){
+  const src=normalizeDevice(base.device);
+  const delta = (grindDelta[src] && grindDelta[src][target]) || 0;
+  return Math.round(clamp(base.grind + delta, 8, 45));
+}
+
+function targetTemp(base,target){
+  if(base.temp == null){
+    if(target==='AeroPress') return 92;
+    if(target==='Hario Switch') return 92;
+    return 93;
+  }
+  let t=base.temp;
+  if(target==='AeroPress' && normalizeDevice(base.device)!=='AeroPress') t -= 1;
+  if(target==='Hario Switch' && normalizeDevice(base.device)!=='Hario Switch') t -= 1;
+  if((target==='V60' || target==='Origami') && normalizeDevice(base.device)==='AeroPress') t += 0;
+  return clamp(Math.round(t), 86, 96);
+}
+
+function cumulativePours(total,dose){
+  const bloom = Math.min(total, round1(Math.max(dose*3, total*0.18)));
+  const remaining = total - bloom;
+  const p1 = round1(bloom + remaining/3);
+  const p2 = round1(bloom + remaining*2/3);
+  return [round1(bloom), p1, p2, round1(total)];
+}
+
+function adaptRecipe(base,target){
+  const originalDevice=normalizeDevice(base.device);
+  if(target==='Original'){
+    return {
+      device: originalDevice,
+      method: base.method,
+      grind: base.grind,
+      dose: base.dose,
+      water: base.water,
+      ice: base.ice||0,
+      temp: base.temp,
+      tempText: base.temp==null ? 'No registrada' : `${base.temp}°C${base.secondTemp ? ' / '+base.secondTemp+'°C' : ''}`,
+      pours: base.pours.map((x,i)=>({ml:x,label:i===0?'Bloom':(base.pours.length===2?'Único':`V${i}`)})),
+      technique: base.note,
+      time: 'Receta real',
+      isOriginal:true
+    };
+  }
+
+  const dose=base.dose;
+  const total=base.water;
+  const temp=targetTemp(base,target);
+  const grind=targetGrind(base,target);
+
+  if(target==='V60' || target==='Origami'){
+    const p=cumulativePours(total,dose);
+    const isOrigami=target==='Origami';
+    return {
+      device:target,
+      method:'Pour over',
+      grind,dose,water:total,ice:base.ice||0,temp,
+      tempText:`${temp}°C`,
+      pours:[
+        {ml:p[0],label:'Bloom'},
+        {ml:p[1],label:'V1'},
+        {ml:p[2],label:'V2'},
+        {ml:p[3],label:'V3'}
+      ],
+      technique:`Bloom 40–45 s. Vertidos suaves y acumulativos, iniciando en el centro y abriendo una espiral corta. ${isOrigami ? 'En Origami, evita inundar la cama: vierte cuando baje el nivel.' : 'En V60, mantén flujo continuo y cama nivelada.'}`,
+      time:isOrigami ? '2:30–3:00' : '2:40–3:10',
+      isOriginal:false
+    };
+  }
+
+  if(target==='AeroPress'){
+    const bloom=round1(Math.max(dose*3, total*0.18));
+    const chamber=Math.min(total,220);
+    const bypass=Math.max(0, round1(total-chamber));
+    return {
+      device:'AeroPress',
+      method:'Inmersión + presión',
+      grind,dose,water:total,ice:base.ice||0,temp,
+      tempText:`${temp}°C`,
+      pours:[
+        {ml:bloom,label:'Bloom'},
+        {ml:round1(chamber),label:'Llenado'}
+      ],
+      technique:`Bloom 30 s. Completa hasta ${round1(chamber)} ml, remueve 2–3 veces, infusiona hasta 1:30 y presiona lentamente 25–30 s.${bypass>0 ? ` Añade ${bypass} ml de bypass al final para conservar el volumen/ratio original.` : ''}`,
+      time:'1:55–2:15',
+      isOriginal:false
+    };
+  }
+
+  if(target==='Hario Switch'){
+    const bloom=round1(Math.max(dose*3,total*0.18));
+    const half=round1(total*0.50);
+    return {
+      device:'Hario Switch',
+      method:'Híbrido',
+      grind,dose,water:total,ice:base.ice||0,temp,
+      tempText:`${temp}°C`,
+      pours:[
+        {ml:bloom,label:'Bloom'},
+        {ml:half,label:'Abierto'},
+        {ml:round1(total),label:'Cerrado'}
+      ],
+      technique:`Empieza con el Switch abierto. Bloom 40 s y percola hasta ${half} ml. Cierra, completa hasta ${round1(total)} ml, deja en inmersión hasta 1:45 y abre para drenar. Busca claridad de V60/Origami con algo más de dulzor y cuerpo.`,
+      time:'2:30–3:00',
+      isOriginal:false
+    };
+  }
+}
+
+const carousel=document.getElementById('carousel');
+const dots=document.getElementById('dots');
+const states=recipes.map(()=> 'Original');
+
+function fmt(n){
+  return Number.isInteger(Number(n)) ? String(Number(n)) : String(round1(Number(n)));
+}
+
+
+function grinderEquivalentsFromMavo(mavoClick){
+  /*
+    Calibración base definida por Edgar:
+    MAVO 35 ≈ AMZCHEF 62 ≈ Timemore C3S 12
+    La conversión usa una escala proporcional a partir de ese punto de referencia.
+    Es una equivalencia práctica, no una medición granulométrica absoluta.
+  */
+  const m = Number(mavoClick);
+  return {
+    mavo: Math.round(m),
+    amzchef: Math.max(1, Math.round(m * 62 / 35)),
+    c3s: Math.max(1, Math.round(m * 12 / 35))
+  };
+}
+
+function buildPours(pours){
+  return pours.map(p=>`
+    <div class="pour-stop">
+      <div class="pour-dot"></div>
+      <div class="pour-ml">${fmt(p.ml)}ml</div>
+      <div class="pour-name">${p.label}</div>
+    </div>`).join('');
+}
+
+function renderCard(base,index){
+  const selected=states[index];
+  const r=adaptRecipe(base,selected);
+  const eq=grinderEquivalentsFromMavo(r.grind);
+  const converted = selected!=='Original';
+
+  return `<section class="card" data-card="${index}">
+    <div class="header-row">
+      <div class="title-wrap">
+        <div class="eyebrow">${converted ? 'Receta adaptada' : 'Mejor receta'} · ${base.source}</div>
+        <h1>${base.name.replace(' ','<br>')}</h1>
+        <div class="subtitle">${base.origin}</div>
+        ${converted ? `<div class="converted-badge">Convertida desde ${normalizeDevice(base.device)} → ${selected}</div>` : ''}
+      </div>
+
+      <div class="converter" data-converter="${index}">
+        <button class="convert-btn" onclick="toggleMenu(${index},event)">
+          Convertir
+          <small>${selected}</small>
+        </button>
+        <div class="convert-menu">
+          ${['Original','V60','Origami','AeroPress','Hario Switch'].map(x=>
+            `<button class="convert-option ${selected===x?'active':''}" onclick="setDevice(${index},'${x}',event)">${x}</button>`
+          ).join('')}
+        </div>
+      </div>
+    </div>
+
     <div class="tag">Método: ${r.method}</div>
+
     <div class="rule"></div>
+
     <div class="spec-grid">
       <div><div class="spec-label">Dispositivo</div><div class="spec-value">${r.device}</div></div>
-      <div><div class="spec-label">Molienda</div><div class="spec-value">Click ${r.grind} <span class="unit">MAVO</span></div></div>
-      <div><div class="spec-label">Dosis</div><div class="spec-value">${r.dose}</div></div>
-      <div><div class="spec-label">Agua</div><div class="spec-value">${r.water}</div></div>
-      <div><div class="spec-label">Temperatura</div><div class="spec-value">${r.temp}</div></div>
-      <div><div class="spec-label">Puntuación</div><div class="spec-value">${r.score}</div></div>
+      <div><div class="spec-label">Molienda base</div><div class="spec-value">Click ${eq.mavo} <span class="unit">MAVO</span></div></div>
+      <div><div class="spec-label">Dosis</div><div class="spec-value">${fmt(r.dose)} g</div></div>
+      <div><div class="spec-label">Agua</div><div class="spec-value">${fmt(r.water)} ml${r.ice ? `<br><span class="unit">+ ${fmt(r.ice)} ml hielo</span>`:''}</div></div>
+      <div><div class="spec-label">Temperatura</div><div class="spec-value">${r.tempText}</div></div>
+      <div><div class="spec-label">${r.isOriginal?'Puntuación':'Base original'}</div><div class="spec-value">${base.score}</div></div>
+
+      <div class="grinder-equivalents">
+        <div class="grinder-title">Equivalencia de molienda</div>
+        <div class="grinder-grid">
+          <div class="grinder-item">
+            <div class="grinder-name">MAVO<br>Edgar</div>
+            <div class="grinder-click">${eq.mavo}</div>
+          </div>
+          <div class="grinder-item">
+            <div class="grinder-name">AMZCHEF<br>Javier</div>
+            <div class="grinder-click">${eq.amzchef}</div>
+          </div>
+          <div class="grinder-item">
+            <div class="grinder-name">Timemore C3S<br>Adrián</div>
+            <div class="grinder-click">${eq.c3s}</div>
+          </div>
+        </div>
+        <div class="grinder-note">Referencia calibrada: MAVO 35 ≈ AMZCHEF 62 ≈ C3S 12. Los demás clics se estiman proporcionalmente desde esa equivalencia.</div>
+      </div>
     </div>
+
     <div class="rule"></div>
-    <div class="section-title"><span class="num">1</span>Vertidos</div>
-    <div class="pours-row"><div class="pours-line"></div>${r.pours.map(p=>`<div class="pour-stop"><div class="pour-dot"></div><div class="pour-ml">${p[0]}ml</div><div class="pour-name">${p[1]}</div></div>`).join('')}</div>
+
+    <div class="section-title"><span class="num">1</span>Vertidos / fases</div>
+    <div class="pours-row">
+      <div class="pours-line"></div>
+      ${buildPours(r.pours)}
+    </div>
+
     <div class="rule"></div>
-    <div class="section-title"><span class="num">2</span>Nota de cata / ejecución</div>
-    <div class="technique-list"><div class="t-item">${r.note}</div></div>
-    <div class="total-box"><div class="total-label">Mejor puntuación</div><div class="total-value">${r.score}</div></div>
-    <div class="footnote">Selección: mejor puntuación de las catas realizadas por Edgar para este café en RoastLab.</div>
+
+    <div class="section-title"><span class="num">2</span>${r.isOriginal?'Nota de cata / ejecución':'Técnica adaptada'}</div>
+    <div class="technique-list">
+      <div class="t-item">${r.technique}</div>
+    </div>
+
+    <div class="total-box">
+      <div class="total-label">${r.isOriginal?'Resultado':'Tiempo objetivo'}</div>
+      <div class="total-value">${r.isOriginal?base.score:r.time}</div>
+    </div>
+
+    ${converted ? `<div class="adapt-note"><b>Adaptación calculada:</b> conserva la dosis y el volumen de la receta ganadora y reajusta molienda, temperatura, fases y tiempo según el método elegido. La molienda adaptada se muestra simultáneamente para MAVO, AMZCHEF y Timemore C3S. Es un punto de partida para mantener el perfil sensorial; no sustituye una cata real.</div>` : ''}
+
+    <div class="footnote">${r.isOriginal ? 'Selección: mejor puntuación registrada por Edgar para este café.' : 'Toca “Convertir” y “Original” para volver instantáneamente a la receta real de RoastLab.'}</div>
   </section>`;
 }
 
-carousel.innerHTML = recipes.map(card).join('');
-dots.innerHTML = recipes.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('');
-const dotEls = [...dots.querySelectorAll('span')];
-carousel.addEventListener('scroll',()=>{ const idx=Math.round(carousel.scrollLeft/carousel.clientWidth); dotEls.forEach((d,i)=>d.classList.toggle('active',i===idx)); });
+function renderAll(){
+  carousel.innerHTML=recipes.map((r,i)=>renderCard(r,i)).join('');
+  dots.innerHTML=recipes.map((_,i)=>`<span class="${i===currentIndex()?'active':''}"></span>`).join('');
+}
 
+function currentIndex(){
+  return Math.round(carousel.scrollLeft / Math.max(carousel.clientWidth,1)) || 0;
+}
+
+window.toggleMenu=function(index,e){
+  e.stopPropagation();
+  document.querySelectorAll('.converter').forEach(el=>{
+    if(el.dataset.converter!=String(index)) el.classList.remove('open');
+  });
+  document.querySelector(`[data-converter="${index}"]`).classList.toggle('open');
+};
+
+window.setDevice=function(index,device,e){
+  e.stopPropagation();
+  const idx=currentIndex();
+  states[index]=device;
+  renderAll();
+  requestAnimationFrame(()=>{ carousel.scrollLeft=idx*carousel.clientWidth; updateDots(); });
+};
+
+document.addEventListener('click',()=>document.querySelectorAll('.converter').forEach(el=>el.classList.remove('open')));
+
+function updateDots(){
+  const idx=currentIndex();
+  [...dots.querySelectorAll('span')].forEach((d,i)=>d.classList.toggle('active',i===idx));
+}
+carousel.addEventListener('scroll',updateDots);
+
+renderAll();
+
+/* Wake Lock */
 let wakeLock=null;
 const bar=document.getElementById('wakeBar'), txt=document.getElementById('wakeTxt'), btn=document.getElementById('wakeBtn');
 function setStatus(on,msg){bar.classList.toggle('on',on); txt.textContent=msg;}
 async function requestWakeLock(){
-  if(!('wakeLock' in navigator)){ setStatus(false,'Tu navegador no soporta Wake Lock.'); btn.style.display='none'; return; }
-  try { wakeLock=await navigator.wakeLock.request('screen'); setStatus(true,'Pantalla activa mientras preparas'); wakeLock.addEventListener('release',()=>setStatus(false,'Se liberó — toca “Reactivar”')); }
-  catch(e){ setStatus(false,'No se pudo activar. Toca “Reactivar”.'); }
+  if(!('wakeLock' in navigator)){
+    setStatus(false,'Tu navegador no soporta Wake Lock.');
+    btn.style.display='none';
+    return;
+  }
+  try{
+    wakeLock=await navigator.wakeLock.request('screen');
+    setStatus(true,'Pantalla activa mientras preparas');
+    wakeLock.addEventListener('release',()=>setStatus(false,'Se liberó — toca “Reactivar”'));
+  }catch(e){
+    setStatus(false,'No se pudo activar. Toca “Reactivar”.');
+  }
 }
 btn.addEventListener('click',requestWakeLock);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')requestWakeLock();});

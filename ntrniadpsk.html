@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3b2417">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Protocolo SLM Café</title>
+<style>
+  :root{
+    --bg:#f5efe6;
+    --bg-2:#efe6d6;
+    --card:#ffffff;
+    --ink:#2b1d12;
+    --muted:#7a6a58;
+    --accent:#8b5a2b;
+    --accent-2:#a56a33;
+    --accent-dark:#5c3a1a;
+    --line:#e8ddcc;
+    --line-2:#dfd2bc;
+    --header:#3b2417;
+    --header-ink:#f7efe2;
+    --ok:#4b7a4b;
+    --shadow:0 1px 2px rgba(60,40,20,.06), 0 4px 14px rgba(60,40,20,.05);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:80px;
+  }
+
+  /* Header */
+  header{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:var(--header);
+    color:var(--header-ink);
+    padding:12px 14px calc(12px + env(safe-area-inset-top,0)) 14px;
+    padding-top:calc(12px + env(safe-area-inset-top,0));
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  header .brand{
+    flex:1;
+    min-width:0;
+  }
+  header h1{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  header .sub{
+    font-size:11.5px;
+    opacity:.75;
+    margin-top:2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  header button{
+    background:rgba(255,255,255,.12);
+    color:var(--header-ink);
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:10px;
+    padding:8px 11px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .15s;
+  }
+  header button:active{background:rgba(255,255,255,.22);}
+
+  /* Intro hint */
+  .hint{
+    max-width:720px;
+    margin:12px auto 4px;
+    padding:0 14px;
+    color:var(--muted);
+    font-size:12.5px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .hint .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--accent);flex:0 0 auto;
+  }
+
+  /* Main */
+  main{
+    max-width:720px;
+    margin:0 auto;
+    padding:8px 12px 40px;
+  }
+
+  /* Group label */
+  .group{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:18px 4px 8px;
+    color:var(--accent-dark);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1.2px;
+    text-transform:uppercase;
+  }
+  .group::before{
+    content:"";
+    width:6px;height:6px;border-radius:50%;
+    background:var(--accent);
+  }
+  .group::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line-2);
+  }
+
+  /* Card (level 1) */
+  .item{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    margin-bottom:8px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .item.open{
+    border-color:var(--accent-2);
+    box-shadow:0 2px 4px rgba(139,90,43,.08), 0 8px 22px rgba(139,90,43,.10);
+  }
+  .head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 14px;
+    cursor:pointer;
+    user-select:none;
+    min-height:56px;
+  }
+  .num{
+    flex:0 0 auto;
+    width:30px;height:30px;
+    border-radius:9px;
+    background:var(--bg-2);
+    color:var(--accent-dark);
+    font-weight:700;
+    font-size:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background .2s,color .2s;
+  }
+  .item.open .num{
+    background:var(--accent);
+    color:#fff;
+  }
+  .title{
+    flex:1;
+    min-width:0;
+    font-weight:600;
+    font-size:14.5px;
+    line-height:1.3;
+  }
+  .item.open .title{color:var(--accent-dark);}
+  .chev{
+    flex:0 0 auto;
+    width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted);
+    transition:transform .25s ease, color .2s;
+    font-size:14px;
+  }
+  .item.open .chev{
+    transform:rotate(180deg);
+    color:var(--accent);
+  }
+
+  /* Collapsible body */
+  .body{
+    display:grid;
+    grid-template-rows:0fr;
+    transition:grid-template-rows .3s ease;
+  }
+  .item.open > .body{grid-template-rows:1fr;}
+  .body > .inner{overflow:hidden;}
+
+  /* Sub-item (level 2) */
+  .sub{
+    border-top:1px solid var(--line);
+    background:#fdfaf4;
+  }
+  .sub:first-child{border-top:none;}
+  .sub-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px 12px 18px;
+    cursor:pointer;
+    user-select:none;
+    min-height:48px;
+  }
+  .sub-head .bullet{
+    flex:0 0 auto;
+    width:6px;height:6px;
+    border-radius:50%;
+    background:var(--accent-2);
+    transition:background .2s, transform .2s;
+  }
+  .sub.open .sub-head .bullet{
+    background:var(--accent-dark);
+    transform:scale(1.4);
+  }
+  .sub-title{
+    flex:1;
+    min-width:0;
+    font-weight:600;
+    font-size:13.5px;
+    color:#3a2a1c;
+  }
+  .sub.open .sub-title{color:var(--accent-dark);}
+  .sub-chev{
+    flex:0 0 auto;
+    color:var(--muted);
+    font-size:12px;
+    transition:transform .25s, color .2s;
+  }
+  .sub.open .sub-chev{transform:rotate(90deg);color:var(--accent);}
+
+  .sub-body{
+    display:grid;
+    grid-template-rows:0fr;
+    transition:grid-template-rows .28s ease;
+  }
+  .sub.open > .sub-body{grid-template-rows:1fr;}
+  .sub-body > .sub-inner{overflow:hidden;}
+  .sub-body .text{
+    padding:0 16px 14px 34px;
+    font-size:13.5px;
+    color:#4a3a2a;
+    line-height:1.55;
+  }
+  .sub-body .text p{margin:0 0 8px;}
+  .sub-body .text p:last-child{margin-bottom:0;}
+  .sub-body .text ul{margin:4px 0 0;padding-left:18px;}
+  .sub-body .text li{margin-bottom:4px;}
+  .sub-body .text strong{color:var(--accent-dark);}
+  .sub-body .text em{color:var(--muted);font-style:normal;font-weight:600;}
+
+  .pill{
+    display:inline-block;
+    background:var(--bg-2);
+    color:var(--accent-dark);
+    border-radius:6px;
+    padding:1px 6px;
+    font-size:11.5px;
+    font-weight:700;
+    margin-right:4px;
+  }
+
+  /* Footer */
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:11.5px;
+    padding:20px 14px 30px;
+  }
+
+  /* Small screens */
+  @media (max-width:360px){
+    .title{font-size:13.5px;}
+    .sub-title{font-size:13px;}
+    header h1{font-size:15px;}
+  }
+
+  /* Prevent double-tap zoom on buttons */
+  button, .head, .sub-head{touch-action:manipulation;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Protocolo SLM Café</h1>
+    <div class="sub">Adaptar y evaluar un modelo pequeño</div>
+  </div>
+  <button id="closeAll" type="button">Cerrar todo</button>
+</header>
+
+<div class="hint">
+  <span class="dot"></span>
+  <span>Toca una tarjeta para abrirla. Toca un subtema para ver su detalle.</span>
+</div>
+
+<main id="main">
+
+  <!-- ===== GRUPO 1: ENMARCAR ===== -->
+  <div class="group">1 · Enmarcar</div>
+
+  <!-- 1 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">1</div>
+      <div class="title">Propósito del documento</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Qué es</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Protocolo educativo para diseñar, adaptar y evaluar un modelo pequeño especializado. Café es el hilo conductor; la estructura sirve para otros dominios técnicos.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Qué no es</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>No es una receta rígida ni una secuencia obligatoria de técnicas. Tampoco un registro de experimentos, datasets ni resultados.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Idea central</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Adaptar no es hacer leer información y esperar que se aplique. Es <strong>definir una conducta verificable</strong>, diagnosticar qué la impide, elegir la <strong>intervención mínima</strong> y demostrar con generación libre y pruebas reservadas que apareció <em>sin destruir</em> capacidades previas.</p>
+        </div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">2</div>
+      <div class="title">Los tres planos</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Plano A · Qué aprende el modelo</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Currículo de capacidades: fundamentos operativos → científicos → causalidad → diagnóstico → recetas → multivariable → transferencia.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Plano B · Cómo se construye</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Ciclo de ingeniería: objetivo → base → datos → intervención → preflight → entrenar → artefacto → evaluar → decidir.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Plano C · Cómo sabemos si funcionó</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Sistema de evidencia: estructura → validación → generación libre → mecánica → regresión → examen cerrado → decisión.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Error común</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Mezclar los tres planos. Una lista de temas no es dataset; una pérdida baja no es mejor conducta; una respuesta vista no es generalización.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Cuatro macrobloques</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p><span class="pill">1</span>Enmarcar <span class="pill">2</span>Diseñar <span class="pill">3</span>Ejecutar <span class="pill">4</span>Demostrar y decidir.</p>
+        </div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">3</div>
+      <div class="title">Qué construimos realmente</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">No es una enciclopedia</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>El objetivo no es almacenar café, sino producir respuestas útiles: comprender, conservar magnitudes, recuperar principios, distinguir observación de inferencia, elegir intervención y expresar incertidumbre.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Cinco objetos distintos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p><strong>1.</strong> Modelo base · <strong>2.</strong> Adaptación (LoRA) · <strong>3.</strong> Artefacto de inferencia (fusionado/cuantizado) · <strong>4.</strong> Configuración de inferencia · <strong>5.</strong> Sistema completo.</p>
+          <p>Cambiar dos a la vez impide atribuir el cambio observado.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Cuatro necesidades distintas</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Especialización de conocimiento ≠ aprendizaje de conducta ≠ alineación de preferencias ≠ ejecución exacta. Cada una pide solución diferente.</p>
+        </div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 4 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">4</div>
+      <div class="title">Principios rectores</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">1 · Carencia demostrada</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Antes de tocar pesos debe existir evidencia repetible de una carencia. El diagnóstico precede al tratamiento.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">2 · Intervención mínima</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Si se resuelve con instrucción, herramienta, recuperación o validador, no hay razón automática para entrenar.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">3 · Calidad ≠ texto bonito</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Un ejemplo debe ser correcto, pertinente, atómico y trazable. Una explicación elegante pero físicamente dudosa es dato de baja calidad.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">4 · General antes que particular</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Primero operaciones y principios transferibles; después métodos, equipos y casos concretos. Ambos se conectan.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">5 · Decisión bajo condiciones</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>En café casi nunca hay regla universal. La recomendación depende de objetivo, método, evidencia y variables controladas.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">6 · Incertidumbre es competencia</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Decir qué falta y proponer prueba discriminante es mejor que inventar una cifra o una causa.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">7 · El examen influye desde el diseño</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Éxito, errores críticos, pruebas reservadas y puertas se definen antes de entrenar.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">8 · Explicable y reproducible</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Cada candidato tiene origen, base, corpus, configuración, código y criterios identificables. Las versiones anteriores se conservan.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- ===== GRUPO 2: DISEÑAR ===== -->
+  <div class="group">2 · Diseñar</div>
+
+  <!-- 5 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">5</div>
+      <div class="title">Etapa I · Misión y límites</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Problema que resuelve</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Evita entrenar una idea vaga como "ser experto en café".</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Preguntas de definición</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>¿Quién lo usa? ¿Para qué decisiones? ¿Qué alcance? ¿Qué puede pedir antes de responder? ¿Qué está prohibido? ¿Qué errores invalidan una versión? ¿Qué conservar del base?</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Contrato de respuesta</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Ocho pasos lógicos (no plantilla verbal): objetivo → verificar datos → separar hechos/inferencias → explicar mecanismo → priorizar acción → mínima variable → verificación → alcance.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Errores críticos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Cálculo mal · contradicción diagnóstico/acción · causalidad sin control · transferencia indebida · confundir intensidad/extracción · inventar datos · mezclar métodos · recomendar sin datos.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Especificación breve y evaluable: qué debe hacer, no hacer y conservar.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 6 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">6</div>
+      <div class="title">Etapa II · Sistema técnico</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Selección del modelo base</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Prueba breve de aptitud: comprensión, cálculo, causalidad, estabilidad, idioma, licencia, hardware, velocidad. Descartar bases con brecha fundamental demasiado grande.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Modelo y representación</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Distinguir pesos, tokenizer, plantilla conversacional y versiones cuantizadas. Un archivo cuantizado es para ejecutar, no necesariamente para entrenar.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Qué hace LoRA</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Congela pesos base e introduce matrices entrenables de bajo rango. Reduce costo, pero no corrige objetivo mal definido, datos contradictorios ni evaluación contaminada.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Fusión y cuantización</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Fusionar = incorporar la actualización a una copia. Cuantizar = menor precisión. Ambas cambian conducta: adaptador, fusionado y cuantizado son candidatos distintos.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Configuración de inferencia</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Plantilla, prompt de sistema, modo de razonamiento, contexto, muestreo, semilla, motor. Si cambia, la comparación deja de ser válida.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Herramientas y validadores</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Delegar cálculos, conversiones y comprobaciones. Un sistema fiable no tiene por qué resolver todo con memoria paramétrica.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Base apta + descripción inequívoca de modelo, adaptación, artefacto y configuración constante.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 7 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">7</div>
+      <div class="title">Etapa III · Diagnóstico</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Línea base</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Probar el base antes de entrenar: qué sabe, qué explica pero no aplica, qué mejora con prompt, qué falla estable, qué proteger.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Taxonomía de carencias</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>1 Conocimiento · 2 Recuperación · 3 Causalidad · 4 Ejecución · 5 Instrucciones · 6 Preferencia · 7 Calibración · 8 Inferencia.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Pruebas de contraste</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Reformular la misma capacidad: directa/indirecta, con/sin distractores, otro método, datos completos/incompletos. Si cambia radicalmente, no es falta de conocimiento.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Mapa de capacidades</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Matriz: capacidad · estado · evidencia · riesgo · intervención candidata.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Carencias clasificadas y cada una con hipótesis de intervención verificable.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 8 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">8</div>
+      <div class="title">Etapa IV · Base de conocimiento</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Jerarquía de afirmaciones</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Principio · modelo simplificado · observación · inferencia · hipótesis · heurística · preferencia · receta personal.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Fuentes</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Literatura primaria > documentación técnica > manuales con referencias > datos reales > experto trazable > sintético revisado.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Datos sintéticos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Borrador, no verdad. Controlar exactitud, coherencia, alcance, duplicación y utilidad pedagógica.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Atomicidad</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Un ejemplo = una decisión principal. Los casos complejos se incorporan después de que sus componentes tengan pruebas propias.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Contraejemplos y fronteras</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Casos parecidos con causa distinta · falta de información · excepciones · trade-offs · recomendaciones tentadoras que contradicen datos · fuera de alcance.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Inventario trazable de afirmaciones, fuentes, simplificaciones, heurísticas y observaciones.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 9 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">9</div>
+      <div class="title">Etapa V · Currículo (7 niveles)</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">N1 · Fundamentos operativos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Unidades, razones, totales, orden temporal, tablas, datos faltantes, consistencia interna.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">N2 · Fundamentos científicos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Conservación de masa · transferencia de masa · transferencia de calor · flujo en medios porosos · diseño experimental e incertidumbre.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">N3 · Relaciones causales</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Condición → intervención → mecanismo probable → efecto observable → variables que alteran → comprobación.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">N4 · Diagnóstico</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>De síntoma a hipótesis · verificar repetición · discriminar · ordenar por evidencia · recomendar prueba mínima.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">N5 · Decisión y recetas</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Objetivo + café + método/equipo + hipótesis + variable principal + criterio. La primera recomendación debe ser interpretable y reversible.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">N6 · Casos multivariable</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Refuerzo, compensación, confusión, tensión, información insuficiente. Proponer secuencia de experimentos, no una causa total.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">N7 · Evidencia real</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Distinguir medido / percibido / cambiado / fijo / inferido / alcance. Un caso real no entra automáticamente al entrenamiento.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Transversal · Generalización</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Combinar principios en situaciones no vistas. Los casos que miden generalización quedan fuera del entrenamiento.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 10 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">10</div>
+      <div class="title">Etapa VI · Intervención adecuada</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Sin entrenamiento</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Prompt, ejemplos en contexto, recuperación, calculadora, plantilla de comprobación, validador, pregunta aclaratoria.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">SFT</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Enseña formatos, procedimientos y aplicaciones causales. Riesgo: imitación superficial. Necesita variaciones y contraejemplos.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">LoRA</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Mecanismo eficiente de actualización, no objetivo pedagógico. Capacidad finita según módulos, rango, datos y optimización.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Destilación</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Explicaciones del maestro como señal adicional. Concisas, comprobables. Preferir rastros verificables sobre monólogos decorativos.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">CPT</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Predicción del siguiente token sobre corpus del dominio. Corpus grande y curado. No obligatorio; puede alterar capacidades generales.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">DPO y preferencias</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Preferir elegida frente a rechazada. Útil cuando ya hay alternativas plausibles y se elige mal. No corrige física ni aritmética.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Árbol de decisión</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>¿Conocimiento disponible pero no llega? → recuperación/contexto.<br>
+          ¿Operación determinista? → herramienta.<br>
+          ¿Falta conducta? → SFT.<br>
+          ¿Estructura? → destilación.<br>
+          ¿Brecha amplia? → CPT.<br>
+          ¿Elegir entre plausibles? → DPO.<br>
+          ¿Complejidad sin evidencia? → no añadir.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Cada carencia tiene intervención escogida y predicción falsable.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 11 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">11</div>
+      <div class="title">Etapa VII · Arquitectura de datos</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Separación funcional</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Entrenamiento · validación de pérdida · validación generativa · regresión · examen cerrado. Una paráfrasis cercana no cruza fronteras.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Unidades de ejemplo</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Declarar: capacidad, dificultad, fuente, entrada, conducta esperada, errores a contrastar, alcance y función.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Cobertura y equilibrio</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Directos e inversos · positivos y negativos · fáciles que detecten regresión · intermedios · complejos · abstención.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Prevención de contaminación</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Examen y clave en archivos separados · acceso restringido · detección de duplicados · fuentes registradas · congelar examen antes de elegir candidato.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Conjuntos con funciones independientes, trazables, que miden sin premiar memorización.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- ===== GRUPO 3: EJECUTAR ===== -->
+  <div class="group">3 · Ejecutar</div>
+
+  <!-- 12 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">12</div>
+      <div class="title">Etapa VIII · Preflight</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Comprobaciones del contenido</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Formato · roles · IDs únicos · fuentes trazables · sin contradicciones · separación real · longitud · balance · clave cerrada inaccesible.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Comprobaciones del modelo</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Revisión base y tokenizer · plantilla · precisión · módulos a adaptar · máscara de pérdida · compatibilidad · memoria.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Sonda sin entrenamiento</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Cargar modelo + adaptador, tokenizar, forward y backward sin actualizar pesos. Comprueba el camino técnico, no el aprendizaje.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Plan de ejecución y recuperación</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Límites · frecuencia de validación · parada · aceptación · persistencia atómica · pausa/continuación · recuperación · control humano explícito.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>"Listo para entrenar" o "bloqueado" con causas. Estar listo no autoriza ni inicia el entrenamiento.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 13 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">13</div>
+      <div class="title">Etapa IX · Entrenar y seleccionar</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Qué significa optimizar</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Menor pérdida = mejor predicción bajo el esquema usado. No demuestra buena generación libre desde cero.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Selección multicriterio · 5 puertas</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p><strong>1.</strong> Optimización estable · <strong>2.</strong> Capacidad objetivo en generación libre · <strong>3.</strong> Mecánica · <strong>4.</strong> Retención · <strong>5.</strong> Salida sin truncamiento/repetición.</p>
+          <p>Si ninguna versión supera: "sin candidato aceptable".</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Validadores mecánicos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Sumas, proporciones, unidades, cronología, datos requeridos, contradicciones, límites de formato.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Comparación directa</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Candidato vs base vs mejor versión anterior, bajo condiciones idénticas. No "¿aprendió algo?" sino "¿es preferible para la misión y a qué costo?".</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Parada anticipada</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Su criterio debe corresponder a la conducta objetivo, no a una métrica cómoda.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Checkpoint congelado, elegido con criterios definidos antes de ver el examen. Si no existe, la corrida termina sin candidato.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 14 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">14</div>
+      <div class="title">Etapa X · Artefacto de inferencia</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Construcción sobre copia</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Fusión sobre copia verificable. Originales, adaptadores y versiones previas inmutables.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Verificación por capas</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Adaptador sobre modelo de entrenamiento → modelo fusionado → artefacto cuantizado. Un resultado en una capa no garantiza la siguiente.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Identidad operacional</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Declarar base, versión, adaptación, cuantización, motor, configuración y huella. Una etiqueta no es evidencia.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>El artefacto final reproduce la conducta del candidato y se identifica sin ambigüedad.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- ===== GRUPO 4: DEMOSTRAR ===== -->
+  <div class="group">4 · Demostrar y decidir</div>
+
+  <!-- 15 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">15</div>
+      <div class="title">Etapa XI · Examen cerrado</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Por qué cerrado</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>El modelo genera sin acceso a la clave; la clave se abre solo tras congelar las respuestas. Evita adaptación consciente o accidental.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Qué se compara</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Base · versión vigente · nuevo candidato · controles. Mismas preguntas, configuración equivalente, orden ciego si hace falta.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Evaluación por dimensiones</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Exactitud · coherencia causal · diagnóstico · correspondencia objetivo/acción · incertidumbre · alcance · claridad · estabilidad técnica.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Evidencia mecánica, juez y humana</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Mecánica verifica invariantes · juez/rúbrica compara semántica · humano resuelve ambigüedades y audita. Ninguna capa debe fingir lo que no mide.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puertas de promoción</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Mejora global suficiente · sin regresiones críticas · retención mínima · sin fallos técnicos inadmisibles · revisar victorias por caso atípico.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Puerta de salida</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Decisión argumentada, no solo puntuación.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 16 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">16</div>
+      <div class="title">Etapa XII · Decidir e iterar</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Decisiones posibles</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Promover · conservar como candidata · usar parcialmente · rechazar · declarar inconclusa. "No promover" puede ser aprendizaje válido.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Análisis de errores</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Agrupar por mecanismo: conocimiento no recuperado · sobregeneralización · asociación verbal · mecánica · contradicción · causalidad · calibración · confusión de métodos · truncamiento.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Versionado de hipótesis</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Una frase: "Esta versión corrige X mediante Y; se acepta si supera Z sin regresión W".</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Ciclo de retorno</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Volver al punto que corresponde a la causa: objetivo · diagnóstico · fuentes · currículo · técnica · validador · examen · arquitectura.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- ===== GRUPO 5: COMPLEMENTOS ===== -->
+  <div class="group">5 · Complementos</div>
+
+  <!-- 17 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">17</div>
+      <div class="title">Roles: IA y persona</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">La IA puede ayudar a</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Explorar literatura · proponer taxonomías · generar borradores y contraejemplos · detectar duplicados · diseñar rúbricas · automatizar comprobaciones.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">La persona debe decidir</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Misión y prioridades · errores críticos · aprobar fuentes · validar observaciones · autorizar ejecución · resolver desacuerdos · promover, conservar o rechazar.</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 18 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">18</div>
+      <div class="title">Forma pedagógica de cada etapa</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">8 pasos por etapa</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Vista breve · problema · conceptos · proceso · evidencia · errores frecuentes · puerta · aplicación a café.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Dos recorridos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Qué aprende el modelo (currículo) · Cómo construimos y comprobamos (ingeniería).</p></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 19 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">19</div>
+      <div class="title">Resumen operativo</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Ruta de construcción</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Definir → base → comprender → diagnosticar → evidencia → currículo → intervención → datos → preflight → entrenar → artefacto → examinar → decidir.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Ruta de aprendizaje</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text"><p>Operaciones → ciencia → causalidad → diagnóstico → decisión → multivariable → evidencia real → generalización.</p></div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Regla de control · 4 preguntas</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>1. ¿Qué afirmamos que cambió?<br>2. ¿Qué evidencia independiente lo demuestra?<br>3. ¿Qué podía degradarse y cómo se protegió?<br>4. ¿Qué decisión permite esa evidencia?</p>
+          <p>Si alguna queda sin respuesta, el proceso no está listo para avanzar.</p>
+        </div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 20 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">20</div>
+      <div class="title">Glosario esencial</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Términos clave</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p><strong>Modelo base:</strong> pesos originales.</p>
+          <p><strong>SLM:</strong> modelo pequeño; el umbral depende del contexto.</p>
+          <p><strong>SFT:</strong> ajuste supervisado con entradas y respuestas objetivo.</p>
+          <p><strong>LoRA:</strong> adaptación de bajo rango con pesos base congelados.</p>
+          <p><strong>PEFT:</strong> familia de técnicas que adapta una fracción pequeña.</p>
+          <p><strong>CPT:</strong> continuación del preentrenamiento en dominio.</p>
+          <p><strong>Destilación:</strong> transferir señales de un modelo maestro.</p>
+          <p><strong>DPO:</strong> optimización directa desde pares preferida/rechazada.</p>
+          <p><strong>Checkpoint:</strong> estado guardado durante el entrenamiento.</p>
+          <p><strong>Pérdida:</strong> error de optimización; no equivale a calidad de uso.</p>
+          <p><strong>Validación generativa:</strong> respuestas libres a entradas no entrenadas.</p>
+          <p><strong>Regresión:</strong> deterioro de una capacidad previa.</p>
+          <p><strong>Contaminación:</strong> material de evaluación dentro de entrenamiento o selección.</p>
+          <p><strong>Cuantización:</strong> menor precisión para reducir costo de inferencia.</p>
+          <p><strong>Puerta:</strong> condición que debe superarse antes de avanzar o promover.</p>
+        </div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- ===== GRUPO 6: ANEXO PRÁCTICO ===== -->
+  <div class="group">6 · Anexo práctico</div>
+
+  <!-- 21 -->
+  <div class="item">
+    <div class="head">
+      <div class="num">21</div>
+      <div class="title">Ruta mínima para entrenar local</div>
+      <div class="chev">▾</div>
+    </div>
+    <div class="body"><div class="inner">
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">10 pasos</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>1. Define una tarea concreta (no "experto en café").<br>
+          2. Reúne 50–200 ejemplos instruct: entrada + respuesta esperada.<br>
+          3. Formatea en la plantilla conversacional del base.<br>
+          4. Elige un base pequeño (1B–3B) que quepa en tu equipo.<br>
+          5. Carga con QLoRA (4-bit).<br>
+          6. Separa entrenamiento / validación / examen cerrado (10–20%).<br>
+          7. Entrena pocas épocas, guarda checkpoints.<br>
+          8. Evalúa generación libre contra el base.<br>
+          9. Fusiona el adaptador; cuantiza si hace falta.<br>
+          10. Prueba local y decide: promover, conservar o rechazar.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Ejemplo café mínimo</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p><strong>Pregunta:</strong> "Molienda fina, 92 °C, 25 s, 40 g en 250 g. ¿Diagnóstico?"</p>
+          <p><strong>Respuesta esperada:</strong> subextracción por tiempo corto; verificar molienda; probar +5 s.</p>
+          <p><strong>Dataset:</strong> 100 ejemplos similares con variaciones.</p>
+          <p><strong>Comparación:</strong> base vs adaptado con las mismas preguntas.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Errores comunes</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>Sobreentrenar · contaminar el examen · confundir pérdida con calidad · cambiar prompt y atribuirlo al modelo · entrenar cálculos que van a herramienta · no comparar contra el base.</p>
+        </div></div></div>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><span class="bullet"></span><span class="sub-title">Checklist mínimo</span><span class="sub-chev">▸</span></div>
+        <div class="sub-body"><div class="sub-inner"><div class="text">
+          <p>¿Evaluación separada? · ¿Contraejemplos? · ¿Probé sin entrenar primero? · ¿Comparé contra el base? · ¿Definí errores críticos antes? · ¿Congelé el examen?</p>
+        </div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <footer>
+    Protocolo SLM Café · documento educativo resumido
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  var main = document.getElementById('main');
+
+  // Delegated click handling for both level-1 heads and level-2 sub-heads
+  main.addEventListener('click', function(e){
+    var head = e.target.closest('.head');
+    var subHead = e.target.closest('.sub-head');
+
+    if (head) {
+      var item = head.parentElement;
+      var wasOpen = item.classList.contains('open');
+
+      // Close all other level-1 items (accordion behavior)
+      var allItems = main.querySelectorAll('.item');
+      for (var i = 0; i < allItems.length; i++) {
+        if (allItems[i] !== item) {
+          allItems[i].classList.remove('open');
+        }
+      }
+      item.classList.toggle('open', !wasOpen);
+
+      // Scroll into view slightly when opening
+      if (!wasOpen) {
+        setTimeout(function(){
+          var top = item.getBoundingClientRect().top + window.pageYOffset - 70;
+          window.scrollTo({top: top, behavior: 'smooth'});
+        }, 120);
+      }
+      return;
+    }
+
+    if (subHead) {
+      var sub = subHead.parentElement;
+      var wasSubOpen = sub.classList.contains('open');
+      var parentBody = sub.parentElement;
+
+      // Close sibling subs inside the same card
+      var siblings = parentBody.querySelectorAll(':scope > .sub');
+      for (var j = 0; j < siblings.length; j++) {
+        if (siblings[j] !== sub) {
+          siblings[j].classList.remove('open');
+        }
+      }
+      sub.classList.toggle('open', !wasSubOpen);
+    }
+  });
+
+  // "Close all" button
+  var closeAllBtn = document.getElementById('closeAll');
+  closeAllBtn.addEventListener('click', function(){
+    var openItems = main.querySelectorAll('.item.open, .sub.open');
+    for (var i = 0; i < openItems.length; i++) {
+      openItems[i].classList.remove('open');
+    }
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  });
+
+  // Prevent accidental double-tap zoom on interactive areas
+  document.addEventListener('dblclick', function(e){
+    if (e.target.closest('.head, .sub-head')) {
+      e.preventDefault();
+    }
+  }, {passive: false});
+
+})();
+</script>
+</body>
+</html>

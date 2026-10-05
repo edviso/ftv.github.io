@@ -565,6 +565,12 @@
       </div>
 
       <div style="margin-top:18px;">
+        <button id="btn-copy-data" class="btn-info">Copiar datos del tueste</button>
+        <p id="copy-status" role="status" aria-live="polite" style="font-size:.9rem;line-height:1.5;"></p>
+        <div id="copy-fallback" hidden>
+          <label for="copy-text">Datos para copiar manualmente</label>
+          <textarea id="copy-text" readonly aria-describedby="copy-status"></textarea>
+        </div>
         <button id="btn-download-json" class="btn-primary">Descargar JSON</button>
         <button id="btn-back-home" class="btn-secondary">Volver al Inicio</button>
       </div>
@@ -952,6 +958,9 @@
     }
 
     function mostrarPantallaResultados(dataObj){
+      document.getElementById('copy-status').textContent = '';
+      document.getElementById('copy-fallback').hidden = true;
+      document.getElementById('copy-text').value = '';
       document.getElementById('res-fecha').textContent = dataObj.fecha || '';
       document.getElementById('res-tostador').textContent = dataObj.tostador || '';
       document.getElementById('res-variedad').textContent = dataObj.variedad || '';
@@ -1114,6 +1123,53 @@
 
       saveHistory(currentRoastExportData);
       mostrarPantallaResultados(currentRoastExportData);
+    });
+
+    function textoDatosTueste(data){
+      const campo = value => String(value ?? '').replace(/[\t\r\n]+/g, ' ');
+      const lines = [
+        'Tueste - Vinza Café',
+        `Fecha: ${campo(data.fecha)}`,
+        `Tostador: ${campo(data.tostador)}`,
+        `Variedad: ${campo(data.variedad)}`,
+        `Perfil: ${campo(data.perfil)}`,
+        `Fidelidad temporal: ${campo(data.score ?? 0)}%`,
+        '',
+        'Temperatura (°C)\tTiempo teórico\tTiempo real\tDiferencia (s)\tFase\tRoR (°C/min)'
+      ];
+      data.puntos_reales.slice(1).forEach(pt => {
+        const target = data.secuencia_teorica[pt.index];
+        const delta = Math.round(pt.deltaSeconds);
+        lines.push([
+          pt.tempValue,
+          target.timeLabel,
+          pt.timeLabel,
+          `${delta > 0 ? '+' : ''}${delta}`,
+          faseNombre(pt.fase || target.faseLetra),
+          pt.ror === '-' || pt.ror == null ? '-' : Math.round(pt.ror)
+        ].map(campo).join('\t'));
+      });
+      return lines.join('\n');
+    }
+
+    document.getElementById('btn-copy-data').addEventListener('click', async () => {
+      if(!currentRoastExportData) return;
+      const text = textoDatosTueste(currentRoastExportData);
+      const status = document.getElementById('copy-status');
+      const fallback = document.getElementById('copy-fallback');
+      const textarea = document.getElementById('copy-text');
+      fallback.hidden = true;
+      try{
+        await navigator.clipboard.writeText(text);
+        status.textContent = 'Datos copiados. Ya puedes pegarlos en otra aplicación.';
+      }catch(error){
+        textarea.value = text;
+        fallback.hidden = false;
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, text.length);
+        status.textContent = 'El navegador no permitió copiar automáticamente. Mantén pulsado el texto seleccionado y elige Copiar.';
+      }
     });
 
     document.getElementById('btn-download-json').addEventListener('click', () => {

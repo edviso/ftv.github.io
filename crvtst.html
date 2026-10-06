@@ -480,7 +480,7 @@
 10:30 | 204°C | D
 11:00 | 205°C | D
 11:30 | 205°C | D</textarea>
-        <p style="font-size:.85rem;line-height:1.5;">Una línea por hito: minutos:segundos | temperatura | fase. Fases: C = carga, S = secado, M = Maillard, 1 = primer crack, D = desarrollo.</p>
+        <p style="font-size:.85rem;line-height:1.5;">Una línea por hito: minutos:segundos | temperatura | fase. Fases: C = carga, S = secado, M = Maillard, PC o 1 = primer crack, D = desarrollo, F = final.</p>
       </div>
 
       <div class="row-controls">
@@ -655,17 +655,20 @@
       renderCurveSelector();
     }
 
-    function validCurveSequence(text){
+    function curveSequenceError(text){
       const lines = text.trim().split('\n');
+      if(lines.length < 2) return 'Introduce al menos dos hitos.';
       let previous = -1;
-      return lines.length >= 2 && lines.every((line, index) => {
-        const match = line.trim().match(/^(\d+):([0-5]\d)\s*\|\s*(\d+(?:\.\d+)?)\s*(?:°?C)?\s*\|\s*([CSM1D])\s*$/i);
-        if(!match) return false;
+      for(const [index, line] of lines.entries()){
+        const match = line.trim().match(/^(\d+):([0-5]\d)\s*\|\s*(\d+(?:\.\d+)?)\s*(?:°?C)?\s*\|\s*(PC|[CSM1DF])\s*$/i);
+        if(!match) return `Línea ${index + 1}: usa minutos:segundos | temperatura | fase (C, S, M, PC, 1, D o F). Ejemplo: 5:00 | 196°C | PC.`;
         const seconds = Number(match[1])*60 + Number(match[2]);
-        if(!Number.isFinite(seconds) || seconds <= previous || (index === 0 && seconds !== 0)) return false;
+        if(!Number.isFinite(seconds) || !Number.isFinite(Number(match[3]))) return `Línea ${index + 1}: el tiempo y la temperatura deben ser números válidos.`;
+        if(index === 0 && seconds !== 0) return 'El primer hito debe comenzar en 0:00.';
+        if(seconds <= previous) return `Línea ${index + 1}: el tiempo debe ser posterior al hito anterior.`;
         previous = seconds;
-        return true;
-      });
+      }
+      return '';
     }
 
     curveSelect.addEventListener('change', () => {
@@ -701,8 +704,9 @@
       if([defaultCurve, ...savedCurves].some(c => c.name.toLocaleLowerCase() === name.toLocaleLowerCase() && (c.id !== selectedCurveId || c.id === 'default'))){
         curveStatus.textContent = 'Ese nombre ya existe. Usa otro nombre para la nueva curva.';return;
       }
-      if(!validCurveSequence(sequence)){
-        curveStatus.textContent = 'Revisa la secuencia: al menos dos hitos, comienza en 0:00 y usa tiempos crecientes. Ejemplo: 0:30 | 88°C | S.';return;
+      const sequenceError = curveSequenceError(sequence);
+      if(sequenceError){
+        curveStatus.textContent = `Revisa la secuencia: ${sequenceError}`;return;
       }
       const id = !selectedCurveId || selectedCurveId === 'default' ? crypto.randomUUID() : selectedCurveId;
       const curve = {id, name, sequence};
@@ -799,8 +803,9 @@
       if(letra === 'C') return 'Carga';
       if(letra === 'S') return 'Secado';
       if(letra === 'M') return 'Maillard';
-      if(letra === '1') return 'Primer crack';
+      if(letra === '1' || letra === 'PC') return 'Primer crack';
       if(letra === 'D') return 'Desarrollo';
+      if(letra === 'F') return 'Final';
       return 'Fase';
     }
 

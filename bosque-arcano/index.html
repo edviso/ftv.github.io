@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#edece4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11151b" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bosque Arcano">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="Una búha druida, cuatro pruebas y un bosque que rescatar. Arcade retro de plataformas, sin dependencias.">
+<title>Bosque Arcano · La noche de las búhas</title>
+<link rel="manifest" id="manifest">
+<link rel="apple-touch-icon" id="apple-icon">
+<style>
+:root{color-scheme:light;--danger:#9b3c27;--bg:#edece4;--surface:#faf9f3;--ink:#242b31;--muted:#566262;--line:#c8cec1;--accent:#216c50;--soft:#dce7dd;--button:#e5e9dd;--board:#0a111e;--shadow:0 18px 55px #13282016}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--danger:#f0ab87;--bg:#11151b;--surface:#181e25;--ink:#e7e9db;--muted:#a3aea7;--line:#333e40;--accent:#b4efbc;--soft:#28382e;--button:#222d2c;--board:#0a111e;--shadow:0 18px 55px #0004}}
+:root[data-tema="oscuro"]{color-scheme:dark;--danger:#f0ab87;--bg:#11151b;--surface:#181e25;--ink:#e7e9db;--muted:#a3aea7;--line:#333e40;--accent:#b4efbc;--soft:#28382e;--button:#222d2c;--board:#0a111e;--shadow:0 18px 55px #0004}
+:root[data-tema="claro"]{color-scheme:light;--danger:#9b3c27;--bg:#edece4;--surface:#faf9f3;--ink:#242b31;--muted:#566262;--line:#c8cec1;--accent:#216c50;--soft:#dce7dd;--button:#e5e9dd;--board:#0a111e;--shadow:0 18px 55px #13282016}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;transition:background .2s,color .2s}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit;color:inherit;min-height:44px;cursor:pointer;touch-action:manipulation}button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}button{border:1px solid var(--line);background:var(--button);border-radius:6px}button:hover{border-color:var(--accent)}.page{max-width:1190px;margin:auto;padding:22px 18px 16px}header{display:flex;align-items:center;gap:12px;margin-bottom:22px}.mark{width:44px;height:44px;background:var(--soft);display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;color:var(--accent);font-size:27px}h1{font-family:system-ui,sans-serif;font-size:19px;letter-spacing:-.6px;line-height:1;margin:0}.eyebrow{font-size:12px;letter-spacing:2px;color:var(--muted);margin-top:7px}.top-actions{margin-left:auto;display:flex;gap:6px}.icon-btn{width:44px;font-size:19px;background:transparent}.icon-btn[aria-pressed="true"]{background:var(--soft);border-color:var(--accent);color:var(--accent)}.layout{display:grid;gap:26px}.cabinet{min-width:0}.hud{display:grid;grid-template-columns:1fr 1.2fr .8fr .8fr;gap:8px;padding:15px 12px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0}.stat{font-size:12px;letter-spacing:1px;color:var(--muted)}.stat strong{display:block;margin-top:6px;font-size:19px;font-weight:500;letter-spacing:1px;color:var(--ink)}.stat.high strong{color:var(--accent)}#lives{color:var(--accent);letter-spacing:3px}.stagebar{background:#131e29;display:flex;align-items:center;justify-content:space-between;padding:9px 13px;color:#bbd3c0;font-size:12px;letter-spacing:1px;border:1px solid #344b4d}.stagebar span:last-child{color:#81baa4}.screen{position:relative;background:var(--board);aspect-ratio:640/700;overflow:hidden;border:1px solid #344b4d;border-top:0;box-shadow:var(--shadow)}canvas{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none}.screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0,transparent 3px,#00000009 3px,#00000009 4px);z-index:2}.overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;background:linear-gradient(#07121a55,#0a1023c9 35%,#0a1023e8 78%,#07121a88);color:#edf0d8;z-index:3}.overlay[hidden]{display:none}.overline{font-size:12px;letter-spacing:3px;color:#abddba;margin-bottom:15px}.overlay h2{font-family:system-ui,sans-serif;font-weight:900;font-size:clamp(32px,7vw,62px);letter-spacing:-2px;line-height:.98;margin:0;text-shadow:3px 3px #38254e}.overlay h2 em{font-style:normal;color:#bceec4}.overlay .story{max-width:320px;color:#c9cec7;font:13px/1.7 ui-monospace,monospace;margin:20px 0 26px}.primary{color:#11271d;background:#b5edbd;border:0;padding:0 28px;min-height:50px;font-size:12px;font-weight:bold;letter-spacing:1px;box-shadow:0 4px 0 #4e795b;border-radius:4px}.primary:active{transform:translateY(2px);box-shadow:0 2px 0 #4e795b}.hint{font-size:12px;letter-spacing:1px;color:#aab8b9;margin:17px 0 0}.legend-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 13px;background:var(--surface);border:1px solid var(--line);border-top:0;border-radius:0 0 9px 9px;font-size:12px;color:var(--muted)}.live-dot{display:inline-block;width:6px;height:6px;background:var(--accent);border-radius:50%;margin-right:6px}.touch{display:flex;justify-content:space-between;align-items:center;padding:16px 0 4px;gap:15px;user-select:none;-webkit-user-select:none}.dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,46px);gap:5px}.dpad button{font-size:21px;touch-action:none}.dpad .up{grid-column:2}.dpad .left{grid-row:2;grid-column:1}.dpad .down{grid-row:2;grid-column:2}.dpad .right{grid-row:2;grid-column:3}.jump{border-radius:50%;width:87px;height:87px;background:var(--soft);border:1px solid var(--accent);color:var(--accent);touch-action:none;font-size:12px;font-weight:bold;letter-spacing:1px;box-shadow:0 4px 0 var(--line)}.pressed{background:var(--accent)!important;color:var(--bg)!important;transform:translateY(2px)}.touch-caption{font-size:12px;letter-spacing:1px;color:var(--muted)}aside{padding-top:7px}.chapter-tag{color:var(--accent);font-size:12px;letter-spacing:2px}.sidebar-title{font-family:system-ui,sans-serif;font-weight:750;letter-spacing:-1.5px;font-size:38px;line-height:1.05;margin:15px 0}.intro{font-family:system-ui,sans-serif;color:var(--muted);line-height:1.6;font-size:14px;margin-bottom:25px}.levels{border-top:1px solid var(--line)}.level{display:flex;gap:13px;padding:16px 0;border-bottom:1px solid var(--line);opacity:1}.level.active{opacity:1}.level .num{font-size:12px;border:1px solid var(--line);border-radius:50%;width:29px;height:29px;display:grid;place-items:center;flex-shrink:0}.level.active .num{background:var(--soft);border-color:var(--accent);color:var(--accent)}.level h3{font-size:12px;letter-spacing:.1px;margin:1px 0 6px}.level p{margin:0;color:var(--muted);font:12px/1.5 system-ui,sans-serif}.instructions{margin-top:26px}.label{font-size:12px;letter-spacing:1.8px;color:var(--muted);margin-bottom:13px}.key-row{display:flex;justify-content:space-between;align-items:center;margin:9px 0;font-size:12px;color:var(--muted)}kbd{font:11px ui-monospace,monospace;border:1px solid var(--line);background:var(--surface);padding:6px 8px;border-radius:3px;color:var(--ink)}.note{font:12px/1.6 system-ui,sans-serif;border-left:2px solid var(--accent);padding:2px 0 2px 12px;margin-top:24px;color:var(--muted)}footer{display:flex;justify-content:space-between;gap:12px;margin-top:22px;padding-top:15px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.5px;color:var(--muted)}footer a{color:var(--accent);display:inline-flex;align-items:center;min-height:40px;text-decoration:none}footer span{align-self:center}.sound-label{font-size:12px}#announcement{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(min-width:850px){.page{padding:30px 30px 18px}.layout{grid-template-columns:minmax(0,650px) minmax(245px,1fr);gap:48px}header{margin-bottom:30px}h1{font-size:22px}.eyebrow{font-size:12px}.touch{display:none}@media(pointer:coarse){.touch{display:flex}}}
+@media(max-width:849px){header .mark{width:36px;height:40px;flex-shrink:0}header .icon-btn{width:40px;min-height:40px}header .top-actions{gap:4px}header{gap:10px}header h1{font-size:17px;letter-spacing:-.5px}header .eyebrow{display:none}.stagebar{flex-wrap:wrap;gap:5px}.page{max-width:600px}.screen{max-height:calc(100svh - 312px);min-height:260px;aspect-ratio:640/700}.screen canvas{object-fit:contain}.cabinet{display:flex;flex-direction:column}.screen{width:100%}aside{display:none}header{margin-bottom:15px}.hud{padding:11px}.stat strong{font-size:17px}.touch-caption{display:none}footer{margin-top:12px}.overlay .story{font-size:12px;margin:15px 0 20px}.overlay h2{font-size:clamp(30px,8vw,48px)}.overline{margin-bottom:10px}.hint{margin-top:12px;font-size:12px}}
+@media(max-height:520px) and (orientation:landscape){.page{max-width:100%;padding:8px 16px}header,aside,footer,.legend-strip{display:none}.layout{display:block}.cabinet{width:min(65vw,500px);margin:auto}.screen{max-height:none;height:calc(100svh - 118px);min-height:180px}.hud{padding:5px 10px}.stat strong{font-size:14px;margin-top:3px}.stagebar{padding:5px 10px}.touch{position:fixed;inset:0;pointer-events:none;padding:0 16px;align-items:center}.touch button{pointer-events:auto}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px)}.jump{width:74px;height:74px}.overlay .story{display:none}.overlay h2{font-size:30px}.primary{margin-top:15px;min-height:42px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}.screen::after{display:none}}
+/* Safari/iPhone: respeta la cámara y el indicador de inicio al instalar la PWA. */
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px)}
+body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.page{padding:calc(22px + var(--safe-top)) max(18px,var(--safe-right)) calc(16px + var(--safe-bottom)) max(18px,var(--safe-left))}
+.touch button,.screen canvas{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.touch{overscroll-behavior:contain}
+@media(min-width:850px){.page{padding:calc(30px + var(--safe-top)) max(30px,var(--safe-right)) calc(18px + var(--safe-bottom)) max(30px,var(--safe-left))}}
+@media(max-width:849px){.screen{min-height:180px;max-height:calc(100vh - 410px - var(--safe-top) - var(--safe-bottom));max-height:calc(100svh - 410px - var(--safe-top) - var(--safe-bottom))}}
+@media(max-width:849px) and (max-height:740px) and (orientation:portrait){.legend-strip{display:none}.screen{max-height:calc(100vh - 360px - var(--safe-top) - var(--safe-bottom));max-height:calc(100svh - 360px - var(--safe-top) - var(--safe-bottom))}.overlay{padding:12px}.overlay .story{display:none}.overlay .primary{margin-top:14px}}
+@media(max-width:849px) and (max-height:620px) and (orientation:portrait){.overlay .hint{display:none}}
+@media(max-height:520px) and (orientation:landscape){.page{padding:calc(8px + var(--safe-top)) max(16px,var(--safe-right)) calc(8px + var(--safe-bottom)) max(16px,var(--safe-left))}.screen{max-height:none;height:calc(100vh - 118px - var(--safe-top) - var(--safe-bottom));height:calc(100svh - 118px - var(--safe-top) - var(--safe-bottom))}.touch{padding:var(--safe-top) max(16px,var(--safe-right)) var(--safe-bottom) max(16px,var(--safe-left))}}
+.magicbar{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px;padding:6px 12px;background:var(--surface);color:var(--muted);border:1px solid var(--line);border-bottom:0;font-size:12px;line-height:16px}.magicbar strong{color:var(--accent)}.magicbar[data-power="freeze"],.magicbar[data-power="invincible"]{background:var(--soft);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="page">
+<header><div class="mark" aria-hidden="true"><canvas id="brand" width="64" height="64" style="width:32px;height:32px"></canvas></div><div><h1>BOSQUE ARCANO</h1><div class="eyebrow">LA NOCHE DE LAS BÚHAS</div></div><div class="top-actions"><button class="icon-btn" id="sound" aria-label="Activar sonido" title="Sonido">♪</button><button class="icon-btn" id="theme" aria-label="Cambiar tema" title="Tema claro u oscuro">◐</button><button class="icon-btn" id="pause" aria-label="Pausar juego" title="Pausar (P)">Ⅱ</button></div></header>
+<main class="layout">
+<section class="cabinet" aria-label="Máquina de arcade">
+<div class="hud"><div class="stat">SCORE<strong id="score">000000</strong></div><div class="stat high">HIGH SCORE<strong id="high">000000</strong></div><div class="stat">LIVES<strong id="lives">♥♥♥</strong></div><div class="stat">TIME<strong id="time">150</strong></div></div>
+<div class="magicbar" aria-label="Magia del gato blanco: cada punto añade 10 segundos al poder final, sobre 40 segundos de base"><span>MAGIA ✦ <strong id="magic-points">0</strong>/4</span><span id="magic-effect">BONUS +0s</span></div>
+<div class="stagebar"><span id="stage-name">01 / EL ÁRBOL INCLINADO</span><span id="stage-task">RESCATA A LAS CRÍAS</span></div>
+<div class="screen"><canvas id="game" width="640" height="700" tabindex="0" role="img" aria-label="Bosque Arcano. Plataformas y escaleras. Usa las flechas y espacio o los botones táctiles."></canvas>
+<div id="overlay" class="overlay"><div class="overline" id="overline">UN ARCADE BAJO LA LUNA</div><h2 id="overlay-title">BOSQUE<br><em>ARCANO</em></h2><p class="story" id="overlay-text">El Sapo Brujo ha encerrado a tus crías.<br>Sube entre las ramas. Rompe el hechizo.<br>Salta sobre el brujo, recoge su llave y abre la jaula.</p><button class="primary" id="action">COMENZAR AVENTURA ↗</button><p class="hint" id="overlay-hint">PRESS SPACE TO START · O TOCA COMENZAR</p></div></div>
+<div class="legend-strip"><span><i class="live-dot"></i>1 JUGADOR · 4 PANTALLAS</span><span id="status">TRES VIDAS. UNA FAMILIA.</span></div>
+<div class="touch" aria-label="Controles táctiles"><div class="dpad"><button class="up" data-key="ArrowUp" aria-label="Subir escalera">↑</button><button class="left" data-key="ArrowLeft" aria-label="Mover a la izquierda">←</button><button class="down" data-key="ArrowDown" aria-label="Bajar escalera">↓</button><button class="right" data-key="ArrowRight" aria-label="Mover a la derecha">→</button></div><span class="touch-caption">EL BOSQUE TE NECESITA</span><button class="jump" data-key="Space" aria-label="Saltar">SALTAR</button></div>
+</section>
+<aside><div class="chapter-tag">FANTASÍA / ARCADE / 1981</div><h2 class="sidebar-title">Pequeñas alas.<br>Una gran aventura.</h2><p class="intro">Eres una búha druida en un bosque encantado. En cada nivel, salta sobre el Sapo Brujo, recoge su llave y abre la jaula de tus crías.</p>
+<div class="levels"><div class="level active" data-level="0"><span class="num">01</span><div><h3>El Árbol Inclinado</h3><p>Salta las pociones. Asciende por las cuerdas.</p></div></div><div class="level" data-level="1"><span class="num">02</span><div><h3>Las Corrientes de Maná</h3><p>Viaja en plataformas de luz. Evita los espíritus.</p></div></div><div class="level" data-level="2"><span class="num">03</span><div><h3>Las Esferas de Rebote</h3><p>Lee el ritmo. Encuentra tu momento.</p></div></div><div class="level" data-level="3"><span class="num">04</span><div><h3>La Caída de los Sellos</h3><p>Rompe los sellos. Consigue la llave y abre la jaula.</p></div></div></div>
+<div class="instructions"><div class="label">CÓMO JUGAR</div><div class="key-row"><span>Moverse</span><span><kbd>←</kbd> <kbd>→</kbd></span></div><div class="key-row"><span>Subir / bajar cuerdas</span><span><kbd>↑</kbd> <kbd>↓</kbd></span></div><div class="key-row"><span>Saltar</span><kbd>ESPACIO</kbd></div><div class="key-row"><span>Pausa</span><kbd>P / ESC</kbd></div></div><p class="note">+100 por saltar un peligro. +1.000 por pantalla y +10 por cada segundo restante. Cae sobre la cabeza del brujo para obtener su llave. Toca al gato blanco para sumar magia; el último regala un poder de 40 segundos más 10 por cada punto mágico (hasta 80 segundos). En Android y iPhone, usa dos dedos para moverte y saltar.</p></aside>
+</main>
+<footer><span>HECHO DE PÍXELES Y MAGIA.</span><a id="download" download="index.html" href="#">↓ GUARDAR HTML</a></footer>
+</div><div id="announcement" role="status" aria-live="polite"></div>
+<script id="game-code">
+(() => {
+'use strict';
+const $=s=>document.querySelector(s), canvas=$('#game'), ctx=canvas.getContext('2d',{alpha:false});
+const W=640,H=700, STEP=1/60, GRAVITY=850;
+const MAGIC_BASE_SECONDS=40,MAGIC_SECONDS_PER_POINT=10;
+const names=['EL ÁRBOL INCLINADO','LAS CORRIENTES DE MANÁ','LAS ESFERAS DE REBOTE','LA CAÍDA DE LOS SELLOS'];
+const tips=['Salta las pociones y sube por las cuerdas.','Súbete a los ascensores luminosos. Evita los espíritus.','Cruza bajo las esferas cuando estén arriba.','Pisa los sellos, salta sobre el brujo y consigue su llave.'];
+const C={sky:'#0a111e',wood:'#574451',edge:'#ba8c70',moss:'#63896b',mint:'#a5f5bf',purple:'#b18cfc',gold:'#f7d082',pale:'#f3efda'};
+let state='title',level=0,score=0,high=0,lives=3,time=150,clock=0,world=0,spawn=0,serial=0,player,plats=[],ladders=[],movers=[],hazards=[],runes=[],particles=[],floats=[],stateTimer=0,seed=817;
+let boss=null,keyItem=null,cageOpen=false,notice={text:'',t:0};
+let cat=null,magicPower={type:null,left:0},enemyClock=0;
+const catClaims=new Set();
+let muted=true,audio=null,last=0,acc=0,jumpBuffer=0,themeMode=0;
+const held=new Set(),touches=new Map(),jumpScored=new Set();
+try{high=Number(localStorage.getItem('bosque-record'))||0;themeMode=Number(localStorage.getItem('bosque-theme'))||0;}catch{}
+const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const yAt=(p,x)=>p.y+(p.slope||0)*(x-p.x);
+const rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+function text(s,x,y,size=12,color=C.pale,align='left'){ctx.fillStyle=color;ctx.font=`${size}px monospace`;ctx.textAlign=align;ctx.fillText(s,Math.round(x),Math.round(y));ctx.textAlign='left';}
+// Un solo contexto y una pista PCM en bucle: tocar flechas nunca detiene el audio.
+// Referencia del motivo breve inicial (un compás de Hammer); el resto es original:
+// https://themushroomkingdom.net/media/dk-arcade/mid
+let masterGain=null,musicGain=null,musicBuffer=null,musicSource=null,resuming=null;
+const effects=new Set(),jingleTimers=new Set();
+function soundUI(){const b=$('#sound');b.textContent=muted?'♪':'♫';b.setAttribute('aria-label',muted?'Activar sonido':'Silenciar sonido');b.setAttribute('aria-pressed',String(!muted));b.title=muted?'Activar música y efectos':'Silenciar música y efectos';}
+function makeMusic(){
+ const rate=24000,beat=60/144,length=32*beat,buffer=audio.createBuffer(1,Math.ceil(rate*length),rate),out=buffer.getChannelData(0);
+ function note(midi,start,duration,volume,bass=false){
+  const freq=440*2**((midi-69)/12),offset=Math.round(start*beat*rate),count=Math.round(duration*beat*rate);
+  for(let i=0;i<count&&offset+i<out.length;i++){const t=i/rate,phase=t*freq*Math.PI*2,attack=Math.min(1,t/.006),release=Math.min(1,(count-i)/(rate*.025));const wave=bass?2/Math.PI*Math.asin(Math.sin(phase)):(Math.sin(phase)+Math.sin(phase*3)/3+Math.sin(phase*5)/5)*.72;out[offset+i]+=wave*attack*release*volume;}
+ }
+ // Ocho compases. Solo el primero usa un motivo corto de Hammer; respuesta y bajo propios.
+ const bars=[
+  [[60,0,.5],[60,.75,.5],[60,1.25,.5],[60,1.625,.5],[60,2.25,.5],[64,2.75,.5],[60,3.25,.5],[64,3.625,.3]],
+  [[67,0,.4],[64,.5,.4],[67,1,.65],[69,1.75,.4],[67,2.25,.4],[64,2.75,.4],[62,3.25,.6]],
+  [[69,0,.65],[72,.75,.4],[71,1.25,.4],[69,1.75,.65],[67,2.5,.4],[64,3,.7]],
+  [[65,0,.4],[69,.5,.4],[72,1,.65],[69,1.75,.4],[65,2.25,.4],[64,2.75,.4],[62,3.25,.6]],
+  [[64,0,.4],[67,.5,.4],[72,1,.65],[71,1.75,.4],[69,2.25,.4],[67,2.75,.7]],
+  [[69,0,.65],[64,.75,.4],[69,1.25,.4],[72,1.75,.65],[71,2.5,.4],[69,3,.7]],
+  [[65,0,.4],[69,.5,.4],[67,1,.4],[65,1.5,.4],[64,2,.65],[62,2.75,.4],[60,3.25,.6]],
+  [[62,0,.4],[67,.5,.4],[71,1,.65],[69,1.75,.4],[67,2.25,.4],[62,2.75,.4],[59,3.25,.55]]
+ ];
+ const roots=[36,36,33,29,36,33,29,31];
+ bars.forEach((bar,b)=>{bar.forEach(([pitch,start,duration])=>note(pitch,b*4+start,duration,.095));for(let i=0;i<4;i++){note(roots[b]+(i%2?7:0),b*4+i,.65,.075,true);note(roots[b]+12,b*4+i+.5,.2,.025,true);}});
+ return buffer;
+}
+function stopMusic(){if(musicSource){const source=musicSource;musicSource=null;try{source.stop();}catch{}source.disconnect();}}
+function syncMusic(){
+ const wanted=!muted&&!document.hidden&&(state==='title'||state==='play');
+ if(!wanted||!audio||audio.state!=='running'){stopMusic();return;}
+ if(musicSource)return;
+ musicBuffer??=makeMusic();const source=audio.createBufferSource();source.buffer=musicBuffer;source.loop=true;source.connect(musicGain);source.start();musicSource=source;
+}
+function stopEffects(){for(const id of jingleTimers)clearTimeout(id);jingleTimers.clear();for(const o of effects){try{o.stop();}catch{}}effects.clear();}
+function tone(freq,duration=.1,type='square',vol=.04,slide=0){
+ if(muted||!audio||audio.state!=='running'||document.hidden)return;
+ try{const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime;o.type=type;o.frequency.setValueAtTime(freq,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+duration);g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(vol,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(masterGain);effects.add(o);o.onended=()=>{effects.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration);}catch{}
+}
+function unlock(){
+ if(muted)return;
+ try{
+  if(audio?.state==='closed'){audio=null;masterGain=null;musicGain=null;musicBuffer=null;musicSource=null;resuming=null;}
+  if(!audio){audio=new(window.AudioContext||window.webkitAudioContext)();masterGain=audio.createGain();masterGain.gain.value=.85;masterGain.connect(audio.destination);musicGain=audio.createGain();musicGain.gain.value=.48;musicGain.connect(masterGain);audio.addEventListener('statechange',syncMusic);}
+  masterGain.gain.setValueAtTime(.85,audio.currentTime);
+  if(audio.state!=='running'&&!resuming){const pending=audio.resume();resuming=pending;pending.then(syncMusic).catch(()=>{}).finally(()=>{if(resuming===pending)resuming=null;});}
+  syncMusic();
+ }catch{}
+}
+function toggleSound(){muted=!muted;soundUI();if(muted){stopMusic();stopEffects();if(masterGain&&audio)masterGain.gain.setValueAtTime(0,audio.currentTime);}else unlock();}
+function melody(){[392,494,587,784].forEach((f,i)=>{const id=setTimeout(()=>{jingleTimers.delete(id);tone(f,.16,'triangle',.055);},i*105);jingleTimers.add(id);});}
+function addScore(n,x,y){score+=n;high=Math.max(high,score);if(x!==undefined)floats.push({x,y,t:1.1,s:'+'+n});save();hud();}
+function save(){try{localStorage.setItem('bosque-record',String(high));}catch{}}
+function hud(){ $('#score').textContent=String(score).padStart(6,'0');$('#high').textContent=String(high).padStart(6,'0');$('#lives').textContent='♥'.repeat(Math.max(0,lives))||'—';$('#time').textContent=String(Math.max(0,Math.ceil(time))).padStart(3,'0');$('#time').style.color=time<30?'var(--danger)':'';$('#stage-name').textContent=String(level+1).padStart(2,'0')+' / '+names[level];$('#stage-task').textContent=questLabel();$('#magic-points').textContent=catClaims.size;$('#magic-effect').textContent=magicPower.left>0?(frozen()?'CONGELACIÓN ':'INVENCIBLE ')+Math.ceil(magicPower.left)+'s':'BONUS +'+catClaims.size*MAGIC_SECONDS_PER_POINT+'s';$('.magicbar').dataset.power=magicPower.type||'';document.querySelectorAll('[data-level]').forEach((el,i)=>el.classList.toggle('active',i===level));}
+function announce(s){$('#announcement').textContent=s;}
+function show(over,title,body,button,hint='ESPACIO O TOCA EL BOTÓN'){$('#overlay').hidden=false;$('#overline').textContent=over;$('#overlay-title').innerHTML=title;$('#overlay-text').textContent=body;$('#action').textContent=button;$('#overlay-hint').textContent=hint;announce(body);}
+function clearKeys(){held.clear();touches.clear();jumpBuffer=0;document.querySelectorAll('.pressed').forEach(el=>el.classList.remove('pressed'));}
+function frozen(){return magicPower.type==='freeze'&&magicPower.left>0;}
+function invincible(){return magicPower.type==='invincible'&&magicPower.left>0;}
+function protectedFromEnemies(){return player.inv>0||invincible();}
+function tickMagic(dt){
+ if(magicPower.left<=0)return;
+ magicPower.left=Math.max(0,magicPower.left-dt);
+ if(magicPower.left<1e-8){magicPower.left=0;magicPower.type=null;questMessage('El poder del gato ha terminado.');hud();}
+}
+function collectCat(){
+ const p=player;
+ if(cat.taken||Math.abs(p.x-cat.x)>=25||p.y<cat.y-46||p.y-p.h>cat.y+2)return;
+ cat.taken=true;catClaims.add(level);floats.push({x:cat.x,y:cat.y-54,t:1.4,s:'+1 MAGIA'});burst(cat.x,cat.y-20,C.mint,24);tone(780,.2,'triangle',.06,1380);
+ if(level===3){
+  const duration=MAGIC_BASE_SECONDS+catClaims.size*MAGIC_SECONDS_PER_POINT;
+  magicPower={type:Math.random()<.5?'freeze':'invincible',left:duration};
+  questMessage(frozen()?`¡Magia +1! Enemigos quietos: ${duration} segundos.`:`¡Magia +1! Búha invencible: ${duration} segundos.`);
+ }else questMessage('¡Magia +1! +10 segundos para tu poder final.');
+ hud();
+}
+function drawCat(){
+ ctx.save();ctx.translate(Math.round(cat.x),Math.round(cat.y));
+ // Cola y cuerpo blancos; el sombrero y los lentes se dibujan en píxeles.
+ rect(12,-17,6,5,'#e9edf0');rect(16,-24,5,10,'#e9edf0');rect(15,-27,5,5,'#e9edf0');
+ rect(-11,-21,23,18,'#e9edf0');rect(-9,-5,7,5,'#fff5df');rect(4,-5,7,5,'#fff5df');rect(-5,-19,12,14,'#fff5df');
+ rect(-13,-36,26,19,'#f4f1df');rect(-13,-41,7,10,'#f4f1df');rect(6,-41,7,10,'#f4f1df');rect(-11,-38,3,4,'#cba3b2');rect(8,-38,3,4,'#cba3b2');
+ rect(-8,-31,4,5,'#25403c');rect(5,-31,4,5,'#25403c');ctx.strokeStyle='#352e46';ctx.lineWidth=2;ctx.strokeRect(-12,-33,11,10);ctx.strokeRect(2,-33,11,10);rect(-1,-30,3,2,'#352e46');rect(-2,-23,4,3,'#c9849b');
+ rect(-17,-42,35,5,'#65986b');rect(-12,-49,26,8,'#366749');rect(-8,-57,19,9,'#427b50');rect(-4,-64,12,8,'#427b50');rect(0,-69,6,7,'#427b50');rect(-12,-45,26,3,'#dfc17a');rect(-1,-54,5,5,C.gold);
+ if(cat.taken)text('✓',0,-78,14,C.mint,'center');else text(level===3?'PODER ?':'+1 MAGIA',0,-78,11,C.mint,'center');
+ ctx.restore();
+}
+function questMessage(message){notice={text:message,t:2.5};$('#status').textContent=message;announce(message);}
+function questLabel(){
+ if(cageOpen)return 'JAULA ABIERTA';
+ const label=keyItem.state==='hidden'?'LLAVE: BRUJO':keyItem.state==='dropped'?'RECOGE LA LLAVE':'LLAVE ✓';
+ return level===3?`SELLOS ${runes.filter(r=>r.off).length}/4 · ${label}`:keyItem.state==='collected'?'LLAVE ✓ · ABRE JAULA':label;
+}
+function updateQuest(dt,previousY){
+ const p=player,top=plats.at(-1),head=boss.y-49;
+ if(!frozen())boss.stun=Math.max(0,boss.stun-dt);
+ if(keyItem.state==='dropped'){
+  const floor=yAt(top,keyItem.x)-14;
+  keyItem.vy+=GRAVITY*dt;keyItem.y=Math.min(floor,keyItem.y+keyItem.vy*dt);
+  if(keyItem.y===floor)keyItem.vy=0;
+ }
+ // Solo una caída sobre la cabeza cuenta como ataque; tocar de lado no entrega la llave.
+ if(!p.ladder&&p.vy>0&&previousY<=head+2&&p.y>=head&&Math.abs(p.x-boss.x)<26){
+  p.y=head;p.vy=-315;p.ground=null;p.ladder=null;p.coyote=0;p.inv=Math.max(p.inv,.45);jumpBuffer=0;boss.stun=3.5;
+  burst(boss.x,head,C.gold,18);tone(180,.16,'triangle',.06,650);
+  if(keyItem.state==='hidden'){
+   keyItem.state='dropped';keyItem.x=boss.x+72;keyItem.y=head-5;keyItem.vy=-70;
+   addScore(200,boss.x,head-25);questMessage('¡Brujo aturdido! Recoge la llave dorada.');hud();
+  }
+ }else if(boss.stun===0&&!protectedFromEnemies()&&Math.abs(p.x-boss.x)<24&&p.y>head+3&&p.y-p.h<boss.y-3){
+  die('El brujo te ha alcanzado. Cae sobre su cabeza');return;
+ }
+ if(keyItem.state==='dropped'&&Math.abs(p.x-keyItem.x)<24&&Math.abs(p.y-17-keyItem.y)<25){
+  keyItem.state='collected';addScore(100,keyItem.x,keyItem.y-20);burst(keyItem.x,keyItem.y,C.gold,20);tone(980,.2,'triangle',.06,1450);
+  questMessage(level===3&&runes.some(r=>!r.off)?'Llave conseguida. Desactiva los sellos y abre la jaula.':'¡Llave conseguida! Ve hasta la jaula.');hud();
+ }
+ if(p.ground===top&&p.x>563&&!cageOpen){
+  if(keyItem.state!=='collected'){
+   if(notice.t<=0)questMessage(keyItem.state==='hidden'?'Falta la llave: salta sobre el brujo.':'Recoge la llave que soltó el brujo.');
+  }else if(level===3&&runes.some(r=>!r.off)){
+   if(notice.t<=0)questMessage('La llave no basta: desactiva los cuatro sellos.');
+  }else{cageOpen=true;keyItem.state='used';burst(575,yAt(top,575)-25,C.gold,32);hud();finish();}
+ }
+}
+function drawKey(x,y,scale=1){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(scale,scale);ctx.strokeStyle=C.gold;ctx.lineWidth=3;ctx.strokeRect(-11,-6,11,11);rect(1,-2,17,3,C.gold);rect(12,0,3,6,C.gold);rect(6,0,3,4,C.gold);rect(-8,-3,3,3,C.pale);ctx.restore();}
+function platform(x,y,w,slope=0){const p={x,y,w,slope};plats.push(p);return p;}
+function ladder(x,lower,upper){ladders.push({x,bottom:yAt(lower,x),top:yAt(upper,x),lower,upper});}
+function elevator(x,low,high,w,period,phase=0){const p={x,y:low,w,slope:0,low,high,period,phase,dy:0,moving:true};movers.push(p);return p;}
+function spirit(p,x1,x2,speed,phase=0){hazards.push({id:++serial,type:'spirit',p,x1,x2,speed,phase,x:x1,y:p.y-14,r:11,t:0});}
+function build(n){
+ level=n;world=0;enemyClock=0;spawn=1.4;hazards=[];plats=[];ladders=[];movers=[];runes=[];particles=[];floats=[];jumpScored.clear();serial=0;time=[150,150,135,160][n];
+ if(n===0){
+  for(let i=0;i<6;i++)platform(26,650-i*101,588,i%2===0?-.035:.035);
+  for(let i=0;i<5;i++){ladder(i%2===0?560:80,plats[i],plats[i+1]);if(i===1||i===3)ladder(310,plats[i],plats[i+1]);}
+ }else if(n===1){
+  const base=platform(26,650,588),a=platform(26,535,160),b=platform(260,455,130),c=platform(460,355,154),d=platform(250,245,140),top=platform(26,140,588);
+  ladder(85,base,a);elevator(190,605,425,60,7);elevator(400,465,265,60,7.5,1);elevator(180,350,150,60,8,2);
+  spirit(b,280,370,42);spirit(c,480,595,46,1.7);spirit(top,270,460,38,.4);
+ }else if(n===2){
+  const base=platform(26,650,588),a=platform(26,475,180),b=platform(210,390,210),c=platform(170,260,444),top=platform(26,140,588);
+  elevator(70,610,300,64,9);elevator(490,410,150,64,8,2);ladder(310,b,c);ladder(575,c,top);
+  spirit(a,50,180,37);spirit(b,235,390,36);
+  for(let i=0;i<3;i++)hazards.push({id:++serial,type:'orb',x:275+i*125,y:160,r:12,phase:i*.63,t:0});
+ }else{
+  for(let i=0;i<5;i++)platform(26,650-i*120,588);
+  for(let i=0;i<4;i++)ladder(i%2===0?555:85,plats[i],plats[i+1]);
+  [480,155,475,305].forEach((x,i)=>runes.push({x,y:plats[i+1].y,off:false,p:plats[i+1]}));
+  spirit(plats[1],160,410,43);spirit(plats[2],240,540,45,1.5);spirit(plats[3],120,395,48,.5);spirit(plats[4],360,520,42,1);
+ }
+ const top=plats.at(-1);boss={x:165,y:yAt(top,165),stun:0};keyItem={state:'hidden',x:boss.x,y:boss.y-40,vy:0};cageOpen=false;notice={text:'',t:0};
+ const catPlatform=[plats[1],plats[1],plats[3],plats[0]][n],catX=[380,135,220,270][n];cat={x:catX,y:yAt(catPlatform,catX),p:catPlatform,taken:catClaims.has(n)};
+ const base=plats[0];player={x:62,y:yAt(base,62),vx:0,vy:0,w:19,h:31,ground:base,ladder:null,coyote:.1,inv:2.5,face:1,walk:0,prevX:62};
+ clearKeys();hud();$('#status').textContent=tips[n];
+}
+function start(){score=0;lives=3;seed=817;catClaims.clear();magicPower={type:null,left:0};build(0);state='play';$('#overlay').hidden=true;unlock();melody();last=performance.now();acc=0;announce('Nivel 1. '+tips[0]);}
+function action(){unlock();if(state==='title'||state==='gameover'||state==='win')start();else if(state==='paused'){state='play';$('#overlay').hidden=true;last=performance.now();acc=0;}else if(state==='clear'){build(level+1);state='play';$('#overlay').hidden=true;announce('Nivel '+(level+1)+'. '+tips[level]);}}
+function pause(){if(state==='play'){state='paused';clearKeys();show('UN RESPIRO BAJO LAS ESTRELLAS','PAUSA','La aventura te espera.','CONTINUAR ↗');}else if(state==='paused')action();}
+function burst(x,y,color,count=14){for(let i=0;i<count;i++){const a=rnd()*Math.PI*2,v=35+rnd()*100;particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:.5+rnd()*.65,color});}}
+function die(reason){if(state!=='play')return;lives--;stateTimer=1.25;state='dying';player.vx=0;player.vy=-150;player.ladder=null;burst(player.x,player.y-15,C.purple,25);tone(180,.5,'sawtooth',.045,45);$('#status').textContent=reason;announce(reason+'. Quedan '+lives+' vidas.');clearKeys();hud();save();}
+function finish(){if(state!=='play'||!cageOpen||keyItem.state!=='used'||(level===3&&runes.some(r=>!r.off)))return;addScore(1000+Math.ceil(time)*10);melody();clearKeys();if(level===3){state='collapse';stateTimer=0;burst(305,170,C.gold,70);$('#status').textContent='¡EL HECHIZO SE HA ROTO!';}else{state='clear';stateTimer=2.7;show('PANTALLA '+(level+1)+' COMPLETADA','SIGUE LA<br><em>MAGIA</em>','¡Abriste la jaula! El brujo huye al siguiente claro. Bonus: '+Math.ceil(time)*10+' puntos.','SIGUIENTE PANTALLA ↗','CONTINÚA AUTOMÁTICAMENTE…');}}
+function movePlatforms(dt){for(const p of movers){const old=p.y,q=((world+p.phase)%p.period)/p.period,tri=q<.5?q*2:(1-q)*2;p.y=p.low+(p.high-p.low)*tri;p.dy=p.y-old;}}
+function updatePlayer(dt){
+ const p=player,oldX=p.x,previousY=p.y;p.prevX=oldX;p.inv=Math.max(0,p.inv-dt);p.coyote=p.ground?.11:Math.max(0,p.coyote-dt);jumpBuffer=Math.max(0,jumpBuffer-dt);
+ if(p.ground?.moving)p.y+=p.ground.dy;
+ const horizontal=(held.has('ArrowRight')?1:0)-(held.has('ArrowLeft')?1:0),vertical=(held.has('ArrowDown')?1:0)-(held.has('ArrowUp')?1:0);
+ if(vertical&&!p.ladder){const l=ladders.find(l=>Math.abs(p.x-l.x)<15&&p.y>=l.top-3&&p.y<=l.bottom+4&&((vertical<0&&p.y>l.top+2)||(vertical>0&&p.y<l.bottom-2)));if(l){p.ladder=l;p.x=l.x;p.vx=0;p.vy=0;p.ground=null;}}
+ if(jumpBuffer>0&&(p.coyote>0||p.ladder)){p.vy=-355;p.ground=null;p.ladder=null;p.coyote=0;jumpBuffer=0;jumpScored.clear();p.vx=horizontal*145;tone(290,.15,'square',.025,640);}
+ if(p.ladder){const l=p.ladder;p.x=l.x;p.y+=vertical*100*dt;p.vy=0;p.vx=0;p.walk+=Math.abs(vertical)*dt*8;if(p.y<=l.top){p.y=l.top;p.ground=l.upper;p.ladder=null;}else if(p.y>=l.bottom){p.y=l.bottom;p.ground=l.lower;p.ladder=null;}}
+ else{
+  const accel=p.ground?1250:560,target=horizontal*145;
+  p.vx+=clamp(target-p.vx,-accel*dt,accel*dt);
+  if(horizontal)p.face=horizontal;p.x=clamp(p.x+p.vx*dt,36,604);p.walk+=Math.abs(p.vx)*dt*.075;
+  if(p.ground){const g=p.ground;if(p.x>=g.x-4&&p.x<=g.x+g.w+4)p.y=yAt(g,p.x);else p.ground=null;}
+  if(!p.ground){const prev=p.y;p.vy+=GRAVITY*dt;p.y+=p.vy*dt;let landed=null,best=Infinity;
+   for(const floor of [...plats,...movers]){const y=yAt(floor,p.x),prevY=y-(floor.moving?floor.dy:0);if(p.x>=floor.x-3&&p.x<=floor.x+floor.w+3&&prev<=prevY+2&&p.y>=y&&p.vy-(floor.moving?floor.dy/dt:0)>=0&&y<best){landed=floor;best=y;}}
+   if(landed){p.ground=landed;p.y=best;p.vy=0;}
+  }
+ }
+ if(p.y>H+40){die('El bosque te hará otro camino');return;}
+ for(const r of runes)if(!r.off&&p.ground===r.p&&Math.abs(p.x-r.x)<16){r.off=true;addScore(250,r.x,r.y-30);burst(r.x,r.y-8,C.mint,22);tone(500+runes.filter(r=>r.off).length*120,.2,'triangle',.06);hud();if(runes.every(r=>r.off))questMessage(keyItem.state==='collected'?'¡Sellos rotos! Lleva la llave a la jaula.':'¡Sellos rotos! Consigue la llave del brujo.');}
+ collectCat();updateQuest(dt,previousY);
+}
+function potion(){const row=5,p=plats[row],x=boss.x+35;hazards.push({id:++serial,type:'potion',x,y:yAt(p,x)-11,r:10,vx:92,vy:0,row,rolling:true,rot:0,age:0,checked:new Set()});tone(120,.05,'triangle',.018);}
+function updateHazards(dt){
+ const stopped=frozen();if(!stopped)enemyClock+=dt;
+ if(!stopped&&level===0&&boss.stun<=0){spawn-=dt;if(spawn<=0){potion();spawn=2.65+rnd()*1.15;}}
+ for(const h of hazards){
+  h.prevX=h.x;
+  if(!stopped){h.t=(h.t||0)+dt;
+  if(h.type==='spirit'){const len=h.x2-h.x1,q=(enemyClock*h.speed+h.phase*90)%(len*2);h.x=h.x1+(q<len?q:len*2-q);h.y=yAt(h.p,h.x)-14+Math.sin(enemyClock*4+h.phase)*3;}
+  if(h.type==='orb'){const q=((enemyClock+h.phase)%1.85)/1.85;h.y=248-100*4*q*(1-q);}
+  if(h.type==='potion'){
+   h.age+=dt;h.rot+=h.vx*dt*.07;
+   if(h.rolling){const p=plats[h.row];h.x+=h.vx*dt;h.y=yAt(p,clamp(h.x,p.x,p.x+p.w))-11;
+    for(const l of ladders){const key=h.row+':'+l.x;if(l.upper===p&&!h.checked.has(key)&&Math.abs(h.x-l.x)<3){h.checked.add(key);if(rnd()<.18){h.rolling=false;h.vy=45;h.x=l.x;h.vx=0;break;}}}
+    if(h.x>p.x+p.w||h.x<p.x){h.rolling=false;h.vy=20;h.x=clamp(h.x,p.x-1,p.x+p.w+1);h.vx=0;}
+   }else{const prev=h.y+h.r;h.vy+=GRAVITY*dt;h.y+=h.vy*dt;h.x+=h.vx*dt;const next=plats[h.row-1];if(next&&prev<=yAt(next,h.x)&&h.y+h.r>=yAt(next,h.x)){h.row--;h.x=clamp(h.x,next.x+1,next.x+next.w-1);h.y=yAt(next,h.x)-11;h.vy=0;h.vx=h.row%2===0?-92:92;h.rolling=true;}}
+  }
+  }
+  const p=player,dx=Math.abs(p.x-h.x),dy=Math.abs(p.y-16-h.y);
+  if(!protectedFromEnemies()&&dx<h.r+8&&dy<h.r+12){die(h.type==='potion'?'Una poción te ha alcanzado':h.type==='orb'?'La esfera rompe tu ritmo':'Un espíritu cruza tu camino');return;}
+  if(!p.ground&&!p.ladder&&h.y-p.y>5&&h.y-p.y<82&&(p.prevX-h.prevX)*(p.x-h.x)<=0&&Math.abs(p.vx)>20&&!jumpScored.has(h.id)){jumpScored.add(h.id);addScore(100,p.x,p.y-40);tone(900,.08,'triangle',.04);}
+ }
+ hazards=hazards.filter(h=>h.y<H+50&&(h.age||0)<50);
+}
+function update(dt){
+ clock+=dt;
+ for(const p of particles){p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=130*dt;}particles=particles.filter(p=>p.t>0);
+ for(const f of floats){f.t-=dt;f.y-=25*dt;}floats=floats.filter(f=>f.t>0);
+ if(state==='play'){tickMagic(dt);notice.t=Math.max(0,notice.t-dt);world+=dt;time-=dt;if(time<=0){time=0;die('Se ha agotado el tiempo');return;}movePlatforms(dt);updatePlayer(dt);if(state==='play')updateHazards(dt);if(Math.floor(clock*10)%3===0)hud();}
+ else if(state==='dying'){stateTimer-=dt;player.vy+=500*dt;player.y+=player.vy*dt;if(stateTimer<=0){if(lives>0){build(level);state='play';announce('Otra oportunidad. '+tips[level]);}else{state='gameover';show('EL BOSQUE RECUERDA TU VALOR','GAME<br><em>OVER</em>','Puntuación: '+score+'. Tus crías siguen esperando.','VOLVER A INTENTAR ↗');}}}
+ else if(state==='clear'){stateTimer-=dt;if(stateTimer<=0)action();}
+ else if(state==='collapse'){stateTimer+=dt;if(stateTimer>3.8){state='win';save();show('LA FAMILIA VUELVE A CASA','BOSQUE<br><em>LIBERADO</em>','¡Rescataste a tus dos crías! Puntuación final: '+score+'.','JUGAR OTRA VEZ ↗','CUATRO PRUEBAS. UN HECHIZO ROTO.');}}
+}
+// Cada personaje se dibuja con piezas de píxel. Sin imágenes ni fuentes remotas.
+function owl(x,y,scale=1,baby=false,walk=0,face=1){
+ ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(scale,scale);const bob=baby?0:Math.abs(Math.sin(walk))*.8;ctx.translate(0,-bob);
+ if(!baby){rect(-10,-20,20,16,'#7652a6');rect(-13,-9,26,7,'#8d68bc');rect(-7,-18,5,15,'#a180d0');rect(7,-17,5,11,'#503c82');rect(-8,-3,6,3,'#dbb477');rect(3,-3,6,3,'#dbb477');rect(-13,-19,4,10,'#b59bce');}
+ const hy=baby?-15:-30;rect(-11,hy,22,17,baby?'#b9aca3':'#c3b2b5');rect(-13,hy+3,3,11,'#8c7797');rect(10,hy+4,3,9,'#8c7797');rect(-9,hy+4,8,8,'#eee6d0');rect(2,hy+4,8,8,'#eee6d0');rect(-6+(face<0?-1:1),hy+6,3,4,'#1a2636');rect(4+(face<0?-1:1),hy+6,3,4,'#1a2636');rect(-2,hy+11,4,4,'#e5b568');
+ if(!baby){for(let i=0;i<7;i++){rect(-12+i*3,hy-4+(i%2)*2,5,5,'#242035');rect(-10+i*3,hy-6+(i%3)*2,4,5,'#30263f');}rect(-13,hy+2,4,8,'#282039');rect(10,hy+1,4,8,'#282039');rect(-5,-10,10,2,'#c9ac78');rect(-2,-12,4,5,'#b5edbd');}
+ else{rect(-8,hy-3,5,5,'#8d7c90');rect(4,hy-3,5,5,'#8d7c90');rect(-7,0,4,2,'#deb675');rect(3,0,4,2,'#deb675');}
+ ctx.restore();
+}
+function frog(x,y,stunned=false){ctx.save();ctx.translate(Math.round(x),Math.round(y));if(stunned)ctx.rotate(Math.sin(enemyClock*16)*.07);rect(-13,-34,24,27,'#293e37');rect(-16,-21,8,17,'#354a39');rect(9,-23,7,19,'#1c302c');rect(-12,-9,7,10,'#6d6351');rect(5,-9,8,10,'#6d6351');rect(-18,-2,15,4,'#8b795b');rect(3,-2,17,4,'#8b795b');rect(-14,-49,28,19,'#8f7653');rect(-18,-46,8,10,'#957e59');rect(10,-46,8,10,'#957e59');rect(-11,-52,8,9,'#a9956f');rect(4,-52,8,9,'#a9956f');rect(-10,-49,6,6,'#ded8b6');rect(5,-49,6,6,'#ded8b6');rect(-7,-48,2,3,'#1b2528');rect(6,-48,2,3,'#1b2528');ctx.strokeStyle='#121b26';ctx.lineWidth=2;ctx.strokeRect(-13,-50,11,10);ctx.strokeRect(2,-50,11,10);rect(-2,-46,4,2,'#141e28');rect(-6,-35,13,2,'#4d443d');rect(-6,-30,3,20,'#60765a');rect(4,-14,7,5,'#0e1e24');rect(-16,-27,6,5,'#0e1e24');const arm=Math.sin(enemyClock*3)>.7;rect(13,-29-(arm?9:0),13,5,'#957b53');rect(24,-45,4,49,'#766a52');rect(20,-50,12,10,'#a4efbf');rect(23,-53,5,16,'#d7f4c3');ctx.restore();}
+function cage(x,y,open=false){
+ const shake=state==='collapse'?Math.sin(clock*18)*Math.max(0,1-stateTimer)*3:0;ctx.save();ctx.translate(x+shake,y);
+ const flap=open?Math.sin(clock*6)*5:0;owl(-13,0, .65,true,0,1);owl(13,-1+flap,.65,true,0,-1);
+ ctx.strokeStyle=C.gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-34,4);ctx.lineTo(-34,-30);ctx.quadraticCurveTo(-34,-58,0,-58);ctx.quadraticCurveTo(34,-58,34,-30);ctx.lineTo(34,4);ctx.stroke();rect(-37,3,74,5,C.gold);rect(-35,-31,70,3,'#b69758');
+ if(!open){for(let i=-24;i<=24;i+=12)rect(i,-45,2,49,'#cfb16d');rect(-5,-13,11,10,'#ffd887');rect(-1,-10,3,5,'#765b4c');}else{ctx.strokeStyle=C.gold;ctx.beginPath();ctx.moveTo(30,4);ctx.lineTo(54,-24);ctx.lineTo(54,-52);ctx.lineTo(30,-33);ctx.stroke();}
+ rect(-6,-64,12,5,'#dfba71');text(open?'LIBRES':keyItem.state==='collected'?(level===3&&runes.some(r=>!r.off)?'SELLOS':'ABRE AQUÍ'):'LLAVE',0,-76,10,open?C.mint:C.gold,'center');ctx.restore();
+}
+function background(){
+ rect(0,0,W,H,C.sky);
+ const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#161c35');grad.addColorStop(.5,'#0d222c');grad.addColorStop(1,'#122c2d');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='#aebfba';for(let i=0;i<60;i++){const x=(i*137+37)%640,y=(i*71+19)%340;ctx.globalAlpha=.25+.3*Math.sin(clock*.5+i)**2;ctx.fillRect(x,y,i%6===0?2:1,2);}ctx.globalAlpha=1;
+ ctx.fillStyle='#bdd9c9';ctx.beginPath();ctx.arc(473,55,25,0,Math.PI*2);ctx.fill();ctx.fillStyle='#161f36';ctx.beginPath();ctx.arc(483,49,24,0,Math.PI*2);ctx.fill();
+ for(let i=0;i<7;i++){const x=i*110-18;rect(x,180+(i%3)*35,24,H,'#122d33');rect(x+8,150+(i%3)*35,10,70,'#122d33');rect(x-22,245+i%2*55,60,14,'#122d33');rect(x+22,365+i%2*45,40,11,'#122d33');}
+ for(let i=0;i<9;i++){const x=i*83-25;ctx.fillStyle=i%2?'#173a3a':'#183b3b';ctx.beginPath();ctx.moveTo(x,H);ctx.lineTo(x+9,630-i%3*25);ctx.lineTo(x+20,670);ctx.lineTo(x+35,612+i%4*8);ctx.lineTo(x+47,H);ctx.fill();}
+ for(let i=0;i<18;i++){const x=(i*119+Math.sin(clock*.4+i)*20+640)%640,y=170+(i*67)%500+Math.sin(clock+i)*9;ctx.globalAlpha=.3+.4*Math.sin(clock+i)**2;rect(x,y,2,2,i%2?C.gold:C.mint);}ctx.globalAlpha=1;
+}
+function drawPlatform(p,index){
+ const falling=state==='collapse'?Math.max(0,stateTimer-.25-index*.1):0,drop=falling*falling*140;ctx.save();ctx.translate(0,drop);const a=yAt(p,p.x),b=yAt(p,p.x+p.w);ctx.beginPath();ctx.moveTo(p.x,a);ctx.lineTo(p.x+p.w,b);ctx.lineTo(p.x+p.w,b+14);ctx.lineTo(p.x,a+14);ctx.closePath();ctx.fillStyle=p.moving?'#326965':C.wood;ctx.fill();
+ ctx.strokeStyle=p.moving?C.mint:C.edge;ctx.lineWidth=p.moving?3:2;ctx.beginPath();ctx.moveTo(p.x,a);ctx.lineTo(p.x+p.w,b);ctx.stroke();
+ for(let x=p.x+8;x<p.x+p.w-4;x+=24){const y=yAt(p,x);rect(x,y+5,14,2,p.moving?'#64a08a':'#78605b');rect(x+17,y+2,2,10,'#302c3c');if(!p.moving&&(Math.floor(x)%7<4))rect(x,y-2,13,3,C.moss);}
+ if(p.moving){rect(p.x-3,p.y-3,5,19,C.mint);rect(p.x+p.w-2,p.y-3,5,19,C.mint);text(p.dy<0?'↑':'↓',p.x+p.w/2,p.y+28,14,C.mint,'center');}
+ ctx.restore();
+}
+function drawLadders(){for(const l of ladders){ctx.strokeStyle='#96ab98';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(l.x-9,l.top);ctx.lineTo(l.x-9,l.bottom);ctx.moveTo(l.x+9,l.top);ctx.lineTo(l.x+9,l.bottom);ctx.stroke();for(let y=l.top+8;y<l.bottom-3;y+=12){rect(l.x-10,y,21,3,'#b9b68d');rect(l.x-9,y+3,2,2,'#6e876f');}}}
+function drawHazard(h){if(h.type==='potion'){ctx.save();ctx.translate(Math.round(h.x),Math.round(h.y));ctx.rotate(h.rot);rect(-7,-9,14,17,'#9e6cda');rect(-10,-5,20,10,'#9e6cda');rect(-6,-6,12,12,'#d097fc');rect(-4,-4,8,9,'#6d3dba');rect(-2,-5,4,4,'#edc5ff');rect(-3,-14,6,6,'#b5cfc2');rect(-4,-15,8,3,'#e3d5a5');ctx.restore();}else if(h.type==='spirit'){const bob=Math.sin(enemyClock*8+h.phase)*2;rect(h.x-10,h.y-8,20,17,'#83c5ac');rect(h.x-7,h.y-12,14,5,'#83c5ac');rect(h.x-12,h.y-4,24,10,'#83c5ac');rect(h.x-10,h.y+6,5,5+bob,'#83c5ac');rect(h.x-2,h.y+6,5,8-bob,'#83c5ac');rect(h.x+6,h.y+6,4,5+bob,'#83c5ac');rect(h.x-6,h.y-4,4,5,'#142a32');rect(h.x+3,h.y-4,4,5,'#142a32');rect(h.x-4,h.y-7,3,2,'#d1f5d7');}else{ctx.save();ctx.translate(h.x,h.y);ctx.rotate(enemyClock*4);ctx.strokeStyle='#bfafff';ctx.lineWidth=3;ctx.strokeRect(-8,-8,16,16);rect(-5,-5,10,10,'#9c79e9');rect(-2,-2,4,4,'#e0d7ff');ctx.restore();rect(h.x-9,260,18,2,'#be90ee');}}
+function render(){
+ background();
+ if(level===1||level===2){for(const p of movers){ctx.strokeStyle='#3d666355';ctx.lineWidth=2;ctx.setLineDash([3,7]);ctx.beginPath();ctx.moveTo(p.x+p.w/2,p.high);ctx.lineTo(p.x+p.w/2,p.low+20);ctx.stroke();ctx.setLineDash([]);}}
+ if(state!=='collapse'&&state!=='win')drawLadders();
+ plats.forEach(drawPlatform);movers.forEach(p=>drawPlatform(p,0));
+ for(const r of runes){const fade=state==='collapse'?Math.max(0,1-stateTimer):1;ctx.globalAlpha=fade;const col=r.off?'#527f73':C.mint;rect(r.x-13,r.y-4,26,7,r.off?'#294f4b':'#65997c');ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(r.x,r.y-29);ctx.lineTo(r.x+7,r.y-18);ctx.lineTo(r.x,r.y-7);ctx.lineTo(r.x-7,r.y-18);ctx.closePath();ctx.stroke();if(!r.off){rect(r.x-1,r.y-24,2,12,C.pale);text('↓',r.x,r.y-37+Math.sin(clock*3)*3,13,C.mint,'center');}ctx.globalAlpha=1;}
+ const top=plats.at(-1),bossY=boss.y,cageY=yAt(top,575)-6;
+ if(state==='collapse'){const fall=Math.max(0,stateTimer-.5);frog(boss.x+Math.sin(fall*5)*20,bossY+fall*fall*130);cage(575,cageY,true);if(stateTimer>1.8){owl(535,cageY+3,1,false,clock,1);text('♥',548,cageY-53,22,C.gold,'center');}}
+ else{if(state!=='win')frog(boss.x,bossY,boss.stun>0);cage(575,cageY,cageOpen||state==='win');}
+ if(state==='play'||state==='title'||state==='paused'){
+  if(boss.stun>0){for(let i=0;i<3;i++){const a=enemyClock*5+i*Math.PI*2/3;text('✦',boss.x+Math.cos(a)*24,bossY-65+Math.sin(a)*5,15,C.gold,'center');}text('ATURDIDO',boss.x,bossY-84,10,C.gold,'center');}
+  else if(keyItem.state==='hidden')text('SALTA ↓',boss.x,bossY-66,12,C.mint,'center');
+  if(keyItem.state==='dropped'){const bob=keyItem.vy===0?Math.sin(clock*4)*3:0;drawKey(keyItem.x,keyItem.y+bob);text('↓ LLAVE',keyItem.x,keyItem.y-20,11,C.gold,'center');}
+ }
+
+ // Petits champignons lumineux au pied de l'arbre.
+ for(const x of [19,619]){rect(x-2,666,4,10,'#b4d0b6');rect(x-8,661,16,6,'#a286c6');rect(x-5,658,10,3,'#c4ace7');rect(x-5,662,3,2,C.pale);}
+ hazards.forEach(h=>{drawHazard(h);if(frozen()){ctx.strokeStyle='#9bdced';ctx.lineWidth=1;ctx.strokeRect(h.x-h.r-3,h.y-h.r-3,(h.r+3)*2,(h.r+3)*2);}});
+ if(state!=='collapse'&&state!=='win')drawCat();
+ if(invincible()&&(state==='play'||state==='paused')){ctx.save();ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.globalAlpha=.65+.25*Math.sin(clock*6);ctx.beginPath();ctx.ellipse(player.x,player.y-18,22,29,0,0,Math.PI*2);ctx.stroke();ctx.restore();}
+ if(frozen()){ctx.strokeStyle='#9bdced';ctx.lineWidth=2;ctx.strokeRect(boss.x-21,boss.y-55,44,60);}
+
+ if(player&&state!=='collapse'&&state!=='win'&&(invincible()||player.inv<=0||Math.floor(clock*12)%2===0||state==='title')){owl(player.x,player.y,1,false,player.walk,player.face);if(player.ladder){rect(player.x-14,player.y-18,4,4,'#d7b7b0');rect(player.x+10,player.y-23,4,4,'#d7b7b0');}}
+ if(keyItem.state==='collected'&&state==='play')drawKey(player.x+19,player.y-42,.6);
+ if(notice.t>0&&state==='play')text(notice.text,320,30,12,C.gold,'center');
+ for(const p of particles){ctx.globalAlpha=clamp(p.t,0,1);rect(p.x,p.y,3,3,p.color);}ctx.globalAlpha=1;for(const f of floats)text(f.s,f.x,f.y,13,C.gold,'center');
+ if(state==='play'&&level===0&&world<7)text('↑ CUERDAS · ESPACIO SALTA',320,690,11,'#c1d8c4','center');
+ if(state==='play'&&player.inv>1.2)text('NIVEL '+(level+1),320,76,15,C.mint,'center');
+ if(state==='collapse')text('EL HECHIZO SE ROMPE',320,90,19,C.gold,'center');
+}
+function frame(now){if(!last)last=now;acc+=Math.min((now-last)/1000,.12);last=now;let steps=0;while(acc>=STEP&&steps++<8){update(STEP);acc-=STEP;}syncMusic();render();requestAnimationFrame(frame);}
+function keyDown(key){if(held.has(key))return;held.add(key);if(key==='Space')jumpBuffer=.13;}
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyP','Escape','Enter'].includes(e.code)){if(e.target instanceof HTMLButtonElement&&['Space','Enter'].includes(e.code))return;e.preventDefault();if(e.repeat)return;if(e.code==='KeyP'||e.code==='Escape'){pause();return;}if((e.code==='Space'||e.code==='Enter')&&state!=='play'&&state!=='dying'&&state!=='collapse'){action();return;}if(state==='play')keyDown(e.code);}});
+window.addEventListener('keyup',e=>{held.delete(e.code);});
+window.addEventListener('blur',()=>{clearKeys();if(state==='play')pause();syncMusic();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){clearKeys();if(state==='play')pause();stopMusic();stopEffects();}});
+for(const b of document.querySelectorAll('[data-key]')){b.addEventListener('pointerdown',e=>{e.preventDefault();unlock();b.setPointerCapture(e.pointerId);touches.set(e.pointerId,b.dataset.key);if(state==='play')keyDown(b.dataset.key);b.classList.add('pressed');});const release=e=>{const key=touches.get(e.pointerId);touches.delete(e.pointerId);if(key&&![...touches.values()].includes(key))held.delete(key);b.classList.toggle('pressed',[...touches.values()].includes(b.dataset.key));};b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release);b.addEventListener('contextmenu',e=>e.preventDefault());}
+$('#action').addEventListener('click',()=>{action();$('#action').blur();});$('#pause').addEventListener('click',()=>{pause();$('#pause').blur();});
+$('#sound').addEventListener('click',()=>{toggleSound();$('#sound').blur();});soundUI();
+function applyTheme(){if(themeMode===0)document.documentElement.removeAttribute('data-tema');else document.documentElement.dataset.tema=themeMode===1?'claro':'oscuro';}
+applyTheme();$('#theme').addEventListener('click',()=>{const dark=document.documentElement.dataset.tema==='oscuro'||(!document.documentElement.dataset.tema&&matchMedia('(prefers-color-scheme:dark)').matches);themeMode=dark?1:2;applyTheme();try{localStorage.setItem('bosque-theme',String(themeMode));}catch{}$('#theme').blur();});
+// Manifiesto e iconos se generan localmente: el HTML suelto conserva todos sus gráficos.
+const icon=document.createElement('canvas');icon.width=icon.height=512;const ic=icon.getContext('2d');ic.fillStyle='#172b2e';ic.fillRect(0,0,512,512);ic.fillStyle='#7652a6';ic.fillRect(140,270,232,115);ic.fillStyle='#aa93be';ic.fillRect(128,145,256,175);ic.fillStyle='#ece6c9';ic.fillRect(150,180,88,87);ic.fillRect(274,180,88,87);ic.fillStyle='#142633';ic.fillRect(188,200,25,42);ic.fillRect(298,200,25,42);ic.fillStyle='#292039';for(let i=0;i<6;i++)ic.fillRect(119+i*44,115-(i%2)*20,56,55);ic.fillStyle='#edc477';ic.fillRect(240,267,32,28);ic.fillStyle='#abefbc';ic.fillRect(241,330,30,30);
+$('#brand').getContext('2d').drawImage(icon,0,0,64,64);const icon512=icon.toDataURL('image/png');const small=document.createElement('canvas');small.width=small.height=192;small.getContext('2d').drawImage(icon,0,0,192,192);const icon192=small.toDataURL('image/png');
+const manifest={name:'Bosque Arcano · La noche de las búhas',short_name:'Bosque Arcano',start_url:'./',scope:'./',display:'standalone',orientation:'any',theme_color:'#11151b',background_color:'#11151b',icons:[{src:icon192,sizes:'192x192',type:'image/png'},{src:icon512,sizes:'512x512',type:'image/png'},{src:icon512,sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+if(location.protocol.startsWith('http')){$('#manifest').href='./manifest.json';$('#apple-icon').href='./icon-192.png';if('serviceWorker'in navigator&&isSecureContext)navigator.serviceWorker.register('./sw.js').catch(()=>{});}else{$('#manifest').href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));$('#apple-icon').href=icon192;}
+$('#download').addEventListener('click',async e=>{e.preventDefault();let html;try{if(location.protocol.startsWith('http'))html=await(await fetch('./index.html',{cache:'no-store'})).text();else html='<!doctype html>\n'+document.documentElement.outerHTML;}catch{html='<!doctype html>\n'+document.documentElement.outerHTML;}const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='index.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);});
+build(0);hud();show('UN ARCADE BAJO LA LUNA','BOSQUE<br><em>ARCANO</em>','Sube hasta el Sapo Brujo. Cae sobre su cabeza, rebota y recoge la llave que suelta. Acércate a la jaula para abrirla.','COMENZAR AVENTURA ↗','PRESS SPACE TO START · O TOCA COMENZAR');requestAnimationFrame(frame);
+// Acceso de diagnóstico únicamente cuando el desarrollador lo pide con ?test=1.
+if(new URLSearchParams(location.search).has('test'))window.__arcade={get audioStatus(){return{muted,context:audio?.state||'uninitialized',musicPlaying:!!musicSource,musicDuration:musicBuffer?.duration||0,activeEffects:effects.size};},get cat(){return cat;},get magicPoints(){return catClaims.size;},get power(){return{...magicPower};},get enemyClock(){return enemyClock;},get boss(){return boss;},get key(){return keyItem;},get cageOpen(){return cageOpen;},get state(){return state;},get player(){return player;},get platforms(){return plats;},get elevators(){return movers;},get ladders(){return ladders;},get hazards(){return hazards;},get runes(){return runes;},get score(){return score;},get lives(){return lives;},get time(){return time;},set time(v){time=v;},get level(){return level;},start,build(n){build(n);state='play';$('#overlay').hidden=true;},step:update,render,keyDown,keyUp:k=>held.delete(k),pause,finish,die};
+})();
+</script>
+</body>
+</html>

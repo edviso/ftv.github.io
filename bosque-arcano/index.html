@@ -54,7 +54,7 @@ body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <div class="levels"><div class="level active" data-level="0"><span class="num">01</span><div><h3>El Árbol Inclinado</h3><p>Salta las pociones. Asciende por las cuerdas.</p></div></div><div class="level" data-level="1"><span class="num">02</span><div><h3>Las Corrientes de Maná</h3><p>Viaja en plataformas de luz. Evita los espíritus.</p></div></div><div class="level" data-level="2"><span class="num">03</span><div><h3>Las Esferas de Rebote</h3><p>Lee el ritmo. Encuentra tu momento.</p></div></div><div class="level" data-level="3"><span class="num">04</span><div><h3>La Caída de los Sellos</h3><p>Rompe los sellos. Consigue la llave y abre la jaula.</p></div></div></div>
 <div class="instructions"><div class="label">CÓMO JUGAR</div><div class="key-row"><span>Moverse</span><span><kbd>←</kbd> <kbd>→</kbd></span></div><div class="key-row"><span>Subir / bajar cuerdas</span><span><kbd>↑</kbd> <kbd>↓</kbd></span></div><div class="key-row"><span>Saltar</span><kbd>ESPACIO</kbd></div><div class="key-row"><span>Pausa</span><kbd>P / ESC</kbd></div></div><p class="note">+100 por saltar un peligro. +1.000 por pantalla y +10 por cada segundo restante. Cae sobre la cabeza del brujo para obtener su llave. Toca al gato blanco para sumar magia; el último regala un poder de 40 segundos más 10 por cada punto mágico (hasta 80 segundos). En Android y iPhone, usa dos dedos para moverte y saltar.</p></aside>
 </main>
-<footer><span>HECHO DE PÍXELES Y MAGIA.</span><a id="download" download="index.html" href="#">↓ GUARDAR HTML</a></footer>
+<footer><span id="version">VERSIÓN 3</span><a id="download" download="index.html" href="#">↓ GUARDAR HTML</a></footer>
 </div><div id="announcement" role="status" aria-live="polite"></div>
 <script id="game-code">
 (() => {
@@ -80,7 +80,8 @@ function text(s,x,y,size=12,color=C.pale,align='left'){ctx.fillStyle=color;ctx.f
 // Un solo contexto y una pista PCM en bucle: tocar flechas nunca detiene el audio.
 // Referencia del motivo breve inicial (un compás de Hammer); el resto es original:
 // https://themushroomkingdom.net/media/dk-arcade/mid
-let masterGain=null,musicGain=null,musicBuffer=null,musicSource=null,resuming=null;
+const AUDIO_LEVEL=2.5,RESUME_TIMEOUT=1500;
+let masterGain=null,musicGain=null,musicBuffer=null,musicSource=null,resuming=null,resumeStarted=0;
 const effects=new Set(),jingleTimers=new Set();
 function soundUI(){const b=$('#sound');b.textContent=muted?'♪':'♫';b.setAttribute('aria-label',muted?'Activar sonido':'Silenciar sonido');b.setAttribute('aria-pressed',String(!muted));b.title=muted?'Activar música y efectos':'Silenciar música y efectos';}
 function makeMusic(){
@@ -112,17 +113,29 @@ function syncMusic(){
  musicBuffer??=makeMusic();const source=audio.createBufferSource();source.buffer=musicBuffer;source.loop=true;source.connect(musicGain);source.start();musicSource=source;
 }
 function stopEffects(){for(const id of jingleTimers)clearTimeout(id);jingleTimers.clear();for(const o of effects){try{o.stop();}catch{}}effects.clear();}
+function resetAudio(){
+ stopMusic();stopEffects();const previous=audio;audio=null;masterGain=null;musicGain=null;musicBuffer=null;resuming=null;resumeStarted=0;
+ if(previous){previous.removeEventListener('statechange',syncMusic);try{previous.close().catch(()=>{});}catch{}}
+}
 function tone(freq,duration=.1,type='square',vol=.04,slide=0){
  if(muted||!audio||audio.state!=='running'||document.hidden)return;
  try{const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime;o.type=type;o.frequency.setValueAtTime(freq,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+duration);g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(vol,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(masterGain);effects.add(o);o.onended=()=>{effects.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration);}catch{}
 }
 function unlock(){
  if(muted)return;
+ // En iPhone, Web Audio puede usar el canal del timbre y quedar mudo en Silencio.
+ // La selección de reproducción se solicita dentro del gesto y es opcional.
+ try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch{}
  try{
-  if(audio?.state==='closed'){audio=null;masterGain=null;musicGain=null;musicBuffer=null;musicSource=null;resuming=null;}
-  if(!audio){audio=new(window.AudioContext||window.webkitAudioContext)();masterGain=audio.createGain();masterGain.gain.value=.85;masterGain.connect(audio.destination);musicGain=audio.createGain();musicGain.gain.value=.48;musicGain.connect(masterGain);audio.addEventListener('statechange',syncMusic);}
-  masterGain.gain.setValueAtTime(.85,audio.currentTime);
-  if(audio.state!=='running'&&!resuming){const pending=audio.resume();resuming=pending;pending.then(syncMusic).catch(()=>{}).finally(()=>{if(resuming===pending)resuming=null;});}
+  if(audio?.state==='closed'||(resuming&&performance.now()-resumeStarted>RESUME_TIMEOUT&&audio.state!=='running'))resetAudio();
+  if(!audio){
+   audio=new(window.AudioContext||window.webkitAudioContext)();
+   const limiter=audio.createDynamicsCompressor();limiter.threshold.value=-6;limiter.knee.value=6;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.1;limiter.connect(audio.destination);
+   masterGain=audio.createGain();masterGain.gain.value=AUDIO_LEVEL;masterGain.connect(limiter);
+   musicGain=audio.createGain();musicGain.gain.value=1;musicGain.connect(masterGain);audio.addEventListener('statechange',syncMusic);
+  }
+  masterGain.gain.setValueAtTime(AUDIO_LEVEL,audio.currentTime);
+  if(audio.state!=='running'&&!resuming){const pending=audio.resume();resuming=pending;resumeStarted=performance.now();pending.then(syncMusic).catch(()=>{}).finally(()=>{if(resuming===pending)resuming=null;});}
   syncMusic();
  }catch{}
 }
@@ -358,7 +371,7 @@ function render(){
 }
 function frame(now){if(!last)last=now;acc+=Math.min((now-last)/1000,.12);last=now;let steps=0;while(acc>=STEP&&steps++<8){update(STEP);acc-=STEP;}syncMusic();render();requestAnimationFrame(frame);}
 function keyDown(key){if(held.has(key))return;held.add(key);if(key==='Space')jumpBuffer=.13;}
-window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyP','Escape','Enter'].includes(e.code)){if(e.target instanceof HTMLButtonElement&&['Space','Enter'].includes(e.code))return;e.preventDefault();if(e.repeat)return;if(e.code==='KeyP'||e.code==='Escape'){pause();return;}if((e.code==='Space'||e.code==='Enter')&&state!=='play'&&state!=='dying'&&state!=='collapse'){action();return;}if(state==='play')keyDown(e.code);}});
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyP','Escape','Enter'].includes(e.code)){if(e.target instanceof HTMLButtonElement&&['Space','Enter'].includes(e.code))return;e.preventDefault();if(e.repeat)return;unlock();if(e.code==='KeyP'||e.code==='Escape'){pause();return;}if((e.code==='Space'||e.code==='Enter')&&state!=='play'&&state!=='dying'&&state!=='collapse'){action();return;}if(state==='play')keyDown(e.code);}});
 window.addEventListener('keyup',e=>{held.delete(e.code);});
 window.addEventListener('blur',()=>{clearKeys();if(state==='play')pause();syncMusic();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearKeys();if(state==='play')pause();stopMusic();stopEffects();}});

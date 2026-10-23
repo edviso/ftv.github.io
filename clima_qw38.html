@@ -4,575 +4,163 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a0e1a">
-<title>Monitor El Niño - Guayaquil</title>
+<title>Monitor El Niño - Guayaquil v2</title>
 
-<!-- Leaflet CSS para el mapa interactivo -->
+<!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <style>
-  /* === VARIABLES DE TEMA OSCURO (DASHBOARD TÉCNICO) === */
+  /* === VARIABLES TEMA OSCURO === */
   :root {
-    --bg-primary: #0a0e1a;
-    --bg-secondary: #131827;
-    --bg-card: #1a2035;
-    --bg-elevated: #232a42;
-    --border: #2a3350;
-    --text-primary: #e8ecf5;
-    --text-secondary: #8a94b0;
-    --text-muted: #5a6478;
-    --accent-blue: #3b82f6;
-    --accent-cyan: #06b6d4;
-    --accent-green: #10b981;
-    --accent-yellow: #f59e0b;
-    --accent-red: #ef4444;
-    --accent-orange: #f97316;
-    --gradient-ocean: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
-    --gradient-warm: linear-gradient(135deg, #dc2626 0%, #ea580c 100%);
-    --gradient-rain: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+    --bg-primary:#0a0e1a; --bg-card:#1a2035; --bg-elevated:#232a42;
+    --border:#2a3350; --text-primary:#e8ecf5; --text-secondary:#8a94b0; --text-muted:#5a6478;
+    --accent-blue:#3b82f6; --accent-cyan:#06b6d4; --accent-green:#10b981;
+    --accent-yellow:#f59e0b; --accent-red:#ef4444; --accent-orange:#f97316;
+    --gradient-ocean:linear-gradient(135deg,#0891b2,#0e7490);
+    --gradient-warm:linear-gradient(135deg,#dc2626,#ea580c);
+    --shadow-sm:0 2px 8px rgba(0,0,0,.3); --shadow-lg:0 8px 24px rgba(0,0,0,.5);
   }
-
-  /* === RESET Y BASE === */
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg-primary); color:var(--text-primary);
+    overflow-x:hidden; -webkit-font-smoothing:antialiased;
   }
-
-  html, body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* === LAYOUT PRINCIPAL === */
-  .app {
-    max-width: 100vw;
-    min-height: 100vh;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-  }
+  .app { max-width:100vw; min-height:100vh; padding-bottom:env(safe-area-inset-bottom,0); }
 
   /* === HEADER === */
   .header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(10, 14, 26, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    position:sticky; top:0; z-index:1000;
+    background:rgba(10,14,26,.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border); padding:12px 16px;
+    display:flex; justify-content:space-between; align-items:center;
   }
-
-  .header-title {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
   .header-title h1 {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size:16px; font-weight:700; letter-spacing:-.02em;
+    background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
   }
+  .header-subtitle { font-size:11px; color:var(--text-muted); font-family:'SF Mono',Consolas,monospace; }
+  .header-status { display:flex; align-items:center; gap:6px; font-size:10px; font-family:monospace; }
+  .status-dot { width:6px; height:6px; background:var(--accent-green); border-radius:50%; animation:pulse 2s ease-in-out infinite; }
+  .status-dot.error { background:var(--accent-red); animation:none; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,185,129,.4)} 50%{opacity:.6;box-shadow:0 0 0 4px rgba(16,185,129,0)} }
 
-  .header-subtitle {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: 'SF Mono', Consolas, monospace;
+  /* === BANNER DE ALERTA === */
+  .alert-banner {
+    margin:12px; padding:16px; border-radius:12px;
+    background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(249,115,22,.15));
+    border:1px solid var(--accent-red); display:none; flex-direction:column; gap:8px;
+    animation:alertPulse 1.5s ease-in-out infinite;
   }
-
-  .header-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    color: var(--text-secondary);
-    font-family: monospace;
-  }
-
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--accent-green);
-    border-radius: 50%;
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  .status-dot.error {
-    background: var(--accent-red);
-    animation: none;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
-    50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(16,185,129,0); }
-  }
+  .alert-banner.visible { display:flex; }
+  .alert-banner-header { display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; color:var(--accent-red); }
+  .alert-banner-text { font-size:12px; line-height:1.4; }
+  @keyframes alertPulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)} 50%{box-shadow:0 0 20px 4px rgba(239,68,68,.3)} }
 
   /* === MAPA === */
-  .map-container {
-    position: relative;
-    width: 100%;
-    height: 45vh;
-    min-height: 320px;
-    max-height: 500px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  #map {
-    width: 100%;
-    height: 100%;
-    background: #050810;
-  }
-
-  .map-controls {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
+  .map-container { position:relative; width:100%; height:45vh; min-height:320px; max-height:500px; border-bottom:1px solid var(--border); }
+  #map { width:100%; height:100%; background:#050810; }
+  .map-controls { position:absolute; top:12px; right:12px; z-index:1000; display:flex; flex-direction:column; gap:8px; }
   .map-btn {
-    background: rgba(26, 32, 53, 0.95);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.2s;
+    background:rgba(26,32,53,.95); border:1px solid var(--border); color:var(--text-primary);
+    padding:10px 12px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;
+    backdrop-filter:blur(8px); display:flex; align-items:center; gap:6px; box-shadow:var(--shadow-sm); transition:all .2s;
   }
-
-  .map-btn:active {
-    transform: scale(0.96);
-    background: var(--bg-elevated);
-  }
-
-  .map-btn.primary {
-    background: var(--gradient-ocean);
-    border: none;
-    color: white;
-  }
-
+  .map-btn:active { transform:scale(.96); background:var(--bg-elevated); }
+  .map-btn.primary { background:var(--gradient-ocean); border:none; color:#fff; }
   .map-legend {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    right: 12px;
-    z-index: 1000;
-    background: rgba(10, 14, 26, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 10px;
-    color: var(--text-secondary);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    position:absolute; bottom:12px; left:12px; right:12px; z-index:1000;
+    background:rgba(10,14,26,.9); backdrop-filter:blur(8px); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px; font-size:10px; color:var(--text-secondary);
+    display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .legend-scale { display:flex; align-items:center; gap:8px; }
+  .legend-gradient { width:110px; height:8px; border-radius:4px; background:linear-gradient(90deg,#2563eb,#06b6d4,#10b981,#f59e0b,#ef4444); }
+
+  /* Filtro oscuro SOLO al pane del basemap (no afecta la capa SST) */
+  .osm-dark .leaflet-basemap-pane .leaflet-tile {
+    filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.5);
   }
 
-  .legend-scale {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .legend-gradient {
-    width: 120px;
-    height: 8px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #2563eb, #06b6d4, #10b981, #f59e0b, #ef4444);
-  }
-
-  /* === GRID DE TARJETAS === */
-  .cards-grid {
-    padding: 12px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
+  /* === TARJETAS === */
+  .cards-grid { padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    padding:14px; display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden;
   }
+  .card.alert { border-color:var(--accent-red); background:linear-gradient(135deg,var(--bg-card),rgba(239,68,68,.1)); animation:alertPulse 1.5s ease-in-out infinite; }
+  .card-full { grid-column:1/-1; }
+  .card-header { display:flex; justify-content:space-between; align-items:center; }
+  .card-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
+  .card-value { font-size:28px; font-weight:700; letter-spacing:-.02em; }
+  .card-value.small { font-size:20px; }
+  .card-value.ocean { background:var(--gradient-ocean); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .card-sub { font-size:11px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+  .badge.safe{background:rgba(16,185,129,.15);color:var(--accent-green)}
+  .badge.warning{background:rgba(245,158,11,.15);color:var(--accent-yellow)}
+  .badge.danger{background:rgba(239,68,68,.15);color:var(--accent-red)}
+  .badge.info{background:rgba(59,130,246,.15);color:var(--accent-blue)}
 
-  .card.alert {
-    border-color: var(--accent-red);
-    background: linear-gradient(135deg, var(--bg-card), rgba(239,68,68,0.1));
-    animation: alertPulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes alertPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
-    50% { box-shadow: 0 0 20px 4px rgba(239,68,68,0.3); }
-  }
-
-  .card-full {
-    grid-column: 1 / -1;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .card-label {
-    font-size: 10px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-  }
-
-  .card-icon {
-    width: 20px;
-    height: 20px;
-    opacity: 0.6;
-  }
-
-  .card-value {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-  }
-
-  .card-value.small {
-    font-size: 20px;
-  }
-
-  .card-value.ocean {
-    background: var(--gradient-ocean);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .card-value.warm {
-    background: var(--gradient-warm);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .card-sub {
-    font-size: 11px;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .badge.safe { background: rgba(16,185,129,0.15); color: var(--accent-green); }
-  .badge.warning { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
-  .badge.danger { background: rgba(239,68,68,0.15); color: var(--accent-red); }
-  .badge.info { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
-
-  /* === PRONÓSTICO POR HORA === */
-  .hourly-scroll {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 4px 0;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .hourly-scroll::-webkit-scrollbar { display: none; }
-
+  /* === PRONÓSTICO HORARIO === */
+  .hourly-scroll { display:flex; gap:8px; overflow-x:auto; padding:4px 0; scrollbar-width:none; }
+  .hourly-scroll::-webkit-scrollbar { display:none; }
   .hour-item {
-    flex: 0 0 auto;
-    min-width: 56px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 6px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: center;
+    flex:0 0 auto; min-width:56px; background:var(--bg-elevated); border:1px solid var(--border);
+    border-radius:8px; padding:8px 6px; text-align:center; display:flex; flex-direction:column; gap:4px; align-items:center;
   }
+  .hour-time { font-size:9px; color:var(--text-muted); font-family:monospace; }
+  .hour-icon { font-size:18px; }
+  .hour-rain { font-size:10px; font-weight:700; color:var(--accent-cyan); }
+  .hour-rain.high { color:var(--accent-red); }
+  .hour-temp { font-size:9px; color:var(--text-secondary); }
 
-  .hour-time {
-    font-size: 9px;
-    color: var(--text-muted);
-    font-family: monospace;
-  }
-
-  .hour-icon {
-    font-size: 18px;
-  }
-
-  .hour-rain {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--accent-cyan);
-  }
-
-  .hour-rain.high { color: var(--accent-red); }
-
-  .hour-temp {
-    font-size: 9px;
-    color: var(--text-secondary);
-  }
-
-  /* === PANEL DE ALERTAS === */
-  .alert-banner {
-    margin: 0 12px 12px;
-    padding: 16px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.15));
-    border: 1px solid var(--accent-red);
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-    animation: alertPulse 1.5s ease-in-out infinite;
-  }
-
-  .alert-banner.visible {
-    display: flex;
-  }
-
-  .alert-banner-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 700;
-    font-size: 13px;
-    color: var(--accent-red);
-  }
-
-  .alert-banner-text {
-    font-size: 12px;
-    color: var(--text-primary);
-    line-height: 1.4;
-  }
-
-  /* === BOTONES DE ACCIÓN === */
-  .actions {
-    padding: 8px 12px 20px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
+  /* === BOTONES === */
+  .actions { padding:8px 12px 20px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .btn {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 14px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 0.2s;
-    -webkit-user-select: none;
-    user-select: none;
+    background:var(--bg-card); border:1px solid var(--border); color:var(--text-primary);
+    padding:14px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; user-select:none;
   }
+  .btn:active { transform:scale(.97); }
+  .btn.primary { background:var(--gradient-ocean); border:none; color:#fff; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
 
-  .btn:active {
-    transform: scale(0.97);
-  }
+  .footer { padding:16px; text-align:center; font-size:10px; color:var(--text-muted); border-top:1px solid var(--border); font-family:monospace; line-height:1.6; }
+  .footer a { color:var(--accent-cyan); text-decoration:none; }
 
-  .btn.primary {
-    background: var(--gradient-ocean);
-    border: none;
-    color: white;
-  }
-
-  .btn.danger {
-    background: var(--gradient-warm);
-    border: none;
-    color: white;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn .spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  /* === FOOTER === */
-  .footer {
-    padding: 16px;
-    text-align: center;
-    font-size: 10px;
-    color: var(--text-muted);
-    border-top: 1px solid var(--border);
-    font-family: monospace;
-  }
-
-  .footer a {
-    color: var(--accent-cyan);
-    text-decoration: none;
-  }
-
-  /* === LOADING OVERLAY === */
+  /* === OVERLOAD / TOAST === */
   .loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(10,14,26,0.85);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-    z-index: 10000;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
+    position:fixed; inset:0; background:rgba(10,14,26,.85); backdrop-filter:blur(8px);
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+    z-index:10000; opacity:0; pointer-events:none; transition:opacity .3s;
   }
-
-  .loading-overlay.visible {
-    opacity: 1;
-    pointer-events: all;
-  }
-
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent-cyan);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  .loading-text {
-    font-size: 12px;
-    color: var(--text-secondary);
-    font-family: monospace;
-  }
-
-  /* === TOAST === */
+  .loading-overlay.visible { opacity:1; pointer-events:all; }
+  .loading-spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--accent-cyan); border-radius:50%; animation:spin .8s linear infinite; }
+  .loading-text { font-size:12px; color:var(--text-secondary); font-family:monospace; }
   .toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 12px;
-    box-shadow: var(--shadow-lg);
-    z-index: 10000;
-    opacity: 0;
-    transition: all 0.3s;
-    max-width: 90vw;
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(100px);
+    background:var(--bg-elevated); border:1px solid var(--border); color:var(--text-primary);
+    padding:12px 16px; border-radius:8px; font-size:12px; box-shadow:var(--shadow-lg);
+    z-index:10000; opacity:0; transition:all .3s; max-width:90vw;
+  }
+  .toast.visible { transform:translateX(-50%) translateY(0); opacity:1; }
+  .toast.error { border-color:var(--accent-red); }
+  .toast.success { border-color:var(--accent-green); }
+
+  @media (min-width:600px) {
+    .cards-grid { grid-template-columns:repeat(4,1fr); }
+    .card-full { grid-column:span 4; }
+    .map-container { height:55vh; }
   }
 
-  .toast.visible {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
-
-  .toast.error { border-color: var(--accent-red); }
-  .toast.success { border-color: var(--accent-green); }
-
-  /* === UTILIDADES === */
-  .flex-row { display: flex; align-items: center; gap: 8px; }
-  .text-muted { color: var(--text-muted); }
-  .text-sm { font-size: 11px; }
-  .mt-4 { margin-top: 4px; }
-  .mb-4 { margin-bottom: 4px; }
-
-  /* === RESPONSIVE MEJORAS === */
-  @media (min-width: 600px) {
-    .cards-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-    .card-full {
-      grid-column: span 4;
-    }
-    .map-container {
-      height: 55vh;
-    }
-  }
-
-  /* === CUSTOMIZACIONES LEAFLET === */
-  .leaflet-container {
-    background: #050810 !important;
-    font-family: inherit;
-  }
-  .leaflet-control-attribution {
-    background: rgba(10,14,26,0.8) !important;
-    color: var(--text-muted) !important;
-    font-size: 9px !important;
-  }
-  .leaflet-control-attribution a {
-    color: var(--accent-cyan) !important;
-  }
-  .leaflet-control-zoom a {
-    background: var(--bg-card) !important;
-    color: var(--text-primary) !important;
-    border-color: var(--border) !important;
-  }
+  /* === AJUSTES LEAFLET === */
+  .leaflet-container { background:#050810 !important; font-family:inherit; }
+  .leaflet-control-attribution { background:rgba(10,14,26,.8)!important; color:var(--text-muted)!important; font-size:9px!important; }
+  .leaflet-control-attribution a { color:var(--accent-cyan)!important; }
 </style>
 </head>
 <body>
@@ -580,7 +168,7 @@
 
   <!-- HEADER -->
   <header class="header">
-    <div class="header-title">
+    <div>
       <h1>🌊 Monitor El Niño</h1>
       <div class="header-subtitle">GYE • -2.1962, -79.8862</div>
     </div>
@@ -590,259 +178,257 @@
     </div>
   </header>
 
-  <!-- ALERT BANNER (oculto hasta que haya alarma) -->
+  <!-- BANNER DE ALERTA -->
   <div class="alert-banner" id="alertBanner">
-    <div class="alert-banner-header">
-      <span>⚠️</span>
-      <span>ALERTA DE LLUVIA INTENSA</span>
-    </div>
-    <div class="alert-banner-text" id="alertBannerText">
-      Se pronostican lluvias intensas en las próximas horas. Probabilidad superior al 60%.
-    </div>
+    <div class="alert-banner-header"><span>⚠️</span><span>ALERTA DE LLUVIA INTENSA</span></div>
+    <div class="alert-banner-text" id="alertBannerText"></div>
   </div>
 
-  <!-- MAPA INTERACTIVO -->
+  <!-- MAPA -->
   <div class="map-container">
     <div id="map"></div>
     <div class="map-controls">
-      <button class="map-btn primary" onclick="zoomToGuayaquil()">
-        <span>📍</span><span>Guayaquil</span>
-      </button>
-      <button class="map-btn" onclick="zoomToSouthAmerica()">
-        <span>🌎</span><span>Pacífico</span>
-      </button>
-      <button class="map-btn" id="sstToggle" onclick="toggleSSTLayer()">
-        <span>🌡️</span><span>SST ON</span>
-      </button>
+      <button class="map-btn primary" onclick="zoomToGuayaquil()"><span>📍</span><span>Guayaquil</span></button>
+      <button class="map-btn" onclick="zoomToPacific()"><span>🌎</span><span>Pacífico</span></button>
+      <button class="map-btn" id="sstToggle" onclick="toggleSSTLayer()"><span>🌡️</span><span>SST ON</span></button>
+      <button class="map-btn" id="baseToggle" onclick="toggleBaseMap()"><span>🗺️</span><span id="baseLabel">Oscuro</span></button>
     </div>
     <div class="map-legend">
       <span>TSM (°C)</span>
-      <div class="legend-scale">
-        <span>18°</span>
-        <div class="legend-gradient"></div>
-        <span>32°</span>
-      </div>
+      <div class="legend-scale"><span>18°</span><div class="legend-gradient"></div><span>32°</span></div>
+      <span id="sstDate">SST: --</span>
     </div>
   </div>
 
-  <!-- GRID DE TARJETAS -->
+  <!-- TARJETAS -->
   <div class="cards-grid">
-
-    <!-- Temperatura actual -->
     <div class="card">
-      <div class="card-header">
-        <span class="card-label">T° Actual</span>
-        <span>🌡️</span>
-      </div>
+      <div class="card-header"><span class="card-label">T° Actual</span><span>🌡️</span></div>
       <div class="card-value" id="currentTemp">--°</div>
-      <div class="card-sub">
-        <span id="tempTrend">—</span>
-        <span class="badge safe" id="tempBadge">NORMAL</span>
-      </div>
+      <div class="card-sub"><span id="tempTrend">—</span><span class="badge safe" id="tempBadge">NORMAL</span></div>
     </div>
 
-    <!-- Probabilidad de lluvia -->
     <div class="card" id="rainCard">
-      <div class="card-header">
-        <span class="card-label">Lluvia Próxima</span>
-        <span>🌧️</span>
-      </div>
+      <div class="card-header"><span class="card-label">Lluvia Próxima</span><span>🌧️</span></div>
       <div class="card-value ocean" id="rainProb">--%</div>
-      <div class="card-sub">
-        <span id="rainMm">0.0 mm</span>
-        <span class="badge safe" id="rainBadge">SECO</span>
-      </div>
+      <div class="card-sub"><span id="rainMm">0.0 mm</span><span class="badge safe" id="rainBadge">SECO</span></div>
     </div>
 
-    <!-- Temperatura del mar -->
     <div class="card">
-      <div class="card-header">
-        <span class="card-label">T° Mar (SST)</span>
-        <span>🌊</span>
-      </div>
+      <div class="card-header"><span class="card-label">T° Mar (SST)</span><span>🌊</span></div>
       <div class="card-value ocean" id="seaTemp">--°</div>
-      <div class="card-sub">
-        <span id="seaStatus">Normal</span>
-        <span class="badge info" id="seaBadge">ESTABLE</span>
-      </div>
+      <div class="card-sub"><span id="seaStatus">Normal</span><span class="badge info" id="seaBadge">ESTABLE</span></div>
     </div>
 
-    <!-- Estado de alertas -->
     <div class="card">
-      <div class="card-header">
-        <span class="card-label">Alertas Activas</span>
-        <span>🔔</span>
-      </div>
+      <div class="card-header"><span class="card-label">Alertas Activas</span><span>🔔</span></div>
       <div class="card-value small" id="alertsCount">0</div>
-      <div class="card-sub">
-        <span id="lastUpdate">--:--</span>
-        <span class="badge safe" id="alertBadge">SIN ALERTAS</span>
-      </div>
+      <div class="card-sub"><span id="lastUpdate">--:--</span><span class="badge safe" id="alertBadge">SIN ALERTAS</span></div>
     </div>
 
-    <!-- Pronóstico por hora (12-24h) -->
     <div class="card card-full">
-      <div class="card-header">
-        <span class="card-label">Próximas 24 Horas</span>
-        <span>⏰</span>
-      </div>
-      <div class="hourly-scroll" id="hourlyScroll">
-        <!-- Se llena dinámicamente -->
-      </div>
+      <div class="card-header"><span class="card-label">Próximas 24 Horas</span><span>⏰</span></div>
+      <div class="hourly-scroll" id="hourlyScroll"></div>
     </div>
 
-    <!-- Oleaje y condiciones marinas -->
     <div class="card card-full">
-      <div class="card-header">
-        <span class="card-label">Condiciones Oceánicas</span>
-        <span>🌊</span>
-      </div>
-      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px;">
-        <div>
-          <div style="font-size:10px; color:var(--text-muted);">OLEAJE</div>
-          <div style="font-size:16px; font-weight:700;" id="waveHeight">-- m</div>
-        </div>
-        <div>
-          <div style="font-size:10px; color:var(--text-muted);">PERIODO</div>
-          <div style="font-size:16px; font-weight:700;" id="wavePeriod">-- s</div>
-        </div>
-        <div>
-          <div style="font-size:10px; color:var(--text-muted);">DIRECCIÓN</div>
-          <div style="font-size:16px; font-weight:700;" id="waveDirection">--°</div>
-        </div>
+      <div class="card-header"><span class="card-label">Condiciones Oceánicas</span><span>🌊</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;">
+        <div><div style="font-size:10px;color:var(--text-muted);">OLEAJE</div><div style="font-size:16px;font-weight:700;" id="waveHeight">-- m</div></div>
+        <div><div style="font-size:10px;color:var(--text-muted);">PERIODO</div><div style="font-size:16px;font-weight:700;" id="wavePeriod">-- s</div></div>
+        <div><div style="font-size:10px;color:var(--text-muted);">DIRECCIÓN</div><div style="font-size:16px;font-weight:700;" id="waveDirection">--°</div></div>
       </div>
     </div>
-
   </div>
 
-  <!-- BOTONES DE ACCIÓN -->
+  <!-- ACCIONES -->
   <div class="actions">
-    <button class="btn primary" onclick="refreshAll()" id="refreshBtn">
-      <span>🔄</span>
-      <span>Actualizar</span>
-    </button>
-    <button class="btn" onclick="requestNotifications()">
-      <span>🔔</span>
-      <span>Notificaciones</span>
-    </button>
+    <button class="btn primary" id="refreshBtn" onclick="refreshAll()"><span>🔄</span><span>Actualizar</span></button>
+    <button class="btn" onclick="requestNotifications()"><span>🔔</span><span>Notificaciones</span></button>
   </div>
 
-  <!-- FOOTER -->
   <footer class="footer">
-    <div>Datos: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> | <a href="https://gibs.earthdata.nasa.gov" target="_blank">NASA GIBS</a></div>
-    <div class="mt-4">Auto-refresh: cada 60 minutos</div>
+    <div>Datos: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> | SST: <a href="https://gibs.earthdata.nasa.gov" target="_blank">NASA GIBS</a> | Base: Esri/OSM</div>
+    <div>Imagery: NASA GIBS / ESDIS • Auto-refresh: 60 min</div>
   </footer>
-
 </div>
 
-<!-- OVERLAY DE CARGA -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
   <div class="loading-text" id="loadingText">Consultando APIs...</div>
 </div>
-
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-/* ============================================
-   CONFIGURACIÓN GLOBAL
-   ============================================ */
+/* =====================================================
+   CONFIGURACIÓN
+   ===================================================== */
 const CONFIG = {
-  location: {
-    name: 'Guayaquil, Ecuador',
-    lat: -2.1962,
-    lon: -79.8862
-  },
-  // Vista inicial: Sudamérica + Pacífico
-  initialView: { lat: -5, lon: -95, zoom: 3 },
-  // Vista de zoom a Guayaquil
+  location: { lat: -2.1962, lon: -79.8862 },
+  initialView: { lat: -5, lon: -95, zoom: 3 },   // Sudamérica + Pacífico
   guayaquilView: { lat: -2.1962, lon: -79.8862, zoom: 9 },
-  thresholds: {
-    rainProbability: 60,  // % para activar alerta
-    rainIntensity: 5,     // mm/h para lluvia intensa
-    sstAnomaly: 27.5      // °C - umbral para anomalía cálida (El Niño)
+  thresholds: { rainProbability: 60, rainIntensity: 5, sstAnomaly: 27.5, sstElNino: 28.5 },
+  refreshInterval: 60 * 60 * 1000
+};
+
+/* Basemaps SIN API KEY.
+   CARTO ahora exige key (marca de agua), así que usamos:
+   - Esri World Dark Gray Base (servicio público ArcGIS Online, sin key)
+   - Esri World Imagery (satélite, sin key)
+   - OSM estándar con filtro oscuro como respaldo automático */
+const BASEMAPS = {
+  dark: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: '© Esri — World Dark Gray Base', maxNativeZoom: 16, dark: false, label: 'Oscuro'
   },
-  refreshInterval: 60 * 60 * 1000 // 1 hora en ms
+  sat: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '© Esri, Maxar, Earthstar Geographics — World Imagery', maxNativeZoom: 18, dark: false, label: 'Satélite'
+  },
+  osm: {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors', maxNativeZoom: 19, dark: true, label: 'OSM'
+  }
 };
 
-// Estado global de la app
+/* Capas SST verificadas en el GetCapabilities de GIBS (EPSG:3857) */
+const SST_LAYERS = [
+  'GHRSST_L4_MUR_Sea_Surface_Temperature',        // 1 km, la de mejor calidad
+  'GHRSST_L4_AVHRR-OI_Sea_Surface_Temperature'    // respaldo
+];
+
 const state = {
-  weather: null,
-  marine: null,
-  map: null,
-  sstLayer: null,
-  sstVisible: true,
-  autoRefreshTimer: null,
-  alerts: []
+  weather: null, marine: null, map: null,
+  baseLayer: null, baseMode: 'dark', baseFallbackUsed: false,
+  sstLayer: null, sstVisible: true, sstIndex: 0, sstErrors: 0, sstFailed: false,
+  autoRefreshTimer: null, alerts: []
 };
 
-/* ============================================
-   INICIALIZACIÓN
-   ============================================ */
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   refreshAll();
   startAutoRefresh();
 });
 
-/* ============================================
-   MAPA LEAFLET + CAPA SST (NASA GIBS)
-   ============================================ */
+/* =====================================================
+   MAPA LEAFLET
+   ===================================================== */
 function initMap() {
-  // Crear el mapa con vista inicial sobre Sudamérica y el Pacífico
   state.map = L.map('map', {
     center: [CONFIG.initialView.lat, CONFIG.initialView.lon],
     zoom: CONFIG.initialView.zoom,
     zoomControl: false,
-    attributionControl: true,
-    worldCopyJump: true
+    worldCopyJump: true,
+    maxZoom: 18
   });
 
-  // Capa base oscura de CartoDB
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(state.map);
+  // Panes separados: el filtro oscuro del basemap no afecta a la capa SST
+  state.map.createPane('basemap').style.zIndex = 350;
+  state.map.createPane('sst').style.zIndex = 450;
 
-  // Añadir capa de Temperatura Superficial del Mar (SST) desde NASA GIBS
-  // GHRSST es el dataset de alta resolución de NASA que muestra TSM en tiempo casi real
+  addBaseMap('dark');
   addSSTLayer();
 
-  // Marcador de Guayaquil
-  const gyeIcon = L.divIcon({
-    html: '<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(239,68,68,0.8);"></div>',
-    className: 'gye-marker',
-    iconSize: [14, 14],
-    iconAnchor: [7, 7]
+  // Marcador Guayaquil
+  const icon = L.divIcon({
+    html: '<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 10px rgba(239,68,68,.8);"></div>',
+    className: '', iconSize: [14, 14], iconAnchor: [7, 7]
+  });
+  L.marker([CONFIG.location.lat, CONFIG.location.lon], { icon, zIndexOffset: 1000 })
+    .addTo(state.map).bindPopup('<b>Guayaquil</b><br>Estación de monitoreo');
+}
+
+/* --- Basemap con respaldo automático ante errores de tiles --- */
+function addBaseMap(mode) {
+  const cfg = BASEMAPS[mode];
+  state.baseLayer = L.tileLayer(cfg.url, {
+    attribution: cfg.attribution,
+    maxNativeZoom: cfg.maxNativeZoom,
+    maxZoom: 18,
+    pane: 'basemap'
+  }).addTo(state.map);
+
+  let errCount = 0;
+  state.baseLayer.on('tileerror', () => {
+    errCount++;
+    // Si el basemap falla (p. ej. bloqueado), cae a OSM con filtro oscuro
+    if (errCount >= 3 && !state.baseFallbackUsed && mode !== 'osm') {
+      state.baseFallbackUsed = true;
+      showToast('Basemap alternativo cargado (OSM)', 'error');
+      switchBaseMap('osm');
+    }
   });
 
-  L.marker([CONFIG.location.lat, CONFIG.location.lon], { icon: gyeIcon })
-    .addTo(state.map)
-    .bindPopup('<b>Guayaquil</b><br>Estación de monitoreo');
+  state.baseMode = mode;
+  state.map.getContainer().classList.toggle('osm-dark', !!cfg.dark);
+  document.getElementById('baseLabel').textContent = cfg.label;
+}
+
+function switchBaseMap(mode) {
+  if (state.baseLayer) state.map.removeLayer(state.baseLayer);
+  addBaseMap(mode);
+}
+
+function toggleBaseMap() {
+  switchBaseMap(state.baseMode === 'dark' ? 'sat' : 'dark');
+}
+
+/* --- Capa WMS de Temperatura Superficial del Mar (NASA GIBS) ---
+   Las capas GIBS son temporales: enviamos TIME=YYYY-MM-DD (UTC -2 días,
+   por la latencia del producto MUR). GIBS ajusta al valor más cercano. */
+function getSSTDate() {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 2);
+  return d.toISOString().slice(0, 10);
 }
 
 function addSSTLayer() {
-  // NASA GIBS WMS - capa de temperatura superficial del mar (SST)
-  // GHRSST L4 MUR: dataset global diario de alta resolución (1km)
-  state.sstLayer = L.tileLayer.wms(
-    'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi',
-    {
-      layers: 'GHRSST_L4_MUR_Skin_SST',
-      format: 'image/png',
-      transparent: true,
-      opacity: 0.7,
-      version: '1.3.0',
-      styles: 'default'
+  const dateStr = getSSTDate();
+  document.getElementById('sstDate').textContent = 'SST: ' + dateStr;
+  buildSSTLayer(SST_LAYERS[state.sstIndex], dateStr);
+}
+
+function buildSSTLayer(layerName, dateStr) {
+  state.sstLayer = L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
+    layers: layerName,
+    format: 'image/png',
+    transparent: true,
+    version: '1.1.1',
+    TIME: dateStr,          // dimensión temporal de GIBS
+    opacity: 0.8,
+    pane: 'sst',
+    attribution: 'SST: NASA GIBS (GHRSST MUR)'
+  });
+
+  state.sstErrors = 0;
+  state.sstLayer.on('load', () => { state.sstErrors = 0; });
+  state.sstLayer.on('tileerror', () => {
+    state.sstErrors++;
+    if (state.sstErrors >= 4 && !state.sstFailed) {
+      if (state.sstIndex < SST_LAYERS.length - 1) {
+        // Respaldo: probar la siguiente capa SST verificada
+        state.sstIndex++;
+        showToast('Cambiando a capa SST de respaldo...', 'error');
+        const wasVisible = state.sstVisible;
+        state.map.removeLayer(state.sstLayer);
+        buildSSTLayer(SST_LAYERS[state.sstIndex], getSSTDate());
+        if (wasVisible) state.sstLayer.addTo(state.map);
+      } else {
+        state.sstFailed = true;
+        state.map.removeLayer(state.sstLayer);
+        state.sstVisible = false;
+        document.getElementById('sstToggle').innerHTML = '<span>🌡️</span><span>SST N/D</span>';
+        showToast('Capa SST no disponible temporalmente', 'error');
+      }
     }
-  ).addTo(state.map);
+  });
+
+  if (state.sstVisible) state.sstLayer.addTo(state.map);
 }
 
 function toggleSSTLayer() {
+  if (state.sstFailed) { showToast('Capa SST no disponible', 'error'); return; }
   const btn = document.getElementById('sstToggle');
   if (state.sstVisible) {
     state.map.removeLayer(state.sstLayer);
@@ -855,92 +441,53 @@ function toggleSSTLayer() {
 }
 
 function zoomToGuayaquil() {
-  state.map.flyTo(
-    [CONFIG.guayaquilView.lat, CONFIG.guayaquilView.lon],
-    CONFIG.guayaquilView.zoom,
-    { duration: 1.5 }
-  );
+  state.map.flyTo([CONFIG.guayaquilView.lat, CONFIG.guayaquilView.lon], CONFIG.guayaquilView.zoom, { duration: 1.5 });
+}
+function zoomToPacific() {
+  state.map.flyTo([CONFIG.initialView.lat, CONFIG.initialView.lon], CONFIG.initialView.zoom, { duration: 1.5 });
 }
 
-function zoomToSouthAmerica() {
-  state.map.flyTo(
-    [CONFIG.initialView.lat, CONFIG.initialView.lon],
-    CONFIG.initialView.zoom,
-    { duration: 1.5 }
-  );
-}
-
-/* ============================================
-   CONSULTA A LA API OPEN-METEO (CLIMA)
-   ============================================ */
+/* =====================================================
+   APIs OPEN-METEO
+   ===================================================== */
 async function fetchWeather() {
-  // Variables solicitadas:
-  // - temperature_2m: temperatura actual
-  // - precipitation_probability: probabilidad de lluvia por hora
-  // - precipitation: mm de lluvia esperados por hora
-  // - weather_code: código del clima
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.location.lat}&longitude=${CONFIG.location.lon}`
     + `&hourly=temperature_2m,precipitation_probability,precipitation,weather_code`
     + `&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m`
     + `&timezone=America/Guayaquil&forecast_days=2`;
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Error en API del clima');
-  return await response.json();
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Error en API del clima');
+  return r.json();
 }
 
-/* ============================================
-   CONSULTA A LA API MARINA DE OPEN-METEO
-   ============================================ */
 async function fetchMarine() {
-  // Marine API: oleaje y condiciones oceánicas
-  // No tiene SST directamente, por eso usamos NASA GIBS para el mapa
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${CONFIG.location.lat}&longitude=${CONFIG.location.lon}`
-    + `&hourly=wave_height,wave_period,wave_direction,wind_wave_height,swell_wave_height`
+    + `&hourly=wave_height,wave_period,wave_direction`
     + `&timezone=America/Guayaquil`;
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Error en API marina');
-  return await response.json();
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Error en API marina');
+  return r.json();
 }
 
-/* ============================================
-   ACTUALIZACIÓN GLOBAL
-   ============================================ */
 async function refreshAll() {
   const btn = document.getElementById('refreshBtn');
-  const overlay = document.getElementById('loadingOverlay');
-  const loadingText = document.getElementById('loadingText');
-
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div><span>Cargando...</span>';
   showLoading(true);
-
   try {
-    // Consultar clima
-    loadingText.textContent = 'Obteniendo pronóstico climático...';
+    document.getElementById('loadingText').textContent = 'Obteniendo pronóstico climático...';
     state.weather = await fetchWeather();
-
-    // Consultar condiciones marinas
-    loadingText.textContent = 'Analizando océano...';
+    document.getElementById('loadingText').textContent = 'Analizando océano...';
     state.marine = await fetchMarine();
-
-    // Procesar y mostrar datos
-    loadingText.textContent = 'Procesando datos...';
-    await new Promise(r => setTimeout(r, 300));
+    document.getElementById('loadingText').textContent = 'Procesando datos...';
     processData();
-
-    // Analizar alertas
     checkAlarms();
-
-    // Actualizar estado
     updateStatus(true);
     showToast('Datos actualizados correctamente', 'success');
-
-  } catch (error) {
-    console.error('Error al actualizar:', error);
+  } catch (e) {
+    console.error(e);
     updateStatus(false);
-    showToast('Error: ' + error.message, 'error');
+    showToast('Error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<span>🔄</span><span>Actualizar</span>';
@@ -948,388 +495,215 @@ async function refreshAll() {
   }
 }
 
-/* ============================================
-   PROCESAMIENTO Y RENDERIZADO DE DATOS
-   ============================================ */
-function processData() {
-  if (!state.weather) return;
-
-  const w = state.weather;
-  const m = state.marine;
-
-  // --- DATOS ACTUALES ---
-  const currentTemp = w.current?.temperature_2m;
-  document.getElementById('currentTemp').textContent = `${currentTemp?.toFixed(1)}°`;
-
-  // Tendencia: comparar con hace 6h
-  const currentIdx = findCurrentHourIndex(w.hourly.time);
-  if (currentIdx >= 6) {
-    const temp6hAgo = w.hourly.temperature_2m[currentIdx - 6];
-    const diff = currentTemp - temp6hAgo;
-    const trendEl = document.getElementById('tempTrend');
-    if (diff > 0.5) {
-      trendEl.textContent = `↑ ${diff.toFixed(1)}° (6h)`;
-      trendEl.style.color = 'var(--accent-red)';
-    } else if (diff < -0.5) {
-      trendEl.textContent = `↓ ${Math.abs(diff).toFixed(1)}° (6h)`;
-      trendEl.style.color = 'var(--accent-cyan)';
-    } else {
-      trendEl.textContent = '→ Estable';
-      trendEl.style.color = 'var(--text-muted)';
-    }
-  }
-
-  // --- LLUVIA EN LAS PRÓXIMAS HORAS (12-24h) ---
-  const hourWindow = getNextHoursData(w.hourly, 24);
-  const maxRainProb = Math.max(...hourWindow.probabilities);
-  const totalRainMm = hourWindow.precipitation.reduce((a, b) => a + b, 0);
-  const maxRainIntensity = Math.max(...hourWindow.precipitation);
-
-  document.getElementById('rainProb').textContent = `${maxRainProb}%`;
-  document.getElementById('rainMm').textContent = `${totalRainMm.toFixed(1)} mm (24h)`;
-
-  const rainCard = document.getElementById('rainCard');
-  const rainBadge = document.getElementById('rainBadge');
-  if (maxRainProb >= 80 || maxRainIntensity >= CONFIG.thresholds.rainIntensity) {
-    rainCard.classList.add('alert');
-    rainBadge.textContent = 'INTENSO';
-    rainBadge.className = 'badge danger';
-  } else if (maxRainProb >= CONFIG.thresholds.rainProbability) {
-    rainCard.classList.add('alert');
-    rainBadge.textContent = 'LLUVIA';
-    rainBadge.className = 'badge warning';
-  } else {
-    rainCard.classList.remove('alert');
-    rainBadge.textContent = 'SECO';
-    rainBadge.className = 'badge safe';
-  }
-
-  // --- TEMPERATURA DEL MAR (SST) ---
-  // Usamos la SST del mapa NASA GIBS como referencia visual.
-  // Como Open-Meteo Marine no provee SST directa, estimamos basado en datos
-  // históricos del Pacífico ecuatorial cerca de Guayaquil.
-  // En condiciones El Niño, la SST supera los 27-28°C.
-  const estimatedSST = estimateSST(currentTemp, hourWindow);
-  document.getElementById('seaTemp').textContent = `${estimatedSST.toFixed(1)}°`;
-
-  const seaBadge = document.getElementById('seaBadge');
-  const seaStatus = document.getElementById('seaStatus');
-  if (estimatedSST >= 28.5) {
-    seaBadge.textContent = 'EL NIÑO';
-    seaBadge.className = 'badge danger';
-    seaStatus.textContent = 'Anomalía cálida';
-    seaStatus.style.color = 'var(--accent-red)';
-  } else if (estimatedSST >= CONFIG.thresholds.sstAnomaly) {
-    seaBadge.textContent = 'CÁLIDO';
-    seaBadge.className = 'badge warning';
-    seaStatus.textContent = 'Sobre promedio';
-    seaStatus.style.color = 'var(--accent-yellow)';
-  } else {
-    seaBadge.textContent = 'ESTABLE';
-    seaBadge.className = 'badge info';
-    seaStatus.textContent = 'Normal';
-    seaStatus.style.color = 'var(--text-secondary)';
-  }
-
-  // --- CONDICIONES OCEÁNICAS ---
-  if (m && m.hourly) {
-    const marineIdx = findCurrentHourIndex(m.hourly.time);
-    const waveH = m.hourly.wave_height?.[marineIdx];
-    const waveP = m.hourly.wave_period?.[marineIdx];
-    const waveD = m.hourly.wave_direction?.[marineIdx];
-
-    document.getElementById('waveHeight').textContent = waveH ? `${waveH.toFixed(2)} m` : '-- m';
-    document.getElementById('wavePeriod').textContent = waveP ? `${waveP.toFixed(1)} s` : '-- s';
-    document.getElementById('waveDirection').textContent = waveD ? `${Math.round(waveD)}°` : '--°';
-  }
-
-  // --- PRONÓSTICO POR HORA (24h) ---
-  renderHourlyForecast(w.hourly);
-
-  // --- ÚLTIMA ACTUALIZACIÓN ---
-  const now = new Date();
-  document.getElementById('lastUpdate').textContent =
-    `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-}
-
-/* Estimación de SST basada en patrones climáticos regionales.
-   Esta es una aproximación; la SST real se visualiza en el mapa NASA GIBS. */
-function estimateSST(airTemp, hourData) {
-  // En la costa ecuatoriana, la SST típicamente está entre 23-29°C
-  // Relación empírica: SST ≈ airTemp + offset según época
-  const month = new Date().getMonth();
-  // Dic-Mayo (temporada cálida/El Niño): offset +3 a +5
-  // Jun-Nov (temporada fría/Humboldt): offset -2 a +1
-  const offset = (month >= 11 || month <= 4) ? 3.5 : 0.5;
-  return Math.max(20, Math.min(32, airTemp + offset));
-}
-
-/* Encuentra el índice de la hora actual en un array de timestamps */
+/* =====================================================
+   PROCESAMIENTO / UI
+   ===================================================== */
 function findCurrentHourIndex(timeArray) {
-  const now = new Date();
-  const nowStr = now.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+  const nowStr = new Date().toISOString().slice(0, 13);
   return timeArray.findIndex(t => t.startsWith(nowStr));
 }
 
-/* Extrae datos de las próximas N horas desde la hora actual */
 function getNextHoursData(hourly, hours) {
-  const idx = findCurrentHourIndex(hourly.time);
-  const startIdx = Math.max(0, idx);
-  const endIdx = Math.min(hourly.time.length, startIdx + hours);
-
+  const i = Math.max(0, findCurrentHourIndex(hourly.time));
+  const e = Math.min(hourly.time.length, i + hours);
   return {
-    probabilities: hourly.precipitation_probability.slice(startIdx, endIdx),
-    precipitation: hourly.precipitation.slice(startIdx, endIdx),
-    temperatures: hourly.temperature_2m.slice(startIdx, endIdx),
-    weatherCodes: hourly.weather_code.slice(startIdx, endIdx),
-    times: hourly.time.slice(startIdx, endIdx)
+    probabilities: hourly.precipitation_probability.slice(i, e),
+    precipitation: hourly.precipitation.slice(i, e),
+    temperatures: hourly.temperature_2m.slice(i, e),
+    weatherCodes: hourly.weather_code.slice(i, e),
+    times: hourly.time.slice(i, e)
   };
 }
 
-/* Renderiza el carrusel de pronóstico por hora */
+function estimateSST(airTemp) {
+  const month = new Date().getMonth();
+  const offset = (month >= 11 || month <= 4) ? 3.5 : 0.5; // cálida vs Humboldt
+  return Math.max(20, Math.min(32, airTemp + offset));
+}
+
+function processData() {
+  const w = state.weather, m = state.marine;
+  if (!w) return;
+
+  const currentTemp = w.current?.temperature_2m ?? 0;
+  document.getElementById('currentTemp').textContent = currentTemp.toFixed(1) + '°';
+
+  const idx = findCurrentHourIndex(w.hourly.time);
+  if (idx >= 6) {
+    const diff = currentTemp - w.hourly.temperature_2m[idx - 6];
+    const el = document.getElementById('tempTrend');
+    if (diff > 0.5)       { el.textContent = `↑ ${diff.toFixed(1)}° (6h)`;  el.style.color = 'var(--accent-red)'; }
+    else if (diff < -0.5) { el.textContent = `↓ ${Math.abs(diff).toFixed(1)}° (6h)`; el.style.color = 'var(--accent-cyan)'; }
+    else                  { el.textContent = '→ Estable'; el.style.color = 'var(--text-muted)'; }
+  }
+
+  // Lluvia próximas 24 h
+  const hw = getNextHoursData(w.hourly, 24);
+  const maxProb = Math.max(...hw.probabilities);
+  const totalMm = hw.precipitation.reduce((a, b) => a + b, 0);
+  const maxInt  = Math.max(...hw.precipitation);
+
+  document.getElementById('rainProb').textContent = maxProb + '%';
+  document.getElementById('rainMm').textContent = totalMm.toFixed(1) + ' mm (24h)';
+
+  const rainCard = document.getElementById('rainCard');
+  const rainBadge = document.getElementById('rainBadge');
+  if (maxProb >= 80 || maxInt >= CONFIG.thresholds.rainIntensity) {
+    rainCard.classList.add('alert'); rainBadge.textContent = 'INTENSO'; rainBadge.className = 'badge danger';
+  } else if (maxProb >= CONFIG.thresholds.rainProbability) {
+    rainCard.classList.add('alert'); rainBadge.textContent = 'LLUVIA'; rainBadge.className = 'badge warning';
+  } else {
+    rainCard.classList.remove('alert'); rainBadge.textContent = 'SECO'; rainBadge.className = 'badge safe';
+  }
+
+  // SST estimada (la real se visualiza en el mapa GIBS)
+  const sst = estimateSST(currentTemp);
+  document.getElementById('seaTemp').textContent = sst.toFixed(1) + '°';
+  const seaBadge = document.getElementById('seaBadge');
+  const seaStatus = document.getElementById('seaStatus');
+  if (sst >= CONFIG.thresholds.sstElNino) {
+    seaBadge.textContent = 'EL NIÑO'; seaBadge.className = 'badge danger';
+    seaStatus.textContent = 'Anomalía cálida'; seaStatus.style.color = 'var(--accent-red)';
+  } else if (sst >= CONFIG.thresholds.sstAnomaly) {
+    seaBadge.textContent = 'CÁLIDO'; seaBadge.className = 'badge warning';
+    seaStatus.textContent = 'Sobre promedio'; seaStatus.style.color = 'var(--accent-yellow)';
+  } else {
+    seaBadge.textContent = 'ESTABLE'; seaBadge.className = 'badge info';
+    seaStatus.textContent = 'Normal'; seaStatus.style.color = 'var(--text-secondary)';
+  }
+
+  // Oleaje
+  if (m?.hourly) {
+    const mi = findCurrentHourIndex(m.hourly.time);
+    document.getElementById('waveHeight').textContent    = m.hourly.wave_height?.[mi]    != null ? m.hourly.wave_height[mi].toFixed(2) + ' m' : '-- m';
+    document.getElementById('wavePeriod').textContent    = m.hourly.wave_period?.[mi]    != null ? m.hourly.wave_period[mi].toFixed(1) + ' s' : '-- s';
+    document.getElementById('waveDirection').textContent = m.hourly.wave_direction?.[mi] != null ? Math.round(m.hourly.wave_direction[mi]) + '°' : '--°';
+  }
+
+  renderHourlyForecast(w.hourly);
+  const now = new Date();
+  document.getElementById('lastUpdate').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+
 function renderHourlyForecast(hourly) {
-  const container = document.getElementById('hourlyScroll');
-  const data = getNextHoursData(hourly, 24);
-  container.innerHTML = '';
-
-  data.times.forEach((time, i) => {
-    const hour = new Date(time).getHours();
-    const prob = data.probabilities[i] || 0;
-    const temp = data.temperatures[i] || 0;
-    const code = data.weatherCodes[i];
-    const icon = weatherCodeToIcon(code);
-
+  const box = document.getElementById('hourlyScroll');
+  const d = getNextHoursData(hourly, 24);
+  box.innerHTML = '';
+  d.times.forEach((t, i) => {
+    const prob = d.probabilities[i] || 0;
     const item = document.createElement('div');
     item.className = 'hour-item';
-    item.innerHTML = `
-      <div class="hour-time">${hour}h</div>
-      <div class="hour-icon">${icon}</div>
-      <div class="hour-rain ${prob >= 60 ? 'high' : ''}">${prob}%</div>
-      <div class="hour-temp">${temp.toFixed(0)}°</div>
-    `;
-    container.appendChild(item);
+    item.innerHTML =
+      `<div class="hour-time">${new Date(t).getHours()}h</div>` +
+      `<div class="hour-icon">${weatherCodeToIcon(d.weatherCodes[i])}</div>` +
+      `<div class="hour-rain ${prob >= 60 ? 'high' : ''}">${prob}%</div>` +
+      `<div class="hour-temp">${(d.temperatures[i] || 0).toFixed(0)}°</div>`;
+    box.appendChild(item);
   });
 }
 
-/* Convierte código WMO de Open-Meteo a emoji */
-function weatherCodeToIcon(code) {
-  if (code === 0) return '☀️';
-  if (code <= 3) return '⛅';
-  if (code <= 48) return '🌫️';
-  if (code <= 55) return '🌦️';
-  if (code <= 67) return '🌧️';
-  if (code <= 77) return '🌨️';
-  if (code <= 82) return '🌧️';
-  if (code <= 86) return '❄️';
-  if (code >= 95) return '⛈️';
+function weatherCodeToIcon(c) {
+  if (c === 0) return '☀️';
+  if (c <= 3) return '⛅';
+  if (c <= 48) return '🌫️';
+  if (c <= 67) return '🌧️';
+  if (c <= 77) return '🌨️';
+  if (c <= 82) return '🌧️';
+  if (c <= 86) return '❄️';
+  if (c >= 95) return '⛈️';
   return '☁️';
 }
 
-/* ============================================
-   SISTEMA DE ALARMAS
-   ============================================ */
+/* =====================================================
+   ALARMAS + NOTIFICACIONES
+   ===================================================== */
 function checkAlarms() {
   state.alerts = [];
   const w = state.weather;
   if (!w) return;
 
-  const hourWindow = getNextHoursData(w.hourly, 24);
-  const maxProb = Math.max(...hourWindow.probabilities);
-  const maxIntensity = Math.max(...hourWindow.precipitation);
-  const totalRain = hourWindow.precipitation.reduce((a, b) => a + b, 0);
+  const hw = getNextHoursData(w.hourly, 24);
+  const maxProb = Math.max(...hw.probabilities);
+  const maxInt  = Math.max(...hw.precipitation);
+  const total   = hw.precipitation.reduce((a, b) => a + b, 0);
 
-  // Alarma 1: Probabilidad de lluvia > 60%
-  if (maxProb >= CONFIG.thresholds.rainProbability) {
-    state.alerts.push({
-      type: 'rain_prob',
-      severity: maxProb >= 80 ? 'high' : 'medium',
-      message: `Alta probabilidad de lluvia: ${maxProb}% en las próximas 24h.`
-    });
-  }
+  if (maxProb >= CONFIG.thresholds.rainProbability)
+    state.alerts.push({ severity: maxProb >= 80 ? 'high' : 'medium', message: `Alta probabilidad de lluvia: ${maxProb}% en las próximas 24h.` });
+  if (maxInt >= CONFIG.thresholds.rainIntensity)
+    state.alerts.push({ severity: 'high', message: `Lluvia intensa prevista: ${maxInt.toFixed(1)} mm/h.` });
+  if (total >= 20)
+    state.alerts.push({ severity: 'high', message: `Acumulación de lluvia: ${total.toFixed(1)} mm en 24h.` });
+  if (estimateSST(w.current?.temperature_2m ?? 25) >= CONFIG.thresholds.sstElNino)
+    state.alerts.push({ severity: 'medium', message: 'TSM elevada: condiciones favorables para El Niño.' });
 
-  // Alarma 2: Lluvia intensa (> 5 mm/h)
-  if (maxIntensity >= CONFIG.thresholds.rainIntensity) {
-    state.alerts.push({
-      type: 'heavy_rain',
-      severity: 'high',
-      message: `Lluvia intensa prevista: ${maxIntensity.toFixed(1)} mm/h.`
-    });
-  }
-
-  // Alarma 3: Acumulación alta
-  if (totalRain >= 20) {
-    state.alerts.push({
-      type: 'accumulation',
-      severity: 'high',
-      message: `Acumulación de lluvia: ${totalRain.toFixed(1)} mm en 24h.`
-    });
-  }
-
-  // Alarma 4: SST elevada (indicador El Niño)
-  const currentTemp = w.current?.temperature_2m || 25;
-  const sst = estimateSST(currentTemp, hourWindow);
-  if (sst >= 28.5) {
-    state.alerts.push({
-      type: 'el_nino',
-      severity: 'medium',
-      message: `TSM elevada: ${sst.toFixed(1)}°C. Condiciones favorables para El Niño.`
-    });
-  }
-
-  // Actualizar UI
   renderAlerts();
-
-  // Disparar notificaciones si hay alertas activas
-  if (state.alerts.length > 0) {
-    triggerAlarm();
-  }
+  if (state.alerts.length) triggerAlarm();
 }
 
 function renderAlerts() {
-  const alertsCount = document.getElementById('alertsCount');
-  const alertBadge = document.getElementById('alertBadge');
-  const alertBanner = document.getElementById('alertBanner');
-  const alertBannerText = document.getElementById('alertBannerText');
+  const n = state.alerts.length;
+  document.getElementById('alertsCount').textContent = n;
+  const badge = document.getElementById('alertBadge');
+  const banner = document.getElementById('alertBanner');
 
-  alertsCount.textContent = state.alerts.length;
-
-  if (state.alerts.length === 0) {
-    alertBadge.textContent = 'SIN ALERTAS';
-    alertBadge.className = 'badge safe';
-    alertBanner.classList.remove('visible');
-  } else {
-    const hasHighSeverity = state.alerts.some(a => a.severity === 'high');
-    alertBadge.textContent = hasHighSeverity ? 'URGENTE' : 'AVISO';
-    alertBadge.className = hasHighSeverity ? 'badge danger' : 'badge warning';
-
-    // Mostrar el banner con el mensaje más crítico
-    alertBanner.classList.add('visible');
-    alertBannerText.textContent = state.alerts
-      .filter(a => a.severity === 'high')
-      .concat(state.alerts.filter(a => a.severity !== 'high'))
-      .slice(0, 2)
-      .map(a => a.message)
-      .join(' | ');
+  if (!n) {
+    badge.textContent = 'SIN ALERTAS'; badge.className = 'badge safe';
+    banner.classList.remove('visible');
+    return;
   }
+  const high = state.alerts.some(a => a.severity === 'high');
+  badge.textContent = high ? 'URGENTE' : 'AVISO';
+  badge.className = high ? 'badge danger' : 'badge warning';
+  banner.classList.add('visible');
+  document.getElementById('alertBannerText').textContent =
+    state.alerts.slice(0, 2).map(a => a.message).join(' | ');
 }
 
 function triggerAlarm() {
-  // Vibración del dispositivo (si está disponible)
-  if (navigator.vibrate) {
-    navigator.vibrate([200, 100, 200, 100, 200]);
-  }
-
-  // Notificación Web (si el usuario dio permiso)
-  if (Notification.permission === 'granted') {
-    const highAlerts = state.alerts.filter(a => a.severity === 'high');
-    const title = highAlerts.length > 0 ? '⚠️ ALERTA: Lluvia Intensa' : '⚠️ Aviso Meteorológico';
-    const body = state.alerts[0].message;
-
-    new Notification(title, {
-      body: body,
-      icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Ctext y="80" font-size="80"%3E🌊%3C/text%3E%3C/svg%3E',
-      badge: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Ctext y="80" font-size="80"%3E⚠️%3C/text%3E%3C/svg%3E',
-      tag: 'el-nino-alert',
-      renotify: true
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const high = state.alerts.some(a => a.severity === 'high');
+    new Notification(high ? '⚠️ ALERTA: Lluvia Intensa' : '⚠️ Aviso Meteorológico', {
+      body: state.alerts[0].message, tag: 'el-nino-alert', renotify: true
     });
   }
 }
 
-/* ============================================
-   NOTIFICACIONES WEB
-   ============================================ */
 async function requestNotifications() {
-  if (!('Notification' in window)) {
-    showToast('Tu navegador no soporta notificaciones', 'error');
-    return;
-  }
-
+  if (!('Notification' in window)) { showToast('Navegador sin soporte de notificaciones', 'error'); return; }
   if (Notification.permission === 'granted') {
     showToast('✓ Notificaciones ya activadas', 'success');
-    new Notification('🌊 Monitor El Niño', {
-      body: 'Las notificaciones están activas. Recibirás alertas de lluvia.',
-      tag: 'test'
-    });
+    new Notification('🌊 Monitor El Niño', { body: 'Notificaciones activas.', tag: 'test' });
     return;
   }
-
-  if (Notification.permission === 'denied') {
-    showToast('Permiso denegado. Actívalo en configuración del navegador', 'error');
-    return;
-  }
-
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      showToast('✓ Notificaciones activadas', 'success');
-      new Notification('🌊 Monitor El Niño', {
-        body: 'Recibirás alertas de lluvia en Guayaquil.',
-        tag: 'welcome'
-      });
-    } else {
-      showToast('Permiso no otorgado', 'error');
-    }
-  } catch (e) {
-    showToast('Error al solicitar permiso', 'error');
-  }
+  if (Notification.permission === 'denied') { showToast('Permiso denegado: actívalo en ajustes', 'error'); return; }
+  const p = await Notification.requestPermission();
+  showToast(p === 'granted' ? '✓ Notificaciones activadas' : 'Permiso no otorgado', p === 'granted' ? 'success' : 'error');
 }
 
-/* ============================================
-   AUTO-REFRESH (CADA HORA)
-   ============================================ */
+/* =====================================================
+   AUTO-REFRESH HORARIO + UTILIDADES
+   ===================================================== */
 function startAutoRefresh() {
   if (state.autoRefreshTimer) clearInterval(state.autoRefreshTimer);
-  state.autoRefreshTimer = setInterval(() => {
-    console.log('[Auto-refresh] Actualizando datos...');
-    refreshAll();
-  }, CONFIG.refreshInterval);
+  state.autoRefreshTimer = setInterval(refreshAll, CONFIG.refreshInterval);
 }
 
-/* ============================================
-   UTILIDADES DE UI
-   ============================================ */
-function updateStatus(online) {
+function updateStatus(ok) {
   const dot = document.getElementById('statusDot');
-  const text = document.getElementById('statusText');
-  if (online) {
-    dot.classList.remove('error');
-    text.textContent = 'EN LÍNEA';
-    text.style.color = 'var(--accent-green)';
-  } else {
-    dot.classList.add('error');
-    text.textContent = 'SIN DATOS';
-    text.style.color = 'var(--accent-red)';
-  }
+  const txt = document.getElementById('statusText');
+  dot.classList.toggle('error', !ok);
+  txt.textContent = ok ? 'EN LÍNEA' : 'SIN DATOS';
+  txt.style.color = ok ? 'var(--accent-green)' : 'var(--accent-red)';
 }
-
-function showLoading(show) {
-  const overlay = document.getElementById('loadingOverlay');
-  if (show) {
-    overlay.classList.add('visible');
-  } else {
-    overlay.classList.remove('visible');
-  }
+function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('visible', v); }
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' visible';
+  setTimeout(() => t.classList.remove('visible'), 3000);
 }
-
-function showToast(message, type = '') {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.className = `toast ${type} visible`;
-  setTimeout(() => {
-    toast.classList.remove('visible');
-  }, 3000);
-}
-
-// Actualización del status cada 30s (heartbeat)
-setInterval(() => {
-  if (state.weather) {
-    const dot = document.getElementById('statusDot');
-    if (!dot.classList.contains('error')) {
-      dot.style.animation = 'none';
-      setTimeout(() => dot.style.animation = '', 10);
-    }
-  }
-}, 30000);
 </script>
 </body>
 </html>

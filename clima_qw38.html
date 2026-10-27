@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v19</title>
+<title>Monitor El Niño - Guayaquil v20</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -121,7 +121,8 @@
   .frow-prob { margin-left:auto; font-size:18px; font-weight:800; color:var(--accent-cyan); letter-spacing:-.02em; }
   .frow.warn .frow-prob { color:var(--accent-yellow); }
   .frow.intense .frow-prob { color:var(--accent-red); }
-  .frow-mm { font-size:12px; color:var(--text-muted); min-width:56px; text-align:right; font-family:'SF Mono',Consolas,monospace; }
+  .frow-mm { font-size:12px; color:var(--text-muted); text-align:right; font-family:'SF Mono',Consolas,monospace; white-space:nowrap; }
+  .frow-mm.hot { color:var(--accent-red); font-weight:800; }
   .frow-bottom { font-size:12px; color:var(--text-secondary); margin-top:3px; }
   .frow.warn    { box-shadow:inset 3px 0 0 var(--accent-yellow); background:rgba(245,158,11,.05); }
   .frow.intense { box-shadow:inset 3px 0 0 var(--accent-red);    background:rgba(239,68,68,.07); }
@@ -866,7 +867,26 @@ function wallHour(utcTimeStr) {
   const h = parseInt(utcTimeStr.slice(11, 13), 10);
   return ((h + TZ_OFFSET_H) % 24 + 24) % 24;
 }
-/* === NUEVO v6: fecha local (Guayaquil) de una hora UTC === */
+/* Hora en palabras: "mañana miércoles a la 1 de la mañana" */
+function horaPalabras(h) {
+  if (h === 0) return '12 de la noche';
+  if (h < 12) return h + ' de la mañana';
+  if (h === 12) return '12 del mediodía';
+  if (h < 19) return (h - 12) + ' de la tarde';
+  return (h - 12) + ' de la noche';
+}
+function fmtCuando(t) {
+  const ld = localWallDate(t);
+  const nowWall = new Date(Date.now() + TZ_OFFSET_H * 3600 * 1000);
+  const dUTC = (d) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const diff = Math.round((dUTC(ld) - dUTC(nowWall)) / 86400000);
+  const dia = diff <= 0 ? 'hoy'
+    : diff === 1 ? 'mañana ' + DIAS_SEMANA[ld.getUTCDay()]
+    : DIAS_SEMANA[ld.getUTCDay()] + ' ' + ld.getUTCDate();
+  const h = wallHour(t);
+  return dia + (h % 12 === 1 ? ' a la ' : ' a las ') + horaPalabras(h);
+}
+/* Fecha reloj de Guayaquil para una hora UTC */
 function localWallDate(utcTimeStr) {
   const utcMs = Date.parse(utcTimeStr + ':00Z');
   return new Date(utcMs + TZ_OFFSET_H * 3600 * 1000); // getUTC*() dará la hora reloj GYE
@@ -941,6 +961,8 @@ function renderForecast(hourly) {
     const mm   = d.precipitation[i] || 0;
     const cls  = (prob >= 80 || mm >= CONFIG.thresholds.rainIntensity) ? 'intense'
                : (prob >= 60 ? 'warn' : '');
+    const mmTxt = mm < 0.1 ? mm.toFixed(1) + ' mm' : mm.toFixed(1) + ' mm · ' + rainDesc(mm);
+    const mmCls = mm >= 2.5 ? 'frow-mm hot' : 'frow-mm';
     const row = document.createElement('div');
     row.className = 'frow ' + cls + (i === 0 ? ' now' : '');
     row.dataset.i = i;
@@ -953,7 +975,7 @@ function renderForecast(hourly) {
         `<span class="frow-time">${i === 0 ? 'AHORA · ' : ''}${wallHour(t)}h${esHoy ? '' : ' <em>· mañana</em>'}</span>` +
         `<span class="frow-icon">${weatherCodeToIcon(d.weatherCodes[i])}</span>` +
         `<span class="frow-prob">${prob}%</span>` +
-        `<span class="frow-mm">${mm.toFixed(1)} mm</span>` +
+        `<span class="${mmCls}">${mmTxt}</span>` +
       `</div>` +
       `<div class="frow-bottom">` +
         `${Math.round(d.temperatures[i] || 0)}° · siente ${Math.round(d.apparent[i] || 0)}° · ` +
@@ -1302,14 +1324,17 @@ function checkAlarms() {
   const w = state.weather;
   if (!w) return;
   const hw = getNextHoursData(w.hourly, 24);
+  if (!hw.times.length) { renderAlerts(); return; }
   const maxProb = Math.max(...hw.probabilities);
   const maxInt  = Math.max(...hw.precipitation);
   const total   = hw.precipitation.reduce((a, b) => a + b, 0);
+  const whenProb = fmtCuando(hw.times[hw.probabilities.indexOf(maxProb)]);
+  const whenInt = fmtCuando(hw.times[hw.precipitation.indexOf(maxInt)]);
 
   if (maxProb >= CONFIG.thresholds.rainProbability)
-    state.alerts.push({ severity: maxProb >= 80 ? 'high' : 'medium', message: `Alta probabilidad de lluvia: ${maxProb}% en las próximas 24h.` });
+    state.alerts.push({ severity: maxProb >= 80 ? 'high' : 'medium', message: `Alta probabilidad de lluvia: ${maxProb}% en las próximas 24h (pico ${whenProb}).` });
   if (maxInt >= CONFIG.thresholds.rainIntensity)
-    state.alerts.push({ severity: 'high', message: `Lluvia intensa prevista: ${maxInt.toFixed(1)} mm/h.` });
+    state.alerts.push({ severity: 'high', message: `Lluvia ${rainDesc(maxInt)} prevista: ${maxInt.toFixed(1)} mm/h ${whenInt}.` });
   if (total >= 20)
     state.alerts.push({ severity: 'high', message: `Acumulación de lluvia: ${total.toFixed(1)} mm en 24h.` });
   if (estimateSST(w.current?.temperature_2m ?? 25) >= CONFIG.thresholds.sstElNino)

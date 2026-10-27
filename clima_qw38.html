@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v18</title>
+<title>Monitor El Niño - Guayaquil v19</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -29,7 +29,7 @@
   }
   /* Tema siempre oscuro, ignore el modo del teléfono */
   @media (prefers-reduced-motion: reduce) {
-    .status-dot, .card.alert, .alert-banner, .alarm-emoji, .loading-spinner, .btn .spinner, .alarm-overlay { animation:none !important; }
+    .status-dot, .card.alert, .alert-banner, .alarm-emoji, .loading-spinner, .btn .spinner, .alarm-overlay, .tap-glow { animation:none !important; }
   }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body {
@@ -85,6 +85,19 @@
   }
   .forecast-hint { font-size:12px; color:var(--text-muted); font-weight:400; text-transform:none; letter-spacing:0; }
   .forecast-summary { font-size:12px; color:var(--text-secondary); font-family:'SF Mono',Consolas,monospace; }
+  /* Pastillita: en el flujo, sobre la lista — no tapa filas ni frena el deslizar */
+  .tap-hint {
+    margin:8px 14px 10px; padding:8px 12px; border-radius:999px;
+    background:rgba(6,182,212,.12); border:1px solid var(--accent-cyan);
+    font-size:12px; color:var(--accent-cyan); text-align:center; font-weight:600;
+  }
+  .tap-hint.hidden { display:none; }
+  /* Brillo sutil en la primera fila hasta el primer toque */
+  .tap-glow { animation:tapGlow 1.6s ease-in-out infinite; border-radius:8px; }
+  @keyframes tapGlow {
+    0%,100% { box-shadow:inset 3px 0 0 var(--accent-cyan); }
+    50% { box-shadow:inset 3px 0 0 var(--accent-cyan),0 0 14px 2px rgba(6,182,212,.45); }
+  }
 
   /* Lista vertical: SOLO ella se desplaza con el dedo */
   .forecast-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:280px; }
@@ -340,6 +353,7 @@
         <span class="forecast-hint">⇕ desliza · toca una hora para ver más</span>
       </div>
       <div class="forecast-summary" id="forecastSummary">calculando...</div>
+      <div class="tap-hint" id="tapHint">👆 Pulsa una hora para ver detalles</div>
     </div>
     <div class="forecast-list" id="forecastList" aria-live="polite"></div>
   </section>
@@ -571,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (h && h.classList.contains('visible')) closeHelp();
     else closeHour();
   });
+  if (hintSeen()) document.getElementById('tapHint').classList.add('hidden');
 });
 
 /* === AUTO-ACTUALIZACIÓN DE LA APP: si lo publicado es más nuevo, recarga sola ===
@@ -932,6 +947,7 @@ function renderForecast(hourly) {
     row.tabIndex = 0;
     row.setAttribute('role', 'button');
     row.setAttribute('aria-label', 'Ver detalle de las ' + wallHour(t) + ' horas');
+    if (i === 0 && !hintSeen()) row.classList.add('tap-glow');
     row.innerHTML =
       `<div class="frow-top">` +
         `<span class="frow-time">${i === 0 ? 'AHORA · ' : ''}${wallHour(t)}h${esHoy ? '' : ' <em>· mañana</em>'}</span>` +
@@ -994,6 +1010,15 @@ function humDesc(h) {
   if (h < 80) return 'alta';
   return 'muy alta';
 }
+/* Pastillita + brillo: se muestran hasta el primer toque en una hora */
+function hintSeen() { try { return localStorage.getItem('qw38_hint') === '1'; } catch (e) { return false; } }
+function markHintSeen() {
+  try { localStorage.setItem('qw38_hint', '1'); } catch (e) {}
+  const h = document.getElementById('tapHint');
+  if (h) h.classList.add('hidden');
+  const glows = document.querySelectorAll ? document.querySelectorAll('.tap-glow') : [];
+  for (const g of glows) g.classList.remove('tap-glow');
+}
 function mini(k, v, help) {
   const q = help ? ' <button class="mini-q" onclick="openHelp(\'' + help + '\',event)" aria-label="Ver escala de ' + k + '">?</button>' : '';
   return '<div class="mini"><div class="k"><span>' + k + '</span>' + q + '</div><div class="v">' + v + '</div></div>';
@@ -1024,6 +1049,7 @@ function closeHelp() {
   ov.setAttribute('aria-hidden', 'true');
 }
 function openHour(i) {
+  markHintSeen();
   const d = state.lastHours;
   if (!d || !d.times || i < 0 || i >= d.times.length) return;
   const t = d.times[i];

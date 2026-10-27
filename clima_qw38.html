@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v16</title>
+<title>Monitor El Niño - Guayaquil v17</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -937,6 +937,22 @@ function weatherCodeToText(c) {
 function cellHour(k, v) {
   return '<div class="sheet-cell"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
 }
+/* Calificativos OMM para lluvia por hora + humedad de confort */
+function rainDesc(mm) {
+  if (mm == null) return '—';
+  if (mm < 0.1) return 'sin lluvia';
+  if (mm < 2.5) return 'ligera';
+  if (mm < 7.5) return 'moderada';
+  if (mm < 20) return 'fuerte';
+  return 'torrencial';
+}
+function humDesc(h) {
+  if (h == null) return '—';
+  if (h < 30) return 'baja';
+  if (h < 60) return 'moderada';
+  if (h < 80) return 'alta';
+  return 'muy alta';
+}
 function mini(k, v) {
   return '<div class="mini"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
 }
@@ -949,13 +965,15 @@ function openHour(i) {
     (i === 0 ? 'AHORA · ' : '') + wallHour(t) + 'h · ' + DIAS_SEMANA[ld.getUTCDay()] + ' ' + ld.getUTCDate();
   const code = d.weatherCodes[i];
   const uvi = (d.uv && d.uv[i] != null) ? d.uv[i] : null;
+  const mmh = d.precipitation[i] || 0;
+  const hum = d.humidity[i] != null ? Math.round(d.humidity[i]) : null;
   document.getElementById('hourSub').textContent = weatherCodeToText(code) + ' ' + weatherCodeToIcon(code);
   document.getElementById('hourMini').innerHTML =
     mini('Temperatura', Math.round(d.temperatures[i] || 0) + '°')
     + mini('Sensación', Math.round(d.apparent[i] || 0) + '°')
     + mini('Prob. lluvia', (d.probabilities[i] || 0) + '%')
-    + mini('Lluvia', (d.precipitation[i] || 0).toFixed(1) + ' mm')
-    + mini('Humedad', Math.round(d.humidity[i] || 0) + '%')
+    + mini('Lluvia', mmh.toFixed(1) + ' mm · ' + rainDesc(mmh))
+    + mini('Humedad', hum != null ? hum + '% · ' + humDesc(hum) : '--')
     + mini('UV', uvi != null ? uvi.toFixed(1) + ' · ' + uvShort(uvi) : '--');
   renderNinoPanel();
   const ov = document.getElementById('hourOverlay');

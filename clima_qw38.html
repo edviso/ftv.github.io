@@ -2,9 +2,17 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0a0e1a">
-<title>Monitor El Niño - Guayaquil v6</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Monitor del fenómeno de El Niño en Guayaquil, Ecuador: lluvia por horas, temperatura del mar, oleaje y alertas.">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#e8f1f8">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0e1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="El Niño GYE">
+<title>Monitor El Niño - Guayaquil v7</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root {
@@ -16,6 +24,16 @@
     --gradient-warm:linear-gradient(135deg,#dc2626,#ea580c);
     --shadow-sm:0 2px 8px rgba(0,0,0,.3); --shadow-lg:0 8px 24px rgba(0,0,0,.5);
     --header-h:56px; /* se ajusta solo con JS */
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg-primary:#e8f1f8; --bg-card:#ffffff; --bg-elevated:#f1f5fb;
+      --border:#c4d3e2; --text-primary:#0d1b2e; --text-secondary:#3c4f68; --text-muted:#64748f;
+      --shadow-sm:0 2px 8px rgba(13,27,46,.12); --shadow-lg:0 8px 24px rgba(13,27,46,.2);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .status-dot, .card.alert, .alert-banner, .alarm-emoji, .loading-spinner, .btn .spinner, .alarm-overlay { animation:none !important; }
   }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body {
@@ -29,16 +47,16 @@
   .header {
     position:sticky; top:0; z-index:1000;
     background:rgba(10,14,26,.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--border); padding:12px 16px;
+    border-bottom:1px solid var(--border); padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;
     display:flex; justify-content:space-between; align-items:center;
   }
-  .header-title h1 {
+  .header h1 {
     font-size:16px; font-weight:700; letter-spacing:-.02em;
     background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue));
     -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
   }
-  .header-subtitle { font-size:11px; color:var(--text-muted); font-family:'SF Mono',Consolas,monospace; }
-  .header-status { display:flex; align-items:center; gap:6px; font-size:10px; font-family:monospace; }
+  .header-subtitle { font-size:12px; color:var(--text-muted); font-family:'SF Mono',Consolas,monospace; }
+  .header-status { display:flex; align-items:center; gap:6px; font-size:12px; font-family:monospace; }
   .status-dot { width:6px; height:6px; background:var(--accent-green); border-radius:50%; animation:pulse 2s ease-in-out infinite; }
   .status-dot.error { background:var(--accent-red); animation:none; }
   @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,185,129,.4)} 50%{opacity:.6;box-shadow:0 0 0 4px rgba(16,185,129,0)} }
@@ -69,34 +87,34 @@
     font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
     display:flex; justify-content:space-between; align-items:center;
   }
-  .forecast-hint { font-size:10px; color:var(--text-muted); font-weight:400; text-transform:none; letter-spacing:0; }
-  .forecast-summary { font-size:11px; color:var(--text-secondary); font-family:'SF Mono',Consolas,monospace; }
+  .forecast-hint { font-size:12px; color:var(--text-muted); font-weight:400; text-transform:none; letter-spacing:0; }
+  .forecast-summary { font-size:12px; color:var(--text-secondary); font-family:'SF Mono',Consolas,monospace; }
 
   /* Lista vertical: SOLO ella se desplaza con el dedo */
-  .forecast-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .forecast-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:280px; }
 
   /* === NUEVO v6: separadores de día (quedan fijos al deslizar) === */
   .fday {
     position:sticky; top:0; z-index:5;
-    padding:8px 14px 6px; font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    padding:8px 14px 6px; font-size:12px; letter-spacing:.1em; text-transform:uppercase;
     color:var(--text-muted); font-family:'SF Mono',Consolas,monospace;
     background:var(--bg-primary); border-bottom:1px solid var(--border);
   }
 
   .frow { padding:11px 14px; border-bottom:1px solid var(--border); }
   .frow-top { display:flex; align-items:center; gap:10px; }
-  .frow-time { font-size:11px; font-family:'SF Mono',Consolas,monospace; color:var(--text-secondary); min-width:104px; }
+  .frow-time { font-size:12px; font-family:'SF Mono',Consolas,monospace; color:var(--text-secondary); min-width:104px; }
   .frow.now .frow-time { color:var(--accent-cyan); font-weight:700; }
-  .frow-time em { font-style:normal; color:var(--text-muted); font-size:9px; } /* etiqueta "mañana" */
+  .frow-time em { font-style:normal; color:var(--text-muted); font-size:11px; } /* etiqueta "mañana" */
   .frow-icon { font-size:18px; }
   .frow-prob { margin-left:auto; font-size:18px; font-weight:800; color:var(--accent-cyan); letter-spacing:-.02em; }
   .frow.warn .frow-prob { color:var(--accent-yellow); }
   .frow.intense .frow-prob { color:var(--accent-red); }
-  .frow-mm { font-size:11px; color:var(--text-muted); min-width:56px; text-align:right; font-family:'SF Mono',Consolas,monospace; }
-  .frow-bottom { font-size:11px; color:var(--text-secondary); margin-top:3px; }
+  .frow-mm { font-size:12px; color:var(--text-muted); min-width:56px; text-align:right; font-family:'SF Mono',Consolas,monospace; }
+  .frow-bottom { font-size:12px; color:var(--text-secondary); margin-top:3px; }
   .frow.warn    { box-shadow:inset 3px 0 0 var(--accent-yellow); background:rgba(245,158,11,.05); }
   .frow.intense { box-shadow:inset 3px 0 0 var(--accent-red);    background:rgba(239,68,68,.07); }
-  .forecast-end { padding:14px; text-align:center; font-size:10px; color:var(--text-muted); font-family:monospace; }
+  .forecast-end { padding:14px; text-align:center; font-size:12px; color:var(--text-muted); font-family:monospace; }
 
   /* === MAPA === */
   .map-container { position:relative; width:100%; height:45vh; min-height:320px; max-height:500px; border-bottom:1px solid var(--border); }
@@ -104,7 +122,7 @@
   .map-controls { position:absolute; top:12px; right:12px; z-index:1000; display:flex; flex-direction:column; gap:8px; }
   .map-btn {
     background:rgba(26,32,53,.95); border:1px solid var(--border); color:var(--text-primary);
-    padding:10px 12px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;
+    padding:10px 12px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; min-height:44px;
     backdrop-filter:blur(8px); display:flex; align-items:center; gap:6px; box-shadow:var(--shadow-sm); transition:all .2s;
   }
   .map-btn:active { transform:scale(.96); background:var(--bg-elevated); }
@@ -112,7 +130,7 @@
   .map-legend {
     position:absolute; bottom:12px; left:12px; right:12px; z-index:1000;
     background:rgba(10,14,26,.9); backdrop-filter:blur(8px); border:1px solid var(--border);
-    border-radius:8px; padding:8px 12px; font-size:10px; color:var(--text-secondary);
+    border-radius:8px; padding:8px 12px; font-size:12px; color:var(--text-secondary);
     display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;
   }
   .legend-scale { display:flex; align-items:center; gap:8px; }
@@ -128,12 +146,12 @@
   .card.alert { border-color:var(--accent-red); background:linear-gradient(135deg,var(--bg-card),rgba(239,68,68,.1)); animation:alertPulse 1.5s ease-in-out infinite; }
   .card-full { grid-column:1/-1; }
   .card-header { display:flex; justify-content:space-between; align-items:center; }
-  .card-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
+  .card-label { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
   .card-value { font-size:28px; font-weight:700; letter-spacing:-.02em; }
   .card-value.small { font-size:20px; }
   .card-value.ocean { background:var(--gradient-ocean); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-  .card-sub { font-size:11px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-  .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+  .card-sub { font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
   .badge.safe{background:rgba(16,185,129,.15);color:var(--accent-green)}
   .badge.warning{background:rgba(245,158,11,.15);color:var(--accent-yellow)}
   .badge.danger{background:rgba(239,68,68,.15);color:var(--accent-red)}
@@ -143,7 +161,7 @@
   .actions { padding:8px 12px 20px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .btn {
     background:var(--bg-card); border:1px solid var(--border); color:var(--text-primary);
-    padding:14px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+    padding:14px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; min-height:48px;
     display:flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; user-select:none;
   }
   .btn:active { transform:scale(.97); }
@@ -154,7 +172,7 @@
   .btn .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg)} }
 
-  .footer { padding:16px; text-align:center; font-size:10px; color:var(--text-muted); border-top:1px solid var(--border); font-family:monospace; line-height:1.6; }
+  .footer { padding:16px; text-align:center; font-size:12px; color:var(--text-muted); border-top:1px solid var(--border); font-family:monospace; line-height:1.6; }
   .footer a { color:var(--accent-cyan); text-decoration:none; }
 
   /* === OVERLAYS / TOAST === */
@@ -167,7 +185,7 @@
   .loading-spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--accent-cyan); border-radius:50%; animation:spin .8s linear infinite; }
   .loading-text { font-size:12px; color:var(--text-secondary); font-family:monospace; }
   .toast {
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(100px);
+    position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%) translateY(100px);
     background:var(--bg-elevated); border:1px solid var(--border); color:var(--text-primary);
     padding:12px 16px; border-radius:8px; font-size:12px; box-shadow:var(--shadow-lg);
     z-index:10000; opacity:0; transition:all .3s; max-width:90vw;
@@ -217,7 +235,7 @@
 
   <!-- ===== PANTALLA 1: PRÓXIMAS 24 HORAS ===== -->
   <section class="forecast-screen">
-    <div class="alert-banner" id="alertBanner">
+    <div class="alert-banner" id="alertBanner" role="alert">
       <div class="alert-banner-header"><span>⚠️</span><span>ALERTA DE LLUVIA INTENSA</span></div>
       <div class="alert-banner-text" id="alertBannerText"></div>
     </div>
@@ -228,17 +246,17 @@
       </div>
       <div class="forecast-summary" id="forecastSummary">calculando...</div>
     </div>
-    <div class="forecast-list" id="forecastList"></div>
+    <div class="forecast-list" id="forecastList" aria-live="polite"></div>
   </section>
 
   <!-- ===== MAPA ===== -->
   <div class="map-container">
     <div id="map"></div>
     <div class="map-controls">
-      <button class="map-btn primary" onclick="zoomToGuayaquil()"><span>📍</span><span>Guayaquil</span></button>
-      <button class="map-btn" onclick="zoomToPacific()"><span>🌎</span><span>Pacífico</span></button>
-      <button class="map-btn" id="sstToggle" onclick="toggleSSTLayer()"><span>🌡️</span><span>SST ON</span></button>
-      <button class="map-btn" id="baseToggle" onclick="toggleBaseMap()"><span>🗺️</span><span id="baseLabel">Oscuro</span></button>
+      <button class="map-btn primary" onclick="zoomToGuayaquil()" aria-label="Centrar mapa en Guayaquil"><span>📍</span><span>Guayaquil</span></button>
+      <button class="map-btn" onclick="zoomToPacific()" aria-label="Ver el océano Pacífico"><span>🌎</span><span>Pacífico</span></button>
+      <button class="map-btn" id="sstToggle" onclick="toggleSSTLayer()" aria-label="Activar o desactivar capa de temperatura del mar"><span>🌡️</span><span>SST ON</span></button>
+      <button class="map-btn" id="baseToggle" onclick="toggleBaseMap()" aria-label="Cambiar estilo del mapa base"><span>🗺️</span><span id="baseLabel">Oscuro</span></button>
     </div>
     <div class="map-legend">
       <span>TSM (°C)</span>
@@ -262,9 +280,9 @@
     </div>
 
     <div class="card">
-      <div class="card-header"><span class="card-label">T° Mar (SST)</span><span>🌊</span></div>
+      <div class="card-header"><span class="card-label">T° Mar (est.)</span><span>🌊</span></div>
       <div class="card-value ocean" id="seaTemp">--°</div>
-      <div class="card-sub"><span id="seaStatus">Normal</span><span class="badge info" id="seaBadge">ESTABLE</span></div>
+      <div class="card-sub"><span id="seaStatus">Estimada, no medida</span><span class="badge info" id="seaBadge">ESTABLE</span></div>
     </div>
 
     <div class="card">
@@ -276,17 +294,17 @@
     <div class="card card-full">
       <div class="card-header"><span class="card-label">Condiciones Oceánicas</span><span>🌊</span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;">
-        <div><div style="font-size:10px;color:var(--text-muted);">OLEAJE</div><div style="font-size:16px;font-weight:700;" id="waveHeight">-- m</div></div>
-        <div><div style="font-size:10px;color:var(--text-muted);">PERIODO</div><div style="font-size:16px;font-weight:700;" id="wavePeriod">-- s</div></div>
-        <div><div style="font-size:10px;color:var(--text-muted);">DIRECCIÓN</div><div style="font-size:16px;font-weight:700;" id="waveDirection">--°</div></div>
+        <div><div style="font-size:12px;color:var(--text-muted);">OLEAJE</div><div style="font-size:16px;font-weight:700;" id="waveHeight">-- m</div></div>
+        <div><div style="font-size:12px;color:var(--text-muted);">PERIODO</div><div style="font-size:16px;font-weight:700;" id="wavePeriod">-- s</div></div>
+        <div><div style="font-size:12px;color:var(--text-muted);">DIRECCIÓN</div><div style="font-size:16px;font-weight:700;" id="waveDirection">--°</div></div>
       </div>
     </div>
   </div>
 
   <div class="actions">
-    <button class="btn primary" id="refreshBtn" onclick="manualRefresh()"><span>🔄</span><span>Actualizar</span></button>
-    <button class="btn" onclick="requestNotifications()"><span>🔔</span><span>Notificaciones</span></button>
-    <button class="btn btn-full" onclick="testAlarm()"><span>🔊</span><span>Probar alarma (sonido + vibración)</span></button>
+    <button class="btn primary" id="refreshBtn" onclick="manualRefresh()" aria-label="Actualizar datos"><span>🔄</span><span>Actualizar</span></button>
+    <button class="btn" onclick="requestNotifications()" aria-label="Activar notificaciones"><span>🔔</span><span>Notificaciones</span></button>
+    <button class="btn btn-full" onclick="testAlarm()" aria-label="Probar alarma con sonido y vibración"><span>🔊</span><span>Probar alarma (sonido + vibración)</span></button>
   </div>
 
   <footer class="footer">
@@ -346,14 +364,17 @@ const state = {
   baseLayer:null, baseMode:'dark', baseFallbackUsed:false,
   sstLayer:null, sstVisible:true, sstIndex:0, sstErrors:0, sstFailed:false,
   autoRefreshTimer:null, alerts:[], snoozedUntil:0,
-  lastFetchTs:0, refreshing:false
+  lastFetchTs:0, refreshing:false, testOverlay:false
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   setHeaderVar();
   window.addEventListener('resize', setHeaderVar);
   window.addEventListener('orientationchange', setHeaderVar);
-  initMap();
+  try {
+    if (window.L) initMap();
+    else mapFallback('No se pudo cargar Leaflet (red/CDN). Los datos del clima igual se actualizan abajo.');
+  } catch (e) { console.error('initMap:', e); mapFallback('Mapa no disponible en este momento.'); }
   registerOptionalSW();
   refreshAll();
   startAutoRefresh();
@@ -444,6 +465,10 @@ async function registerOptionalSW() {
 /* =====================================================
    MAPA LEAFLET
    ===================================================== */
+function mapFallback(msg) {
+  const el = document.getElementById('map');
+  if (el) el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center;font-size:13px;color:var(--text-secondary);">' + msg + '</div>';
+}
 function initMap() {
   state.map = L.map('map', {
     center:[CONFIG.initialView.lat, CONFIG.initialView.lon],
@@ -478,8 +503,8 @@ function addBaseMap(mode) {
   state.map.getContainer().classList.toggle('osm-dark', !!cfg.dark);
   document.getElementById('baseLabel').textContent = cfg.label;
 }
-function switchBaseMap(mode) { if (state.baseLayer) state.map.removeLayer(state.baseLayer); addBaseMap(mode); }
-function toggleBaseMap() { switchBaseMap(state.baseMode === 'dark' ? 'sat' : 'dark'); }
+function switchBaseMap(mode) { if (!state.map) return; if (state.baseLayer) state.map.removeLayer(state.baseLayer); addBaseMap(mode); }
+function toggleBaseMap() { switchBaseMap(state.baseMode === 'dark' ? 'sat' : state.baseMode === 'sat' ? 'osm' : 'dark'); }
 
 function getSSTDate() {
   const d = new Date();
@@ -520,14 +545,15 @@ function buildSSTLayer(layerName, dateStr) {
   if (state.sstVisible) state.sstLayer.addTo(state.map);
 }
 function toggleSSTLayer() {
+  if (!state.map || !state.sstLayer) { showToast('Mapa no disponible', 'error'); return; }
   if (state.sstFailed) { showToast('Capa SST no disponible', 'error'); return; }
   const btn = document.getElementById('sstToggle');
   if (state.sstVisible) { state.map.removeLayer(state.sstLayer); btn.innerHTML = '<span>🌡️</span><span>SST OFF</span>'; }
   else { state.sstLayer.addTo(state.map); btn.innerHTML = '<span>🌡️</span><span>SST ON</span>'; }
   state.sstVisible = !state.sstVisible;
 }
-function zoomToGuayaquil() { state.map.flyTo([CONFIG.guayaquilView.lat, CONFIG.guayaquilView.lon], CONFIG.guayaquilView.zoom, { duration:1.5 }); }
-function zoomToPacific()  { state.map.flyTo([CONFIG.initialView.lat, CONFIG.initialView.lon], CONFIG.initialView.zoom, { duration:1.5 }); }
+function zoomToGuayaquil() { if (!state.map) return; state.map.flyTo([CONFIG.guayaquilView.lat, CONFIG.guayaquilView.lon], CONFIG.guayaquilView.zoom, { duration:1.5 }); }
+function zoomToPacific()  { if (!state.map) return; state.map.flyTo([CONFIG.initialView.lat, CONFIG.initialView.lon], CONFIG.initialView.zoom, { duration:1.5 }); }
 
 /* =====================================================
    APIs OPEN-METEO
@@ -631,6 +657,11 @@ function renderForecast(hourly) {
   const d = getNextHoursData(hourly, 24);
   const list = document.getElementById('forecastList');
   list.innerHTML = '';
+  if (!d.times.length) {
+    list.innerHTML = '<div class="forecast-end">Sin datos de pronóstico por ahora · pulsa Actualizar</div>';
+    document.getElementById('forecastSummary').textContent = 'sin datos';
+    return;
+  }
 
   let currentDayKey = null;   // día local (Guayaquil) del grupo actual
   let groupIndex = -1;        // 0 = hoy, 1 = mañana, 2+ = siguiente
@@ -726,13 +757,13 @@ function processData() {
   const seaStatus = document.getElementById('seaStatus');
   if (sst >= CONFIG.thresholds.sstElNino) {
     seaBadge.textContent = 'EL NIÑO'; seaBadge.className = 'badge danger';
-    seaStatus.textContent = 'Anomalía cálida'; seaStatus.style.color = 'var(--accent-red)';
+    seaStatus.textContent = 'Anomalía cálida (estimada)'; seaStatus.style.color = 'var(--accent-red)';
   } else if (sst >= CONFIG.thresholds.sstAnomaly) {
     seaBadge.textContent = 'CÁLIDO'; seaBadge.className = 'badge warning';
-    seaStatus.textContent = 'Sobre promedio'; seaStatus.style.color = 'var(--accent-yellow)';
+    seaStatus.textContent = 'Sobre promedio (estimada)'; seaStatus.style.color = 'var(--accent-yellow)';
   } else {
     seaBadge.textContent = 'ESTABLE'; seaBadge.className = 'badge info';
-    seaStatus.textContent = 'Normal'; seaStatus.style.color = 'var(--text-secondary)';
+    seaStatus.textContent = 'Normal (estimada)'; seaStatus.style.color = 'var(--text-secondary)';
   }
 
   if (m?.hourly) {
@@ -810,6 +841,7 @@ function triggerAlarm() {
   safeNotify(high ? '⚠️ ALERTA: Lluvia Intensa' : '⚠️ Aviso Meteorológico',
     { body: msg, tag: 'el-nino-alert', renotify: true }).catch(() => {});
   if (high && Date.now() > state.snoozedUntil) {
+    state.testOverlay = false;
     playSiren(5);
     document.getElementById('alarmOverlayText').textContent = msg;
     document.getElementById('alarmOverlay').classList.add('visible');
@@ -818,10 +850,12 @@ function triggerAlarm() {
 function dismissAlarm() {
   document.getElementById('alarmOverlay').classList.remove('visible');
   if (navigator.vibrate) navigator.vibrate(0);
-  state.snoozedUntil = Date.now() + 30 * 60 * 1000;
+  if (state.testOverlay) state.testOverlay = false; // la prueba no silencia alarmas reales
+  else state.snoozedUntil = Date.now() + 30 * 60 * 1000;
 }
 function testAlarm() {
   ensureAudio();
+  state.testOverlay = true;
   const ok = playSiren(2.5);
   if (navigator.vibrate) navigator.vibrate([300,100,300]);
   document.getElementById('alarmOverlayText').textContent = 'Prueba de alarma: así te avisaré cuando haya lluvia intensa.';

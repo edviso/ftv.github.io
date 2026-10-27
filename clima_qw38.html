@@ -9,7 +9,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="El Niño GYE">
-<title>Monitor El Niño - Guayaquil v13</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Monitor El Niño - Guayaquil v14</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -497,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerOptionalSW();
   refreshAll();
   startAutoRefresh();
+  checkAppUpdate(); // si hay versión nueva publicada, la app se recarga sola con ?v=
 
   /* Auto-actualizar al REGRESAR a la app si pasó más de 1 hora */
   document.addEventListener('visibilitychange', () => {
@@ -521,7 +525,28 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHour(); });
 });
 
+/* === AUTO-ACTUALIZACIÓN DE LA APP: si lo publicado es más nuevo, recarga sola ===
+   Así nadie ve versiones viejas guardadas por WhatsApp u otros navegadores. */
+let updateDone = false;
+async function checkAppUpdate() {
+  if (updateDone) return;
+  try {
+    const base = location.href.split('?')[0].split('#')[0];
+    const r = await fetch(base + '?fresh=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const txt = await r.text();
+    const pub = (txt.match(/<title>[^<]*?v(\d+)<\/title>/) || [])[1];
+    const cur = (document.title.match(/v(\d+)/) || [])[1];
+    if (pub && cur && parseInt(pub, 10) > parseInt(cur, 10)) {
+      updateDone = true;
+      showToast('⬇️ Actualizando a la nueva versión...', 'success');
+      setTimeout(() => { location.href = base + '?v=' + pub; }, 1200);
+    }
+  } catch (e) { /* sin red: sigue con la versión actual */ }
+}
+
 function maybeRefreshOnReturn() {
+  checkAppUpdate();
   const stale = (Date.now() - state.lastFetchTs) > CONFIG.refreshInterval;
   if (stale && !state.refreshing) {
     showToast('🔄 Regresaste: actualizando datos...', 'success');

@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v17</title>
+<title>Monitor El Niño - Guayaquil v18</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -132,8 +132,30 @@
   }
   .mini-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:4px 0 16px; }
   .mini { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
-  .mini .k { font-size:12px; color:var(--text-muted); }
+  .mini .k { font-size:12px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; gap:4px; }
   .mini .v { font-size:16px; font-weight:800; margin-top:1px; }
+  .mini-q {
+    width:30px; height:30px; min-width:30px; border-radius:50%; flex-shrink:0;
+    border:1px solid var(--border); background:var(--bg-elevated); color:var(--accent-cyan);
+    font-size:15px; font-weight:800; cursor:pointer; line-height:1;
+  }
+  .mini-q:active { transform:scale(.92); }
+  /* === VENTANITA DE AYUDA (pequeña, temporal, con X) === */
+  .help-overlay {
+    position:fixed; inset:0; z-index:16000; display:none;
+    align-items:center; justify-content:center; padding:24px;
+    background:rgba(3,6,14,.6);
+  }
+  .help-overlay.visible { display:flex; }
+  .help-box {
+    width:100%; max-width:300px; background:var(--bg-card); border:1px solid var(--border);
+    border-radius:14px; padding:14px 16px; box-shadow:var(--shadow-lg);
+  }
+  .help-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
+  .help-title { font-size:14px; font-weight:800; }
+  .help-row { display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:5px 0; border-bottom:1px solid var(--border); }
+  .help-row:last-child { border-bottom:none; }
+  .help-row span:last-child { color:var(--text-secondary); font-family:'SF Mono',Consolas,monospace; text-align:right; }
   .nino-eyebrow { font-size:12px; letter-spacing:.1em; color:var(--text-muted); font-family:'SF Mono',Consolas,monospace; text-transform:uppercase; }
   .nino-h { font-size:22px; font-weight:800; margin:4px 0 6px; display:flex; align-items:center; gap:8px; }
   .nino-desc { font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:4px; }
@@ -402,6 +424,17 @@
   </footer>
 </div>
 
+<!-- VENTANITA DE AYUDA -->
+<div class="help-overlay" id="helpOverlay" aria-hidden="true">
+  <div class="help-box" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="help-head">
+      <div class="help-title" id="helpTitle">--</div>
+      <button class="sheet-x" onclick="closeHelp()" aria-label="Cerrar ayuda">✕</button>
+    </div>
+    <div id="helpRows"></div>
+  </div>
+</div>
+
 <!-- VENTANA DE DETALLE POR HORA (pantalla completa) -->
 <div class="sheet-overlay" id="hourOverlay" aria-hidden="true">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hourTitle">
@@ -529,7 +562,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('hourOverlay').addEventListener('click', (e) => {
     if (e.target.id === 'hourOverlay') closeHour();
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHour(); });
+  document.getElementById('helpOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'helpOverlay') closeHelp();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const h = document.getElementById('helpOverlay');
+    if (h && h.classList.contains('visible')) closeHelp();
+    else closeHour();
+  });
 });
 
 /* === AUTO-ACTUALIZACIÓN DE LA APP: si lo publicado es más nuevo, recarga sola ===
@@ -953,8 +994,34 @@ function humDesc(h) {
   if (h < 80) return 'alta';
   return 'muy alta';
 }
-function mini(k, v) {
-  return '<div class="mini"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
+function mini(k, v, help) {
+  const q = help ? ' <button class="mini-q" onclick="openHelp(\'' + help + '\',event)" aria-label="Ver escala de ' + k + '">?</button>' : '';
+  return '<div class="mini"><div class="k"><span>' + k + '</span>' + q + '</div><div class="v">' + v + '</div></div>';
+}
+/* Escalas para las ventanitas de ayuda */
+const HELP = {
+  sensacion: { t:'Sensación térmica', rows:[['Qué es','combina T°, humedad, viento y sol'],['Confortable','menos de 27°'],['Bochorno','27° – 32°'],['Mucho calor','32° – 40°'],['Peligroso','más de 40° *']] },
+  lluvia: { t:'Escala de lluvia (OMM)', rows:[['Sin lluvia','menos de 0.1 mm'],['Ligera','0.1 – 2.5'],['Moderada','2.5 – 7.5'],['Fuerte','7.5 – 20'],['Torrencial','más de 20 mm/h']] },
+  humedad: { t:'Humedad relativa', rows:[['Baja','menos de 30%'],['Moderada','30 – 60%'],['Alta','60 – 80%'],['Muy alta','más de 80%']] },
+  uv: { t:'Índice UV (OMS)', rows:[['Bajo','0 – 2'],['Moderado','3 – 5'],['Alto','6 – 7'],['Muy alto','8 – 10'],['Extremo','11 o más']] }
+};
+function openHelp(key, e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  const h = HELP[key];
+  if (!h) return;
+  document.getElementById('helpTitle').textContent = h.t;
+  document.getElementById('helpRows').innerHTML = h.rows.map(r =>
+    '<div class="help-row"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>').join('')
+    + '<div class="card-sub" style="margin-top:6px;">* rangos orientativos</div>';
+  const ov = document.getElementById('helpOverlay');
+  ov.classList.add('visible');
+  ov.setAttribute('aria-hidden', 'false');
+}
+function closeHelp() {
+  const ov = document.getElementById('helpOverlay');
+  if (!ov) return;
+  ov.classList.remove('visible');
+  ov.setAttribute('aria-hidden', 'true');
 }
 function openHour(i) {
   const d = state.lastHours;
@@ -970,11 +1037,11 @@ function openHour(i) {
   document.getElementById('hourSub').textContent = weatherCodeToText(code) + ' ' + weatherCodeToIcon(code);
   document.getElementById('hourMini').innerHTML =
     mini('Temperatura', Math.round(d.temperatures[i] || 0) + '°')
-    + mini('Sensación', Math.round(d.apparent[i] || 0) + '°')
+    + mini('Sensación', Math.round(d.apparent[i] || 0) + '°', 'sensacion')
     + mini('Prob. lluvia', (d.probabilities[i] || 0) + '%')
-    + mini('Lluvia', mmh.toFixed(1) + ' mm · ' + rainDesc(mmh))
-    + mini('Humedad', hum != null ? hum + '% · ' + humDesc(hum) : '--')
-    + mini('UV', uvi != null ? uvi.toFixed(1) + ' · ' + uvShort(uvi) : '--');
+    + mini('Lluvia', mmh.toFixed(1) + ' mm · ' + rainDesc(mmh), 'lluvia')
+    + mini('Humedad', hum != null ? hum + '% · ' + humDesc(hum) : '--', 'humedad')
+    + mini('UV', uvi != null ? uvi.toFixed(1) + ' · ' + uvShort(uvi) : '--', 'uv');
   renderNinoPanel();
   const ov = document.getElementById('hourOverlay');
   ov.classList.add('visible');
@@ -1043,7 +1110,7 @@ function renderNinoPanel() {
     + regs.map(g =>
       '<div class="nino-line">' + g.nombre + ' <b>' + (g.anom != null ? fmtAnom(g.anom) : '--') + '</b></div>'
     ).join('')
-    + '<p>sobre el promedio 1991–2020. Un solo veredicto arriba; abajo solo datos. Indicativo; no equivale al ONI trimestral oficial.</p></div>'
+    + '<p>sobre el promedio 1991–2020.</p></div>'
     + regs.map(g =>
       '<div class="nino-card"><div class="nino-row"><div><div class="nino-name">' + g.nombre + '</div>'
       + '<div class="nino-desc2">' + g.desc + '</div></div>'

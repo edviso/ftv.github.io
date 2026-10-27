@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="El Niño GYE">
-<title>Monitor El Niño - Guayaquil v12</title>
+<title>Monitor El Niño - Guayaquil v13</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -133,8 +133,7 @@
   .mini .v { font-size:16px; font-weight:800; margin-top:1px; }
   .nino-eyebrow { font-size:12px; letter-spacing:.1em; color:var(--text-muted); font-family:'SF Mono',Consolas,monospace; text-transform:uppercase; }
   .nino-h { font-size:22px; font-weight:800; margin:4px 0 6px; display:flex; align-items:center; gap:8px; }
-  .nino-desc { font-size:13px; color:var(--text-secondary); line-height:1.5; }
-  .nino-view { margin:12px 0; }
+  .nino-desc { font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:4px; }
   .nino-status {
     background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
     padding:14px; margin:12px 0; display:flex; flex-direction:column; gap:10px; align-items:flex-start;
@@ -410,7 +409,6 @@
     <div class="nino-eyebrow">SST en vivo · Pacífico ecuatorial</div>
     <div class="nino-h">🌐 Indicadores El Niño</div>
     <div class="nino-desc">Temperatura del mar en vivo (Open-Meteo Marine) y anomalía indicativa frente al promedio 1991–2020 (ERSSTv5, NOAA). Se calcula sola, sin actualizar nada.</div>
-    <div class="nino-view"><button class="btn" onclick="viewAnomaly()" aria-label="Ver anomalía en el mapa"><span>🗺️</span><span>Ver anomalía</span></button></div>
     <div id="ninoPanel"><div class="forecast-end">Cargando indicadores del mar...</div></div>
   </div>
 </div>
@@ -451,14 +449,15 @@ const CONFIG = {
     { n:'Salinas', lat:-2.21, lon:-80.97 },
     { n:'Playas', lat:-2.63, lon:-80.39 }
   ],
-  /* Puntos representativos + promedio mensual 1991-2020 (ERSSTv5, NOAA). Tabla fija: no se actualiza. */
+  /* Puntos representativos + promedio mensual 1991-2020 (ERSSTv5, NOAA). Tabla fija: no se actualiza.
+     Orden: costa primero, luego oriente, luego centro. */
   nino: [
-    { id:'n34', nombre:'Niño 3.4', desc:'Pacífico central · 5°N–5°S, 170°–120°O', lat:0, lon:-140,
-      climo:{1:26.58,2:26.81,3:27.34,4:27.86,5:27.95,6:27.73,7:27.28,8:26.85,9:26.71,10:26.72,11:26.71,12:26.61} },
+    { id:'costa', nombre:'Costa de Guayaquil', desc:'Punto marino cercano a Playas', lat:-2.8, lon:-80.6,
+      climo:{1:26.54,2:26.39,3:26.25,4:26.99,5:27.51,6:27.14,7:26.72,8:26.7,9:26.83,10:26.78,11:26.49,12:26.41} },
     { id:'n12', nombre:'Niño 1+2', desc:'Pacífico oriental · frente a Perú/Ecuador', lat:-5, lon:-85,
       climo:{1:27.01,2:27.36,3:27.57,4:27.8,5:27.8,6:27.37,7:27.01,8:26.89,9:26.84,10:26.83,11:26.71,12:26.72} },
-    { id:'costa', nombre:'Costa de Guayaquil', desc:'Punto marino cercano a Playas', lat:-2.8, lon:-80.6,
-      climo:{1:26.54,2:26.39,3:26.25,4:26.99,5:27.51,6:27.14,7:26.72,8:26.7,9:26.83,10:26.78,11:26.49,12:26.41} }
+    { id:'n34', nombre:'Niño 3.4', desc:'Pacífico central · 5°N–5°S, 170°–120°O', lat:0, lon:-140,
+      climo:{1:26.58,2:26.81,3:27.34,4:27.86,5:27.95,6:27.73,7:27.28,8:26.85,9:26.71,10:26.72,11:26.71,12:26.61} }
   ]
 };
 const TZ_OFFSET_H = -5; // Ecuador continental UTC-5
@@ -964,14 +963,15 @@ function renderNinoPanel() {
   const regs = CONFIG.nino.map((r, k) => {
     const sst = latestSST(arr[k] && arr[k].hourly);
     const anom = (sst != null && r.climo[mes] != null) ? sst - r.climo[mes] : null;
-    return { nombre:r.nombre, desc:r.desc, sst, anom };
+    return { id:r.id, nombre:r.nombre, desc:r.desc, sst, anom };
   });
-  const st = ninoStatus(regs[0].anom);
+  const ref = regs.find(g => g.id === 'n34') || regs[0]; // la etiqueta grande siempre usa Niño 3.4
+  const st = ninoStatus(ref.anom);
   const pos = (a) => a == null ? 50 : Math.min(100, Math.max(0, (a + 4) / 8 * 100));
   box.innerHTML =
     '<div class="nino-status"><span class="' + st.c + '">' + st.t + '</span>'
     + '<p>Niño 3.4 (Pacífico central): '
-    + (regs[0].anom != null ? '<b>' + fmtAnom(regs[0].anom) + '</b> sobre el promedio 1991–2020.' : 'sin dato.')
+    + (ref.anom != null ? '<b>' + fmtAnom(ref.anom) + '</b> sobre el promedio 1991–2020.' : 'sin dato.')
     + ' Indicativo; no equivale al ONI trimestral oficial.</p></div>'
     + regs.map(g =>
       '<div class="nino-card"><div class="nino-row"><div><div class="nino-name">' + g.nombre + '</div>'
@@ -980,13 +980,7 @@ function renderNinoPanel() {
       + '<span class="nino-anom">' + (g.anom != null ? fmtAnom(g.anom) : '--') + '</span></div></div>'
       + '<div class="nino-bar"><div class="nino-pin" style="left:calc(' + pos(g.anom).toFixed(1) + '% - 7px)"></div></div></div>'
     ).join('')
-    + '<a class="btn" style="text-decoration:none" href="https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ensoyears.shtml" target="_blank" rel="noopener"><span>ONI oficial NOAA</span><span>↗</span></a>'
     + '<div class="card-sub" style="margin-top:8px;">Anomalía indicativa calculada en tu celular: mar en vivo menos promedio 1991–2020. Nada que actualizar.</div>';
-}
-function viewAnomaly() {
-  closeHour();
-  if (state.sstLayer && !state.sstVisible && !state.sstFailed) toggleSSTLayer();
-  zoomToPacific();
 }
 function closeHour() {
   const ov = document.getElementById('hourOverlay');

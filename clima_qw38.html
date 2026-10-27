@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a0e1a">
-<title>Monitor El Niño - Guayaquil v4</title>
+<title>Monitor El Niño - Guayaquil v6</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root {
@@ -46,7 +46,7 @@
   /* === PANTALLA COMPLETA: PRÓXIMAS 24 HORAS === */
   .forecast-screen {
     height:calc(100vh - var(--header-h));
-    height:calc(100dvh - var(--header-h)); /* dvh: altura real en móviles */
+    height:calc(100dvh - var(--header-h));
     display:flex; flex-direction:column; background:var(--bg-primary);
   }
   .forecast-screen .alert-banner { margin:10px 12px 0; }
@@ -75,17 +75,25 @@
   /* Lista vertical: SOLO ella se desplaza con el dedo */
   .forecast-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
+  /* === NUEVO v6: separadores de día (quedan fijos al deslizar) === */
+  .fday {
+    position:sticky; top:0; z-index:5;
+    padding:8px 14px 6px; font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-muted); font-family:'SF Mono',Consolas,monospace;
+    background:var(--bg-primary); border-bottom:1px solid var(--border);
+  }
+
   .frow { padding:11px 14px; border-bottom:1px solid var(--border); }
   .frow-top { display:flex; align-items:center; gap:10px; }
-  .frow-time { font-size:11px; font-family:'SF Mono',Consolas,monospace; color:var(--text-secondary); min-width:92px; }
+  .frow-time { font-size:11px; font-family:'SF Mono',Consolas,monospace; color:var(--text-secondary); min-width:104px; }
   .frow.now .frow-time { color:var(--accent-cyan); font-weight:700; }
+  .frow-time em { font-style:normal; color:var(--text-muted); font-size:9px; } /* etiqueta "mañana" */
   .frow-icon { font-size:18px; }
   .frow-prob { margin-left:auto; font-size:18px; font-weight:800; color:var(--accent-cyan); letter-spacing:-.02em; }
   .frow.warn .frow-prob { color:var(--accent-yellow); }
   .frow.intense .frow-prob { color:var(--accent-red); }
   .frow-mm { font-size:11px; color:var(--text-muted); min-width:56px; text-align:right; font-family:'SF Mono',Consolas,monospace; }
   .frow-bottom { font-size:11px; color:var(--text-secondary); margin-top:3px; }
-  /* Barra lateral de intensidad, minimalista */
   .frow.warn    { box-shadow:inset 3px 0 0 var(--accent-yellow); background:rgba(245,158,11,.05); }
   .frow.intense { box-shadow:inset 3px 0 0 var(--accent-red);    background:rgba(239,68,68,.07); }
   .forecast-end { padding:14px; text-align:center; font-size:10px; color:var(--text-muted); font-family:monospace; }
@@ -115,7 +123,7 @@
   .cards-grid { padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .card {
     background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
-    padding:14px; display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden;
+    padding:14px; display:flex; flex-direction:column; gap:6px; position:relative; overflow-hidden;
   }
   .card.alert { border-color:var(--accent-red); background:linear-gradient(135deg,var(--bg-card),rgba(239,68,68,.1)); animation:alertPulse 1.5s ease-in-out infinite; }
   .card-full { grid-column:1/-1; }
@@ -207,7 +215,7 @@
     </div>
   </header>
 
-  <!-- ===== PANTALLA 1: PRÓXIMAS 24 HORAS (ocupa todo el alto) ===== -->
+  <!-- ===== PANTALLA 1: PRÓXIMAS 24 HORAS ===== -->
   <section class="forecast-screen">
     <div class="alert-banner" id="alertBanner">
       <div class="alert-banner-header"><span>⚠️</span><span>ALERTA DE LLUVIA INTENSA</span></div>
@@ -223,7 +231,7 @@
     <div class="forecast-list" id="forecastList"></div>
   </section>
 
-  <!-- ===== PANTALLA 2+: MAPA ===== -->
+  <!-- ===== MAPA ===== -->
   <div class="map-container">
     <div id="map"></div>
     <div class="map-controls">
@@ -239,7 +247,7 @@
     </div>
   </div>
 
-  <!-- ===== TARJETAS RESTANTES ===== -->
+  <!-- ===== TARJETAS ===== -->
   <div class="cards-grid">
     <div class="card">
       <div class="card-header"><span class="card-label">T° Actual</span><span>🌡️</span></div>
@@ -276,14 +284,14 @@
   </div>
 
   <div class="actions">
-    <button class="btn primary" id="refreshBtn" onclick="refreshAll()"><span>🔄</span><span>Actualizar</span></button>
+    <button class="btn primary" id="refreshBtn" onclick="manualRefresh()"><span>🔄</span><span>Actualizar</span></button>
     <button class="btn" onclick="requestNotifications()"><span>🔔</span><span>Notificaciones</span></button>
     <button class="btn btn-full" onclick="testAlarm()"><span>🔊</span><span>Probar alarma (sonido + vibración)</span></button>
   </div>
 
   <footer class="footer">
     <div>Datos: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> | SST: <a href="https://gibs.earthdata.nasa.gov" target="_blank">NASA GIBS</a> | Base: Esri/OSM</div>
-    <div>Imagery: NASA GIBS / ESDIS • Auto-refresh: 60 min</div>
+    <div>Imagery: NASA GIBS / ESDIS • Auto-refresh: 60 min y al regresar a la app</div>
   </footer>
 </div>
 
@@ -317,6 +325,9 @@ const CONFIG = {
 };
 const TZ_OFFSET_H = -5; // Ecuador continental UTC-5
 
+/* === NUEVO v6: nombres de día en español para los separadores === */
+const DIAS_SEMANA = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
 const BASEMAPS = {
   dark: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
           attribution:'© Esri — World Dark Gray Base', maxNativeZoom:16, dark:false, label:'Oscuro' },
@@ -334,28 +345,45 @@ const state = {
   weather:null, marine:null, map:null,
   baseLayer:null, baseMode:'dark', baseFallbackUsed:false,
   sstLayer:null, sstVisible:true, sstIndex:0, sstErrors:0, sstFailed:false,
-  autoRefreshTimer:null, alerts:[], snoozedUntil:0
+  autoRefreshTimer:null, alerts:[], snoozedUntil:0,
+  lastFetchTs:0, refreshing:false
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  setHeaderVar();               // ajusta la altura de la pantalla de 24 h
+  setHeaderVar();
   window.addEventListener('resize', setHeaderVar);
   window.addEventListener('orientationchange', setHeaderVar);
   initMap();
   registerOptionalSW();
   refreshAll();
   startAutoRefresh();
+
+  /* Auto-actualizar al REGRESAR a la app si pasó más de 1 hora */
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') maybeRefreshOnReturn();
+  });
+  window.addEventListener('pageshow', (e) => { if (e.persisted) maybeRefreshOnReturn(); });
 });
 
-/* La pantalla de 24 h mide "100% del alto menos el encabezado":
-   se calcula con JS para que sea exacta en cualquier celular. */
+function maybeRefreshOnReturn() {
+  const stale = (Date.now() - state.lastFetchTs) > CONFIG.refreshInterval;
+  if (stale && !state.refreshing) {
+    showToast('🔄 Regresaste: actualizando datos...', 'success');
+    refreshAll();
+    startAutoRefresh();
+  }
+}
+function manualRefresh() {
+  refreshAll();
+  startAutoRefresh();
+}
 function setHeaderVar() {
   const h = document.getElementById('appHeader').offsetHeight;
   document.documentElement.style.setProperty('--header-h', h + 'px');
 }
 
 /* =====================================================
-   SONIDO DE SIRENA (Web Audio, todo dentro del HTML)
+   SONIDO DE SIRENA
    ===================================================== */
 let audioCtx = null;
 function ensureAudio() {
@@ -502,8 +530,7 @@ function zoomToGuayaquil() { state.map.flyTo([CONFIG.guayaquilView.lat, CONFIG.g
 function zoomToPacific()  { state.map.flyTo([CONFIG.initialView.lat, CONFIG.initialView.lon], CONFIG.initialView.zoom, { duration:1.5 }); }
 
 /* =====================================================
-   APIs OPEN-METEO (UTC; se agrega sensación térmica,
-   humedad y viento por hora para la lista de 24 h)
+   APIs OPEN-METEO
    ===================================================== */
 async function fetchWeather() {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.location.lat}&longitude=${CONFIG.location.lon}`
@@ -523,6 +550,8 @@ async function fetchMarine() {
 }
 
 async function refreshAll() {
+  if (state.refreshing) return;
+  state.refreshing = true;
   const btn = document.getElementById('refreshBtn');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div><span>Cargando...</span>';
@@ -533,26 +562,25 @@ async function refreshAll() {
     document.getElementById('loadingText').textContent = 'Analizando océano...';
     state.marine = await fetchMarine();
     document.getElementById('loadingText').textContent = 'Procesando datos...';
+    try { processData(); } catch (e) { console.error('processData:', e); }
+    try { checkAlarms(); } catch (e) { console.error('checkAlarms:', e); }
+    state.lastFetchTs = Date.now();
+    updateStatus(true);
+    showToast('Datos actualizados correctamente', 'success');
   } catch (e) {
     console.error(e);
     updateStatus(false);
     showToast('Error de red/API: ' + e.message, 'error');
+  } finally {
     btn.disabled = false;
     btn.innerHTML = '<span>🔄</span><span>Actualizar</span>';
     showLoading(false);
-    return;
+    state.refreshing = false;
   }
-  try { processData(); } catch (e) { console.error('processData:', e); }
-  try { checkAlarms(); } catch (e) { console.error('checkAlarms:', e); }
-  updateStatus(true);
-  showToast('Datos actualizados correctamente', 'success');
-  btn.disabled = false;
-  btn.innerHTML = '<span>🔄</span><span>Actualizar</span>';
-  showLoading(false);
 }
 
 /* =====================================================
-   TIEMPO UTC -> HORA GUAYAQUIL
+   TIEMPO UTC -> HORA Y DÍA DE GUAYAQUIL
    ===================================================== */
 function findCurrentHourIndex(times) {
   const s = new Date().toISOString().slice(0, 13);
@@ -561,6 +589,11 @@ function findCurrentHourIndex(times) {
 function wallHour(utcTimeStr) {
   const h = parseInt(utcTimeStr.slice(11, 13), 10);
   return ((h + TZ_OFFSET_H) % 24 + 24) % 24;
+}
+/* === NUEVO v6: fecha local (Guayaquil) de una hora UTC === */
+function localWallDate(utcTimeStr) {
+  const utcMs = Date.parse(utcTimeStr + ':00Z');
+  return new Date(utcMs + TZ_OFFSET_H * 3600 * 1000); // getUTC*() dará la hora reloj GYE
 }
 function getNextHoursData(hourly, hours) {
   const i = Math.max(0, findCurrentHourIndex(hourly.time));
@@ -592,14 +625,34 @@ function estimateSST(airTemp) {
 }
 
 /* =====================================================
-   LISTA VERTICAL DE 24 HORAS (pantalla principal)
+   LISTA VERTICAL DE 24 HORAS CON SEPARADORES HOY/MAÑANA
    ===================================================== */
 function renderForecast(hourly) {
   const d = getNextHoursData(hourly, 24);
   const list = document.getElementById('forecastList');
   list.innerHTML = '';
 
+  let currentDayKey = null;   // día local (Guayaquil) del grupo actual
+  let groupIndex = -1;        // 0 = hoy, 1 = mañana, 2+ = siguiente
+
   d.times.forEach((t, i) => {
+    const ld  = localWallDate(t);
+    const key = ld.toISOString().slice(0, 10);
+
+    /* Al cambiar de día, inserta el separador (queda fijo al deslizar) */
+    if (key !== currentDayKey) {
+      currentDayKey = key;
+      groupIndex++;
+      const sep = document.createElement('div');
+      sep.className = 'fday';
+      const nombre = `${DIAS_SEMANA[ld.getUTCDay()]} ${ld.getUTCDate()}`;
+      sep.textContent = groupIndex === 0 ? `HOY · ${nombre}`
+                      : groupIndex === 1 ? `MAÑANA · ${nombre}`
+                      : nombre;
+      list.appendChild(sep);
+    }
+    const esHoy = (groupIndex === 0);
+
     const prob = d.probabilities[i] || 0;
     const mm   = d.precipitation[i] || 0;
     const cls  = (prob >= 80 || mm >= CONFIG.thresholds.rainIntensity) ? 'intense'
@@ -608,7 +661,7 @@ function renderForecast(hourly) {
     row.className = 'frow ' + cls + (i === 0 ? ' now' : '');
     row.innerHTML =
       `<div class="frow-top">` +
-        `<span class="frow-time">${i === 0 ? 'AHORA · ' : ''}${wallHour(t)}h</span>` +
+        `<span class="frow-time">${i === 0 ? 'AHORA · ' : ''}${wallHour(t)}h${esHoy ? '' : ' <em>· mañana</em>'}</span>` +
         `<span class="frow-icon">${weatherCodeToIcon(d.weatherCodes[i])}</span>` +
         `<span class="frow-prob">${prob}%</span>` +
         `<span class="frow-mm">${mm.toFixed(1)} mm</span>` +
@@ -625,7 +678,6 @@ function renderForecast(hourly) {
   end.textContent = '— fin de las 24 horas · desliza una vez más para ver el mapa —';
   list.appendChild(end);
 
-  // Resumen de un vistazo
   const maxProb = Math.max(...d.probabilities);
   const total   = d.precipitation.reduce((a, b) => a + b, 0);
   const peak    = d.probabilities.indexOf(maxProb);
@@ -693,7 +745,7 @@ function processData() {
     document.getElementById('waveDirection').textContent = wd != null ? Math.round(wd) + '°' : '--°';
   }
 
-  renderForecast(w.hourly);   // ← la nueva pantalla principal
+  renderForecast(w.hourly);
   const now = new Date();
   document.getElementById('lastUpdate').textContent =
     String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');

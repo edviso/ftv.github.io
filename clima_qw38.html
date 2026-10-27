@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v27</title>
+<title>Monitor El Niño - Guayaquil v28</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -266,6 +266,7 @@
   .badge.warning{background:rgba(245,158,11,.15);color:var(--accent-yellow)}
   .badge.danger{background:rgba(239,68,68,.15);color:var(--accent-red)}
   .badge.info{background:rgba(59,130,246,.15);color:var(--accent-blue)}
+  .red { color:var(--accent-red); font-weight:700; }
 
   /* === BOTONES === */
   .actions { padding:8px 12px 20px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -738,7 +739,7 @@ function updateTideLine() {
       .filter(e => e.hi && e.t > nowWall - 600000);
     let nx = '';
     if (fut.length) nx = ' \u00b7 ' + tideWords(fut[0].t) + ' (' + fut[0].h.toFixed(1) + ' m)';
-    document.getElementById('tideLine').textContent = '\uD83C\uDF0A Marea ' + hNow.toFixed(1) + ' m \u00b7 ' + dir + nx;
+    document.getElementById('tideLine').innerHTML = redMarea('\uD83C\uDF0A Marea ' + hNow.toFixed(1) + ' m \u00b7 ' + dir + nx);
   } catch (e) { console.error('tide:', e); }
 }
 
@@ -1209,7 +1210,7 @@ function renderForecast(hourly) {
       `<div class="frow-bottom">` +
         `${Math.round(d.temperatures[i] || 0)}° · siente ${Math.round(d.apparent[i] || 0)}° · ` +
         `humedad ${Math.round(d.humidity[i] || 0)}% · viento ${Math.round(d.wind[i] || 0)} km/h` +
-        (nearHigh ? ' · 🌊 marea alta' : '') +
+        (nearHigh ? ' · 🌊 <span class="red">marea alta</span>' : '') +
       `</div>`;
     list.appendChild(row);
   });
@@ -1585,6 +1586,8 @@ function checkAlarms() {
   renderAlerts();
   if (state.alerts.length) triggerAlarm();
 }
+function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function redMarea(s) { return escHtml(s).replace(/marea alta/g, '<span class="red">marea alta</span>'); }
 function renderAlerts() {
   const n = state.alerts.length;
   document.getElementById('alertsCount').textContent = n;
@@ -1599,7 +1602,7 @@ function renderAlerts() {
   badge.textContent = high ? 'URGENTE' : 'AVISO';
   badge.className = high ? 'badge danger' : 'badge warning';
   banner.classList.add('visible');
-  document.getElementById('alertBannerText').textContent = state.alerts.slice(0, 3).map(a => a.message).join(' | ');
+  document.getElementById('alertBannerText').innerHTML = state.alerts.slice(0, 3).map(a => redMarea(a.message)).join(' | ');
 }
 function triggerAlarm() {
   const high = state.alerts.some(a => a.severity === 'high');
@@ -1611,7 +1614,7 @@ function triggerAlarm() {
     state.testOverlay = false;
     /* Sin sirena automática: la alerta entra en silencio (pantalla + vibración).
        El sonido solo suena con el botón "Probar alarma". */
-    document.getElementById('alarmOverlayText').textContent = msg;
+    document.getElementById('alarmOverlayText').innerHTML = redMarea(msg);
     document.getElementById('alarmOverlay').classList.add('visible');
   }
 }

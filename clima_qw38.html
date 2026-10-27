@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v14</title>
+<title>Monitor El Niño - Guayaquil v15</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -142,6 +142,10 @@
     padding:14px; margin:12px 0; display:flex; flex-direction:column; gap:10px; align-items:flex-start;
   }
   .nino-status p { font-size:13px; color:var(--text-secondary); line-height:1.55; }
+  .nino-event { font-size:15px; font-weight:800; display:flex; align-items:center; gap:8px; }
+  .nino-line { font-size:14px; color:var(--text-primary); }
+  .nino-line b { font-family:'SF Mono',Consolas,monospace; }
+  .nino-line span { color:var(--text-secondary); }
   .nino-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:14px; margin:10px 0; }
   .nino-row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
   .nino-name { font-size:16px; font-weight:800; }
@@ -968,6 +972,17 @@ function ninoStatus(a) {
   return { t:'NEUTRO', c:'badge safe' };
 }
 function fmtAnom(a) { return (a >= 0 ? '+' : '') + a.toFixed(1) + '°'; }
+/* Descripción honesta por zona: habla del tamaño del número, no inventa
+   clasificación oficial (esa solo existe para Niño 3.4). */
+function anomDesc(a) {
+  if (a == null) return 'sin dato';
+  const v = Math.abs(a);
+  if (v < 0.5) return 'normal';
+  const dir = a > 0 ? 'sobre lo normal' : 'bajo lo normal';
+  if (v < 1) return 'ligeramente ' + dir;
+  if (v < 2) return 'muy ' + dir;
+  return 'extremadamente ' + dir;
+}
 function latestSST(h) {
   if (!h || !h.time || !h.sea_surface_temperature) return null;
   const v = valueAtOrNear(h.sea_surface_temperature, Math.max(0, findCurrentHourIndex(h.time)), 12);
@@ -992,12 +1007,14 @@ function renderNinoPanel() {
   });
   const ref = regs.find(g => g.id === 'n34') || regs[0]; // la etiqueta grande siempre usa Niño 3.4
   const st = ninoStatus(ref.anom);
+  const evLabel = ref.anom == null ? 'ESTADO' : ref.anom >= 0.5 ? 'EL NIÑO' : ref.anom <= -0.5 ? 'LA NIÑA' : 'ESTADO';
   const pos = (a) => a == null ? 50 : Math.min(100, Math.max(0, (a + 4) / 8 * 100));
   box.innerHTML =
-    '<div class="nino-status"><span class="' + st.c + '">' + st.t + '</span>'
-    + '<p>Niño 3.4 (Pacífico central): '
-    + (ref.anom != null ? '<b>' + fmtAnom(ref.anom) + '</b> sobre el promedio 1991–2020.' : 'sin dato.')
-    + ' Indicativo; no equivale al ONI trimestral oficial.</p></div>'
+    '<div class="nino-status"><div class="nino-event"><span>' + evLabel + ':</span><span class="' + st.c + '">' + st.t + '</span></div>'
+    + regs.map(g =>
+      '<div class="nino-line">' + g.nombre + ' <b>' + (g.anom != null ? fmtAnom(g.anom) : '--') + '</b> <span>· ' + anomDesc(g.anom) + '</span></div>'
+    ).join('')
+    + '<p>sobre el promedio 1991–2020. Intensidad oficial según Niño 3.4; por zona se describe el valor. Indicativo; no equivale al ONI trimestral oficial.</p></div>'
     + regs.map(g =>
       '<div class="nino-card"><div class="nino-row"><div><div class="nino-name">' + g.nombre + '</div>'
       + '<div class="nino-desc2">' + g.desc + '</div></div>'

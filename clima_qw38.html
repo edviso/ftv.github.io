@@ -4,13 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a0e1a">
-<title>Monitor El Niño - Guayaquil v2</title>
-
-<!-- Leaflet CSS -->
+<title>Monitor El Niño - Guayaquil v3.1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
 <style>
-  /* === VARIABLES TEMA OSCURO === */
   :root {
     --bg-primary:#0a0e1a; --bg-card:#1a2035; --bg-elevated:#232a42;
     --border:#2a3350; --text-primary:#e8ecf5; --text-secondary:#8a94b0; --text-muted:#5a6478;
@@ -28,7 +24,6 @@
   }
   .app { max-width:100vw; min-height:100vh; padding-bottom:env(safe-area-inset-bottom,0); }
 
-  /* === HEADER === */
   .header {
     position:sticky; top:0; z-index:1000;
     background:rgba(10,14,26,.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
@@ -46,7 +41,6 @@
   .status-dot.error { background:var(--accent-red); animation:none; }
   @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,185,129,.4)} 50%{opacity:.6;box-shadow:0 0 0 4px rgba(16,185,129,0)} }
 
-  /* === BANNER DE ALERTA === */
   .alert-banner {
     margin:12px; padding:16px; border-radius:12px;
     background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(249,115,22,.15));
@@ -58,7 +52,6 @@
   .alert-banner-text { font-size:12px; line-height:1.4; }
   @keyframes alertPulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)} 50%{box-shadow:0 0 20px 4px rgba(239,68,68,.3)} }
 
-  /* === MAPA === */
   .map-container { position:relative; width:100%; height:45vh; min-height:320px; max-height:500px; border-bottom:1px solid var(--border); }
   #map { width:100%; height:100%; background:#050810; }
   .map-controls { position:absolute; top:12px; right:12px; z-index:1000; display:flex; flex-direction:column; gap:8px; }
@@ -77,13 +70,8 @@
   }
   .legend-scale { display:flex; align-items:center; gap:8px; }
   .legend-gradient { width:110px; height:8px; border-radius:4px; background:linear-gradient(90deg,#2563eb,#06b6d4,#10b981,#f59e0b,#ef4444); }
+  .osm-dark .leaflet-basemap-pane .leaflet-tile { filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.5); }
 
-  /* Filtro oscuro SOLO al pane del basemap (no afecta la capa SST) */
-  .osm-dark .leaflet-basemap-pane .leaflet-tile {
-    filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.5);
-  }
-
-  /* === TARJETAS === */
   .cards-grid { padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .card {
     background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
@@ -103,7 +91,6 @@
   .badge.danger{background:rgba(239,68,68,.15);color:var(--accent-red)}
   .badge.info{background:rgba(59,130,246,.15);color:var(--accent-blue)}
 
-  /* === PRONÓSTICO HORARIO === */
   .hourly-scroll { display:flex; gap:8px; overflow-x:auto; padding:4px 0; scrollbar-width:none; }
   .hourly-scroll::-webkit-scrollbar { display:none; }
   .hour-item {
@@ -116,7 +103,6 @@
   .hour-rain.high { color:var(--accent-red); }
   .hour-temp { font-size:9px; color:var(--text-secondary); }
 
-  /* === BOTONES === */
   .actions { padding:8px 12px 20px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .btn {
     background:var(--bg-card); border:1px solid var(--border); color:var(--text-primary);
@@ -125,14 +111,15 @@
   }
   .btn:active { transform:scale(.97); }
   .btn.primary { background:var(--gradient-ocean); border:none; color:#fff; }
+  .btn.danger { background:var(--gradient-warm); border:none; color:#fff; }
   .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-full { grid-column:1/-1; }
   .btn .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg)} }
 
   .footer { padding:16px; text-align:center; font-size:10px; color:var(--text-muted); border-top:1px solid var(--border); font-family:monospace; line-height:1.6; }
   .footer a { color:var(--accent-cyan); text-decoration:none; }
 
-  /* === OVERLOAD / TOAST === */
   .loading-overlay {
     position:fixed; inset:0; background:rgba(10,14,26,.85); backdrop-filter:blur(8px);
     display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
@@ -151,13 +138,26 @@
   .toast.error { border-color:var(--accent-red); }
   .toast.success { border-color:var(--accent-green); }
 
+  /* === PANTALLA COMPLETA DE ALARMA (nuevo en v3.1) === */
+  .alarm-overlay {
+    position:fixed; inset:0; z-index:20000; display:none;
+    align-items:center; justify-content:center; padding:24px;
+    background:rgba(127,29,29,.92); animation:alarmFlash 1s ease-in-out infinite;
+  }
+  .alarm-overlay.visible { display:flex; }
+  @keyframes alarmFlash { 0%,100%{background:rgba(127,29,29,.92)} 50%{background:rgba(220,38,38,.95)} }
+  .alarm-box { text-align:center; display:flex; flex-direction:column; gap:14px; align-items:center; }
+  .alarm-emoji { font-size:64px; animation:pulse 1s ease-in-out infinite; }
+  .alarm-box h2 { font-size:22px; font-weight:800; letter-spacing:.02em; color:#fff; }
+  .alarm-box p { font-size:14px; color:#fee2e2; line-height:1.5; max-width:320px; }
+  .alarm-box .btn { min-width:200px; }
+
   @media (min-width:600px) {
     .cards-grid { grid-template-columns:repeat(4,1fr); }
     .card-full { grid-column:span 4; }
     .map-container { height:55vh; }
   }
 
-  /* === AJUSTES LEAFLET === */
   .leaflet-container { background:#050810 !important; font-family:inherit; }
   .leaflet-control-attribution { background:rgba(10,14,26,.8)!important; color:var(--text-muted)!important; font-size:9px!important; }
   .leaflet-control-attribution a { color:var(--accent-cyan)!important; }
@@ -166,7 +166,6 @@
 <body>
 <div class="app">
 
-  <!-- HEADER -->
   <header class="header">
     <div>
       <h1>🌊 Monitor El Niño</h1>
@@ -178,13 +177,11 @@
     </div>
   </header>
 
-  <!-- BANNER DE ALERTA -->
   <div class="alert-banner" id="alertBanner">
     <div class="alert-banner-header"><span>⚠️</span><span>ALERTA DE LLUVIA INTENSA</span></div>
     <div class="alert-banner-text" id="alertBannerText"></div>
   </div>
 
-  <!-- MAPA -->
   <div class="map-container">
     <div id="map"></div>
     <div class="map-controls">
@@ -200,7 +197,6 @@
     </div>
   </div>
 
-  <!-- TARJETAS -->
   <div class="cards-grid">
     <div class="card">
       <div class="card-header"><span class="card-label">T° Actual</span><span>🌡️</span></div>
@@ -227,7 +223,7 @@
     </div>
 
     <div class="card card-full">
-      <div class="card-header"><span class="card-label">Próximas 24 Horas</span><span>⏰</span></div>
+      <div class="card-header"><span class="card-label">Próximas 24 Horas (hora GYE)</span><span>⏰</span></div>
       <div class="hourly-scroll" id="hourlyScroll"></div>
     </div>
 
@@ -241,16 +237,26 @@
     </div>
   </div>
 
-  <!-- ACCIONES -->
   <div class="actions">
     <button class="btn primary" id="refreshBtn" onclick="refreshAll()"><span>🔄</span><span>Actualizar</span></button>
     <button class="btn" onclick="requestNotifications()"><span>🔔</span><span>Notificaciones</span></button>
+    <button class="btn btn-full" onclick="testAlarm()"><span>🔊</span><span>Probar alarma (sonido + vibración)</span></button>
   </div>
 
   <footer class="footer">
     <div>Datos: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> | SST: <a href="https://gibs.earthdata.nasa.gov" target="_blank">NASA GIBS</a> | Base: Esri/OSM</div>
     <div>Imagery: NASA GIBS / ESDIS • Auto-refresh: 60 min</div>
   </footer>
+</div>
+
+<!-- PANTALLA COMPLETA DE ALARMA -->
+<div class="alarm-overlay" id="alarmOverlay">
+  <div class="alarm-box">
+    <div class="alarm-emoji">⚠️</div>
+    <h2>ALERTA DE LLUVIA INTENSA</h2>
+    <p id="alarmOverlayText"></p>
+    <button class="btn danger" onclick="dismissAlarm()"><span>✓</span><span>ENTENDIDO</span></button>
+  </div>
 </div>
 
 <div class="loading-overlay" id="loadingOverlay">
@@ -266,154 +272,174 @@
    ===================================================== */
 const CONFIG = {
   location: { lat: -2.1962, lon: -79.8862 },
-  initialView: { lat: -5, lon: -95, zoom: 3 },   // Sudamérica + Pacífico
+  initialView: { lat: -5, lon: -95, zoom: 3 },
   guayaquilView: { lat: -2.1962, lon: -79.8862, zoom: 9 },
   thresholds: { rainProbability: 60, rainIntensity: 5, sstAnomaly: 27.5, sstElNino: 28.5 },
   refreshInterval: 60 * 60 * 1000
 };
+const TZ_OFFSET_H = -5; // Ecuador continental UTC-5
 
-/* Basemaps SIN API KEY.
-   CARTO ahora exige key (marca de agua), así que usamos:
-   - Esri World Dark Gray Base (servicio público ArcGIS Online, sin key)
-   - Esri World Imagery (satélite, sin key)
-   - OSM estándar con filtro oscuro como respaldo automático */
 const BASEMAPS = {
-  dark: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    attribution: '© Esri — World Dark Gray Base', maxNativeZoom: 16, dark: false, label: 'Oscuro'
-  },
-  sat: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '© Esri, Maxar, Earthstar Geographics — World Imagery', maxNativeZoom: 18, dark: false, label: 'Satélite'
-  },
-  osm: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors', maxNativeZoom: 19, dark: true, label: 'OSM'
-  }
+  dark: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+          attribution:'© Esri — World Dark Gray Base', maxNativeZoom:16, dark:false, label:'Oscuro' },
+  sat:  { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attribution:'© Esri, Maxar, Earthstar Geographics — World Imagery', maxNativeZoom:18, dark:false, label:'Satélite' },
+  osm:  { url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          attribution:'© OpenStreetMap contributors', maxNativeZoom:19, dark:true, label:'OSM' }
 };
-
-/* Capas SST verificadas en el GetCapabilities de GIBS (EPSG:3857) */
 const SST_LAYERS = [
-  'GHRSST_L4_MUR_Sea_Surface_Temperature',        // 1 km, la de mejor calidad
-  'GHRSST_L4_AVHRR-OI_Sea_Surface_Temperature'    // respaldo
+  'GHRSST_L4_MUR_Sea_Surface_Temperature',
+  'GHRSST_L4_AVHRR-OI_Sea_Surface_Temperature'
 ];
 
 const state = {
-  weather: null, marine: null, map: null,
-  baseLayer: null, baseMode: 'dark', baseFallbackUsed: false,
-  sstLayer: null, sstVisible: true, sstIndex: 0, sstErrors: 0, sstFailed: false,
-  autoRefreshTimer: null, alerts: []
+  weather:null, marine:null, map:null,
+  baseLayer:null, baseMode:'dark', baseFallbackUsed:false,
+  sstLayer:null, sstVisible:true, sstIndex:0, sstErrors:0, sstFailed:false,
+  autoRefreshTimer:null, alerts:[], snoozedUntil:0
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
+  registerOptionalSW();  // si algún día subes sw.js, se activa solo
   refreshAll();
   startAutoRefresh();
 });
+
+/* =====================================================
+   SONIDO DE SIRENA (Web Audio, todo dentro del HTML)
+   Los navegadores exigen un primer toque del usuario para
+   permitir sonido; por eso lo "desbloqueamos" con cualquier tap.
+   ===================================================== */
+let audioCtx = null;
+function ensureAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) { /* sin audio disponible */ }
+}
+document.addEventListener('pointerdown', ensureAudio);
+
+function playSiren(seconds = 4) {
+  if (!audioCtx) return false;
+  try {
+    const t0 = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    // Sirena: sube y baja dos veces
+    osc.frequency.setValueAtTime(660, t0);
+    osc.frequency.linearRampToValueAtTime(990, t0 + seconds * 0.25);
+    osc.frequency.linearRampToValueAtTime(660, t0 + seconds * 0.5);
+    osc.frequency.linearRampToValueAtTime(990, t0 + seconds * 0.75);
+    osc.frequency.linearRampToValueAtTime(660, t0 + seconds);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.05);
+    gain.gain.setValueAtTime(0.35, t0 + seconds - 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + seconds);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0 + seconds + 0.05);
+    return true;
+  } catch (e) { return false; }
+}
+
+/* =====================================================
+   NOTIFICACIONES A PRUEBA DE ANDROID
+   Android Chrome prohíbe new Notification(): se usa el
+   Service Worker si existe; si no, sirena+vibración+pantalla.
+   Esta función NUNCA lanza errores.
+   ===================================================== */
+async function safeNotify(title, opts = {}) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, opts);
+      return true;
+    } catch (e) { /* seguimos a la ruta 2 */ }
+  }
+  try { new Notification(title, opts); return true; }
+  catch (e) { return false; } // Android sin sw.js: ya hay sirena y pantalla
+}
+
+/* Registra sw.js SOLO si existe en la carpeta. Si no, no pasa nada. */
+async function registerOptionalSW() {
+  if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
+  try {
+    const res = await fetch('sw.js', { cache: 'no-store' });
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok || !/javascript|ecmascript/.test(ct)) return;
+    await navigator.serviceWorker.register('sw.js');
+  } catch (e) { /* silencioso */ }
+}
 
 /* =====================================================
    MAPA LEAFLET
    ===================================================== */
 function initMap() {
   state.map = L.map('map', {
-    center: [CONFIG.initialView.lat, CONFIG.initialView.lon],
-    zoom: CONFIG.initialView.zoom,
-    zoomControl: false,
-    worldCopyJump: true,
-    maxZoom: 18
+    center:[CONFIG.initialView.lat, CONFIG.initialView.lon],
+    zoom:CONFIG.initialView.zoom, zoomControl:false, worldCopyJump:true, maxZoom:18
   });
-
-  // Panes separados: el filtro oscuro del basemap no afecta a la capa SST
   state.map.createPane('basemap').style.zIndex = 350;
   state.map.createPane('sst').style.zIndex = 450;
-
   addBaseMap('dark');
   addSSTLayer();
-
-  // Marcador Guayaquil
   const icon = L.divIcon({
-    html: '<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 10px rgba(239,68,68,.8);"></div>',
-    className: '', iconSize: [14, 14], iconAnchor: [7, 7]
+    html:'<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 10px rgba(239,68,68,.8);"></div>',
+    className:'', iconSize:[14,14], iconAnchor:[7,7]
   });
-  L.marker([CONFIG.location.lat, CONFIG.location.lon], { icon, zIndexOffset: 1000 })
+  L.marker([CONFIG.location.lat, CONFIG.location.lon], { icon, zIndexOffset:1000 })
     .addTo(state.map).bindPopup('<b>Guayaquil</b><br>Estación de monitoreo');
 }
-
-/* --- Basemap con respaldo automático ante errores de tiles --- */
 function addBaseMap(mode) {
   const cfg = BASEMAPS[mode];
   state.baseLayer = L.tileLayer(cfg.url, {
-    attribution: cfg.attribution,
-    maxNativeZoom: cfg.maxNativeZoom,
-    maxZoom: 18,
-    pane: 'basemap'
+    attribution:cfg.attribution, maxNativeZoom:cfg.maxNativeZoom, maxZoom:18, pane:'basemap'
   }).addTo(state.map);
-
   let errCount = 0;
   state.baseLayer.on('tileerror', () => {
     errCount++;
-    // Si el basemap falla (p. ej. bloqueado), cae a OSM con filtro oscuro
     if (errCount >= 3 && !state.baseFallbackUsed && mode !== 'osm') {
       state.baseFallbackUsed = true;
       showToast('Basemap alternativo cargado (OSM)', 'error');
       switchBaseMap('osm');
     }
   });
-
   state.baseMode = mode;
   state.map.getContainer().classList.toggle('osm-dark', !!cfg.dark);
   document.getElementById('baseLabel').textContent = cfg.label;
 }
+function switchBaseMap(mode) { if (state.baseLayer) state.map.removeLayer(state.baseLayer); addBaseMap(mode); }
+function toggleBaseMap() { switchBaseMap(state.baseMode === 'dark' ? 'sat' : 'dark'); }
 
-function switchBaseMap(mode) {
-  if (state.baseLayer) state.map.removeLayer(state.baseLayer);
-  addBaseMap(mode);
-}
-
-function toggleBaseMap() {
-  switchBaseMap(state.baseMode === 'dark' ? 'sat' : 'dark');
-}
-
-/* --- Capa WMS de Temperatura Superficial del Mar (NASA GIBS) ---
-   Las capas GIBS son temporales: enviamos TIME=YYYY-MM-DD (UTC -2 días,
-   por la latencia del producto MUR). GIBS ajusta al valor más cercano. */
 function getSSTDate() {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - 2);
   return d.toISOString().slice(0, 10);
 }
-
 function addSSTLayer() {
   const dateStr = getSSTDate();
   document.getElementById('sstDate').textContent = 'SST: ' + dateStr;
   buildSSTLayer(SST_LAYERS[state.sstIndex], dateStr);
 }
-
 function buildSSTLayer(layerName, dateStr) {
   state.sstLayer = L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
-    layers: layerName,
-    format: 'image/png',
-    transparent: true,
-    version: '1.1.1',
-    TIME: dateStr,          // dimensión temporal de GIBS
-    opacity: 0.8,
-    pane: 'sst',
-    attribution: 'SST: NASA GIBS (GHRSST MUR)'
+    layers:layerName, format:'image/png', transparent:true, version:'1.1.1',
+    TIME:dateStr, opacity:0.8, pane:'sst', attribution:'SST: NASA GIBS (GHRSST MUR)'
   });
-
   state.sstErrors = 0;
   state.sstLayer.on('load', () => { state.sstErrors = 0; });
   state.sstLayer.on('tileerror', () => {
     state.sstErrors++;
     if (state.sstErrors >= 4 && !state.sstFailed) {
       if (state.sstIndex < SST_LAYERS.length - 1) {
-        // Respaldo: probar la siguiente capa SST verificada
         state.sstIndex++;
         showToast('Cambiando a capa SST de respaldo...', 'error');
-        const wasVisible = state.sstVisible;
+        const vis = state.sstVisible;
         state.map.removeLayer(state.sstLayer);
         buildSSTLayer(SST_LAYERS[state.sstIndex], getSSTDate());
-        if (wasVisible) state.sstLayer.addTo(state.map);
+        if (vis) state.sstLayer.addTo(state.map);
       } else {
         state.sstFailed = true;
         state.map.removeLayer(state.sstLayer);
@@ -423,47 +449,33 @@ function buildSSTLayer(layerName, dateStr) {
       }
     }
   });
-
   if (state.sstVisible) state.sstLayer.addTo(state.map);
 }
-
 function toggleSSTLayer() {
   if (state.sstFailed) { showToast('Capa SST no disponible', 'error'); return; }
   const btn = document.getElementById('sstToggle');
-  if (state.sstVisible) {
-    state.map.removeLayer(state.sstLayer);
-    btn.innerHTML = '<span>🌡️</span><span>SST OFF</span>';
-  } else {
-    state.sstLayer.addTo(state.map);
-    btn.innerHTML = '<span>🌡️</span><span>SST ON</span>';
-  }
+  if (state.sstVisible) { state.map.removeLayer(state.sstLayer); btn.innerHTML = '<span>🌡️</span><span>SST OFF</span>'; }
+  else { state.sstLayer.addTo(state.map); btn.innerHTML = '<span>🌡️</span><span>SST ON</span>'; }
   state.sstVisible = !state.sstVisible;
 }
-
-function zoomToGuayaquil() {
-  state.map.flyTo([CONFIG.guayaquilView.lat, CONFIG.guayaquilView.lon], CONFIG.guayaquilView.zoom, { duration: 1.5 });
-}
-function zoomToPacific() {
-  state.map.flyTo([CONFIG.initialView.lat, CONFIG.initialView.lon], CONFIG.initialView.zoom, { duration: 1.5 });
-}
+function zoomToGuayaquil() { state.map.flyTo([CONFIG.guayaquilView.lat, CONFIG.guayaquilView.lon], CONFIG.guayaquilView.zoom, { duration:1.5 }); }
+function zoomToPacific()  { state.map.flyTo([CONFIG.initialView.lat, CONFIG.initialView.lon], CONFIG.initialView.zoom, { duration:1.5 }); }
 
 /* =====================================================
-   APIs OPEN-METEO
+   APIs OPEN-METEO (UTC para que el índice horario no falle)
    ===================================================== */
 async function fetchWeather() {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.location.lat}&longitude=${CONFIG.location.lon}`
     + `&hourly=temperature_2m,precipitation_probability,precipitation,weather_code`
     + `&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m`
-    + `&timezone=America/Guayaquil&forecast_days=2`;
+    + `&timezone=UTC&forecast_days=2`;
   const r = await fetch(url);
   if (!r.ok) throw new Error('Error en API del clima');
   return r.json();
 }
-
 async function fetchMarine() {
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${CONFIG.location.lat}&longitude=${CONFIG.location.lon}`
-    + `&hourly=wave_height,wave_period,wave_direction`
-    + `&timezone=America/Guayaquil`;
+    + `&hourly=wave_height,wave_period,wave_direction&timezone=UTC`;
   const r = await fetch(url);
   if (!r.ok) throw new Error('Error en API marina');
   return r.json();
@@ -480,29 +492,35 @@ async function refreshAll() {
     document.getElementById('loadingText').textContent = 'Analizando océano...';
     state.marine = await fetchMarine();
     document.getElementById('loadingText').textContent = 'Procesando datos...';
-    processData();
-    checkAlarms();
-    updateStatus(true);
-    showToast('Datos actualizados correctamente', 'success');
   } catch (e) {
     console.error(e);
     updateStatus(false);
-    showToast('Error: ' + e.message, 'error');
-  } finally {
+    showToast('Error de red/API: ' + e.message, 'error');
     btn.disabled = false;
     btn.innerHTML = '<span>🔄</span><span>Actualizar</span>';
     showLoading(false);
+    return;
   }
+  try { processData(); } catch (e) { console.error('processData:', e); }
+  try { checkAlarms(); } catch (e) { console.error('checkAlarms:', e); }
+  updateStatus(true);
+  showToast('Datos actualizados correctamente', 'success');
+  btn.disabled = false;
+  btn.innerHTML = '<span>🔄</span><span>Actualizar</span>';
+  showLoading(false);
 }
 
 /* =====================================================
-   PROCESAMIENTO / UI
+   TIEMPO UTC -> HORA GUAYAQUIL
    ===================================================== */
-function findCurrentHourIndex(timeArray) {
-  const nowStr = new Date().toISOString().slice(0, 13);
-  return timeArray.findIndex(t => t.startsWith(nowStr));
+function findCurrentHourIndex(times) {
+  const s = new Date().toISOString().slice(0, 13);
+  return times.findIndex(t => t.startsWith(s));
 }
-
+function wallHour(utcTimeStr) {
+  const h = parseInt(utcTimeStr.slice(11, 13), 10);
+  return ((h + TZ_OFFSET_H) % 24 + 24) % 24;
+}
 function getNextHoursData(hourly, hours) {
   const i = Math.max(0, findCurrentHourIndex(hourly.time));
   const e = Math.min(hourly.time.length, i + hours);
@@ -514,17 +532,27 @@ function getNextHoursData(hourly, hours) {
     times: hourly.time.slice(i, e)
   };
 }
-
+function valueAtOrNear(arr, i, span = 6) {
+  if (!arr || i < 0) return null;
+  for (let d = 0; d <= span; d++) {
+    for (const j of [i + d, i - d]) {
+      if (j >= 0 && j < arr.length && arr[j] != null) return arr[j];
+    }
+  }
+  return null;
+}
 function estimateSST(airTemp) {
   const month = new Date().getMonth();
-  const offset = (month >= 11 || month <= 4) ? 3.5 : 0.5; // cálida vs Humboldt
+  const offset = (month >= 11 || month <= 4) ? 3.5 : 0.5;
   return Math.max(20, Math.min(32, airTemp + offset));
 }
 
+/* =====================================================
+   PROCESADO / UI
+   ===================================================== */
 function processData() {
   const w = state.weather, m = state.marine;
   if (!w) return;
-
   const currentTemp = w.current?.temperature_2m ?? 0;
   document.getElementById('currentTemp').textContent = currentTemp.toFixed(1) + '°';
 
@@ -532,17 +560,15 @@ function processData() {
   if (idx >= 6) {
     const diff = currentTemp - w.hourly.temperature_2m[idx - 6];
     const el = document.getElementById('tempTrend');
-    if (diff > 0.5)       { el.textContent = `↑ ${diff.toFixed(1)}° (6h)`;  el.style.color = 'var(--accent-red)'; }
+    if (diff > 0.5)       { el.textContent = `↑ ${diff.toFixed(1)}° (6h)`; el.style.color = 'var(--accent-red)'; }
     else if (diff < -0.5) { el.textContent = `↓ ${Math.abs(diff).toFixed(1)}° (6h)`; el.style.color = 'var(--accent-cyan)'; }
     else                  { el.textContent = '→ Estable'; el.style.color = 'var(--text-muted)'; }
   }
 
-  // Lluvia próximas 24 h
   const hw = getNextHoursData(w.hourly, 24);
   const maxProb = Math.max(...hw.probabilities);
   const totalMm = hw.precipitation.reduce((a, b) => a + b, 0);
   const maxInt  = Math.max(...hw.precipitation);
-
   document.getElementById('rainProb').textContent = maxProb + '%';
   document.getElementById('rainMm').textContent = totalMm.toFixed(1) + ' mm (24h)';
 
@@ -556,7 +582,6 @@ function processData() {
     rainCard.classList.remove('alert'); rainBadge.textContent = 'SECO'; rainBadge.className = 'badge safe';
   }
 
-  // SST estimada (la real se visualiza en el mapa GIBS)
   const sst = estimateSST(currentTemp);
   document.getElementById('seaTemp').textContent = sst.toFixed(1) + '°';
   const seaBadge = document.getElementById('seaBadge');
@@ -572,12 +597,14 @@ function processData() {
     seaStatus.textContent = 'Normal'; seaStatus.style.color = 'var(--text-secondary)';
   }
 
-  // Oleaje
   if (m?.hourly) {
     const mi = findCurrentHourIndex(m.hourly.time);
-    document.getElementById('waveHeight').textContent    = m.hourly.wave_height?.[mi]    != null ? m.hourly.wave_height[mi].toFixed(2) + ' m' : '-- m';
-    document.getElementById('wavePeriod').textContent    = m.hourly.wave_period?.[mi]    != null ? m.hourly.wave_period[mi].toFixed(1) + ' s' : '-- s';
-    document.getElementById('waveDirection').textContent = m.hourly.wave_direction?.[mi] != null ? Math.round(m.hourly.wave_direction[mi]) + '°' : '--°';
+    const wh = valueAtOrNear(m.hourly.wave_height, mi);
+    const wp = valueAtOrNear(m.hourly.wave_period, mi);
+    const wd = valueAtOrNear(m.hourly.wave_direction, mi);
+    document.getElementById('waveHeight').textContent    = wh != null ? wh.toFixed(2) + ' m' : '-- m';
+    document.getElementById('wavePeriod').textContent    = wp != null ? wp.toFixed(1) + ' s' : '-- s';
+    document.getElementById('waveDirection').textContent = wd != null ? Math.round(wd) + '°' : '--°';
   }
 
   renderHourlyForecast(w.hourly);
@@ -595,14 +622,13 @@ function renderHourlyForecast(hourly) {
     const item = document.createElement('div');
     item.className = 'hour-item';
     item.innerHTML =
-      `<div class="hour-time">${new Date(t).getHours()}h</div>` +
+      `<div class="hour-time">${wallHour(t)}h</div>` +
       `<div class="hour-icon">${weatherCodeToIcon(d.weatherCodes[i])}</div>` +
       `<div class="hour-rain ${prob >= 60 ? 'high' : ''}">${prob}%</div>` +
       `<div class="hour-temp">${(d.temperatures[i] || 0).toFixed(0)}°</div>`;
     box.appendChild(item);
   });
 }
-
 function weatherCodeToIcon(c) {
   if (c === 0) return '☀️';
   if (c <= 3) return '⛅';
@@ -616,13 +642,12 @@ function weatherCodeToIcon(c) {
 }
 
 /* =====================================================
-   ALARMAS + NOTIFICACIONES
+   ALARMAS: banner + sirena + vibración + pantalla completa
    ===================================================== */
 function checkAlarms() {
   state.alerts = [];
   const w = state.weather;
   if (!w) return;
-
   const hw = getNextHoursData(w.hourly, 24);
   const maxProb = Math.max(...hw.probabilities);
   const maxInt  = Math.max(...hw.precipitation);
@@ -646,7 +671,6 @@ function renderAlerts() {
   document.getElementById('alertsCount').textContent = n;
   const badge = document.getElementById('alertBadge');
   const banner = document.getElementById('alertBanner');
-
   if (!n) {
     badge.textContent = 'SIN ALERTAS'; badge.className = 'badge safe';
     banner.classList.remove('visible');
@@ -656,40 +680,66 @@ function renderAlerts() {
   badge.textContent = high ? 'URGENTE' : 'AVISO';
   badge.className = high ? 'badge danger' : 'badge warning';
   banner.classList.add('visible');
-  document.getElementById('alertBannerText').textContent =
-    state.alerts.slice(0, 2).map(a => a.message).join(' | ');
+  document.getElementById('alertBannerText').textContent = state.alerts.slice(0, 2).map(a => a.message).join(' | ');
 }
 
 function triggerAlarm() {
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
-  if ('Notification' in window && Notification.permission === 'granted') {
-    const high = state.alerts.some(a => a.severity === 'high');
-    new Notification(high ? '⚠️ ALERTA: Lluvia Intensa' : '⚠️ Aviso Meteorológico', {
-      body: state.alerts[0].message, tag: 'el-nino-alert', renotify: true
-    });
+  const high = state.alerts.some(a => a.severity === 'high');
+  const msg = state.alerts.map(a => a.message).join(' ');
+
+  // Vibración siempre (si el teléfono la soporta)
+  if (navigator.vibrate) navigator.vibrate(high ? [400,150,400,150,400] : [200,100,200]);
+
+  // Notificación nativa (solo si hay sw.js o navegador compatible)
+  safeNotify(high ? '⚠️ ALERTA: Lluvia Intensa' : '⚠️ Aviso Meteorológico',
+    { body: msg, tag: 'el-nino-alert', renotify: true }).catch(() => {});
+
+  // Alarma sonora + pantalla completa: solo nivel ALTO y sin "snooze" activo
+  if (high && Date.now() > state.snoozedUntil) {
+    playSiren(5);
+    document.getElementById('alarmOverlayText').textContent = msg;
+    document.getElementById('alarmOverlay').classList.add('visible');
   }
+}
+
+/* Botón "ENTENDIDO": apaga sirena visual y silencia 30 min */
+function dismissAlarm() {
+  document.getElementById('alarmOverlay').classList.remove('visible');
+  if (navigator.vibrate) navigator.vibrate(0);
+  state.snoozedUntil = Date.now() + 30 * 60 * 1000;
+}
+
+/* Botón de prueba: sonido + vibración + pantalla, para que verifiques todo */
+function testAlarm() {
+  ensureAudio();
+  const ok = playSiren(2.5);
+  if (navigator.vibrate) navigator.vibrate([300,100,300]);
+  document.getElementById('alarmOverlayText').textContent = 'Prueba de alarma: así te avisaré cuando haya lluvia intensa.';
+  document.getElementById('alarmOverlay').classList.add('visible');
+  safeNotify('🌊 Monitor El Niño', { body: 'Prueba de notificación.', tag: 'test' }).catch(() => {});
+  showToast(ok ? '🔊 Sirena funcionando' : 'Sin sonido: revisa el volumen del navegador', ok ? 'success' : 'error');
 }
 
 async function requestNotifications() {
-  if (!('Notification' in window)) { showToast('Navegador sin soporte de notificaciones', 'error'); return; }
-  if (Notification.permission === 'granted') {
-    showToast('✓ Notificaciones ya activadas', 'success');
-    new Notification('🌊 Monitor El Niño', { body: 'Notificaciones activas.', tag: 'test' });
-    return;
+  ensureAudio();
+  if (!('Notification' in window)) { showToast('Navegador sin soporte; usarás sirena y pantalla', 'error'); return; }
+  if (Notification.permission === 'denied') { showToast('Permiso denegado: actívalo en ajustes del navegador', 'error'); return; }
+  if (Notification.permission !== 'granted') {
+    const p = await Notification.requestPermission();
+    if (p !== 'granted') { showToast('Permiso no otorgado: igual tendrás sirena y pantalla', 'error'); return; }
   }
-  if (Notification.permission === 'denied') { showToast('Permiso denegado: actívalo en ajustes', 'error'); return; }
-  const p = await Notification.requestPermission();
-  showToast(p === 'granted' ? '✓ Notificaciones activadas' : 'Permiso no otorgado', p === 'granted' ? 'success' : 'error');
+  await registerOptionalSW();
+  const ok = await safeNotify('🌊 Monitor El Niño', { body: 'Notificaciones activas.', tag: 'test' });
+  showToast(ok ? '✓ Notificaciones nativas activadas' : '✓ Permiso OK (alertas con sirena y pantalla)', 'success');
 }
 
 /* =====================================================
-   AUTO-REFRESH HORARIO + UTILIDADES
+   AUTO-REFRESH + UTILIDADES
    ===================================================== */
 function startAutoRefresh() {
   if (state.autoRefreshTimer) clearInterval(state.autoRefreshTimer);
   state.autoRefreshTimer = setInterval(refreshAll, CONFIG.refreshInterval);
 }
-
 function updateStatus(ok) {
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');

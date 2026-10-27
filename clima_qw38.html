@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="El Niño GYE">
-<title>Monitor El Niño - Guayaquil v11</title>
+<title>Monitor El Niño - Guayaquil v12</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -111,20 +111,46 @@
   .frow.intense { box-shadow:inset 3px 0 0 var(--accent-red);    background:rgba(239,68,68,.07); }
   .forecast-end { padding:14px; text-align:center; font-size:12px; color:var(--text-muted); font-family:monospace; }
 
-  /* === VENTANA DE DETALLE POR HORA (hoja inferior, no ocupa toda la pantalla) === */
+  /* === VENTANA DE DETALLE POR HORA (pantalla completa) === */
   .sheet-overlay {
     position:fixed; inset:0; z-index:15000; display:none;
-    align-items:flex-end; justify-content:center;
-    background:rgba(3,6,14,.6);
-    padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));
+    align-items:stretch; justify-content:center;
+    background:var(--bg-primary); padding:0;
   }
   .sheet-overlay.visible { display:flex; }
   .sheet {
-    width:100%; max-width:420px; max-height:78vh; max-height:78dvh; overflow-y:auto;
-    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
-    padding:16px; box-shadow:var(--shadow-lg);
+    width:100%; max-width:640px; height:100vh; height:100dvh; overflow-y:auto;
+    background:var(--bg-primary); padding:0 14px calc(20px + env(safe-area-inset-bottom,0px));
   }
-  .sheet-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+  .sheet-head {
+    position:sticky; top:0; z-index:2; background:var(--bg-primary);
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:calc(12px + env(safe-area-inset-top,0px)) 0 10px;
+  }
+  .mini-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:4px 0 16px; }
+  .mini { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
+  .mini .k { font-size:12px; color:var(--text-muted); }
+  .mini .v { font-size:16px; font-weight:800; margin-top:1px; }
+  .nino-eyebrow { font-size:12px; letter-spacing:.1em; color:var(--text-muted); font-family:'SF Mono',Consolas,monospace; text-transform:uppercase; }
+  .nino-h { font-size:22px; font-weight:800; margin:4px 0 6px; display:flex; align-items:center; gap:8px; }
+  .nino-desc { font-size:13px; color:var(--text-secondary); line-height:1.5; }
+  .nino-view { margin:12px 0; }
+  .nino-status {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+    padding:14px; margin:12px 0; display:flex; flex-direction:column; gap:10px; align-items:flex-start;
+  }
+  .nino-status p { font-size:13px; color:var(--text-secondary); line-height:1.55; }
+  .nino-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:14px; margin:10px 0; }
+  .nino-row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .nino-name { font-size:16px; font-weight:800; }
+  .nino-desc2 { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .nino-vals { text-align:right; white-space:nowrap; }
+  .nino-sst { font-size:14px; color:var(--text-secondary); font-family:'SF Mono',Consolas,monospace; }
+  .nino-anom { font-size:20px; font-weight:800; color:var(--accent-orange); margin-left:6px; }
+  .nino-bar { position:relative; height:8px; border-radius:4px; margin-top:12px;
+    background:linear-gradient(90deg,#3b82f6,#06b6d4 30%,#f59e0b 52%,#ef4444 72%,#a855f7); }
+  .nino-pin { position:absolute; top:-3px; width:14px; height:14px; border-radius:50%;
+    background:#fff; border:3px solid var(--bg-card); box-shadow:0 0 0 1px var(--text-muted); }
   .sheet-title { font-size:16px; font-weight:800; }
   .sheet-sub { font-size:12px; color:var(--text-secondary); margin-top:2px; }
   .sheet-x {
@@ -370,7 +396,7 @@
   </footer>
 </div>
 
-<!-- VENTANA DE DETALLE POR HORA -->
+<!-- VENTANA DE DETALLE POR HORA (pantalla completa) -->
 <div class="sheet-overlay" id="hourOverlay" aria-hidden="true">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hourTitle">
     <div class="sheet-head">
@@ -380,7 +406,12 @@
       </div>
       <button class="sheet-x" onclick="closeHour()" aria-label="Cerrar detalle">✕</button>
     </div>
-    <div class="sheet-grid" id="hourGrid"></div>
+    <div class="mini-grid" id="hourMini"></div>
+    <div class="nino-eyebrow">SST en vivo · Pacífico ecuatorial</div>
+    <div class="nino-h">🌐 Indicadores El Niño</div>
+    <div class="nino-desc">Temperatura del mar en vivo (Open-Meteo Marine) y anomalía indicativa frente al promedio 1991–2020 (ERSSTv5, NOAA). Se calcula sola, sin actualizar nada.</div>
+    <div class="nino-view"><button class="btn" onclick="viewAnomaly()" aria-label="Ver anomalía en el mapa"><span>🗺️</span><span>Ver anomalía</span></button></div>
+    <div id="ninoPanel"><div class="forecast-end">Cargando indicadores del mar...</div></div>
   </div>
 </div>
 
@@ -419,6 +450,15 @@ const CONFIG = {
     { n:'Montañita', lat:-1.83, lon:-80.75 },
     { n:'Salinas', lat:-2.21, lon:-80.97 },
     { n:'Playas', lat:-2.63, lon:-80.39 }
+  ],
+  /* Puntos representativos + promedio mensual 1991-2020 (ERSSTv5, NOAA). Tabla fija: no se actualiza. */
+  nino: [
+    { id:'n34', nombre:'Niño 3.4', desc:'Pacífico central · 5°N–5°S, 170°–120°O', lat:0, lon:-140,
+      climo:{1:26.58,2:26.81,3:27.34,4:27.86,5:27.95,6:27.73,7:27.28,8:26.85,9:26.71,10:26.72,11:26.71,12:26.61} },
+    { id:'n12', nombre:'Niño 1+2', desc:'Pacífico oriental · frente a Perú/Ecuador', lat:-5, lon:-85,
+      climo:{1:27.01,2:27.36,3:27.57,4:27.8,5:27.8,6:27.37,7:27.01,8:26.89,9:26.84,10:26.83,11:26.71,12:26.72} },
+    { id:'costa', nombre:'Costa de Guayaquil', desc:'Punto marino cercano a Playas', lat:-2.8, lon:-80.6,
+      climo:{1:26.54,2:26.39,3:26.25,4:26.99,5:27.51,6:27.14,7:26.72,8:26.7,9:26.83,10:26.78,11:26.49,12:26.41} }
   ]
 };
 const TZ_OFFSET_H = -5; // Ecuador continental UTC-5
@@ -444,7 +484,7 @@ const state = {
   baseLayer:null, baseMode:'dark', baseFallbackUsed:false,
   sstLayer:null, sstVisible:true, sstIndex:0, sstErrors:0, sstFailed:false,
   autoRefreshTimer:null, alerts:[], snoozedUntil:0,
-  lastFetchTs:0, refreshing:false, testOverlay:false, lastHours:null, beaches:null
+  lastFetchTs:0, refreshing:false, testOverlay:false, lastHours:null, beaches:null, nino:null
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -679,6 +719,15 @@ async function fetchBeaches() {
   if (!r.ok) throw new Error('Error en API de playas');
   return r.json();
 }
+async function fetchNino() {
+  const lats = CONFIG.nino.map(x => x.lat).join(',');
+  const lons = CONFIG.nino.map(x => x.lon).join(',');
+  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lats}&longitude=${lons}`
+    + `&hourly=sea_surface_temperature&forecast_days=2&timezone=UTC`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Error en API de indicadores');
+  return r.json();
+}
 
 async function refreshAll() {
   if (state.refreshing) return;
@@ -698,6 +747,9 @@ async function refreshAll() {
     document.getElementById('loadingText').textContent = 'Procesando datos...';
     try { processData(); } catch (e) { console.error('processData:', e); }
     try { processBeaches(); } catch (e) { console.error('processBeaches:', e); }
+    document.getElementById('loadingText').textContent = 'Midiendo el mar (El Niño)...';
+    try { state.nino = await fetchNino(); }
+    catch (ne) { console.error('nino:', ne); state.nino = null; }
     try { checkAlarms(); } catch (e) { console.error('checkAlarms:', e); }
     state.lastFetchTs = Date.now();
     updateStatus(true);
@@ -852,6 +904,9 @@ function weatherCodeToText(c) {
 function cellHour(k, v) {
   return '<div class="sheet-cell"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
 }
+function mini(k, v) {
+  return '<div class="mini"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
+}
 function openHour(i) {
   const d = state.lastHours;
   if (!d || !d.times || i < 0 || i >= d.times.length) return;
@@ -861,34 +916,77 @@ function openHour(i) {
     (i === 0 ? 'AHORA · ' : '') + wallHour(t) + 'h · ' + DIAS_SEMANA[ld.getUTCDay()] + ' ' + ld.getUTCDate();
   const code = d.weatherCodes[i];
   const uvi = (d.uv && d.uv[i] != null) ? d.uv[i] : null;
-  const radi = (d.rad && d.rad[i] != null) ? d.rad[i] : null;
   document.getElementById('hourSub').textContent = weatherCodeToText(code) + ' ' + weatherCodeToIcon(code);
-  let waveHtml = '';
-  if (state.marine && state.marine.hourly && state.marine.hourly.time) {
-    const mi = state.marine.hourly.time.indexOf(t);
-    if (mi >= 0) {
-      const wh = state.marine.hourly.wave_height[mi];
-      const wp = state.marine.hourly.wave_period[mi];
-      const wd = state.marine.hourly.wave_direction[mi];
-      waveHtml = cellHour('Oleaje', wh != null ? wh.toFixed(2) + ' m' : '--')
-               + cellHour('Período', wp != null ? wp.toFixed(1) + ' s' : '--')
-               + cellHour('Dirección', wd != null ? Math.round(wd) + '°' : '--');
-    }
-  }
-  document.getElementById('hourGrid').innerHTML =
-    cellHour('Temperatura', Math.round(d.temperatures[i] || 0) + '°')
-    + cellHour('Sensación', Math.round(d.apparent[i] || 0) + '°')
-    + cellHour('Prob. lluvia', (d.probabilities[i] || 0) + '%')
-    + cellHour('Lluvia', (d.precipitation[i] || 0).toFixed(1) + ' mm')
-    + cellHour('Humedad', Math.round(d.humidity[i] || 0) + '%')
-    + cellHour('Viento', Math.round(d.wind[i] || 0) + ' km/h')
-    + cellHour('UV', uvi != null ? uvi.toFixed(1) + ' · ' + uvShort(uvi) : '--')
-    + cellHour('Sol', radi != null ? Math.round(radi) + ' W/m²' : '--')
-    + waveHtml;
+  document.getElementById('hourMini').innerHTML =
+    mini('Temperatura', Math.round(d.temperatures[i] || 0) + '°')
+    + mini('Sensación', Math.round(d.apparent[i] || 0) + '°')
+    + mini('Prob. lluvia', (d.probabilities[i] || 0) + '%')
+    + mini('Lluvia', (d.precipitation[i] || 0).toFixed(1) + ' mm')
+    + mini('Humedad', Math.round(d.humidity[i] || 0) + '%')
+    + mini('UV', uvi != null ? uvi.toFixed(1) + ' · ' + uvShort(uvi) : '--');
+  renderNinoPanel();
   const ov = document.getElementById('hourOverlay');
   ov.classList.add('visible');
   ov.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
+}
+
+/* === INDICADORES EL NIÑO: SST en vivo + anomalía auto-calculada ===
+   Anomalía = SST en vivo (Open-Meteo Marine) menos promedio del mes
+   1991–2020 (ERSSTv5, NOAA, tabla fija en CONFIG). No requiere updates. */
+function ninoStatus(a) {
+  if (a == null) return { t:'SIN DATO', c:'badge info' };
+  if (a >= 2) return { t:'EL NIÑO MUY FUERTE', c:'badge danger' };
+  if (a >= 1.5) return { t:'EL NIÑO FUERTE', c:'badge danger' };
+  if (a >= 1) return { t:'EL NIÑO MODERADO', c:'badge warning' };
+  if (a >= 0.5) return { t:'EL NIÑO DÉBIL', c:'badge info' };
+  if (a <= -0.5) return { t:'LA NIÑA', c:'badge info' };
+  return { t:'NEUTRO', c:'badge safe' };
+}
+function fmtAnom(a) { return (a >= 0 ? '+' : '') + a.toFixed(1) + '°'; }
+function latestSST(h) {
+  if (!h || !h.time || !h.sea_surface_temperature) return null;
+  const v = valueAtOrNear(h.sea_surface_temperature, Math.max(0, findCurrentHourIndex(h.time)), 12);
+  if (v != null) return v;
+  for (let j = h.sea_surface_temperature.length - 1; j >= 0; j--) {
+    if (h.sea_surface_temperature[j] != null) return h.sea_surface_temperature[j];
+  }
+  return null;
+}
+function renderNinoPanel() {
+  const box = document.getElementById('ninoPanel');
+  const arr = state.nino;
+  if (!Array.isArray(arr) || !arr.length) {
+    box.innerHTML = '<div class="forecast-end">Sin datos del mar por ahora.</div>';
+    return;
+  }
+  const mes = new Date().getMonth() + 1;
+  const regs = CONFIG.nino.map((r, k) => {
+    const sst = latestSST(arr[k] && arr[k].hourly);
+    const anom = (sst != null && r.climo[mes] != null) ? sst - r.climo[mes] : null;
+    return { nombre:r.nombre, desc:r.desc, sst, anom };
+  });
+  const st = ninoStatus(regs[0].anom);
+  const pos = (a) => a == null ? 50 : Math.min(100, Math.max(0, (a + 4) / 8 * 100));
+  box.innerHTML =
+    '<div class="nino-status"><span class="' + st.c + '">' + st.t + '</span>'
+    + '<p>Niño 3.4 (Pacífico central): '
+    + (regs[0].anom != null ? '<b>' + fmtAnom(regs[0].anom) + '</b> sobre el promedio 1991–2020.' : 'sin dato.')
+    + ' Indicativo; no equivale al ONI trimestral oficial.</p></div>'
+    + regs.map(g =>
+      '<div class="nino-card"><div class="nino-row"><div><div class="nino-name">' + g.nombre + '</div>'
+      + '<div class="nino-desc2">' + g.desc + '</div></div>'
+      + '<div class="nino-vals"><span class="nino-sst">' + (g.sst != null ? g.sst.toFixed(1) + ' °C' : '--') + '</span>'
+      + '<span class="nino-anom">' + (g.anom != null ? fmtAnom(g.anom) : '--') + '</span></div></div>'
+      + '<div class="nino-bar"><div class="nino-pin" style="left:calc(' + pos(g.anom).toFixed(1) + '% - 7px)"></div></div></div>'
+    ).join('')
+    + '<a class="btn" style="text-decoration:none" href="https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ensoyears.shtml" target="_blank" rel="noopener"><span>ONI oficial NOAA</span><span>↗</span></a>'
+    + '<div class="card-sub" style="margin-top:8px;">Anomalía indicativa calculada en tu celular: mar en vivo menos promedio 1991–2020. Nada que actualizar.</div>';
+}
+function viewAnomaly() {
+  closeHour();
+  if (state.sstLayer && !state.sstVisible && !state.sstFailed) toggleSSTLayer();
+  zoomToPacific();
 }
 function closeHour() {
   const ov = document.getElementById('hourOverlay');

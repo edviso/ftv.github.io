@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v24</title>
+<title>Monitor El Niño - Guayaquil v25</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -413,6 +413,7 @@
         <div><div style="font-size:12px;color:var(--text-muted);">PERIODO</div><div style="font-size:16px;font-weight:700;" id="wavePeriod">-- s</div></div>
         <div><div style="font-size:12px;color:var(--text-muted);">DIRECCIÓN</div><div style="font-size:16px;font-weight:700;" id="waveDirection">--°</div></div>
       </div>
+      <div class="card-sub" id="tideLine" style="margin-top:8px;">🌊 Marea: --</div>
     </div>
 
     <div class="card card-full">
@@ -518,6 +519,228 @@ const TZ_OFFSET_H = -5; // Ecuador continental UTC-5
 
 /* === NUEVO v6: nombres de día en español para los separadores === */
 const DIAS_SEMANA = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+/* =====================================================
+   MAREA Guayaquil-Río: motor propio de síntesis armónica.
+   Constituyentes oficiales INOCAR (68 analizados, 39 incluidos);
+   cálculo verificado contra tabla oficial (pleamares a minutos).
+   Tiempos en hora reloj de Guayaquil (UTC-5 fijo). Nada que actualizar.
+   ===================================================== */
+/* Motor de marea propio: síntesis armónica con correcciones nodales.
+   Matemáticas publicadas (Meeus, Schureman 1958) + constituyentes oficiales
+   de INOCAR para Guayaquil-Río. Sin copiar código de nadie. */
+'use strict';
+const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+function s2d(d, m, s) { return d + m / 60 + s / 3600; }
+function poly(c, x) { let r = 0; for (let i = 0; i < c.length; i++) r += c[i] * Math.pow(x, i); return r; }
+function dpoly(c, x) { let r = 0; for (let i = 1; i < c.length; i++) r += c[i] * i * Math.pow(x, i - 1); return r; }
+function mod360(x) { return ((x % 360) + 360) % 360; }
+
+function jdFromMs(ms) {
+  const d = new Date(ms);
+  let Y = d.getUTCFullYear(), M = d.getUTCMonth() + 1;
+  const D = d.getUTCDate() + d.getUTCHours() / 24 + d.getUTCMinutes() / 1440
+    + d.getUTCSeconds() / 86400 + d.getUTCMilliseconds() / 86400000;
+  if (M <= 2) { Y -= 1; M += 12; }
+  const A = Math.floor(Y / 100), B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (Y + 4716)) + Math.floor(30.6001 * (M + 1)) + D + B - 1524.5;
+}
+
+const OBL = [s2d(23, 26, 21.448), -s2d(0, 0, 4680.93) / 100, -s2d(0, 0, 1.55) / 1e4,
+  s2d(0, 0, 1999.25) / 1e6, -s2d(0, 0, 51.38) / 1e8, -s2d(0, 0, 249.67) / 1e10,
+  -s2d(0, 0, 39.05) / 1e12, s2d(0, 0, 7.12) / 1e14, s2d(0, 0, 27.87) / 1e16,
+  s2d(0, 0, 5.79) / 1e18, s2d(0, 0, 2.45) / 1e20];
+
+function tideAstro(ms) {
+  const jd = jdFromMs(ms), T = (jd - 2451545.0) / 36525, k = 1 / (24 * 365.25 * 100);
+  const v = {}, s = {};
+  const P = {
+    s: [218.3164591, 481267.88134236, -0.0013268, 1 / 538841 - 1 / 65194000],
+    h: [280.46645, 36000.76983, 0.0003032],
+    p: [83.3532430, 4069.0137111, -0.0103238, -1 / 80053 + 1 / 18999000],
+    N: [125.0445550, -1934.1361849, 0.0020762, 1 / 467410 - 1 / 60616000],
+    pp: [280.46645 - 357.52910, 36000.76932 - 35999.05030, 0.0003032 + 0.0001559, 0.00000048],
+    c90: [90], om: OBL, inc: [5.145]
+  };
+  for (const key of Object.keys(P)) {
+    v[key] = mod360(poly(P[key], T));
+    s[key] = dpoly(P[key], T) * k;
+  }
+  const N = v.N * D2R, inc = v.inc * D2R, om = v.om * D2R;
+  const cosI = Math.cos(inc) * Math.cos(om) - Math.sin(inc) * Math.sin(om) * Math.cos(N);
+  v.I = R2D * Math.acos(Math.min(1, Math.max(-1, cosI)));
+  const e1 = Math.atan(Math.cos(0.5 * (om - inc)) / Math.cos(0.5 * (om + inc)) * Math.tan(0.5 * N)) - 0.5 * N;
+  const e2 = Math.atan(Math.sin(0.5 * (om - inc)) / Math.sin(0.5 * (om + inc)) * Math.tan(0.5 * N)) - 0.5 * N;
+  v.xi = mod360(-(e1 + e2) * R2D);
+  v.nu = mod360((e1 - e2) * R2D);
+  const I = v.I * D2R, nu = v.nu * D2R;
+  v.nup = mod360(R2D * Math.atan(Math.sin(2 * I) * Math.sin(nu) / (Math.sin(2 * I) * Math.cos(nu) + 0.3347)));
+  v.nupp = mod360(R2D * 0.5 * Math.atan((Math.sin(I) * Math.sin(I) * Math.sin(2 * nu)) / (Math.sin(I) * Math.sin(I) * Math.cos(2 * nu) + 0.0727)));
+  const hv = (jd - Math.floor(jd)) * 360;
+  v.ths = mod360(hv + v.h - v.s); s.ths = 15 + s.h - s.s;
+  v.P = mod360(v.p - v.xi);
+  return { v, s };
+}
+const KEYS = ['ths', 's', 'h', 'p', 'N', 'pp', 'c90'];
+
+function nodF(tag, a, n) {
+  const g = (x) => x * D2R, om = g(a.v.om), inc = g(a.v.inc), I = g(a.v.I);
+  switch (tag) {
+    case 'Mm': return (2 / 3 - Math.sin(I) * Math.sin(I)) / ((2 / 3 - Math.sin(om) * Math.sin(om)) * (1 - 1.5 * Math.sin(inc) * Math.sin(inc)));
+    case 'Mf': return Math.sin(I) * Math.sin(I) / (Math.sin(om) * Math.sin(om) * Math.pow(Math.cos(0.5 * inc), 4));
+    case 'O1': return Math.sin(I) * Math.pow(Math.cos(0.5 * I), 2) / (Math.sin(om) * Math.pow(Math.cos(0.5 * om), 2) * Math.pow(Math.cos(0.5 * inc), 4));
+    case 'J1': return Math.sin(2 * I) / (Math.sin(2 * om) * (1 - 1.5 * Math.sin(inc) * Math.sin(inc)));
+    case 'OO1': return Math.sin(I) * Math.pow(Math.sin(0.5 * I), 2) / (Math.sin(om) * Math.pow(Math.sin(0.5 * om), 2) * Math.pow(Math.cos(0.5 * inc), 4));
+    case 'M2': return Math.pow(Math.cos(0.5 * I), 4) / (Math.pow(Math.cos(0.5 * om), 4) * Math.pow(Math.cos(0.5 * inc), 4));
+    case 'K1': {
+      const m = 0.5023 * Math.sin(2 * om) * (1 - 1.5 * Math.sin(inc) * Math.sin(inc)) + 0.1681;
+      return Math.sqrt(0.2523 * Math.pow(Math.sin(2 * I), 2) + 0.1689 * Math.sin(2 * I) * Math.cos(g(a.v.nu)) + 0.0283) / m;
+    }
+    case 'L2': {
+      const Pp = g(a.v.P);
+      return nodF('M2', a) * Math.sqrt(1 - 12 * Math.pow(Math.tan(0.5 * I), 2) * Math.cos(2 * Pp) + 36 * Math.pow(Math.tan(0.5 * I), 4));
+    }
+    case 'K2': {
+      const m = 0.5023 * Math.sin(om) * Math.sin(om) * (1 - 1.5 * Math.sin(inc) * Math.sin(inc)) + 0.0365;
+      return Math.sqrt(0.2523 * Math.pow(Math.sin(I), 4) + 0.0367 * Math.sin(I) * Math.sin(I) * Math.cos(2 * g(a.v.nu)) + 0.0013) / m;
+    }
+    case 'Modd': return Math.pow(nodF('M2', a), n / 2);
+    default: return 1;
+  }
+}
+function nodU(tag, a, n) {
+  const g = (x) => x * D2R;
+  switch (tag) {
+    case 'Mf': return -2 * a.v.xi;
+    case 'O1': return 2 * a.v.xi - a.v.nu;
+    case 'J1': return -a.v.nu;
+    case 'OO1': return -2 * a.v.xi - a.v.nu;
+    case 'M2': return 2 * a.v.xi - 2 * a.v.nu;
+    case 'K1': return -a.v.nup;
+    case 'L2': {
+      const I = g(a.v.I), Pp = g(a.v.P);
+      const R = R2D * Math.atan(Math.sin(2 * Pp) / (1 / 6 * Math.pow(Math.tan(0.5 * I), -2) - Math.cos(2 * Pp)));
+      return 2 * a.v.xi - 2 * a.v.nu - R;
+    }
+    case 'K2': return -2 * a.v.nupp;
+    case 'Modd': return n / 2 * nodU('M2', a);
+    default: return 0;
+  }
+}
+
+function tidePrepare(table, wallMs) {
+  const a = tideAstro(wallMs);
+  return table.map((e) => {
+    let V = 0, sp = 0;
+    for (let j = 0; j < 7; j++) {
+      const key = j === 6 ? 'c90' : KEYS[j];
+      V += e.c[j] * a.v[key]; sp += e.c[j] * a.s[key];
+    }
+    let u, f;
+    if (e.p) {
+      u = 0; f = 1;
+      for (const [fk, uk, cn] of e.p) { u += cn * nodU(uk, a); f *= Math.pow(nodF(fk, a), Math.abs(cn)); }
+    } else { u = nodU(e.uk, a, e.n); f = nodF(e.fk, a, e.n); }
+    return { A: e.A, G: e.G, V: mod360(V), sp, u: mod360(u), f };
+  });
+}
+function tideHeightAt(prep, t0ms, wallMs) {
+  const dh = (wallMs - t0ms) / 3600000;
+  let h = 0;
+  for (const p of prep) h += p.A * p.f * Math.cos((p.sp * dh + p.V + p.u - p.G) * D2R);
+  return h;
+}
+function tideHeights(table, wallMs0, n, stepMin) {
+  const prep = tidePrepare(table, wallMs0), out = [];
+  for (let k = 0; k < n; k++) out.push(tideHeightAt(prep, wallMs0, wallMs0 + k * stepMin * 60000));
+  return out;
+}
+function tideExtrema(table, wallMs0, wallMs1, stepMin) {
+  const n = Math.max(3, Math.ceil((wallMs1 - wallMs0) / (stepMin * 60000)) + 1);
+  const hs = tideHeights(table, wallMs0, n, stepMin), res = [];
+  for (let k = 1; k < n - 1; k++) {
+    if (hs[k] >= hs[k - 1] && hs[k] >= hs[k + 1] && (hs[k] > hs[k - 1] || hs[k] > hs[k + 1]))
+      res.push({ t: wallMs0 + k * stepMin * 60000, h: hs[k], hi: true });
+    else if (hs[k] <= hs[k - 1] && hs[k] <= hs[k + 1] && (hs[k] < hs[k - 1] || hs[k] < hs[k + 1]))
+      res.push({ t: wallMs0 + k * stepMin * 60000, h: hs[k], hi: false });
+  }
+  return res;
+}
+function tideHighNear(table, wallMs, winH) {
+  const ex = tideExtrema(table, wallMs - winH * 3600000, wallMs + winH * 3600000, 10)
+    .filter((e) => e.hi);
+  if (!ex.length) return null;
+  ex.sort((a, b) => Math.abs(a.t - wallMs) - Math.abs(b.t - wallMs));
+  return Math.abs(ex[0].t - wallMs) <= winH * 3600000 ? ex[0] : null;
+}
+
+
+const TIDE = [
+{c:[0.0,0.0,0.0,0.0,0.0,0.0,0.0],A:2.4406,G:0.0,fk:'U',uk:'U',n:0},
+{c:[0.0,0.0,1.0,0.0,0.0,0.0,0.0],A:0.106,G:82.21,fk:'U',uk:'U',n:0},
+{c:[0.0,0.0,2.0,0.0,0.0,0.0,0.0],A:0.057,G:335.69,fk:'U',uk:'U',n:0},
+{c:[0.0,1.0,0.0,-1.0,0.0,0.0,0.0],A:0.0466,G:22.33,fk:'Mm',uk:'U',n:0},
+{c:[0.0,2.0,-2.0,0.0,0.0,0.0,0.0],A:0.0878,G:37.05,p:[['U','U',1],['M2','M2',-1]]},
+{c:[0.0,2.0,0.0,0.0,0.0,0.0,0.0],A:0.0436,G:53.01,fk:'Mf',uk:'Mf',n:0},
+{c:[1.0,-3.0,0.0,2.0,0.0,0.0,1.0],A:0.0015,G:181.89,p:[['M2','M2',1],['J1','J1',-1]]},
+{c:[1.0,-2.0,0.0,1.0,0.0,0.0,1.0],A:0.004,G:184.51,fk:'O1',uk:'O1',n:0},
+{c:[1.0,-2.0,2.0,-1.0,0.0,0.0,1.0],A:0.0029,G:286.47,p:[['M2','M2',1],['K1','K1',-1]]},
+{c:[1.0,-1.0,0.0,0.0,0.0,0.0,1.0],A:0.0218,G:316.67,fk:'O1',uk:'O1',n:0},
+{c:[1.0,1.0,-2.0,0.0,0.0,0.0,1.0],A:0.0395,G:4.15,fk:'U',uk:'U',n:0},
+{c:[1.0,1.0,-1.0,0.0,0.0,0.0,0.0],A:0.0365,G:354.73,fk:'U',uk:'U',n:0},
+{c:[1.0,1.0,0.0,0.0,0.0,0.0,-1.0],A:0.1213,G:9.71,fk:'K1',uk:'K1',n:0},
+{c:[1.0,2.0,0.0,-1.0,0.0,0.0,-1.0],A:0.0081,G:43.75,fk:'J1',uk:'J1',n:0},
+{c:[1.0,3.0,0.0,0.0,0.0,0.0,-1.0],A:0.0065,G:74.2,fk:'OO1',uk:'OO1',n:0},
+{c:[2.0,-2.0,0.0,2.0,0.0,0.0,0.0],A:0.0113,G:322.88,fk:'M2',uk:'M2',n:0},
+{c:[2.0,-2.0,2.0,0.0,0.0,0.0,0.0],A:0.132,G:308.32,p:[['M2','M2',2],['U','U',-1]]},
+{c:[2.0,-1.0,0.0,1.0,0.0,0.0,0.0],A:0.2858,G:187.38,fk:'M2',uk:'M2',n:0},
+{c:[2.0,-1.0,2.0,-1.0,0.0,0.0,0.0],A:0.0898,G:167.7,fk:'M2',uk:'M2',n:0},
+{c:[2.0,0.0,0.0,0.0,0.0,0.0,0.0],A:1.6529,G:209.18,fk:'M2',uk:'M2',n:0},
+{c:[2.0,0.0,2.0,0.0,0.0,0.0,0.0],A:0.0296,G:53.11,p:[['M2','M2',1],['K2','K2',1],['U','U',-1]]},
+{c:[2.0,1.0,0.0,-1.0,0.0,0.0,2.0],A:0.189,G:210.18,fk:'L2',uk:'L2',n:0},
+{c:[2.0,2.0,-3.0,0.0,0.0,1.0,0.0],A:0.0267,G:221.95,fk:'U',uk:'U',n:0},
+{c:[2.0,2.0,-2.0,0.0,0.0,0.0,0.0],A:0.3853,G:269.33,fk:'U',uk:'U',n:0},
+{c:[2.0,2.0,-1.0,0.0,0.0,-1.0,2.0],A:0.0132,G:169.66,fk:'U',uk:'U',n:0},
+{c:[2.0,2.0,0.0,0.0,0.0,0.0,0.0],A:0.1054,G:261.37,fk:'K2',uk:'K2',n:0},
+{c:[2.0,3.0,-2.0,-1.0,0.0,0.0,0.0],A:0.0294,G:102.43,p:[['M2','M2',1],['U','U',1],['M2','M2',-1]]},
+{c:[3.0,-1.0,0.0,0.0,0.0,0.0,1.0],A:0.0239,G:235.25,p:[['M2','M2',1],['O1','O1',1]]},
+{c:[3.0,0.0,0.0,0.0,0.0,0.0,0.0],A:0.0018,G:284.41,fk:'Modd',uk:'Modd',n:3},
+{c:[3.0,1.0,0.0,0.0,0.0,0.0,-1.0],A:0.0172,G:144.81,p:[['M2','M2',1],['K1','K1',1]]},
+{c:[4.0,-1.0,0.0,1.0,0.0,0.0,0.0],A:0.0711,G:310.99,p:[['M2','M2',1],['M2','M2',1]]},
+{c:[4.0,0.0,0.0,0.0,0.0,0.0,0.0],A:0.1864,G:331.95,p:[['M2','M2',2]]},
+{c:[4.0,2.0,-2.0,0.0,0.0,0.0,0.0],A:0.1036,G:30.63,p:[['M2','M2',1],['U','U',1]]},
+{c:[4.0,4.0,-4.0,0.0,0.0,0.0,0.0],A:0.0087,G:127.62,p:[['U','U',2]]},
+{c:[6.0,-1.0,0.0,1.0,0.0,0.0,0.0],A:0.0425,G:334.9,p:[['M2','M2',2],['M2','M2',1]]},
+{c:[6.0,0.0,0.0,0.0,0.0,0.0,0.0],A:0.0768,G:358.26,p:[['M2','M2',3]]},
+{c:[6.0,2.0,-2.0,0.0,0.0,0.0,0.0],A:0.0615,G:60.26,p:[['M2','M2',2],['U','U',1]]},
+{c:[6.0,2.0,0.0,0.0,0.0,0.0,0.0],A:0.0145,G:58.14,p:[['M2','M2',2],['K2','K2',1]]},
+{c:[8.0,0.0,0.0,0.0,0.0,0.0,0.0],A:0.028,G:89.94,p:[['M2','M2',4]]}
+];
+
+function tideWallMs(utcStr) { return Date.parse(utcStr + ':00Z') + TZ_OFFSET_H * 3600000; }
+function tideWords(highWallMs) {
+  const back = new Date(highWallMs - TZ_OFFSET_H * 3600000).toISOString().slice(0, 16);
+  return 'pleamar a las ' + horaPalabras(wallHour(back));
+}
+function tideNote(utcStr) {
+  try {
+    const near = tideHighNear(TIDE, tideWallMs(utcStr), 2);
+    return near ? ', con marea alta (' + tideWords(near.t) + '): el agua no drena' : '';
+  } catch (e) { return ''; }
+}
+function updateTideLine() {
+  try {
+    const nowWall = Date.now() + TZ_OFFSET_H * 3600000;
+    const prep = tidePrepare(TIDE, nowWall);
+    const hNow = tideHeightAt(prep, nowWall, nowWall);
+    const dir = tideHeightAt(prep, nowWall, nowWall + 1200000) >= hNow ? 'subiendo' : 'bajando';
+    const fut = tideExtrema(TIDE, nowWall - 3600000, nowWall + 15 * 3600000, 10)
+      .filter(e => e.hi && e.t > nowWall - 600000);
+    let nx = '';
+    if (fut.length) nx = ' \u00b7 ' + tideWords(fut[0].t) + ' (' + fut[0].h.toFixed(1) + ' m)';
+    document.getElementById('tideLine').textContent = '\uD83C\uDF0A Marea ' + hNow.toFixed(1) + ' m \u00b7 ' + dir + nx;
+  } catch (e) { console.error('tide:', e); }
+}
+
 
 const BASEMAPS = {
   dark: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
@@ -935,6 +1158,13 @@ function renderForecast(hourly) {
   let currentDayKey = null;   // día local (Guayaquil) del grupo actual
   let groupIndex = -1;        // 0 = hoy, 1 = mañana, 2+ = siguiente
 
+  /* Pleamares en la ventana, para marcar las horas que coinciden */
+  let highMarks = [];
+  try {
+    const w0 = tideWallMs(d.times[0]) - 3600000, w1 = tideWallMs(d.times[d.times.length - 1]) + 3600000;
+    highMarks = tideExtrema(TIDE, w0, w1, 10).filter(e => e.hi).map(e => e.t);
+  } catch (e) { console.error('tideMarks:', e); }
+
   d.times.forEach((t, i) => {
     const ld  = localWallDate(t);
     const key = ld.toISOString().slice(0, 10);
@@ -959,6 +1189,8 @@ function renderForecast(hourly) {
                : (prob >= 60 ? 'warn' : '');
     const mmTxt = mm < 0.1 ? mm.toFixed(1) + ' mm' : mm.toFixed(1) + ' mm · ' + rainDesc(mm);
     const mmCls = mm >= 2.5 ? 'frow-mm hot' : 'frow-mm';
+    const rwMs = tideWallMs(t);
+    const nearHigh = highMarks.some(hh => Math.abs(hh - rwMs) <= 3600000);
     const row = document.createElement('div');
     row.className = 'frow ' + cls + (i === 0 ? ' now' : '');
     row.dataset.i = i;
@@ -976,6 +1208,7 @@ function renderForecast(hourly) {
       `<div class="frow-bottom">` +
         `${Math.round(d.temperatures[i] || 0)}° · siente ${Math.round(d.apparent[i] || 0)}° · ` +
         `humedad ${Math.round(d.humidity[i] || 0)}% · viento ${Math.round(d.wind[i] || 0)} km/h` +
+        (nearHigh ? ' · 🌊 pleamar' : '') +
       `</div>`;
     list.appendChild(row);
   });
@@ -1265,6 +1498,7 @@ function processData() {
     document.getElementById('waveDirection').textContent = wd != null ? Math.round(wd) + '°' : '--°';
   }
 
+  try { updateTideLine(); } catch (e) { console.error('updateTideLine:', e); }
   renderForecast(w.hourly);
   const now = new Date();
   document.getElementById('lastUpdate').textContent =
@@ -1333,11 +1567,11 @@ function checkAlarms() {
   if (maxProb >= CONFIG.thresholds.rainProbability)
     state.alerts.push({ severity: maxProb >= 80 ? 'high' : 'medium', message: `Alta probabilidad de lluvia: ${maxProb}% en las próximas 24h (prob. máx. ${whenProb}).` });
   if (maxInt >= CONFIG.thresholds.rainIntensity) {
-    state.alerts.push({ severity: 'high', message: `Lluvia ${rainDesc(maxInt)} prevista: ${maxInt.toFixed(1)} mm/h ${whenInt}.` });
+    state.alerts.push({ severity: 'high', message: `Lluvia ${rainDesc(maxInt)} prevista: ${maxInt.toFixed(1)} mm/h ${whenInt}${tideNote(hw.times[peakIntI])}.` });
     if (modI >= 0 && modI !== peakIntI)
-      state.alerts.push({ severity: 'medium', message: `Lluvia moderada: ${hw.precipitation[modI].toFixed(1)} mm/h ${fmtCuando(hw.times[modI])} (también inunda calles).` });
+      state.alerts.push({ severity: 'medium', message: `Lluvia moderada: ${hw.precipitation[modI].toFixed(1)} mm/h ${fmtCuando(hw.times[modI])}${tideNote(hw.times[modI])} (también inunda calles).` });
   } else if (maxInt >= 2.5) {
-    state.alerts.push({ severity: 'medium', message: `Lluvia moderada prevista: ${maxInt.toFixed(1)} mm/h ${whenInt} (riesgo alto: inunda calles).` });
+    state.alerts.push({ severity: 'medium', message: `Lluvia moderada prevista: ${maxInt.toFixed(1)} mm/h ${whenInt}${tideNote(hw.times[peakIntI])} (riesgo alto: inunda calles).` });
   }
   if (total >= 20)
     state.alerts.push({ severity: 'high', message: `Acumulación de lluvia: ${total.toFixed(1)} mm en 24h.` });

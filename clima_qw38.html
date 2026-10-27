@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v25</title>
+<title>Monitor El Niño - Guayaquil v26</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -148,6 +148,7 @@
   .mini { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
   .mini .k { font-size:12px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; gap:4px; }
   .mini .v { font-size:16px; font-weight:800; margin-top:1px; }
+  .mini .v.red { color:var(--accent-red); }
   .mini-q {
     width:30px; height:30px; min-width:30px; border-radius:50%; flex-shrink:0;
     border:1px solid var(--border); background:var(--bg-elevated); color:var(--accent-cyan);
@@ -1271,9 +1272,9 @@ function markHintSeen() {
   const glows = document.querySelectorAll ? document.querySelectorAll('.tap-glow') : [];
   for (const g of glows) g.classList.remove('tap-glow');
 }
-function mini(k, v, help) {
+function mini(k, v, help, vc) {
   const q = help ? ' <button class="mini-q" onclick="openHelp(\'' + help + '\',event)" aria-label="Ver escala de ' + k + '">?</button>' : '';
-  return '<div class="mini"><div class="k"><span>' + k + '</span>' + q + '</div><div class="v">' + v + '</div></div>';
+  return '<div class="mini"><div class="k"><span>' + k + '</span>' + q + '</div><div class="v' + (vc ? ' ' + vc : '') + '">' + v + '</div></div>';
 }
 /* Escalas para las ventanitas de ayuda */
 const HELP = {
@@ -1312,6 +1313,8 @@ function openHour(i) {
   const uvi = (d.uv && d.uv[i] != null) ? d.uv[i] : null;
   const mmh = d.precipitation[i] || 0;
   const hum = d.humidity[i] != null ? Math.round(d.humidity[i]) : null;
+  let tideHi = null;
+  try { tideHi = tideHighNear(TIDE, tideWallMs(t), 2); } catch (e) { tideHi = null; }
   document.getElementById('hourSub').textContent = weatherCodeToText(code) + ' ' + weatherCodeToIcon(code);
   document.getElementById('hourMini').innerHTML =
     mini('Temperatura', Math.round(d.temperatures[i] || 0) + '°')
@@ -1319,7 +1322,8 @@ function openHour(i) {
     + mini('Prob. lluvia', (d.probabilities[i] || 0) + '%')
     + mini('Lluvia', mmh.toFixed(1) + ' mm · ' + rainDesc(mmh), 'lluvia')
     + mini('Humedad', hum != null ? hum + '% · ' + humDesc(hum) : '--', 'humedad')
-    + mini('UV', uvi != null ? uvi.toFixed(1) + ' · ' + uvShort(uvi) : '--', 'uv');
+    + mini('UV', uvi != null ? uvi.toFixed(1) + ' · ' + uvShort(uvi) : '--', 'uv')
+    + mini('Marea', tideHi ? 'ALTA' : 'BAJA', null, tideHi ? 'red' : '');
   renderNinoPanel();
   const ov = document.getElementById('hourOverlay');
   ov.classList.add('visible');

@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Monitor El Niño - Guayaquil v15</title>
+<title>Monitor El Niño - Guayaquil v16</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230891b2'/%3E%3Ctext x='50' y='72' font-size='58' text-anchor='middle'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -459,11 +459,14 @@ const CONFIG = {
   /* Puntos representativos + promedio mensual 1991-2020 (ERSSTv5, NOAA). Tabla fija: no se actualiza.
      Orden: costa primero, luego oriente, luego centro. */
   nino: [
-    { id:'costa', nombre:'Costa de Guayaquil', desc:'Punto marino cercano a Playas', lat:-2.8, lon:-80.6,
-      climo:{1:26.54,2:26.39,3:26.25,4:26.99,5:27.51,6:27.14,7:26.72,8:26.7,9:26.83,10:26.78,11:26.49,12:26.41} },
-    { id:'n12', nombre:'Niño 1+2', desc:'Pacífico oriental · frente a Perú/Ecuador', lat:-5, lon:-85,
-      climo:{1:27.01,2:27.36,3:27.57,4:27.8,5:27.8,6:27.37,7:27.01,8:26.89,9:26.84,10:26.83,11:26.71,12:26.72} },
-    { id:'n34', nombre:'Niño 3.4', desc:'Pacífico central · 5°N–5°S, 170°–120°O', lat:0, lon:-140,
+    { id:'costa', nombre:'Costa de Guayaquil', desc:'Punto marino cercano a Playas',
+      pts:[[-2.8,-80.6]],
+      climo:{1:24.96,2:25.9,3:25.51,4:24.95,5:24.83,6:24.1,7:23.17,8:22.71,9:22.94,10:23.14,11:23.17,12:23.73} },
+    { id:'n12', nombre:'Niño 1+2', desc:'Pacífico oriental · frente a Perú/Ecuador',
+      pts:[[-2,-87],[-5,-85],[-8,-82]],
+      climo:{1:24.59,2:26.06,3:26.42,4:25.56,5:24.5,6:23.24,7:22.09,8:21.18,9:20.92,10:21.18,11:21.78,12:22.9} },
+    { id:'n34', nombre:'Niño 3.4', desc:'Pacífico central · 5°N–5°S, 170°–120°O',
+      pts:[[2,-160],[0,-140],[-2,-125]],
       climo:{1:26.58,2:26.81,3:27.34,4:27.86,5:27.95,6:27.73,7:27.28,8:26.85,9:26.71,10:26.72,11:26.71,12:26.61} }
   ]
 };
@@ -748,8 +751,10 @@ async function fetchBeaches() {
   return r.json();
 }
 async function fetchNino() {
-  const lats = CONFIG.nino.map(x => x.lat).join(',');
-  const lons = CONFIG.nino.map(x => x.lon).join(',');
+  const all = [];
+  CONFIG.nino.forEach(r => r.pts.forEach(p => all.push(p)));
+  const lats = all.map(p => p[0]).join(',');
+  const lons = all.map(p => p[1]).join(',');
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lats}&longitude=${lons}`
     + `&hourly=sea_surface_temperature&forecast_days=2&timezone=UTC`;
   const r = await fetch(url);
@@ -972,16 +977,13 @@ function ninoStatus(a) {
   return { t:'NEUTRO', c:'badge safe' };
 }
 function fmtAnom(a) { return (a >= 0 ? '+' : '') + a.toFixed(1) + '°'; }
-/* Descripción honesta por zona: habla del tamaño del número, no inventa
-   clasificación oficial (esa solo existe para Niño 3.4). */
-function anomDesc(a) {
-  if (a == null) return 'sin dato';
-  const v = Math.abs(a);
-  if (v < 0.5) return 'normal';
-  const dir = a > 0 ? 'sobre lo normal' : 'bajo lo normal';
-  if (v < 1) return 'ligeramente ' + dir;
-  if (v < 2) return 'muy ' + dir;
-  return 'extremadamente ' + dir;
+/* Frase en lenguaje normal: qué significa para Guayaquil */
+function guayaquilMsg(a) {
+  if (a == null) return 'Sin dato del mar frente a la costa por ahora.';
+  if (a >= 2) return 'Mar muy caliente frente a Ecuador: aumenta el potencial de lluvias fuertes en Guayaquil.';
+  if (a >= 0.5) return 'Mar más caliente de lo normal frente a Ecuador: lluvias sobre lo normal en Guayaquil.';
+  if (a <= -0.5) return 'Mar más frío de lo normal frente a Ecuador.';
+  return 'Mar frente a Ecuador en su estado habitual.';
 }
 function latestSST(h) {
   if (!h || !h.time || !h.sea_surface_temperature) return null;
@@ -1000,21 +1002,30 @@ function renderNinoPanel() {
     return;
   }
   const mes = new Date().getMonth() + 1;
-  const regs = CONFIG.nino.map((r, k) => {
-    const sst = latestSST(arr[k] && arr[k].hourly);
+  const regs = [];
+  let k = 0;
+  for (const r of CONFIG.nino) {
+    const vals = [];
+    for (let j = 0; j < r.pts.length; j++, k++) {
+      const v = latestSST(arr[k] && arr[k].hourly);
+      if (v != null) vals.push(v);
+    }
+    const sst = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     const anom = (sst != null && r.climo[mes] != null) ? sst - r.climo[mes] : null;
-    return { id:r.id, nombre:r.nombre, desc:r.desc, sst, anom };
-  });
+    regs.push({ id:r.id, nombre:r.nombre, desc:r.desc, sst, anom });
+  }
   const ref = regs.find(g => g.id === 'n34') || regs[0]; // la etiqueta grande siempre usa Niño 3.4
   const st = ninoStatus(ref.anom);
   const evLabel = ref.anom == null ? 'ESTADO' : ref.anom >= 0.5 ? 'EL NIÑO' : ref.anom <= -0.5 ? 'LA NIÑA' : 'ESTADO';
+  const costa = regs.find(g => g.id === 'costa');
   const pos = (a) => a == null ? 50 : Math.min(100, Math.max(0, (a + 4) / 8 * 100));
   box.innerHTML =
     '<div class="nino-status"><div class="nino-event"><span>' + evLabel + ':</span><span class="' + st.c + '">' + st.t + '</span></div>'
+    + '<p>' + guayaquilMsg(costa ? costa.anom : null) + '</p>'
     + regs.map(g =>
-      '<div class="nino-line">' + g.nombre + ' <b>' + (g.anom != null ? fmtAnom(g.anom) : '--') + '</b> <span>· ' + anomDesc(g.anom) + '</span></div>'
+      '<div class="nino-line">' + g.nombre + ' <b>' + (g.anom != null ? fmtAnom(g.anom) : '--') + '</b></div>'
     ).join('')
-    + '<p>sobre el promedio 1991–2020. Intensidad oficial según Niño 3.4; por zona se describe el valor. Indicativo; no equivale al ONI trimestral oficial.</p></div>'
+    + '<p>sobre el promedio 1991–2020. Un solo veredicto arriba; abajo solo datos. Indicativo; no equivale al ONI trimestral oficial.</p></div>'
     + regs.map(g =>
       '<div class="nino-card"><div class="nino-row"><div><div class="nino-name">' + g.nombre + '</div>'
       + '<div class="nino-desc2">' + g.desc + '</div></div>'

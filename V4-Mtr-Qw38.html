@@ -1,1 +1,576 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora · Proyecto B-612 v4</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --accent: #58a6ff;
+            --accent-glow: rgba(88, 166, 255, 0.15);
+            --success: #3fb950;
+            --success-glow: rgba(63, 185, 80, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 24px 0 32px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .proyecto-info {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+
+        .proyecto-info h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .proyecto-info p {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .proyecto-info ul {
+            padding-left: 20px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .proyecto-info li {
+            margin-bottom: 6px;
+        }
+
+        .fases-container h2 {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 16px;
+            padding-left: 4px;
+        }
+
+        .fase {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .fase.completada {
+            border-color: var(--success);
+            box-shadow: 0 0 12px var(--success-glow);
+        }
+
+        .fase-header {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .fase-header:active {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .checkbox-wrapper {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            margin-right: 14px;
+            flex-shrink: 0;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--text-dim);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-wrapper input:checked + .checkmark {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .checkmark::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .checkbox-wrapper input:checked + .checkmark::after {
+            opacity: 1;
+        }
+
+        .fase-titulo {
+            flex: 1;
+        }
+
+        .fase-titulo h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .fase-titulo span {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .flecha {
+            width: 20px;
+            height: 20px;
+            margin-left: 12px;
+            transition: transform 0.3s ease;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .fase.abierta .flecha {
+            transform: rotate(180deg);
+        }
+
+        .fase-contenido {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .fase.abierta .fase-contenido {
+            max-height: 2000px;
+        }
+
+        .fase-contenido-inner {
+            padding: 0 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .fase-contenido-inner h4 {
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin: 16px 0 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .fase-contenido-inner p,
+        .fase-contenido-inner li {
+            font-size: 0.85rem;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .fase-contenido-inner ul {
+            padding-left: 18px;
+        }
+
+        .fase-contenido-inner li {
+            margin-bottom: 6px;
+        }
+
+        .nota {
+            background: rgba(88, 166, 255, 0.08);
+            border-left: 3px solid var(--accent);
+            padding: 10px 12px;
+            border-radius: 0 8px 8px 0;
+            margin: 12px 0;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .procedimiento {
+            background: rgba(63, 185, 80, 0.06);
+            border-left: 3px solid var(--success);
+            padding: 10px 12px;
+            border-radius: 0 8px 8px 0;
+            margin: 12px 0;
+        }
+
+        .procedimiento h5 {
+            font-size: 0.8rem;
+            color: var(--success);
+            margin-bottom: 6px;
+        }
+
+        .procedimiento ol {
+            padding-left: 18px;
+            font-size: 0.82rem;
+        }
+
+        .procedimiento li {
+            margin-bottom: 4px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px 0;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            border-top: 1px solid var(--border);
+            margin-top: 24px;
+        }
+
+        @media (max-width: 360px) {
+            body { padding: 12px; }
+            header h1 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🪐 Bitácora de Laboratorio</h1>
+        <p>Proyecto B-612 · Micro-modelo v4 · Generalización</p>
+    </header>
+
+    <section class="proyecto-info">
+        <h2>📋 El Proyecto</h2>
+        <p>
+            <strong>Objetivo:</strong> Construir un micro-modelo de inteligencia artificial que no solo memorice respuestas sobre El Principito, sino que <em>comprenda</em> las preguntas y generalice a formulaciones nunca antes vistas.
+        </p>
+        <p>
+            <strong>Problema detectado en v3:</strong> La versión anterior aprendió a asociar palabras clave (ej: "zorro" → "amigo") sin entender la estructura lógica. Un simple buscador de texto (TF-IDF) podía superar sus pruebas.
+        </p>
+        <p><strong>Áreas de conocimiento (fijas):</strong></p>
+        <ul>
+            <li>Identidad (Soy el Principito)</li>
+            <li>Vivienda (Planeta pequeño)</li>
+            <li>Rosa (Única)</li>
+            <li>Amistad (Zorro)</li>
+            <li>Nostalgia (Extrañar)</li>
+            <li>Volcanes (Dormidos)</li>
+            <li>Fuera de dominio (Rechazo)</li>
+        </ul>
+    </section>
+
+    <section class="fases-container">
+        <h2>⚙️ Fases del Proyecto</h2>
+
+        <!-- FASE 1 -->
+        <div class="fase" id="fase1">
+            <div class="fase-header" onclick="toggleFase('fase1', event)">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="check1" onclick="event.stopPropagation(); toggleCheck('fase1', this)">
+                    <span class="checkmark"></span>
+                </div>
+                <div class="fase-titulo">
+                    <h3>Fase 1 · Ingeniería del Dataset</h3>
+                    <span>El cimiento semántico</span>
+                </div>
+                <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </div>
+            <div class="fase-contenido">
+                <div class="fase-contenido-inner">
+                    <h4>Teoría</h4>
+                    <p>Un modelo solo generaliza si los datos de entrenamiento cubren el espacio de variaciones posibles. En v3, el dataset tenía 81 ejemplos con contradicciones internas que enseñaban relaciones erróneas (ej: "mundo pequeño" → volcanes, pero "planeta pequeño" → vivienda).</p>
+                    <p>Para v4, construimos un <strong>grafo de conocimiento</strong> con entidades y atributos, y generamos preguntas contrastivas que obligan al modelo a entender la intención, no solo buscar palabras.</p>
+                    
+                    <div class="nota">
+                        <strong>Principio clave:</strong> Por cada pregunta positiva, debe existir al menos una pregunta adversaria que contenga las mismas palabras clave pero apunte a un tema diferente.
+                    </div>
+
+                    <h4>Procedimiento</h4>
+                    <div class="procedimiento">
+                        <ol>
+                            <li>Definir ontología: 5 entidades × 5 atributos + 1 clase de rechazo.</li>
+                            <li>Crear 50 plantillas gramaticales por cada tema (interrogativas, afirmativas, negativas).</li>
+                            <li>Generar 2,000 pares pregunta→intención usando las plantillas.</li>
+                            <li>Incluir 30% de ejemplos con distractores léxicos de otros temas.</li>
+                            <li>Tokenizar con SentencePiece (vocabulario ~500 subpalabras).</li>
+                            <li>Validar que ninguna pregunta del set de test aparezca en entrenamiento.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FASE 2 -->
+        <div class="fase" id="fase2">
+            <div class="fase-header" onclick="toggleFase('fase2', event)">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="check2" onclick="event.stopPropagation(); toggleCheck('fase2', this)">
+                    <span class="checkmark"></span>
+                </div>
+                <div class="fase-titulo">
+                    <h3>Fase 2 · Arquitectura del Modelo</h3>
+                    <span>Micro-Transformer con Atención</span>
+                </div>
+                <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </div>
+            <div class="fase-contenido">
+                <div class="fase-contenido-inner">
+                    <h4>Teoría</h4>
+                    <p>Las redes recurrentes (GRU/LSTM) procesan el texto secuencialmente, lo que dificulta capturar relaciones entre palabras distantes. Los <strong>Transformers</strong> usan mecanismos de atención que permiten a cada palabra "mirar" a todas las demás simultáneamente.</p>
+                    <p>Para este micro-proyecto, un Transformer de 2 capas con ~350K parámetros es suficiente para aprender composicionalidad sin necesidad de gran poder computacional.</p>
+
+                    <div class="nota">
+                        <strong>Decisión de diseño:</strong> Usamos un Encoder-Only (tipo BERT diminuto) para clasificar la intención en 7 categorías, en lugar de generar texto libremente. Esto elimina alucinaciones y garantiza respuestas canónicas exactas.
+                    </div>
+
+                    <h4>Especificaciones</h4>
+                    <ul>
+                        <li><strong>Embedding:</strong> 500 tokens × 64 dimensiones</li>
+                        <li><strong>Capas:</strong> 2 bloques Transformer (4 heads, dim=64)</li>
+                        <li><strong>Clasificador:</strong> Capa densa 64 → 7 clases</li>
+                        <li><strong>Parámetros totales:</strong> ~350,000</li>
+                        <li><strong>Salida:</strong> Probabilidad por tema → plantilla de respuesta fija</li>
+                    </ul>
+
+                    <div class="procedimiento">
+                        <ol>
+                            <li>Implementar tokenizador SentencePiece entrenado en el corpus de 2,000 preguntas.</li>
+                            <li>Construir el Encoder con PyTorch o TensorFlow Lite.</li>
+                            <li>Agregar capa de clasificación con softmax.</li>
+                            <li>Mapear cada clase a su respuesta canónica de v3.</li>
+                            <li>Verificar que el modelo quepa en &lt;5MB para uso en móvil.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FASE 3 -->
+        <div class="fase" id="fase3">
+            <div class="fase-header" onclick="toggleFase('fase3', event)">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="check3" onclick="event.stopPropagation(); toggleCheck('fase3', this)">
+                    <span class="checkmark"></span>
+                </div>
+                <div class="fase-titulo">
+                    <h3>Fase 3 · Estrategia de Entrenamiento</h3>
+                    <span>Currículum y Regularización</span>
+                </div>
+                <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </div>
+            <div class="fase-contenido">
+                <div class="fase-contenido-inner">
+                    <h4>Teoría</h4>
+                    <p>El sobreajuste (memorización) ocurre cuando el modelo tiene capacidad suficiente para recordar cada ejemplo de entrenamiento en lugar de aprender patrones generales. Para combatirlo, usamos tres técnicas:</p>
+                    <ul>
+                        <li><strong>Aprendizaje por Currículum:</strong> Presentar ejemplos de menor a mayor dificultad.</li>
+                        <li><strong>Dropout:</strong> Apagar neuronas aleatoriamente durante el entrenamiento para forzar redundancia.</li>
+                        <li><strong>Label Smoothing:</strong> Evitar que el modelo esté 100% seguro de sus predicciones, mejorando calibración.</li>
+                    </ul>
+
+                    <div class="nota">
+                        <strong>Regla de oro:</strong> La pérdida de validación debe bajar de forma consistente. Si la pérdida de entrenamiento baja pero la de validación sube, hay memorización → detener entrenamiento.
+                    </div>
+
+                    <h4>Procedimiento</h4>
+                    <div class="procedimiento">
+                        <ol>
+                            <li><strong>Épocas 1-10:</strong> Solo preguntas directas sin distractores (aprendizaje base).</li>
+                            <li><strong>Épocas 11-20:</strong> Introducir sinónimos y reformulaciones.</li>
+                            <li><strong>Épocas 21-30:</strong> Añadir preguntas con distractores y negaciones.</li>
+                            <li>Usar AdamW con learning rate 0.001 y decaimiento lineal.</li>
+                            <li>Dropout de 0.2 en capas de atención y feed-forward.</li>
+                            <li>Early Stopping con paciencia de 5 épocas sobre validación.</li>
+                            <li>Guardar checkpoint solo si mejora en set de validación composicional.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FASE 4 -->
+        <div class="fase" id="fase4">
+            <div class="fase-header" onclick="toggleFase('fase4', event)">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="check4" onclick="event.stopPropagation(); toggleCheck('fase4', this)">
+                    <span class="checkmark"></span>
+                </div>
+                <div class="fase-titulo">
+                    <h3>Fase 4 · Batería de Evaluación</h3>
+                    <span>Pruebas "Rompe-TF-IDF"</span>
+                </div>
+                <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </div>
+            <div class="fase-contenido">
+                <div class="fase-contenido-inner">
+                    <h4>Teoría</h4>
+                    <p>En v3, un simple buscador de similitud léxica (TF-IDF) podía resolver el examen porque las preguntas de prueba compartían palabras con el entrenamiento. Para demostrar generalización real, el examen debe contener preguntas que <strong>compartan vocabulario</strong> pero <strong>difieran en estructura lógica</strong>.</p>
+
+                    <h4>Tipos de Prueba</h4>
+                    <ul>
+                        <li><strong>Test de Inversión de Rol:</strong> "¿Soy yo tu amigo?" vs "¿Eres tú mi amigo?" (mismas palabras, distinta relación).</li>
+                        <li><strong>Test del Caballo de Troya:</strong> "Sé que tienes un zorro, pero ¿cómo son tus volcanes?" (distractor + pregunta real).</li>
+                        <li><strong>Test de Negación:</strong> "¿Tu rosa NO es única?" (debe seguir reconociendo el tema Rosa).</li>
+                        <li><strong>Test de Frontera:</strong> "¿De qué color es tu coche?" (debe activar rechazo de dominio).</li>
+                        <li><strong>Test de Permutación Extrema:</strong> "¿Amigo zorro tu es?" (desorden gramatical, misma intención).</li>
+                    </ul>
+
+                    <div class="nota">
+                        <strong>Criterio de éxito:</strong> El modelo debe superar el 85% en todas las categorías. Un baseline TF-IDF debe obtener menos del 40% en las mismas pruebas.
+                    </div>
+
+                    <div class="procedimiento">
+                        <ol>
+                            <li>Diseñar 300 preguntas de test distribuidas en los 5 tipos anteriores.</li>
+                            <li>Validar manualmente que ninguna pregunta sea ambigua.</li>
+                            <li>Ejecutar baseline TF-IDF sobre el test (debe fallar).</li>
+                            <li>Ejecutar el modelo entrenado y registrar precisión por categoría.</li>
+                            <li>Analizar errores: ¿son fallos de comprensión o de vocabulario?</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FASE 5 -->
+        <div class="fase" id="fase5">
+            <div class="fase-header" onclick="toggleFase('fase5', event)">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="check5" onclick="event.stopPropagation(); toggleCheck('fase5', this)">
+                    <span class="checkmark"></span>
+                </div>
+                <div class="fase-titulo">
+                    <h3>Fase 5 · Gobernanza y Control</h3>
+                    <span>MLOps y Reproducibilidad</span>
+                </div>
+                <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </div>
+            <div class="fase-contenido">
+                <div class="fase-contenido-inner">
+                    <h4>Teoría</h4>
+                    <p>Un experimento científico solo es válido si es <strong>reproducible</strong> y si no hay <strong>fuga de información</strong> entre entrenamiento y evaluación. En v3, el examen sellado tenía sus frases visibles en el código, comprometiendo la validez del resultado.</p>
+
+                    <h4>Controles Obligatorios</h4>
+                    <ul>
+                        <li><strong>Sellado criptográfico:</strong> El archivo de test se guarda con hash SHA-256 y no se lee durante el entrenamiento.</li>
+                        <li><strong>Versionado de datos:</strong> Cada dataset tiene un identificador único. Cualquier cambio requiere nueva versión.</li>
+                        <li><strong>Configuración inmutable:</strong> Hiperparámetros fijados en archivo YAML antes de iniciar. Prohibido ajustarlos manualmente para "mejorar" resultados.</li>
+                        <li><strong>Registro automático:</strong> Cada ejecución guarda: fecha, hash de código, métricas, y ruta del checkpoint.</li>
+                        <li><strong>Auditoría de semillas:</strong> Todas las semillas aleatorias se documentan. El experimento debe dar el mismo resultado al repetirse.</li>
+                    </ul>
+
+                    <div class="procedimiento">
+                        <ol>
+                            <li>Crear repositorio con estructura: <code>/datos</code>, <code>/src</code>, <code>/checkpoints</code>, <code>/test-sellado</code>.</li>
+                            <li>Generar hash SHA-256 del archivo de test antes de entrenar.</li>
+                            <li>Configurar script de entrenamiento para que NO tenga acceso a <code>/test-sellado</code>.</li>
+                            <li>Usar MLflow o archivo JSON para loggear cada época.</li>
+                            <li>Al finalizar, verificar que el hash del test no cambió.</li>
+                            <li>Publicar informe con todos los artefactos y semillas.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <footer>
+        Bitácora Proyecto B-612 · v4 · Laboratorio de Micro-Modelos<br>
+        Generado para evaluación en dispositivo móvil
+    </footer>
+
+    <script>
+        function toggleFase(id, event) {
+            const fase = document.getElementById(id);
+            const checkbox = fase.querySelector('input[type="checkbox"]');
+            
+            if (event.target === checkbox || checkbox.contains(event.target)) {
+                return;
+            }
+            
+            fase.classList.toggle('abierta');
+        }
+
+        function toggleCheck(id, checkbox) {
+            const fase = document.getElementById(id);
+            
+            if (checkbox.checked) {
+                fase.classList.add('completada');
+            } else {
+                fase.classList.remove('completada');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.fase input[type="checkbox"]').forEach(function(cb) {
+                if (cb.checked) {
+                    cb.closest('.fase').classList.add('completada');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

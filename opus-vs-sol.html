@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Claude Opus 5.5 con Claude Code frente a GPT-6.1 Sol con Codex: resultado, gasto, tiempos y herramientas en un examen de programación como agentes.">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11161d" media="(prefers-color-scheme: dark)">
+<title>Opus 5.5 frente a Sol 6.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Informe de una página: cabecera, resumen, prueba, tabla y barras a escala; columnas en pantalla ancha */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --fg: #18202b; --suave: #556070; --linea: #dde2e8;
+  --opus: #a8501c; --opus-fondo: #f6e6dc; --sol: #0d6e66; --sol-fondo: #dcefec;
+  --f-titulo: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-texto: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161d; --panel: #19202a; --fg: #e6eaf0; --suave: #9aa5b4; --linea: #2b3542;
+  --opus: #f0a070; --opus-fondo: #3a2619; --sol: #5fcfc3; --sol-fondo: #15322f; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11161d; --panel: #19202a; --fg: #e6eaf0; --suave: #9aa5b4; --linea: #2b3542;
+  --opus: #f0a070; --opus-fondo: #3a2619; --sol: #5fcfc3; --sol-fondo: #15322f; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font: 400 1rem/1.55 var(--f-texto); }
+.hoja { max-width: 68rem; margin: 0 auto; padding-block: 1.5rem 3rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 1.25rem; }
+h1, h2 { font-family: var(--f-titulo); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(1.6rem, 5vw, 2.3rem); font-weight: 700; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+.etiqueta { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); font-weight: 600; }
+.cabecera { display: grid; gap: .5rem; }
+.cabecera .sub { color: var(--suave); max-width: 62ch; }
+.opus { color: var(--opus); } .sol { color: var(--sol); }
+
+.bloque { background: var(--panel); border: 1px solid var(--linea); border-radius: 10px; padding: 1.1rem 1.1rem 1.2rem; display: grid; gap: .8rem; min-width: 0; }
+.resumen { border-left: 4px solid var(--sol); }
+.resumen ul, .bloque ul { margin: 0; padding-left: 1.15rem; display: grid; gap: .45rem; }
+.columnas { display: grid; gap: 1.25rem; }
+@media (min-width: 760px) { .columnas { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); } }
+
+.ejercicios { list-style: none; padding: 0 !important; counter-reset: ej; }
+.ejercicios li { display: grid; grid-template-columns: 1.8rem 1fr; gap: .6rem; }
+.ejercicios li::before { counter-increment: ej; content: counter(ej); font: 600 .9rem/1.8rem var(--f-titulo);
+  width: 1.8rem; height: 1.8rem; text-align: center; border-radius: 50%; background: var(--linea); }
+.ejercicios b { font-weight: 600; }
+
+.tabla-caja { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 30rem; }
+th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
+thead th { font-family: var(--f-titulo); font-size: .95rem; }
+thead th.opus { background: var(--opus-fondo); } thead th.sol { background: var(--sol-fondo); }
+td.n { text-align: right; white-space: nowrap; }
+tbody th { font-weight: 500; color: var(--suave); }
+tr.sub th { padding-left: 1.4rem; font-size: .9rem; }
+tr.sub td { font-size: .9rem; color: var(--suave); }
+.nota-tabla { font-size: .82rem; color: var(--suave); }
+
+.barras { display: grid; gap: 1rem; }
+.metrica { display: grid; gap: .35rem; }
+.metrica .titulo { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: .92rem; }
+.metrica .titulo span:last-child { color: var(--suave); }
+.fila-barra { display: grid; grid-template-columns: 4.2rem 1fr 4.6rem; align-items: center; gap: .5rem; font-variant-numeric: tabular-nums; font-size: .88rem; }
+.pista { height: .8rem; background: var(--linea); border-radius: 4px; overflow: hidden; }
+.pista span { display: block; height: 100%; border-radius: 4px; }
+.pista .opus { background: var(--opus); } .pista .sol { background: var(--sol); }
+.fila-barra b { font-weight: 600; text-align: right; }
+.pie { font-size: .82rem; color: var(--suave); display: grid; gap: .3rem; }
+</style>
+<style>*,*::before,*::after{box-sizing:border-box} body{margin:0;-webkit-text-size-adjust:100%} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<main class="hoja">
+  <header class="cabecera">
+    <span class="etiqueta">Examen de modelos como agentes · 9 de noviembre de 2026</span>
+    <h1><span class="opus">Claude Opus 5.5</span> frente a <span class="sol">GPT-6.1 Sol</span></h1>
+    <p class="sub">Los dos modelos hicieron la misma prueba de programación, cada uno con su herramienta nativa y su propia suscripción. El objetivo era ver si los dos la resuelven y cuál gasta más para lograrlo.</p>
+  </header>
+
+  <section class="bloque resumen">
+    <h2>Resultado en breve</h2>
+    <ul>
+      <li><b>Los dos resolvieron la prueba completa</b>: 100 sobre 100 cada uno.</li>
+      <li><b>Sol gastó unas 2,4 veces menos</b>: 0,56 US$ frente a 1,37 US$, al precio equivalente de API.</li>
+      <li>Opus escribió más del doble de texto (23 400 tokens frente a 10 700), y la escritura es la parte más cara.</li>
+      <li>Sol terminó antes: 6 min 05 s de trabajo, frente a 7 min 50 s de Opus.</li>
+    </ul>
+  </section>
+
+  <div class="columnas">
+    <section class="bloque">
+      <h2>En qué consistía la prueba</h2>
+      <p>Cada modelo recibe una copia de un proyecto pequeño, una red neuronal (un Transformer en miniatura) que aprendió a restar números de tres cifras. Debe resolver tres ejercicios seguidos, solo y sin ayuda humana:</p>
+      <ol class="ejercicios">
+        <li><span><b>Construir.</b> Escribir un programa que mida con exactitud dónde se equivoca una versión de la red a medio entrenar, con sus propias pruebas.</span></li>
+        <li><span><b>Arreglar.</b> La evaluación muestra miles de errores que no deberían existir. Hay que encontrar los fallos escondidos en el código, incluida una prueba que los encubre, y corregirlos.</span></li>
+        <li><span><b>Diagnosticar.</b> El entrenamiento corre, pero la red no aprende. Hay que encontrar las causas y conseguir que supere el 95 % de acierto.</span></li>
+      </ol>
+      <p>Se puntúa sobre 100 con 21 criterios verificados automáticamente: si el resultado es exacto, si sale de verdad de la red, si las pruebas sirven y si se respetaron las reglas. Límite de 30 minutos por ejercicio.</p>
+    </section>
+
+    <section class="bloque">
+      <h2>Condiciones</h2>
+      <ul>
+        <li>Mismo enunciado, mismos archivos de partida y mismo límite de tiempo para los dos.</li>
+        <li><span class="opus"><b>Opus 5.5</b></span>: herramienta Claude Code, suscripción de Claude.</li>
+        <li><span class="sol"><b>Sol 6.1</b></span>: herramienta Codex, suscripción de ChatGPT.</li>
+        <li>Nivel de razonamiento: medio en los dos.</li>
+        <li>Un agente por ejercicio, tres en total por modelo. Ninguno lanzó subagentes.</li>
+        <li>Ningún coste real: los dos trabajaron dentro de sus suscripciones. El precio en dólares es lo que habría costado por API.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="bloque">
+    <h2>Cifras completas</h2>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th></th><th class="opus">Opus 5.5 · Claude Code</th><th class="sol">Sol 6.1 · Codex</th></tr></thead>
+        <tbody>
+          <tr><th>Nota</th><td class="n">100 / 100</td><td class="n">100 / 100</td></tr>
+          <tr><th>Tiempo de trabajo</th><td class="n">7 min 50 s</td><td class="n">6 min 05 s</td></tr>
+          <tr class="sub"><th>Construir · Arreglar · Diagnosticar</th><td class="n">2:00 · 2:30 · 3:20</td><td class="n">2:10 · 1:55 · 2:00</td></tr>
+          <tr><th>Agentes</th><td class="n">3</td><td class="n">3</td></tr>
+          <tr><th>Llamadas al modelo</th><td class="n">23</td><td class="n">no lo informa Codex</td></tr>
+          <tr><th>Acciones con herramientas</th><td class="n">20</td><td class="n">32</td></tr>
+          <tr class="sub"><th>Comandos de terminal</th><td class="n">20</td><td class="n">26</td></tr>
+          <tr class="sub"><th>Ediciones de archivos</th><td class="n">0 (escribió los archivos desde la terminal)</td><td class="n">6</td></tr>
+          <tr class="sub"><th>Por ejercicio</th><td class="n">6 · 7 · 7</td><td class="n">10 · 8 · 14</td></tr>
+          <tr><th>Tokens procesados en total</th><td class="n">786 000</td><td class="n">832 000</td></tr>
+          <tr class="sub"><th>Releídos de la caché</th><td class="n">667 000</td><td class="n">740 000</td></tr>
+          <tr class="sub"><th>Escritos por el modelo</th><td class="n">23 400</td><td class="n">10 700</td></tr>
+          <tr><th>Equivalente a precio de API</th><td class="n">1,37 US$</td><td class="n">0,56 US$</td></tr>
+          <tr><th>Franja de 5 horas usada</th><td class="n">7 %</td><td class="n">3 %</td></tr>
+          <tr><th>Límite semanal usado</th><td class="n">≈ 1 %</td><td class="n">no lo informa ChatGPT</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="nota-tabla">Los porcentajes de franja son de cada suscripción por separado. Como son planes distintos, cada uno indica cuánto se consumió de su propio plan y no se comparan entre sí.</p>
+  </section>
+
+  <div class="columnas">
+    <section class="bloque">
+      <h2>Comparación a escala</h2>
+      <div class="barras">
+        <div class="metrica">
+          <div class="titulo"><span>Equivalente a precio de API</span><span>Opus, 2,4 veces más</span></div>
+          <div class="fila-barra"><span class="opus">Opus</span><span class="pista"><span class="opus" style="width:100%"></span></span><b>1,37 US$</b></div>
+          <div class="fila-barra"><span class="sol">Sol</span><span class="pista"><span class="sol" style="width:40.9%"></span></span><b>0,56 US$</b></div>
+        </div>
+        <div class="metrica">
+          <div class="titulo"><span>Tokens escritos por el modelo</span><span>Opus, 2,2 veces más</span></div>
+          <div class="fila-barra"><span class="opus">Opus</span><span class="pista"><span class="opus" style="width:100%"></span></span><b>23 400</b></div>
+          <div class="fila-barra"><span class="sol">Sol</span><span class="pista"><span class="sol" style="width:45.7%"></span></span><b>10 700</b></div>
+        </div>
+        <div class="metrica">
+          <div class="titulo"><span>Tiempo de trabajo</span><span>Sol, 22 % más rápido</span></div>
+          <div class="fila-barra"><span class="opus">Opus</span><span class="pista"><span class="opus" style="width:100%"></span></span><b>7:50</b></div>
+          <div class="fila-barra"><span class="sol">Sol</span><span class="pista"><span class="sol" style="width:77.7%"></span></span><b>6:05</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bloque">
+      <h2>Cómo trabajó cada uno</h2>
+      <ul>
+        <li><span class="opus"><b>Opus</b></span> hizo pocas acciones, pero largas: 20 comandos, muchos con programas completos escritos de una vez. Razonó y escribió más en cada paso.</li>
+        <li><span class="sol"><b>Sol</b></span> hizo más acciones, más cortas: 32 entre comandos y ediciones. Escribió menos y avanzó con pasos pequeños.</li>
+        <li>Los dos releyeron una cantidad parecida de contexto (unos 800 000 tokens). La diferencia de gasto viene sobre todo de lo que escribió cada modelo y del precio por token.</li>
+        <li><b>Conclusión:</b> con el mismo resultado, Sol lo consiguió con bastante menos gasto.</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer class="pie">
+    <p>Precio equivalente de API: Opus según el coste que informa Claude Code; Sol según las tarifas públicas de OpenAI. Son orientativos.</p>
+    <p>La franja de 5 horas se mide como la diferencia de uso de la cuenta entre el inicio y el final del examen.</p>
+  </footer>
+</main>
+</body>
+</html>
